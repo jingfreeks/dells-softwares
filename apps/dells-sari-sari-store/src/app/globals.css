@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+:root {
+  --color-ink: #241f19;
+  --color-paper: #f4ecd8;
+  --color-wood: #6b3f22;
+  --color-wood-light: #b97a45;
+  --color-roof: #c9cc9c;
+  --color-sari-red: #c93b2e;
+  --color-grille: #201c17;
+}
+
+@theme inline {
+  --color-ink: var(--color-ink);
+  --color-paper: var(--color-paper);
+  --color-wood: var(--color-wood);
+  --color-wood-light: var(--color-wood-light);
+  --color-roof: var(--color-roof);
+  --color-sari-red: var(--color-sari-red);
+  --color-grille: var(--color-grille);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-tag: var(--font-tag);
+  --font-script: var(--font-script);
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  overflow-anchor: none;
+}
+
+/* Signature motif: the storefront's wire-mesh security grille, reused as a
+   structural divider and card frame throughout the page. */
+.grille-divider {
+  height: 14px;
+  background-image: repeating-linear-gradient(
+      45deg,
+      var(--color-grille) 0 2px,
+      transparent 2px 10px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      var(--color-grille) 0 2px,
+      transparent 2px 10px
+    );
+  background-color: var(--color-wood);
+}
+
+.grille-frame {
+  position: relative;
+  border: 2px solid var(--color-grille);
+}
+
+.grille-frame::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+      0deg,
+      var(--color-grille) 0 1px,
+      transparent 1px 10px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      var(--color-grille) 0 1px,
+      transparent 1px 10px
+    );
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lift-on-hover {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .lift-on-hover:hover {
+    transform: translateY(-4px);
+  }
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--color-sari-red);
+  outline-offset: 2px;
+}
