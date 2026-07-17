@@ -261,51 +261,94 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ---- Visit us: two-tone CTA panel ---- */}
-      <section id="visit" className="grid sm:grid-cols-2">
-        <div className="flex flex-col justify-center gap-6 bg-[var(--color-paper)] px-6 py-20 sm:px-10">
-          <Eyebrow>Bisitahin &middot; Visit Us</Eyebrow>
-          <h2 className="font-[family-name:var(--font-display)] text-4xl leading-[0.95] tracking-wide sm:text-5xl">
-            Halika, dumalaw ka.
-          </h2>
-          <p className="max-w-sm text-[var(--color-ink)]/70">
-            It would be our pleasure to have you at the counter — whether
-            it&apos;s a quick top-up or a long &ldquo;kamusta.&rdquo;
-          </p>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <PlankButton href="#contact">See Store Hours</PlankButton>
-          </div>
-        </div>
-        <div className="flex flex-col justify-center gap-6 bg-[var(--color-wood)] px-6 py-20 text-[var(--color-paper)] sm:px-10">
-          <div className="border-2 border-[var(--color-roof)]/40 bg-[var(--color-grille)]/30 p-5">
-            <p className="font-[family-name:var(--font-tag)] text-xs uppercase tracking-[0.2em] text-[var(--color-roof)]">
-              Store Hours
+      {/* ---- Visit us: receipt card + map on dark wood ---- */}
+      <section
+        id="visit"
+        className="relative overflow-x-clip bg-[var(--color-wood)] px-6 py-24 text-[var(--color-paper)] sm:px-10"
+      >
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(90deg, var(--color-grille) 0 2px, transparent 2px 60px)",
+          }}
+        />
+        <div className="relative mx-auto max-w-6xl">
+          <div className="text-center">
+            <Eyebrow>Bisitahin &middot; Visit Us</Eyebrow>
+            <h2 className="mt-2 font-[family-name:var(--font-display)] text-4xl tracking-wide sm:text-5xl">
+              Halika, dumalaw ka.
+            </h2>
+            <p className="mt-1 whitespace-nowrap text-[clamp(2.5rem,8vw,5rem)] leading-none text-[var(--color-roof)] font-[family-name:var(--font-script)]">
+              see you at the counter
             </p>
-            <dl className="mt-3 divide-y divide-[var(--color-paper)]/15 font-[family-name:var(--font-tag)] text-sm">
-              {HOURS.map((row) => (
-                <div key={row.days} className="flex justify-between py-2">
-                  <dt className="text-[var(--color-paper)]/70">{row.days}</dt>
-                  <dd>{row.time}</dd>
-                </div>
-              ))}
-            </dl>
           </div>
-          <div
-            id="contact"
-            className="border-2 border-[var(--color-roof)]/40 bg-[var(--color-grille)]/30 p-5"
-          >
-            <p className="font-[family-name:var(--font-tag)] text-xs uppercase tracking-[0.2em] text-[var(--color-roof)]">
-              Address
-            </p>
-            <p className="mt-2 text-sm">{ADDRESS_LINE_1}</p>
-          </div>
-          <div className="grille-frame overflow-hidden bg-[var(--color-paper)] p-2 shadow-lg">
-            <iframe
-              title="Store location map"
-              className="h-56 w-full"
-              loading="lazy"
-              src={`https://www.google.com/maps?q=${mapQuery}&output=embed`}
-            />
+
+          <div className="mt-14 grid items-start gap-10 lg:grid-cols-[360px_1fr]">
+            {/* Receipt-style hours card */}
+            <div className="mx-auto w-full max-w-sm -rotate-1 bg-[var(--color-paper)] px-6 py-7 text-[var(--color-ink)] shadow-[8px_8px_0_rgba(0,0,0,0.35)]">
+              <div className="text-center font-[family-name:var(--font-tag)]">
+                <p className="text-sm font-bold uppercase tracking-[0.2em]">
+                  {STORE_NAME}
+                </p>
+                <p className="mt-1 text-[11px] uppercase tracking-[0.2em] text-[var(--color-ink)]/50">
+                  Official Store Hours
+                </p>
+              </div>
+              <div
+                aria-hidden
+                className="my-4 border-t-2 border-dashed border-[var(--color-ink)]/25"
+              />
+              <dl className="font-[family-name:var(--font-tag)] text-sm">
+                {HOURS.map((row) => (
+                  <div key={row.days} className="flex justify-between py-1.5">
+                    <dt className="text-[var(--color-ink)]/60">{row.days}</dt>
+                    <dd className="font-bold">{row.time}</dd>
+                  </div>
+                ))}
+              </dl>
+              <div
+                aria-hidden
+                className="my-4 border-t-2 border-dashed border-[var(--color-ink)]/25"
+              />
+              <div id="contact" className="font-[family-name:var(--font-tag)] text-xs leading-relaxed">
+                <p className="uppercase tracking-[0.2em] text-[var(--color-ink)]/50">Address</p>
+                <p className="mt-1 font-bold">{ADDRESS_LINE_1}</p>
+                <p className="mt-3 uppercase tracking-[0.2em] text-[var(--color-ink)]/50">Call or Text</p>
+                <p className="mt-1 font-bold">{PHONE}</p>
+              </div>
+              <div
+                aria-hidden
+                className="my-4 border-t-2 border-dashed border-[var(--color-ink)]/25"
+              />
+              <p className="text-center font-[family-name:var(--font-tag)] text-xs uppercase tracking-[0.3em] text-[var(--color-sari-red)]">
+                ** Salamat po — balik ka ulit! **
+              </p>
+            </div>
+
+            {/* Map with directions */}
+            <div className="flex flex-col gap-5">
+              <div className="grille-frame rotate-1 overflow-hidden bg-[var(--color-paper)] p-2 shadow-[8px_8px_0_rgba(0,0,0,0.35)]">
+                <iframe
+                  title="Store location map"
+                  className="h-72 w-full sm:h-96"
+                  loading="lazy"
+                  src={`https://www.google.com/maps?q=${mapQuery}&output=embed`}
+                />
+              </div>
+              <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+                <p className="max-w-md text-sm text-[var(--color-paper)]/70">
+                  It would be our pleasure to have you at the counter — whether
+                  it&apos;s a quick top-up or a long &ldquo;kamusta.&rdquo;
+                </p>
+                <PlankButton
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${mapQuery}`}
+                >
+                  Get Directions
+                </PlankButton>
+              </div>
+            </div>
           </div>
         </div>
       </section>
