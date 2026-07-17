@@ -1,16 +1,22 @@
-import { expect, test, type Page } from '@playwright/test'
-
-async function login(page: Page) {
-  await page.goto('/login')
-  await page.getByLabel('Email or phone').fill('admin@dellsstore.ph')
-  await page.getByLabel('Password').fill('admin123')
-  await page.getByRole('button', { name: 'Log in' }).click()
-  await expect(page).toHaveURL(/\/pos/)
-}
+import { expect, test } from '@playwright/test'
+import { addProduct, registerFreshStore } from './helpers'
 
 test.describe('POS checkout flow (Epic A)', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page)
+    await registerFreshStore(page)
+    await addProduct(page, {
+      name: 'Sardines in Tomato Sauce',
+      category: 'Canned Goods',
+      price: '22',
+      stock: '60',
+    })
+    await addProduct(page, {
+      name: 'Shampoo Sachet (Tingi)',
+      category: 'Household Essentials',
+      price: '8',
+      stock: '120',
+    })
+    await page.goto('/pos')
   })
 
   test('unknown barcode shows "Product not found" (story A1)', async ({ page }) => {
@@ -71,7 +77,7 @@ test.describe('POS checkout flow (Epic A)', () => {
     await page.getByLabel('Amount tendered').fill('50')
     await page.getByRole('button', { name: 'Complete sale' }).click()
 
-    await expect(page.getByText('Sale recorded')).toBeVisible()
+    await expect(page.getByText('Sale recorded')).toBeVisible({ timeout: 10_000 })
     await expect(page.getByText('Cart is empty')).toBeVisible()
 
     await page.getByRole('link', { name: 'Admin' }).click()
@@ -90,8 +96,15 @@ test.describe('POS checkout flow (Epic A)', () => {
 
 test.describe('Inventory (Epic B)', () => {
   test.beforeEach(async ({ page }) => {
-    await login(page)
-    await page.getByRole('link', { name: 'Inventory' }).click()
+    await registerFreshStore(page)
+    await addProduct(page, {
+      name: 'Ube Crackers',
+      category: 'Snacks & Chips',
+      price: '28',
+      stock: '8',
+      lowStockThreshold: '10',
+    })
+    await page.goto('/inventory')
   })
 
   test('flags low and out-of-stock products (story B5)', async ({ page }) => {

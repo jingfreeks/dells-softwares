@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { DEMO_ADMIN, DEMO_PASSWORD, STORE_NAME } from "../lib/mockData";
+import { STORE_NAME } from "../lib/mockData";
 
 export function Login() {
   const { user, login } = useAuth();
@@ -9,12 +9,16 @@ export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   if (user) return <Navigate to="/pos" replace />;
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const result = login(email, password);
+    setError(null);
+    setSubmitting(true);
+    const result = await login(email, password);
+    setSubmitting(false);
     if (result.ok) {
       navigate("/pos");
     } else {
@@ -23,28 +27,29 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <p className="text-sm font-medium text-[var(--color-brand)]">Tindahan POS</p>
-        <h1 className="mt-1 text-xl font-semibold text-stone-900">Log in to {STORE_NAME}</h1>
+        <h1 className="mt-1 text-xl font-semibold text-slate-900">Log in to {STORE_NAME}</h1>
 
         <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
           <div>
-            <label htmlFor="email" className="text-sm font-medium text-stone-700">
-              Email or phone
+            <label htmlFor="email" className="text-sm font-medium text-slate-700">
+              Email address
             </label>
             <input
               id="email"
-              type="text"
+              type="email"
               autoComplete="username"
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
             />
           </div>
           <div>
             <div className="flex items-center justify-between">
-              <label htmlFor="password" className="text-sm font-medium text-stone-700">
+              <label htmlFor="password" className="text-sm font-medium text-slate-700">
                 Password
               </label>
               <Link to="/forgot-password" className="text-xs text-[var(--color-brand)] hover:underline">
@@ -55,9 +60,10 @@ export function Login() {
               id="password"
               type="password"
               autoComplete="current-password"
+              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
             />
           </div>
 
@@ -69,18 +75,20 @@ export function Login() {
 
           <button
             type="submit"
-            className="mt-2 cursor-pointer rounded-lg bg-[var(--color-brand)] py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-brand-dark)]"
+            disabled={submitting}
+            className="mt-2 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--color-brand)] text-sm font-semibold text-white transition-colors hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Log in
+            {submitting && (
+              <span
+                aria-hidden
+                className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+              />
+            )}
+            {submitting ? "Logging in…" : "Log in"}
           </button>
         </form>
 
-        <p className="mt-4 text-xs text-stone-500">
-          Demo admin: <span className="font-mono">{DEMO_ADMIN.email}</span> /{" "}
-          <span className="font-mono">{DEMO_PASSWORD}</span>
-        </p>
-
-        <p className="mt-6 text-center text-sm text-stone-600">
+        <p className="mt-6 text-center text-sm text-slate-600">
           New store?{" "}
           <Link to="/register" className="font-medium text-[var(--color-brand)] hover:underline">
             Register

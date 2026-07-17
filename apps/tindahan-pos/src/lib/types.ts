@@ -2,6 +2,7 @@ export type Role = "admin" | "cashier";
 
 export interface StaffAccount {
   id: string;
+  storeId: string;
   name: string;
   email: string;
   role: Role;
