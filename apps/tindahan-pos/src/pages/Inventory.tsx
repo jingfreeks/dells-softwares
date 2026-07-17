@@ -16,12 +16,15 @@ const emptyForm = {
 };
 
 export function Inventory() {
-  const { products, addProduct, updateProduct, removeProduct, restock } = useStoreData();
+  const { products, loading, error, addProduct, updateProduct, removeProduct, restock } =
+    useStoreData();
   const [query, setQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const lowStock = useMemo(() => lowStockProducts(products), [products]);
   const filtered = useMemo(() => {
@@ -56,7 +59,7 @@ export function Inventory() {
     setShowForm(true);
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const price = Number(form.price);
     const stock = Number(form.stock);
@@ -84,20 +87,46 @@ export function Inventory() {
       category: form.category.trim() || "Uncategorized",
     };
 
-    if (editingId) {
-      updateProduct(editingId, payload);
-    } else {
-      addProduct(payload);
+    setSubmitting(true);
+    setFormError(null);
+    try {
+      if (editingId) {
+        await updateProduct(editingId, payload);
+      } else {
+        await addProduct(payload);
+      }
+      setShowForm(false);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Could not save product.");
+    } finally {
+      setSubmitting(false);
     }
-    setShowForm(false);
+  }
+
+  async function handleRestock(id: string) {
+    setActionError(null);
+    try {
+      await restock(id, 10);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Could not restock product.");
+    }
+  }
+
+  async function handleRemove(id: string) {
+    setActionError(null);
+    try {
+      await removeProduct(id);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Could not remove product.");
+    }
   }
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-stone-900">Inventory</h1>
-          <p className="text-sm text-stone-500">{products.length} products tracked.</p>
+          <h1 className="text-lg font-semibold text-slate-900">Inventory</h1>
+          <p className="text-sm text-slate-500">{products.length} products tracked.</p>
         </div>
         <button
           type="button"
@@ -108,7 +137,13 @@ export function Inventory() {
         </button>
       </div>
 
-      {lowStock.length > 0 && (
+      {(error || actionError) && (
+        <div role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error ?? actionError}
+        </div>
+      )}
+
+      {!loading && lowStock.length > 0 && (
         <div role="alert" className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {lowStock.length} product{lowStock.length === 1 ? "" : "s"} running low or out of stock —{" "}
           {lowStock.map((p) => p.name).join(", ")}.
@@ -120,12 +155,12 @@ export function Inventory() {
         placeholder="Search by name, category, or barcode"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="mt-4 w-full max-w-sm rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+        className="mt-4 w-full max-w-sm rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
       />
 
-      <div className="mt-4 overflow-x-auto rounded-xl border border-stone-200 bg-white">
+      <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-sm">
-          <thead className="border-b border-stone-200 bg-stone-50 text-left text-xs font-medium uppercase tracking-wide text-stone-500">
+          <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
             <tr>
               <th className="px-4 py-3">Product</th>
               <th className="px-4 py-3">Category</th>
@@ -136,49 +171,60 @@ export function Inventory() {
               <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-stone-100">
-            {filtered.map((product) => (
-              <tr key={product.id}>
-                <td className="px-4 py-3 font-medium text-stone-800">{product.name}</td>
-                <td className="px-4 py-3 text-stone-500">{product.category}</td>
-                <td className="px-4 py-3 font-mono text-xs text-stone-500">
-                  {product.barcode ?? "—"}
-                </td>
-                <td className="px-4 py-3 text-stone-700">{PESO.format(product.price)}</td>
-                <td className="px-4 py-3 text-stone-700">{product.stock}</td>
-                <td className="px-4 py-3">
-                  <StockBadge status={stockStatus(product)} />
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-1 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => restock(product.id, 10)}
-                      className="flex min-h-11 cursor-pointer items-center px-2 text-stone-600 hover:underline"
-                    >
-                      +10 stock
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openEditForm(product)}
-                      className="flex min-h-11 cursor-pointer items-center px-2 text-stone-600 hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeProduct(product.id)}
-                      className="flex min-h-11 cursor-pointer items-center px-2 text-red-600 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
+          <tbody className="divide-y divide-slate-100">
+            {loading &&
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i}>
+                  <td colSpan={7} className="px-4 py-3">
+                    <div className="h-4 w-full animate-pulse rounded bg-slate-100" />
+                  </td>
+                </tr>
+              ))}
+            {!loading &&
+              filtered.map((product) => (
+                <tr key={product.id} className="hover:bg-slate-50/60">
+                  <td className="px-4 py-3 font-medium text-slate-800">{product.name}</td>
+                  <td className="px-4 py-3 text-slate-500">{product.category}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-slate-500">
+                    {product.barcode ?? "—"}
+                  </td>
+                  <td className="tabular-nums px-4 py-3 text-slate-700">
+                    {PESO.format(product.price)}
+                  </td>
+                  <td className="tabular-nums px-4 py-3 text-slate-700">{product.stock}</td>
+                  <td className="px-4 py-3">
+                    <StockBadge status={stockStatus(product)} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => handleRestock(product.id)}
+                        className="flex min-h-11 cursor-pointer items-center px-2 text-slate-600 hover:underline"
+                      >
+                        +10 stock
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openEditForm(product)}
+                        className="flex min-h-11 cursor-pointer items-center px-2 text-slate-600 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemove(product.id)}
+                        className="flex min-h-11 cursor-pointer items-center px-2 text-red-600 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            {!loading && filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-stone-400">
+                <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
                   No products match "{query}".
                 </td>
               </tr>
@@ -189,13 +235,13 @@ export function Inventory() {
 
       {showForm && (
         <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6">
-            <h2 className="text-base font-semibold text-stone-900">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h2 className="text-base font-semibold text-slate-900">
               {editingId ? "Edit product" : "Add product"}
             </h2>
             <form className="mt-4 flex flex-col gap-3" onSubmit={handleSubmit} noValidate>
               <div>
-                <label htmlFor="pname" className="text-xs font-medium text-stone-700">
+                <label htmlFor="pname" className="text-xs font-medium text-slate-700">
                   Name
                 </label>
                 <input
@@ -203,11 +249,11 @@ export function Inventory() {
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                 />
               </div>
               <div>
-                <label htmlFor="pbarcode" className="text-xs font-medium text-stone-700">
+                <label htmlFor="pbarcode" className="text-xs font-medium text-slate-700">
                   Barcode (optional — leave blank for tingi/repack items)
                 </label>
                 <input
@@ -215,11 +261,11 @@ export function Inventory() {
                   type="text"
                   value={form.barcode}
                   onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-mono focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                 />
               </div>
               <div>
-                <label htmlFor="pcategory" className="text-xs font-medium text-stone-700">
+                <label htmlFor="pcategory" className="text-xs font-medium text-slate-700">
                   Category
                 </label>
                 <input
@@ -227,12 +273,12 @@ export function Inventory() {
                   type="text"
                   value={form.category}
                   onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                 />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label htmlFor="pprice" className="text-xs font-medium text-stone-700">
+                  <label htmlFor="pprice" className="text-xs font-medium text-slate-700">
                     Price
                   </label>
                   <input
@@ -241,11 +287,11 @@ export function Inventory() {
                     min="0"
                     value={form.price}
                     onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />
                 </div>
                 <div>
-                  <label htmlFor="pstock" className="text-xs font-medium text-stone-700">
+                  <label htmlFor="pstock" className="text-xs font-medium text-slate-700">
                     Stock
                   </label>
                   <input
@@ -254,11 +300,11 @@ export function Inventory() {
                     min="0"
                     value={form.stock}
                     onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />
                 </div>
                 <div>
-                  <label htmlFor="pthreshold" className="text-xs font-medium text-stone-700">
+                  <label htmlFor="pthreshold" className="text-xs font-medium text-slate-700">
                     Low-stock at
                   </label>
                   <input
@@ -267,7 +313,7 @@ export function Inventory() {
                     min="0"
                     value={form.lowStockThreshold}
                     onChange={(e) => setForm((f) => ({ ...f, lowStockThreshold: e.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />
                 </div>
               </div>
@@ -282,15 +328,16 @@ export function Inventory() {
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="cursor-pointer rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+                  className="cursor-pointer rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="cursor-pointer rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)]"
+                  disabled={submitting}
+                  className="cursor-pointer rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {editingId ? "Save changes" : "Add product"}
+                  {submitting ? "Saving…" : editingId ? "Save changes" : "Add product"}
                 </button>
               </div>
             </form>

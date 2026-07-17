@@ -37,8 +37,19 @@ export function LogoutIcon({ className }: IconProps) {
   );
 }
 
+export function StaffIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3.5 20c0-3.4 2.5-5.8 5.5-5.8s5.5 2.4 5.5 5.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16 8.5a2.8 2.8 0 1 0 0-5.6M18 14.5c2.2.4 3.5 2.3 3.5 5.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export const NAV_ICONS = {
   pos: PosIcon,
   inventory: InventoryIcon,
   admin: AdminIcon,
+  staff: StaffIcon,
 };

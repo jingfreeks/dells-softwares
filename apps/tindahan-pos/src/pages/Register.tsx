@@ -11,87 +11,125 @@ export function Register() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   if (user) return <Navigate to="/pos" replace />;
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const result = register({ storeName, ownerName, email, password, confirmPassword });
-    if (result.ok) {
-      navigate("/pos");
-    } else {
+    setError(null);
+    setSubmitting(true);
+    const result = await register({ storeName, ownerName, email, password, confirmPassword });
+    setSubmitting(false);
+
+    if (!result.ok) {
       setError(result.error);
+      return;
     }
+    if (result.needsEmailConfirmation) {
+      setAwaitingConfirmation(true);
+      return;
+    }
+    navigate("/pos");
+  }
+
+  if (awaitingConfirmation) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+        <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <p className="text-sm font-medium text-[var(--color-brand)]">Tindahan POS</p>
+          <h1 className="mt-1 text-xl font-semibold text-slate-900">Check your email</h1>
+          <p role="status" className="mt-3 text-sm text-slate-600">
+            We sent a confirmation link to <span className="font-medium">{email}</span>. Open it
+            to activate your store, then come back and log in.
+          </p>
+          <Link
+            to="/login"
+            className="mt-6 inline-block font-medium text-[var(--color-brand)] hover:underline"
+          >
+            Back to login
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4 py-10">
-      <div className="w-full max-w-sm rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <p className="text-sm font-medium text-[var(--color-brand)]">Tindahan POS</p>
-        <h1 className="mt-1 text-xl font-semibold text-stone-900">Set up your store</h1>
+        <h1 className="mt-1 text-xl font-semibold text-slate-900">Set up your store</h1>
 
         <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
           <div>
-            <label htmlFor="storeName" className="text-sm font-medium text-stone-700">
+            <label htmlFor="storeName" className="text-sm font-medium text-slate-700">
               Store name
             </label>
             <input
               id="storeName"
               type="text"
+              required
               value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
             />
           </div>
           <div>
-            <label htmlFor="ownerName" className="text-sm font-medium text-stone-700">
+            <label htmlFor="ownerName" className="text-sm font-medium text-slate-700">
               Your name
             </label>
             <input
               id="ownerName"
               type="text"
+              required
               value={ownerName}
               onChange={(e) => setOwnerName(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
             />
           </div>
           <div>
-            <label htmlFor="regEmail" className="text-sm font-medium text-stone-700">
-              Email or phone number
+            <label htmlFor="regEmail" className="text-sm font-medium text-slate-700">
+              Email address
             </label>
             <input
               id="regEmail"
-              type="text"
+              type="email"
               autoComplete="username"
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
             />
           </div>
           <div>
-            <label htmlFor="regPassword" className="text-sm font-medium text-stone-700">
+            <label htmlFor="regPassword" className="text-sm font-medium text-slate-700">
               Password
             </label>
             <input
               id="regPassword"
               type="password"
               autoComplete="new-password"
+              required
+              minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
             />
+            <p className="mt-1 text-xs text-slate-500">At least 6 characters.</p>
           </div>
           <div>
-            <label htmlFor="confirmPassword" className="text-sm font-medium text-stone-700">
+            <label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">
               Confirm password
             </label>
             <input
               id="confirmPassword"
               type="password"
               autoComplete="new-password"
+              required
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
             />
           </div>
 
@@ -103,13 +141,20 @@ export function Register() {
 
           <button
             type="submit"
-            className="mt-2 cursor-pointer rounded-lg bg-[var(--color-brand)] py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-brand-dark)]"
+            disabled={submitting}
+            className="mt-2 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--color-brand)] text-sm font-semibold text-white transition-colors hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Create account
+            {submitting && (
+              <span
+                aria-hidden
+                className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+              />
+            )}
+            {submitting ? "Creating account…" : "Create account"}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-stone-600">
+        <p className="mt-6 text-center text-sm text-slate-600">
           Already have an account?{" "}
           <Link to="/login" className="font-medium text-[var(--color-brand)] hover:underline">
             Log in
