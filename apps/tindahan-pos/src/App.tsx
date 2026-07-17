@@ -8,6 +8,7 @@ import { ForgotPassword } from "./pages/ForgotPassword";
 import { Pos } from "./pages/Pos";
 import { Inventory } from "./pages/Inventory";
 import { Dashboard } from "./pages/Dashboard";
+import { Staff } from "./pages/Staff";
 
 function App() {
   return (
@@ -39,6 +40,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff"
+              element={
+                <ProtectedRoute>
+                  <Staff />
                 </ProtectedRoute>
               }
             />

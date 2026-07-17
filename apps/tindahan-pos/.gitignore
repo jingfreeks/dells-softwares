@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# env files (never commit real Supabase keys)
+.env
+.env.*
+!.env.example
+
+# Supabase CLI local link state
+supabase/.temp
+
 # testing
 /test-results/
 /playwright-report/
