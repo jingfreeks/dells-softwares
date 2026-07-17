@@ -166,7 +166,7 @@ export function Pos() {
           ) : (
             <ul className="flex flex-col gap-3" aria-label="Cart items">
               {cart.map((line) => (
-                <li key={line.product.id} className="flex items-center justify-between gap-2">
+                <li key={line.product.id} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-stone-800">{line.product.name}</p>
                     <p className="text-xs text-stone-500">{PESO.format(line.product.price)} each</p>
@@ -178,7 +178,7 @@ export function Pos() {
                       onClick={() =>
                         setCart((prev) => setQuantity(prev, line.product.id, line.quantity - 1))
                       }
-                      className="h-7 w-7 cursor-pointer rounded border border-stone-300 text-sm hover:bg-stone-100"
+                      className="flex h-11 w-11 cursor-pointer items-center justify-center rounded border border-stone-300 text-base hover:bg-stone-100"
                     >
                       −
                     </button>
@@ -189,19 +189,19 @@ export function Pos() {
                       onClick={() =>
                         setCart((prev) => setQuantity(prev, line.product.id, line.quantity + 1))
                       }
-                      className="h-7 w-7 cursor-pointer rounded border border-stone-300 text-sm hover:bg-stone-100"
+                      className="flex h-11 w-11 cursor-pointer items-center justify-center rounded border border-stone-300 text-base hover:bg-stone-100"
                     >
                       +
                     </button>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${line.product.name}`}
+                      onClick={() => setCart((prev) => removeFromCart(prev, line.product.id))}
+                      className="flex h-11 min-w-11 cursor-pointer items-center justify-center px-2 text-xs text-red-600 hover:underline"
+                    >
+                      Remove
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    aria-label={`Remove ${line.product.name}`}
-                    onClick={() => setCart((prev) => removeFromCart(prev, line.product.id))}
-                    className="cursor-pointer text-xs text-red-600 hover:underline"
-                  >
-                    Remove
-                  </button>
                 </li>
               ))}
             </ul>

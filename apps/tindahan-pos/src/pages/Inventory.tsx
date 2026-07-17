@@ -150,25 +150,25 @@ export function Inventory() {
                   <StockBadge status={stockStatus(product)} />
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex gap-3 text-xs">
+                  <div className="flex gap-1 text-xs">
                     <button
                       type="button"
                       onClick={() => restock(product.id, 10)}
-                      className="cursor-pointer text-stone-600 hover:underline"
+                      className="flex min-h-11 cursor-pointer items-center px-2 text-stone-600 hover:underline"
                     >
                       +10 stock
                     </button>
                     <button
                       type="button"
                       onClick={() => openEditForm(product)}
-                      className="cursor-pointer text-stone-600 hover:underline"
+                      className="flex min-h-11 cursor-pointer items-center px-2 text-stone-600 hover:underline"
                     >
                       Edit
                     </button>
                     <button
                       type="button"
                       onClick={() => removeProduct(product.id)}
-                      className="cursor-pointer text-red-600 hover:underline"
+                      className="flex min-h-11 cursor-pointer items-center px-2 text-red-600 hover:underline"
                     >
                       Delete
                     </button>
