@@ -26,9 +26,9 @@ const script = Great_Vibes({
 });
 
 export const metadata: Metadata = {
-  title: "Dell's Sari-Sari Store",
+  title: "Dell's Sari-Sari Store — Tindahan With A Big Smile",
   description:
-    "Everyday essentials, snacks, and load — right around the corner from home. Suki-friendly since day one.",
+    "Everyday essentials, snacks, and load — right around the corner from home. Tindahan with a big smile: every suki leaves happier than they came.",
 };
 
 export default function RootLayout({

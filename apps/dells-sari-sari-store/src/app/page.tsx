@@ -133,7 +133,7 @@ export default function Home() {
       <section id="about" className="overflow-x-clip px-6 pt-16 pb-6 sm:px-10">
         <div className="mx-auto flex max-w-6xl items-start justify-between font-[family-name:var(--font-tag)] text-[11px] uppercase tracking-[0.2em] text-[var(--color-ink)]/60">
           <span>Sari-Sari &amp; E-load</span>
-          <span className="text-right">Suki-Friendly Since Day One</span>
+          <span className="text-right">Tindahan With A Big Smile</span>
         </div>
         <h1 className="-mt-2 text-[clamp(3rem,15vw,15rem)] leading-[0.88] tracking-wide font-[family-name:var(--font-display)] whitespace-nowrap">
           Dell&apos;s Sari-Sari
@@ -165,15 +165,16 @@ export default function Home() {
       <section className="overflow-x-clip bg-[var(--color-paper)] px-6 py-24 text-center sm:px-10">
         <Eyebrow>Kwento &middot; Our Story</Eyebrow>
         <p className="mx-auto mt-6 max-w-3xl font-[family-name:var(--font-display)] text-2xl leading-snug tracking-wide sm:text-3xl">
-          {STORE_NAME} IS A NEIGHBORHOOD TINDAHAN BUILT ON TRUST, RUNNING ON
-          FAIR PRICES AND FAMILIAR FACES.
+          {STORE_NAME} IS A NEIGHBORHOOD TINDAHAN BUILT ON TRUST — FAIR
+          PRICES, FAMILIAR FACES, AND A SMILE WITH EVERY SALE.
         </p>
         <p className="mt-4 max-w-2xl mx-auto whitespace-nowrap overflow-visible text-[clamp(3rem,10vw,7rem)] leading-none text-[var(--color-sari-red)]/90 font-[family-name:var(--font-script)]">
-          Small store, big kwentuhan
+          Tindahan with a big smile
         </p>
         <p className="mx-auto mt-6 max-w-xl font-[family-name:var(--font-body)] text-[var(--color-ink)]/70">
-          No frills, no long lines — just everyday essentials, fair prices,
-          and a friendly &ldquo;kamusta&rdquo; every time you walk in.
+          No frills, no long lines — just everyday essentials, a friendly
+          &ldquo;kamusta,&rdquo; and one simple goal: every suki walks away
+          happier than they came.
         </p>
         <div className="mt-10 flex justify-center">
           <Image
@@ -244,6 +245,11 @@ export default function Home() {
           <p className="mt-4 whitespace-nowrap text-[clamp(3rem,11vw,8rem)] leading-none text-[var(--color-sari-red)] font-[family-name:var(--font-script)]">
             Dear Suki,
           </p>
+          <p className="mx-auto mt-6 max-w-xl text-[var(--color-paper)]/75">
+            Salamat sa bawat bili, sa bawat kwento, at sa bawat ngiti. Whether
+            you drop by for load, a snack, or a quick kamusta — our promise is
+            the same: you&apos;ll always leave this counter smiling.
+          </p>
         </div>
         <div className="relative mx-auto mt-10 max-w-4xl">
           <div className="relative aspect-[16/9] w-full overflow-hidden">
@@ -256,7 +262,7 @@ export default function Home() {
             />
           </div>
           <p className="absolute bottom-6 left-6 max-w-sm font-[family-name:var(--font-display)] text-2xl leading-tight tracking-wide sm:text-3xl">
-            Small store. Big kwentuhan.
+            If you leave smiling, that&apos;s our best sale of the day.
           </p>
         </div>
       </section>
@@ -339,8 +345,8 @@ export default function Home() {
               </div>
               <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
                 <p className="max-w-md text-sm text-[var(--color-paper)]/70">
-                  It would be our pleasure to have you at the counter — whether
-                  it&apos;s a quick top-up or a long &ldquo;kamusta.&rdquo;
+                  Come for the load, the snacks, or the kwentuhan — leave with
+                  a big smile. That&apos;s the Dell&apos;s guarantee.
                 </p>
                 <PlankButton
                   href={`https://www.google.com/maps/dir/?api=1&destination=${mapQuery}`}
@@ -365,6 +371,9 @@ export default function Home() {
         </div>
         <p className="mt-3 font-[family-name:var(--font-display)] tracking-wide text-[var(--color-paper)]">
           {STORE_NAME}
+        </p>
+        <p className="mt-1 text-lg text-[var(--color-sari-red)] font-[family-name:var(--font-script)]">
+          Tindahan with a big smile
         </p>
         <p className="mt-2 font-[family-name:var(--font-tag)] text-xs">
           {PHONE} &nbsp;&middot;&nbsp; {FACEBOOK}
