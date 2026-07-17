@@ -56,6 +56,7 @@ export function Pos() {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
     setCart((prev) => addToCart(prev, product));
+    setSearchQuery("");
   }
 
   function handleCompleteSale() {

@@ -33,6 +33,15 @@ test.describe('POS checkout flow (Epic A)', () => {
     await expect(page.getByText('₱28.00')).toBeVisible()
   })
 
+  test('search clears after adding, ready for the next lookup (story A2)', async ({ page }) => {
+    const search = page.getByPlaceholder('e.g. sardines')
+    await search.fill('sardines')
+    await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
+
+    await expect(search).toHaveValue('')
+    await expect(page.locator('ul.mt-2', { hasText: 'Sardines in Tomato Sauce' })).toHaveCount(0)
+  })
+
   test('quantity can be adjusted without rescanning (story A3)', async ({ page }) => {
     await page.getByPlaceholder('e.g. sardines').fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
