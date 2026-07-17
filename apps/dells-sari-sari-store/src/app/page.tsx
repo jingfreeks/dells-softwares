@@ -30,13 +30,13 @@ const CATEGORIES = [
     mark: "CG",
     title: "Canned Goods",
     description: "Sardines, corned beef, and pantry staples for any meal.",
-    image: undefined as string | undefined,
+    image: "/images/canned-goods.jpg",
   },
   {
     mark: "DB",
     title: "Drinks & Beverages",
     description: "Softdrinks, juices, coffee, and cold refreshments.",
-    image: undefined as string | undefined,
+    image: "/images/drinks-beverages.jpg",
   },
   {
     mark: "LE",
