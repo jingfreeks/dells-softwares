@@ -73,7 +73,7 @@ export function Pos() {
   }
 
   return (
-    <div className="grid h-full grid-cols-1 gap-6 p-6 lg:grid-cols-[1fr_360px]">
+    <div className="grid grid-cols-1 gap-6 p-6 lg:h-full lg:grid-cols-[1fr_360px]">
       <div className="flex flex-col gap-6">
         <div>
           <h1 className="text-lg font-semibold text-stone-900">POS Checkout</h1>
@@ -160,7 +160,7 @@ export function Pos() {
           <h2 className="text-sm font-semibold text-stone-900">Current sale</h2>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="p-4 lg:flex-1 lg:overflow-y-auto">
           {cart.length === 0 ? (
             <p className="text-sm text-stone-400">Cart is empty. Scan or search an item to begin.</p>
           ) : (
