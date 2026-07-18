@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { deductStockForSale, lowStockProducts, receiveStock, stockStatus } from "./inventory";
+import {
+  deductStockForSale,
+  lowStockProducts,
+  receiveStock,
+  receivingTotalCost,
+  stockPreview,
+  stockStatus,
+  type ReceivingLine,
+} from "./inventory";
 import type { Product } from "./types";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
@@ -75,5 +83,31 @@ describe("deductStockForSale (story A6)", () => {
     const products = [makeProduct({ id: "a", stock: 2 })];
     const result = deductStockForSale(products, [{ productId: "a", quantity: 5 }]);
     expect(result.find((p) => p.id === "a")?.stock).toBe(0);
+  });
+});
+
+describe("receivingTotalCost (story E2)", () => {
+  it("sums quantity * costEach across all lines", () => {
+    const lines: ReceivingLine[] = [
+      { productId: "a", productName: "Chips", quantity: 10, costEach: 8 },
+      { productId: "b", productName: "Soda", quantity: 24, costEach: 15 },
+    ];
+    expect(receivingTotalCost(lines)).toBe(440);
+  });
+
+  it("returns 0 for no lines", () => {
+    expect(receivingTotalCost([])).toBe(0);
+  });
+});
+
+describe("stockPreview (story E2)", () => {
+  it("returns the current and post-receiving stock for a known product", () => {
+    const products = [makeProduct({ id: "a", stock: 10 })];
+    expect(stockPreview(products, "a", 15)).toEqual({ old: 10, next: 25 });
+  });
+
+  it("returns null for a product that isn't loaded", () => {
+    const products = [makeProduct({ id: "a", stock: 10 })];
+    expect(stockPreview(products, "nonexistent", 5)).toBeNull();
   });
 });

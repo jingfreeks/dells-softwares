@@ -2,8 +2,8 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useStoreData } from "../lib/storeData";
 import { lowStockProducts } from "../lib/inventory";
+import { salesByCategory } from "../lib/reports";
 import { StatCard } from "../components/StatCard";
-import { V1_1Badge } from "../components/V1_1Badge";
 
 const PESO = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
 
@@ -41,22 +41,7 @@ export function Dashboard() {
       .slice(0, 5);
   }, [sales]);
 
-  // v1.1 preview — computed from currently-loaded products, so a sale's items
-  // for a since-deleted product fall back to "Other" rather than vanishing.
-  const salesByCategory = useMemo(() => {
-    const categoryByProductId = new Map(products.map((p) => [p.id, p.category]));
-    const totals = new Map<string, number>();
-    for (const sale of sales) {
-      for (const item of sale.items) {
-        const category = categoryByProductId.get(item.productId) ?? "Other";
-        totals.set(category, (totals.get(category) ?? 0) + item.quantity * item.price);
-      }
-    }
-    const rows = Array.from(totals.entries()).map(([category, total]) => ({ category, total }));
-    rows.sort((a, b) => b.total - a.total);
-    const grandTotal = rows.reduce((sum, r) => sum + r.total, 0);
-    return { rows, grandTotal };
-  }, [sales, products]);
+  const categoryTotals = useMemo(() => salesByCategory(sales, products), [sales, products]);
 
   return (
     <div className="p-6">
@@ -141,14 +126,13 @@ export function Dashboard() {
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-200 p-4">
+            <div className="border-b border-slate-200 p-4">
               <h2 className="text-sm font-semibold text-slate-900">Sales by category</h2>
-              <V1_1Badge />
             </div>
             <ul className="divide-y divide-slate-100">
-              {salesByCategory.rows.map((row) => {
+              {categoryTotals.rows.map((row) => {
                 const pct =
-                  salesByCategory.grandTotal > 0 ? (row.total / salesByCategory.grandTotal) * 100 : 0;
+                  categoryTotals.grandTotal > 0 ? (row.total / categoryTotals.grandTotal) * 100 : 0;
                 return (
                   <li key={row.category} className="px-4 py-3 text-sm">
                     <div className="flex items-center justify-between">
@@ -164,7 +148,7 @@ export function Dashboard() {
                   </li>
                 );
               })}
-              {salesByCategory.rows.length === 0 && (
+              {categoryTotals.rows.length === 0 && (
                 <li className="px-4 py-8 text-center text-sm text-slate-400">No data yet.</li>
               )}
             </ul>

@@ -10,23 +10,15 @@ import {
   searchProductsByName,
   setQuantity,
 } from "../lib/pos";
-import type { CartLine } from "../lib/types";
+import type { CartLine, ServiceLine } from "../lib/types";
 import { CameraIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
-import { V1_1Badge } from "../components/V1_1Badge";
 
 const BarcodeScanner = lazy(() =>
   import("../components/BarcodeScanner").then((m) => ({ default: m.BarcodeScanner }))
 );
 
 const PESO = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
-
-interface ServiceLine {
-  id: string;
-  label: string;
-  amount: number;
-  fee: number;
-}
 
 const SERVICE_TYPES = [
   { key: "eload", label: "E-Load", badge: "L", badgeClass: "bg-violet-100 text-violet-700" },
@@ -129,9 +121,7 @@ export function Pos() {
     setCheckingOut(true);
     setCheckoutError(null);
     try {
-      if (cart.length > 0) {
-        await checkout(cart, user?.name ?? "Cashier");
-      }
+      await checkout(cart, serviceLines, user?.name ?? "Cashier");
       setLastReceiptTotal(total);
       setCart([]);
       setServiceLines([]);
@@ -183,7 +173,6 @@ export function Pos() {
               Services
             </button>
           </div>
-          {activeTab === "services" && <V1_1Badge />}
         </div>
 
         {activeTab === "products" ? (
@@ -480,9 +469,9 @@ export function Pos() {
           )}
 
           {serviceLines.length > 0 && (
-            <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              Services are a v1.1 preview — they're included in this receipt's total but not yet
-              saved to sales reports. GCash/load transfer still happens on the phone as usual.
+            <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              Services are recorded with this sale for reporting. The GCash/load transfer itself
+              still happens on the phone as usual.
             </p>
           )}
 
