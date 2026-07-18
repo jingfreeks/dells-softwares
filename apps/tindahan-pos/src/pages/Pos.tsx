@@ -12,6 +12,7 @@ import {
   setQuantity,
 } from "../lib/pos";
 import { packPriceLabel } from "../lib/inventory";
+import { PESO } from "../lib/money";
 import type { CartLine, ServiceLine } from "../lib/types";
 import { CameraIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
@@ -19,8 +20,6 @@ import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
 const BarcodeScanner = lazy(() =>
   import("../components/BarcodeScanner").then((m) => ({ default: m.BarcodeScanner }))
 );
-
-const PESO = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
 
 const SERVICE_TYPES = [
   { key: "eload", label: "E-Load", badge: "L", badgeClass: "bg-violet-100 text-violet-700" },

@@ -1,3 +1,4 @@
+import { roundMoney } from "./money";
 import type { CartLine, Product } from "./types";
 
 export function addToCart(cart: CartLine[], product: Product, quantity = 1): CartLine[] {
@@ -32,9 +33,9 @@ export function setQuantity(cart: CartLine[], productId: string, quantity: numbe
  */
 export function lineTotal(product: Product, quantity: number): number {
   if (product.packQuantity != null && product.packPrice != null) {
-    return Math.round(((quantity * product.packPrice) / product.packQuantity) * 100) / 100;
+    return roundMoney((quantity * product.packPrice) / product.packQuantity);
   }
-  return Math.round(product.price * quantity * 100) / 100;
+  return roundMoney(product.price * quantity);
 }
 
 export function cartTotal(cart: CartLine[]): number {
@@ -51,7 +52,7 @@ export function cartItemCount(cart: CartLine[]): number {
  */
 export function computeChange(total: number, amountTendered: number): number | null {
   if (amountTendered < total) return null;
-  return Math.round((amountTendered - total) * 100) / 100;
+  return roundMoney(amountTendered - total);
 }
 
 export function findProductByBarcode(products: Product[], barcode: string): Product | undefined {

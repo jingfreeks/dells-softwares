@@ -148,4 +148,25 @@ describe("salesByCategory (story E5)", () => {
   it("returns empty rows and a zero grand total for no sales", () => {
     expect(salesByCategory([], [])).toEqual({ rows: [], grandTotal: 0 });
   });
+
+  it("falls back to quantity * price + fee if lineTotal is missing (schema/deploy-order mismatch)", () => {
+    const products = [makeProduct({ id: "a", category: "Snacks" })];
+    const sales = [
+      makeSale({
+        items: [
+          {
+            productId: "a",
+            name: "A",
+            quantity: 2,
+            price: 10,
+            itemType: "product",
+            fee: 0,
+            lineTotal: null as unknown as number,
+          },
+        ],
+      }),
+    ];
+    const result = salesByCategory(sales, products);
+    expect(result.rows).toEqual([{ category: "Snacks", total: 20 }]);
+  });
 });
