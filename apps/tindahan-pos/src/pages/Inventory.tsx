@@ -1,8 +1,14 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { lazy, Suspense, useMemo, useState, type FormEvent } from "react";
 import { useStoreData } from "../lib/storeData";
 import { lowStockProducts, stockStatus } from "../lib/inventory";
 import { StockBadge } from "../components/StockBadge";
+import { CameraIcon } from "../components/icons";
+import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
 import type { Product } from "../lib/types";
+
+const BarcodeScanner = lazy(() =>
+  import("../components/BarcodeScanner").then((m) => ({ default: m.BarcodeScanner }))
+);
 
 const PESO = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
 
@@ -25,6 +31,7 @@ export function Inventory() {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
 
   const lowStock = useMemo(() => lowStockProducts(products), [products]);
   const filtered = useMemo(() => {
@@ -256,13 +263,23 @@ export function Inventory() {
                 <label htmlFor="pbarcode" className="text-xs font-medium text-slate-700">
                   Barcode (optional — leave blank for tingi/repack items)
                 </label>
-                <input
-                  id="pbarcode"
-                  type="text"
-                  value={form.barcode}
-                  onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-                />
+                <div className="mt-1 flex gap-2">
+                  <input
+                    id="pbarcode"
+                    type="text"
+                    value={form.barcode}
+                    onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
+                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowScanner(true)}
+                    aria-label="Scan with camera"
+                    className="flex h-[38px] w-10 cursor-pointer items-center justify-center rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100"
+                  >
+                    <CameraIcon className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
               <div>
                 <label htmlFor="pcategory" className="text-xs font-medium text-slate-700">
@@ -343,6 +360,18 @@ export function Inventory() {
             </form>
           </div>
         </div>
+      )}
+
+      {showScanner && (
+        <Suspense fallback={<ScannerLoadingOverlay />}>
+          <BarcodeScanner
+            onDetected={(code) => {
+              setShowScanner(false);
+              setForm((f) => ({ ...f, barcode: code }));
+            }}
+            onClose={() => setShowScanner(false)}
+          />
+        </Suspense>
       )}
     </div>
   );

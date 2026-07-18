@@ -47,6 +47,19 @@ export function StaffIcon({ className }: IconProps) {
   );
 }
 
+export function CameraIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden>
+      <path
+        d="M4 8h2.5l1.3-2h8.4l1.3 2H20a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="13.5" r="3.2" />
+    </svg>
+  );
+}
+
 export const NAV_ICONS = {
   pos: PosIcon,
   inventory: InventoryIcon,
