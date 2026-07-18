@@ -2,12 +2,14 @@ import { lazy, Suspense, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useStoreData } from "../lib/storeData";
 import {
-  findDuplicateBarcode,
+  buildBarcodeIndex,
+  findDuplicateBarcodeFast,
   lowStockProducts,
   packPriceLabel,
   packUnitPrice,
   stockStatus,
 } from "../lib/inventory";
+import { PESO } from "../lib/money";
 import { StockBadge } from "../components/StockBadge";
 import { CameraIcon, TruckIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
@@ -18,7 +20,6 @@ const BarcodeScanner = lazy(() =>
   import("../components/BarcodeScanner").then((m) => ({ default: m.BarcodeScanner }))
 );
 
-const PESO = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
 const PAGE_SIZE = 20;
 
 const emptyForm = {
@@ -87,6 +88,10 @@ export function Inventory() {
       ? packUnitPrice(packQuantityNum, packPriceNum)
       : null;
 
+  // Memoized so the barcode field's onChange (fires on every keystroke)
+  // does an O(1) map lookup instead of an O(n) scan over all products.
+  const barcodeIndex = useMemo(() => buildBarcodeIndex(products), [products]);
+
   function handleQueryChange(value: string) {
     setQuery(value);
     setPage(1);
@@ -98,7 +103,7 @@ export function Inventory() {
   }
 
   function checkDuplicateBarcode(barcode: string) {
-    setDuplicateProduct(findDuplicateBarcode(products, barcode, editingId));
+    setDuplicateProduct(findDuplicateBarcodeFast(barcodeIndex, barcode, editingId));
   }
 
   function openAddForm() {
@@ -190,7 +195,7 @@ export function Inventory() {
       price = packUnitPrice(packQuantity, packPrice);
     } else {
       price = Number(form.price);
-      if (Number.isNaN(price) || price < 0) {
+      if (form.price.trim() === "" || Number.isNaN(price) || price < 0) {
         setFormError("Price must be a valid number.");
         return;
       }
@@ -398,7 +403,7 @@ export function Inventory() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => setPage(Math.max(1, currentPage - 1))}
               disabled={currentPage <= 1}
               className="cursor-pointer rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
@@ -409,7 +414,7 @@ export function Inventory() {
             </span>
             <button
               type="button"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage >= totalPages}
               className="cursor-pointer rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
@@ -471,7 +476,15 @@ export function Inventory() {
                     This barcode is already used by <strong>{duplicateProduct.name}</strong>.{" "}
                     <button
                       type="button"
-                      onClick={() => openEditForm(duplicateProduct)}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `Switch to editing "${duplicateProduct.name}"? Anything you've typed here will be discarded.`
+                          )
+                        ) {
+                          openEditForm(duplicateProduct);
+                        }
+                      }}
                       className="cursor-pointer font-semibold underline"
                     >
                       Open existing product
