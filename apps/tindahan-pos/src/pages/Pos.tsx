@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { useAuth } from "../lib/auth";
 import { useStoreData } from "../lib/storeData";
 import {
@@ -11,6 +11,12 @@ import {
   setQuantity,
 } from "../lib/pos";
 import type { CartLine } from "../lib/types";
+import { CameraIcon } from "../components/icons";
+import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
+
+const BarcodeScanner = lazy(() =>
+  import("../components/BarcodeScanner").then((m) => ({ default: m.BarcodeScanner }))
+);
 
 const PESO = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
 
@@ -25,6 +31,7 @@ export function Pos() {
   const [lastReceiptTotal, setLastReceiptTotal] = useState<number | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
 
   const total = useMemo(() => cartTotal(cart), [cart]);
   const searchResults = useMemo(
@@ -39,19 +46,27 @@ export function Pos() {
       ? computeChange(total, tenderedNumber)
       : null;
 
-  function handleScan(e: React.FormEvent) {
-    e.preventDefault();
-    const barcode = barcodeInput.trim();
-    if (!barcode) return;
+  function addByBarcode(barcode: string) {
     const product = findProductByBarcode(products, barcode);
     if (!product) {
       setBarcodeError(`Product not found for barcode "${barcode}".`);
-      setBarcodeInput("");
       return;
     }
     setBarcodeError(null);
     setCart((prev) => addToCart(prev, product));
+  }
+
+  function handleScan(e: React.FormEvent) {
+    e.preventDefault();
+    const barcode = barcodeInput.trim();
+    if (!barcode) return;
+    addByBarcode(barcode);
     setBarcodeInput("");
+  }
+
+  function handleCameraDetected(barcode: string) {
+    setShowScanner(false);
+    addByBarcode(barcode);
   }
 
   function handleAddProduct(productId: string) {
@@ -109,6 +124,14 @@ export function Pos() {
               className="cursor-pointer rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
             >
               Add
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowScanner(true)}
+              aria-label="Scan with camera"
+              className="flex h-[42px] w-11 cursor-pointer items-center justify-center rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100"
+            >
+              <CameraIcon className="h-5 w-5" />
             </button>
           </div>
           {barcodeError && (
@@ -279,6 +302,12 @@ export function Pos() {
           </div>
         </div>
       </div>
+
+      {showScanner && (
+        <Suspense fallback={<ScannerLoadingOverlay />}>
+          <BarcodeScanner onDetected={handleCameraDetected} onClose={() => setShowScanner(false)} />
+        </Suspense>
+      )}
     </div>
   );
 }
