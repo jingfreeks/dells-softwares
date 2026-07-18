@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useStoreData } from "../lib/storeData";
 import { lowStockProducts } from "../lib/inventory";
+import { salesByCategory } from "../lib/reports";
 import { StatCard } from "../components/StatCard";
 
 const PESO = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
@@ -39,6 +40,8 @@ export function Dashboard() {
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 5);
   }, [sales]);
+
+  const categoryTotals = useMemo(() => salesByCategory(sales, products), [sales, products]);
 
   return (
     <div className="p-6">
@@ -117,6 +120,35 @@ export function Dashboard() {
                 </li>
               ))}
               {bestSellers.length === 0 && (
+                <li className="px-4 py-8 text-center text-sm text-slate-400">No data yet.</li>
+              )}
+            </ul>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-200 p-4">
+              <h2 className="text-sm font-semibold text-slate-900">Sales by category</h2>
+            </div>
+            <ul className="divide-y divide-slate-100">
+              {categoryTotals.rows.map((row) => {
+                const pct =
+                  categoryTotals.grandTotal > 0 ? (row.total / categoryTotals.grandTotal) * 100 : 0;
+                return (
+                  <li key={row.category} className="px-4 py-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-700">{row.category}</span>
+                      <span className="tabular-nums font-medium text-slate-900">{PESO.format(row.total)}</span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-[var(--color-brand)]"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+              {categoryTotals.rows.length === 0 && (
                 <li className="px-4 py-8 text-center text-sm text-slate-400">No data yet.</li>
               )}
             </ul>

@@ -18,6 +18,7 @@ const chips: Product = {
   price: 20,
   stock: 10,
   lowStockThreshold: 5,
+  categoryId: "cat-snacks",
   category: "Snacks",
 };
 
@@ -28,6 +29,7 @@ const soda: Product = {
   price: 35,
   stock: 4,
   lowStockThreshold: 5,
+  categoryId: "cat-drinks",
   category: "Drinks",
 };
 

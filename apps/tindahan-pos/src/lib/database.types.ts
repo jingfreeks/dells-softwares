@@ -4,6 +4,7 @@
 //   npx supabase gen types typescript --project-id <ref> > src/lib/database.types.ts
 
 export type StaffRole = "admin" | "cashier";
+export type SaleItemType = "product" | "service";
 
 export interface Database {
   public: {
@@ -48,6 +49,19 @@ export interface Database {
           },
         ];
       };
+      categories: {
+        Row: { id: string; store_id: string; name: string; created_at: string };
+        Insert: { id?: string; store_id: string; name: string; created_at?: string };
+        Update: { id?: string; store_id?: string; name?: string; created_at?: string };
+        Relationships: [
+          {
+            foreignKeyName: "categories_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       products: {
         Row: {
           id: string;
@@ -58,6 +72,7 @@ export interface Database {
           stock: number;
           low_stock_threshold: number;
           category: string;
+          category_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -70,6 +85,7 @@ export interface Database {
           stock?: number;
           low_stock_threshold?: number;
           category?: string;
+          category_id: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -82,6 +98,7 @@ export interface Database {
           stock?: number;
           low_stock_threshold?: number;
           category?: string;
+          category_id?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -90,6 +107,12 @@ export interface Database {
             foreignKeyName: "products_store_id_fkey";
             columns: ["store_id"];
             referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "products_category_id_fkey";
+            columns: ["category_id"];
+            referencedRelation: "categories";
             referencedColumns: ["id"];
           },
         ];
@@ -139,6 +162,8 @@ export interface Database {
           name: string;
           quantity: number;
           price: number;
+          item_type: SaleItemType;
+          fee: number;
         };
         Insert: {
           id?: string;
@@ -147,6 +172,8 @@ export interface Database {
           name: string;
           quantity: number;
           price: number;
+          item_type?: SaleItemType;
+          fee?: number;
         };
         Update: {
           id?: string;
@@ -155,6 +182,8 @@ export interface Database {
           name?: string;
           quantity?: number;
           price?: number;
+          item_type?: SaleItemType;
+          fee?: number;
         };
         Relationships: [
           {
@@ -171,11 +200,88 @@ export interface Database {
           },
         ];
       };
+      receiving_entries: {
+        Row: {
+          id: string;
+          store_id: string;
+          supplier: string;
+          received_on: string;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          supplier: string;
+          received_on: string;
+          created_by: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          supplier?: string;
+          received_on?: string;
+          created_by?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "receiving_entries_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      receiving_lines: {
+        Row: {
+          id: string;
+          receiving_entry_id: string;
+          product_id: string | null;
+          product_name: string;
+          quantity: number;
+          cost_each: number;
+        };
+        Insert: {
+          id?: string;
+          receiving_entry_id: string;
+          product_id?: string | null;
+          product_name: string;
+          quantity: number;
+          cost_each?: number;
+        };
+        Update: {
+          id?: string;
+          receiving_entry_id?: string;
+          product_id?: string | null;
+          product_name?: string;
+          quantity?: number;
+          cost_each?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "receiving_lines_receiving_entry_id_fkey";
+            columns: ["receiving_entry_id"];
+            referencedRelation: "receiving_entries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "receiving_lines_product_id_fkey";
+            columns: ["product_id"];
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
       checkout_sale: {
-        Args: { p_items: { product_id: string; quantity: number }[] };
+        Args: {
+          p_items: { product_id: string; quantity: number }[];
+          p_services?: { label: string; amount: number; fee?: number }[];
+        };
         Returns: { sale_id: string; total: number }[];
       };
     };
