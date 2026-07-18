@@ -73,6 +73,8 @@ export interface Database {
           low_stock_threshold: number;
           category: string;
           category_id: string;
+          pack_quantity: number | null;
+          pack_price: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -86,6 +88,8 @@ export interface Database {
           low_stock_threshold?: number;
           category?: string;
           category_id: string;
+          pack_quantity?: number | null;
+          pack_price?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -99,6 +103,8 @@ export interface Database {
           low_stock_threshold?: number;
           category?: string;
           category_id?: string;
+          pack_quantity?: number | null;
+          pack_price?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -164,6 +170,7 @@ export interface Database {
           price: number;
           item_type: SaleItemType;
           fee: number;
+          line_total: number;
         };
         Insert: {
           id?: string;
@@ -174,6 +181,7 @@ export interface Database {
           price: number;
           item_type?: SaleItemType;
           fee?: number;
+          line_total: number;
         };
         Update: {
           id?: string;
@@ -184,6 +192,7 @@ export interface Database {
           price?: number;
           item_type?: SaleItemType;
           fee?: number;
+          line_total?: number;
         };
         Relationships: [
           {

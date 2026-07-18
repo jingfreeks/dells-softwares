@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth } from "./auth";
+import { lineTotal } from "./pos";
 import { supabase } from "./supabaseClient";
 import type { ReceivingLine } from "./inventory";
 import type { CartLine, Category, Product, SaleRecord, ServiceLine } from "./types";
@@ -49,6 +50,8 @@ function mapProductRow(row: {
   stock: number;
   low_stock_threshold: number;
   category_id: string;
+  pack_quantity: number | null;
+  pack_price: number | null;
   categories: { name: string } | { name: string }[] | null;
 }): Product {
   const cat = Array.isArray(row.categories) ? row.categories[0] : row.categories;
@@ -61,7 +64,16 @@ function mapProductRow(row: {
     lowStockThreshold: row.low_stock_threshold,
     categoryId: row.category_id,
     category: cat?.name ?? "Uncategorized",
+    packQuantity: row.pack_quantity,
+    packPrice: row.pack_price,
   };
+}
+
+function friendlyProductError(err: { code?: string; message: string }): Error {
+  if (err.code === "23505") {
+    return new Error("That barcode is already used by another product.");
+  }
+  return new Error(err.message);
 }
 
 export function StoreDataProvider({ children }: { children: ReactNode }) {
@@ -76,7 +88,9 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   const fetchProducts = useCallback(async () => {
     const { data, error: err } = await supabase
       .from("products")
-      .select("id, barcode, name, price, stock, low_stock_threshold, category_id, categories(name)")
+      .select(
+        "id, barcode, name, price, stock, low_stock_threshold, category_id, pack_quantity, pack_price, categories(name)"
+      )
       .order("name");
     if (err) throw err;
     setProducts((data ?? []).map(mapProductRow));
@@ -94,7 +108,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     const { data, error: err } = await supabase
       .from("sales")
       .select(
-        "id, created_at, total, staff:cashier_id(name), sale_items(product_id, name, quantity, price, item_type, fee)"
+        "id, created_at, total, staff:cashier_id(name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)"
       )
       .order("created_at", { ascending: false })
       .limit(100);
@@ -115,6 +129,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
             price: item.price,
             itemType: item.item_type,
             fee: item.fee,
+            lineTotal: item.line_total,
           })),
         };
       })
@@ -195,8 +210,10 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       stock: product.stock,
       low_stock_threshold: product.lowStockThreshold,
       category_id: product.categoryId,
+      pack_quantity: product.packQuantity,
+      pack_price: product.packPrice,
     });
-    if (err) throw err;
+    if (err) throw friendlyProductError(err);
     await fetchProducts();
   }
 
@@ -212,9 +229,11 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
           low_stock_threshold: patch.lowStockThreshold,
         }),
         ...(patch.categoryId !== undefined && { category_id: patch.categoryId }),
+        ...(patch.packQuantity !== undefined && { pack_quantity: patch.packQuantity }),
+        ...(patch.packPrice !== undefined && { pack_price: patch.packPrice }),
       })
       .eq("id", id);
-    if (err) throw err;
+    if (err) throw friendlyProductError(err);
     await fetchProducts();
   }
 
@@ -261,6 +280,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
           price: line.product.price,
           itemType: "product" as const,
           fee: 0,
+          lineTotal: lineTotal(line.product, line.quantity),
         })),
         ...services.map((line) => ({
           productId: "",
@@ -269,6 +289,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
           price: line.amount,
           itemType: "service" as const,
           fee: line.fee,
+          lineTotal: line.amount + line.fee,
         })),
       ],
       total: result.total,

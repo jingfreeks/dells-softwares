@@ -22,6 +22,9 @@ export interface Product {
   lowStockThreshold: number;
   categoryId: string;
   category: string;
+  /** Pack pricing (e.g. "3 pcs for ₱5"). Both set together or both null. */
+  packQuantity: number | null;
+  packPrice: number | null;
 }
 
 export interface CartLine {
@@ -36,6 +39,8 @@ export interface SaleItem {
   price: number;
   itemType: "product" | "service";
   fee: number;
+  /** Amount actually charged for this line — the source of truth for reporting. */
+  lineTotal: number;
 }
 
 export interface SaleRecord {

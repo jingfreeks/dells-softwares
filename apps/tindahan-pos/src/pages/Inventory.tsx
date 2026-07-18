@@ -1,7 +1,13 @@
 import { lazy, Suspense, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useStoreData } from "../lib/storeData";
-import { lowStockProducts, stockStatus } from "../lib/inventory";
+import {
+  findDuplicateBarcode,
+  lowStockProducts,
+  packPriceLabel,
+  packUnitPrice,
+  stockStatus,
+} from "../lib/inventory";
 import { StockBadge } from "../components/StockBadge";
 import { CameraIcon, TruckIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
@@ -13,6 +19,7 @@ const BarcodeScanner = lazy(() =>
 );
 
 const PESO = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
+const PAGE_SIZE = 20;
 
 const emptyForm = {
   name: "",
@@ -21,6 +28,9 @@ const emptyForm = {
   stock: "",
   lowStockThreshold: "5",
   categoryId: "",
+  packEnabled: false,
+  packQuantity: "",
+  packPrice: "",
 };
 
 const NEW_CATEGORY_VALUE = "__new__";
@@ -49,6 +59,8 @@ export function Inventory() {
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
+  const [duplicateProduct, setDuplicateProduct] = useState<Product | null>(null);
+  const [page, setPage] = useState(1);
 
   const lowStock = useMemo(() => lowStockProducts(products), [products]);
   const filtered = useMemo(() => {
@@ -64,11 +76,37 @@ export function Inventory() {
     });
   }, [products, query, categoryFilter]);
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageProducts = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const packQuantityNum = Number(form.packQuantity);
+  const packPriceNum = Number(form.packPrice);
+  const packPreview =
+    form.packEnabled && packQuantityNum >= 2 && !Number.isNaN(packPriceNum) && packPriceNum >= 0
+      ? packUnitPrice(packQuantityNum, packPriceNum)
+      : null;
+
+  function handleQueryChange(value: string) {
+    setQuery(value);
+    setPage(1);
+  }
+
+  function handleCategoryFilterChange(value: string) {
+    setCategoryFilter(value);
+    setPage(1);
+  }
+
+  function checkDuplicateBarcode(barcode: string) {
+    setDuplicateProduct(findDuplicateBarcode(products, barcode, editingId));
+  }
+
   function openAddForm() {
     setEditingId(null);
     setForm({ ...emptyForm, categoryId: categories[0]?.id ?? "" });
     setAddingCategory(false);
     setFormError(null);
+    setDuplicateProduct(null);
     setShowForm(true);
   }
 
@@ -81,9 +119,13 @@ export function Inventory() {
       stock: String(product.stock),
       lowStockThreshold: String(product.lowStockThreshold),
       categoryId: product.categoryId,
+      packEnabled: product.packQuantity != null,
+      packQuantity: product.packQuantity != null ? String(product.packQuantity) : "",
+      packPrice: product.packPrice != null ? String(product.packPrice) : "",
     });
     setAddingCategory(false);
     setFormError(null);
+    setDuplicateProduct(null);
     setShowForm(true);
   }
 
@@ -110,16 +152,11 @@ export function Inventory() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const price = Number(form.price);
     const stock = Number(form.stock);
     const lowStockThreshold = Number(form.lowStockThreshold);
 
     if (!form.name.trim()) {
       setFormError("Product name is required.");
-      return;
-    }
-    if (Number.isNaN(price) || price < 0) {
-      setFormError("Price must be a valid number.");
       return;
     }
     if (Number.isNaN(stock) || stock < 0) {
@@ -130,6 +167,34 @@ export function Inventory() {
       setFormError("Choose a category.");
       return;
     }
+    if (duplicateProduct) {
+      setFormError(`That barcode is already used by "${duplicateProduct.name}".`);
+      return;
+    }
+
+    let price: number;
+    let packQuantity: number | null = null;
+    let packPrice: number | null = null;
+
+    if (form.packEnabled) {
+      packQuantity = Number(form.packQuantity);
+      packPrice = Number(form.packPrice);
+      if (!Number.isInteger(packQuantity) || packQuantity < 2) {
+        setFormError("Pack size must be a whole number of 2 or more.");
+        return;
+      }
+      if (Number.isNaN(packPrice) || packPrice < 0) {
+        setFormError("Pack price must be a valid number.");
+        return;
+      }
+      price = packUnitPrice(packQuantity, packPrice);
+    } else {
+      price = Number(form.price);
+      if (Number.isNaN(price) || price < 0) {
+        setFormError("Price must be a valid number.");
+        return;
+      }
+    }
 
     const payload = {
       name: form.name.trim(),
@@ -138,6 +203,8 @@ export function Inventory() {
       stock,
       lowStockThreshold: Number.isNaN(lowStockThreshold) ? 5 : lowStockThreshold,
       categoryId: form.categoryId,
+      packQuantity,
+      packPrice,
     };
 
     setSubmitting(true);
@@ -227,12 +294,12 @@ export function Inventory() {
           type="text"
           placeholder="Search by name, category, or barcode"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => handleQueryChange(e.target.value)}
           className="w-full max-w-sm rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
         />
         <select
           value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
+          onChange={(e) => handleCategoryFilterChange(e.target.value)}
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
         >
           <option value="All">All categories</option>
@@ -267,7 +334,7 @@ export function Inventory() {
                 </tr>
               ))}
             {!loading &&
-              filtered.map((product) => (
+              pageProducts.map((product) => (
                 <tr key={product.id} className="hover:bg-slate-50/60">
                   <td className="px-4 py-3 font-medium text-slate-800">{product.name}</td>
                   <td className="px-4 py-3 text-slate-500">{product.category}</td>
@@ -276,6 +343,9 @@ export function Inventory() {
                   </td>
                   <td className="tabular-nums px-4 py-3 text-slate-700">
                     {PESO.format(product.price)}
+                    {packPriceLabel(product) && (
+                      <span className="block text-xs text-slate-400">{packPriceLabel(product)}</span>
+                    )}
                   </td>
                   <td className="tabular-nums px-4 py-3 text-slate-700">{product.stock}</td>
                   <td className="px-4 py-3">
@@ -319,6 +389,36 @@ export function Inventory() {
         </table>
       </div>
 
+      {!loading && filtered.length > 0 && (
+        <div className="mt-3 flex items-center justify-between text-sm text-slate-500">
+          <span>
+            Showing {(currentPage - 1) * PAGE_SIZE + 1}–
+            {Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+              className="cursor-pointer rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+              className="cursor-pointer rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
       {showForm && (
         <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
@@ -347,7 +447,11 @@ export function Inventory() {
                     id="pbarcode"
                     type="text"
                     value={form.barcode}
-                    onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setForm((f) => ({ ...f, barcode: value }));
+                      checkDuplicateBarcode(value);
+                    }}
                     className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />
                   <button
@@ -359,6 +463,22 @@ export function Inventory() {
                     <CameraIcon className="h-4 w-4" />
                   </button>
                 </div>
+                {duplicateProduct && (
+                  <div
+                    role="alert"
+                    className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                  >
+                    This barcode is already used by <strong>{duplicateProduct.name}</strong>.{" "}
+                    <button
+                      type="button"
+                      onClick={() => openEditForm(duplicateProduct)}
+                      className="cursor-pointer font-semibold underline"
+                    >
+                      Open existing product
+                    </button>{" "}
+                    instead.
+                  </div>
+                )}
               </div>
               <div>
                 <label htmlFor="pcategory" className="text-xs font-medium text-slate-700">
@@ -409,11 +529,56 @@ export function Inventory() {
                   </select>
                 )}
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label htmlFor="pprice" className="text-xs font-medium text-slate-700">
-                    Price
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-slate-700">Pricing</label>
+                  <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
+                    <input
+                      type="checkbox"
+                      checked={form.packEnabled}
+                      onChange={(e) => setForm((f) => ({ ...f, packEnabled: e.target.checked }))}
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                    Sell by pack (e.g. 3 pcs for ₱5)
                   </label>
+                </div>
+                {form.packEnabled ? (
+                  <div className="mt-1 grid grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="ppackqty" className="text-xs font-medium text-slate-700">
+                        Pack size (pcs)
+                      </label>
+                      <input
+                        id="ppackqty"
+                        type="number"
+                        min="2"
+                        step="1"
+                        value={form.packQuantity}
+                        onChange={(e) => setForm((f) => ({ ...f, packQuantity: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="ppackprice" className="text-xs font-medium text-slate-700">
+                        Pack price (₱)
+                      </label>
+                      <input
+                        id="ppackprice"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.packPrice}
+                        onChange={(e) => setForm((f) => ({ ...f, packPrice: e.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                      />
+                    </div>
+                    {packPreview !== null && (
+                      <p className="col-span-2 text-xs text-slate-500">
+                        ≈ {PESO.format(packPreview)} per pc
+                      </p>
+                    )}
+                  </div>
+                ) : (
                   <input
                     id="pprice"
                     type="number"
@@ -422,7 +587,9 @@ export function Inventory() {
                     onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />
-                </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="pstock" className="text-xs font-medium text-slate-700">
                     Stock
@@ -467,7 +634,7 @@ export function Inventory() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || !!duplicateProduct}
                   className="cursor-pointer rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? "Saving…" : editingId ? "Save changes" : "Add product"}
@@ -484,6 +651,7 @@ export function Inventory() {
             onDetected={(code) => {
               setShowScanner(false);
               setForm((f) => ({ ...f, barcode: code }));
+              checkDuplicateBarcode(code);
             }}
             onClose={() => setShowScanner(false)}
           />
