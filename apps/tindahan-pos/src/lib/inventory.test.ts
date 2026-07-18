@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildBarcodeIndex,
   deductStockForSale,
   findDuplicateBarcode,
+  findDuplicateBarcodeFast,
   lowStockProducts,
   packPriceLabel,
   packUnitPrice,
@@ -158,5 +160,33 @@ describe("findDuplicateBarcode (story B1a)", () => {
 
   it("returns null for a blank barcode", () => {
     expect(findDuplicateBarcode(products, "   ", null)).toBeNull();
+  });
+});
+
+describe("buildBarcodeIndex / findDuplicateBarcodeFast", () => {
+  const products = [
+    makeProduct({ id: "a", barcode: "1111" }),
+    makeProduct({ id: "b", barcode: "2222" }),
+    makeProduct({ id: "c", barcode: null }),
+  ];
+  const index = buildBarcodeIndex(products);
+
+  it("matches the same results as the O(n) findDuplicateBarcode", () => {
+    expect(findDuplicateBarcodeFast(index, "1111", null)?.id).toBe(
+      findDuplicateBarcode(products, "1111", null)?.id
+    );
+    expect(findDuplicateBarcodeFast(index, "1111", "a")).toBe(
+      findDuplicateBarcode(products, "1111", "a")
+    );
+    expect(findDuplicateBarcodeFast(index, "9999", null)).toBe(
+      findDuplicateBarcode(products, "9999", null)
+    );
+    expect(findDuplicateBarcodeFast(index, "   ", null)).toBe(
+      findDuplicateBarcode(products, "   ", null)
+    );
+  });
+
+  it("skips products with no barcode when building the index", () => {
+    expect(index.size).toBe(2);
   });
 });

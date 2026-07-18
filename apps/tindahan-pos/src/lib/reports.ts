@@ -30,7 +30,12 @@ export function salesByCategory(sales: SaleRecord[], products: Product[]): Sales
         item.itemType === "service"
           ? SERVICES_CATEGORY
           : (categoryByProductId.get(item.productId) ?? OTHER_CATEGORY);
-      totals.set(category, (totals.get(category) ?? 0) + item.lineTotal);
+      // Falls back to the pre-line_total formula if a row somehow arrives
+      // without it (e.g. a client build running ahead of migration 0005),
+      // so a schema/deploy-order mismatch degrades to a slightly-imprecise
+      // total instead of NaN-ing the whole category.
+      const amount = item.lineTotal ?? item.quantity * item.price + item.fee;
+      totals.set(category, (totals.get(category) ?? 0) + amount);
     }
   }
 
