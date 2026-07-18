@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useAuth } from "./auth";
 import { supabase } from "./supabaseClient";
 import type { ReceivingLine } from "./inventory";
 import type { CartLine, Category, Product, SaleRecord, ServiceLine } from "./types";
@@ -64,6 +65,7 @@ function mapProductRow(row: {
 }
 
 export function StoreDataProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -152,10 +154,24 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchProducts, fetchCategories, fetchSales, fetchReceivingHistory]);
 
+  // Re-fetch whenever the signed-in user changes (including the initial
+  // login itself). Supabase's session restore/sign-in resolves after this
+  // provider first mounts, so fetching only on mount (the previous
+  // behavior) could run before a session existed — RLS then legitimately
+  // returns zero rows, and nothing here would ever retry until the user
+  // hit "refresh" by hand.
   useEffect(() => {
+    if (!user) {
+      setProducts([]);
+      setSales([]);
+      setCategories([]);
+      setReceivingHistory([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     refresh().finally(() => setLoading(false));
-  }, [refresh]);
+  }, [user?.id, refresh]);
 
   async function currentStoreId(): Promise<string> {
     const { data: userData } = await supabase.auth.getUser();
