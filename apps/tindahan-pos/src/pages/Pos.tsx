@@ -24,6 +24,7 @@ const SERVICE_TYPES = [
   { key: "eload", label: "E-Load", badge: "L", badgeClass: "bg-violet-100 text-violet-700" },
   { key: "cashin", label: "Cash-in", badge: "In", badgeClass: "bg-emerald-100 text-emerald-700" },
   { key: "cashout", label: "Cash-out", badge: "Out", badgeClass: "bg-amber-100 text-amber-700" },
+  { key: "print", label: "Print / Photocopy", badge: "P", badgeClass: "bg-sky-100 text-sky-700" },
 ] as const;
 
 export function Pos() {
@@ -282,13 +283,13 @@ export function Pos() {
           </>
         ) : (
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {SERVICE_TYPES.map((service) => (
                 <button
                   key={service.key}
                   type="button"
                   onClick={() => setSelectedService(service.key)}
-                  className={`flex cursor-pointer flex-col items-center gap-2 rounded-xl border p-4 transition-colors ${
+                  className={`flex cursor-pointer flex-col items-center gap-2 rounded-xl border p-3 transition-colors sm:p-4 ${
                     selectedService === service.key
                       ? "border-[var(--color-brand)] bg-[var(--color-brand)]/5"
                       : "border-slate-200 hover:bg-slate-50"
