@@ -3,9 +3,8 @@ import { Link } from "react-router-dom";
 import { useStoreData } from "../lib/storeData";
 import { lowStockProducts } from "../lib/inventory";
 import { salesByCategory } from "../lib/reports";
+import { PESO } from "../lib/money";
 import { StatCard } from "../components/StatCard";
-
-const PESO = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
 
 function isToday(isoString: string) {
   const d = new Date(isoString);

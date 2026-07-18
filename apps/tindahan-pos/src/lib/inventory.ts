@@ -1,3 +1,4 @@
+import { PESO, roundMoney } from "./money";
 import type { Product } from "./types";
 
 export type StockStatus = "out" | "low" | "in-stock";
@@ -63,13 +64,13 @@ export function stockPreview(
  * what checkout actually charges against (see lib/pos.ts lineTotal).
  */
 export function packUnitPrice(packQuantity: number, packPrice: number): number {
-  return Math.round((packPrice / packQuantity) * 100) / 100;
+  return roundMoney(packPrice / packQuantity);
 }
 
 /** A short label for pack-priced products, e.g. "3 pcs for ₱5.00". */
 export function packPriceLabel(product: Product): string | null {
   if (product.packQuantity == null || product.packPrice == null) return null;
-  return `${product.packQuantity} pcs for ₱${product.packPrice.toFixed(2)}`;
+  return `${product.packQuantity} pcs for ${PESO.format(product.packPrice)}`;
 }
 
 /**
@@ -85,4 +86,30 @@ export function findDuplicateBarcode(
   const trimmed = barcode.trim();
   if (!trimmed) return null;
   return products.find((p) => p.barcode === trimmed && p.id !== excludeId) ?? null;
+}
+
+/** O(1) lookup index for findDuplicateBarcodeFast, memoize this per products list. */
+export function buildBarcodeIndex(products: Product[]): Map<string, Product> {
+  const index = new Map<string, Product>();
+  for (const p of products) {
+    if (p.barcode) index.set(p.barcode, p);
+  }
+  return index;
+}
+
+/**
+ * Same contract as findDuplicateBarcode, but O(1) given a pre-built index
+ * instead of scanning every product — use this for checks that run on
+ * every keystroke (e.g. the barcode field's onChange).
+ */
+export function findDuplicateBarcodeFast(
+  index: Map<string, Product>,
+  barcode: string,
+  excludeId: string | null
+): Product | null {
+  const trimmed = barcode.trim();
+  if (!trimmed) return null;
+  const match = index.get(trimmed);
+  if (!match || match.id === excludeId) return null;
+  return match;
 }

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useStoreData } from "../lib/storeData";
 import { receivingTotalCost, stockPreview, type ReceivingLine } from "../lib/inventory";
 import { findProductByBarcode, searchProductsByName } from "../lib/pos";
+import { PESO } from "../lib/money";
 import { CameraIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
 
@@ -10,7 +11,6 @@ const BarcodeScanner = lazy(() =>
   import("../components/BarcodeScanner").then((m) => ({ default: m.BarcodeScanner }))
 );
 
-const PESO = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
 const today = () => new Date().toISOString().slice(0, 10);
 
 export function Receiving() {
