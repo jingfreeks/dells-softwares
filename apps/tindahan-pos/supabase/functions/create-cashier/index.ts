@@ -40,7 +40,14 @@ Deno.serve(async (req) => {
       return json({ error: "Missing Authorization header" }, 401);
     }
 
-    const { name, email, password } = await req.json();
+    let body: { name?: string; email?: string; password?: string };
+    try {
+      body = await req.json();
+    } catch {
+      return json({ error: "Request body must be valid JSON" }, 400);
+    }
+
+    const { name, email, password } = body;
     if (!name?.trim() || !email?.trim() || !password || password.length < 6) {
       return json(
         { error: "name, email, and a password of at least 6 characters are required" },
@@ -89,7 +96,11 @@ Deno.serve(async (req) => {
     });
 
     if (createError || !created.user) {
-      return json({ error: createError?.message ?? "Could not create the account" }, 400);
+      // Log the real reason server-side, but don't tell the client whether
+      // this email is already registered elsewhere in the system — that
+      // would let one store's admin enumerate accounts across tenants.
+      console.error("create-cashier: createUser failed:", createError?.message);
+      return json({ error: "Could not create this cashier account. Try a different email address." }, 400);
     }
 
     const newUserId = created.user.id;
