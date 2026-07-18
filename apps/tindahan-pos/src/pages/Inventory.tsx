@@ -1,9 +1,11 @@
 import { lazy, Suspense, useMemo, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { useStoreData } from "../lib/storeData";
 import { lowStockProducts, stockStatus } from "../lib/inventory";
 import { StockBadge } from "../components/StockBadge";
-import { CameraIcon } from "../components/icons";
+import { CameraIcon, TruckIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
+import { CategoryManager } from "../components/CategoryManager";
 import type { Product } from "../lib/types";
 
 const BarcodeScanner = lazy(() =>
@@ -18,16 +20,31 @@ const emptyForm = {
   price: "",
   stock: "",
   lowStockThreshold: "5",
-  category: "",
+  categoryId: "",
 };
 
+const NEW_CATEGORY_VALUE = "__new__";
+
 export function Inventory() {
-  const { products, loading, error, addProduct, updateProduct, removeProduct, restock } =
-    useStoreData();
+  const {
+    products,
+    categories,
+    loading,
+    error,
+    addProduct,
+    updateProduct,
+    removeProduct,
+    restock,
+    addCategory,
+  } = useStoreData();
   const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("All");
   const [showForm, setShowForm] = useState(false);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -36,18 +53,21 @@ export function Inventory() {
   const lowStock = useMemo(() => lowStockProducts(products), [products]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter(
-      (p) =>
+    return products.filter((p) => {
+      const matchesCategory = categoryFilter === "All" || p.category === categoryFilter;
+      const matchesQuery =
+        !q ||
         p.name.toLowerCase().includes(q) ||
         p.category.toLowerCase().includes(q) ||
-        (p.barcode ?? "").includes(q)
-    );
-  }, [products, query]);
+        (p.barcode ?? "").includes(q);
+      return matchesCategory && matchesQuery;
+    });
+  }, [products, query, categoryFilter]);
 
   function openAddForm() {
     setEditingId(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, categoryId: categories[0]?.id ?? "" });
+    setAddingCategory(false);
     setFormError(null);
     setShowForm(true);
   }
@@ -60,10 +80,32 @@ export function Inventory() {
       price: String(product.price),
       stock: String(product.stock),
       lowStockThreshold: String(product.lowStockThreshold),
-      category: product.category,
+      categoryId: product.categoryId,
     });
+    setAddingCategory(false);
     setFormError(null);
     setShowForm(true);
+  }
+
+  function handleCategorySelect(value: string) {
+    if (value === NEW_CATEGORY_VALUE) {
+      setAddingCategory(true);
+      setNewCategoryName("");
+    } else {
+      setForm((f) => ({ ...f, categoryId: value }));
+    }
+  }
+
+  async function handleCreateCategory() {
+    if (!newCategoryName.trim()) return;
+    setFormError(null);
+    try {
+      const category = await addCategory(newCategoryName);
+      setForm((f) => ({ ...f, categoryId: category.id }));
+      setAddingCategory(false);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Could not add category.");
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -84,6 +126,10 @@ export function Inventory() {
       setFormError("Stock must be a valid number.");
       return;
     }
+    if (!form.categoryId) {
+      setFormError("Choose a category.");
+      return;
+    }
 
     const payload = {
       name: form.name.trim(),
@@ -91,7 +137,7 @@ export function Inventory() {
       price,
       stock,
       lowStockThreshold: Number.isNaN(lowStockThreshold) ? 5 : lowStockThreshold,
-      category: form.category.trim() || "Uncategorized",
+      categoryId: form.categoryId,
     };
 
     setSubmitting(true);
@@ -135,13 +181,32 @@ export function Inventory() {
           <h1 className="text-lg font-semibold text-slate-900">Inventory</h1>
           <p className="text-sm text-slate-500">{products.length} products tracked.</p>
         </div>
-        <button
-          type="button"
-          onClick={openAddForm}
-          className="cursor-pointer rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)]"
-        >
-          Add product
-        </button>
+        <div className="flex gap-2">
+          <Link
+            to="/inventory/receiving"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            <TruckIcon className="h-4 w-4" />
+            Receive stock
+            <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+              v1.1
+            </span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setShowCategoryManager(true)}
+            className="cursor-pointer rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Categories
+          </button>
+          <button
+            type="button"
+            onClick={openAddForm}
+            className="cursor-pointer rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)]"
+          >
+            Add product
+          </button>
+        </div>
       </div>
 
       {(error || actionError) && (
@@ -157,13 +222,27 @@ export function Inventory() {
         </div>
       )}
 
-      <input
-        type="text"
-        placeholder="Search by name, category, or barcode"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="mt-4 w-full max-w-sm rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-      />
+      <div className="mt-4 flex flex-wrap gap-2">
+        <input
+          type="text"
+          placeholder="Search by name, category, or barcode"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full max-w-sm rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+        />
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+        >
+          <option value="All">All categories</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.name}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-sm">
@@ -285,13 +364,50 @@ export function Inventory() {
                 <label htmlFor="pcategory" className="text-xs font-medium text-slate-700">
                   Category
                 </label>
-                <input
-                  id="pcategory"
-                  type="text"
-                  value={form.category}
-                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-                />
+                {addingCategory ? (
+                  <div className="mt-1 flex gap-2">
+                    <input
+                      type="text"
+                      autoFocus
+                      placeholder="New category name"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreateCategory())}
+                      className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCreateCategory}
+                      className="cursor-pointer rounded-lg bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
+                    >
+                      Add
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAddingCategory(false)}
+                      className="cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    id="pcategory"
+                    value={form.categoryId}
+                    onChange={(e) => handleCategorySelect(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                  >
+                    <option value="" disabled>
+                      Choose a category…
+                    </option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                    <option value={NEW_CATEGORY_VALUE}>+ New category…</option>
+                  </select>
+                )}
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
@@ -373,6 +489,8 @@ export function Inventory() {
           />
         </Suspense>
       )}
+
+      {showCategoryManager && <CategoryManager onClose={() => setShowCategoryManager(false)} />}
     </div>
   );
 }

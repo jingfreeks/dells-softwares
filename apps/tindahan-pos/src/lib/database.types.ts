@@ -48,6 +48,19 @@ export interface Database {
           },
         ];
       };
+      categories: {
+        Row: { id: string; store_id: string; name: string; created_at: string };
+        Insert: { id?: string; store_id: string; name: string; created_at?: string };
+        Update: { id?: string; store_id?: string; name?: string; created_at?: string };
+        Relationships: [
+          {
+            foreignKeyName: "categories_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       products: {
         Row: {
           id: string;
@@ -58,6 +71,7 @@ export interface Database {
           stock: number;
           low_stock_threshold: number;
           category: string;
+          category_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -70,6 +84,7 @@ export interface Database {
           stock?: number;
           low_stock_threshold?: number;
           category?: string;
+          category_id: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -82,6 +97,7 @@ export interface Database {
           stock?: number;
           low_stock_threshold?: number;
           category?: string;
+          category_id?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -90,6 +106,12 @@ export interface Database {
             foreignKeyName: "products_store_id_fkey";
             columns: ["store_id"];
             referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "products_category_id_fkey";
+            columns: ["category_id"];
+            referencedRelation: "categories";
             referencedColumns: ["id"];
           },
         ];

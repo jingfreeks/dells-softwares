@@ -8,6 +8,11 @@ export interface StaffAccount {
   role: Role;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+}
+
 export interface Product {
   id: string;
   barcode: string | null;
@@ -15,6 +20,7 @@ export interface Product {
   price: number;
   stock: number;
   lowStockThreshold: number;
+  categoryId: string;
   category: string;
 }
 
