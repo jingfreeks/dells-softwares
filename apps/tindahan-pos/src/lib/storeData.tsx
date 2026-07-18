@@ -9,6 +9,20 @@ import {
 import { supabase } from "./supabaseClient";
 import type { CartLine, Product, SaleRecord } from "./types";
 
+export interface ReceivingLine {
+  productId: string;
+  productName: string;
+  quantity: number;
+  costEach: number;
+}
+
+export interface ReceivingEntry {
+  id: string;
+  date: string;
+  supplier: string;
+  lines: ReceivingLine[];
+}
+
 interface StoreDataContextValue {
   products: Product[];
   sales: SaleRecord[];
@@ -20,6 +34,11 @@ interface StoreDataContextValue {
   restock: (id: string, quantity: number) => Promise<void>;
   checkout: (cart: CartLine[], cashierName: string) => Promise<SaleRecord>;
   refresh: () => Promise<void>;
+  // v1.1 preview — receiving history is local-only for now (not yet backed
+  // by a database table), so it resets on reload. The stock increases it
+  // triggers ARE real, via the same restock() path used elsewhere.
+  receivingHistory: ReceivingEntry[];
+  receiveStock: (supplier: string, date: string, lines: ReceivingLine[]) => Promise<void>;
 }
 
 const StoreDataContext = createContext<StoreDataContextValue | null>(null);
@@ -49,6 +68,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [receivingHistory, setReceivingHistory] = useState<ReceivingEntry[]>([]);
 
   const fetchProducts = useCallback(async () => {
     const { data, error: err } = await supabase
@@ -190,6 +210,16 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     };
   }
 
+  async function receiveStock(supplier: string, date: string, lines: ReceivingLine[]) {
+    for (const line of lines) {
+      await restock(line.productId, line.quantity);
+    }
+    setReceivingHistory((prev) => [
+      { id: `recv-${Date.now()}`, date, supplier, lines },
+      ...prev,
+    ]);
+  }
+
   return (
     <StoreDataContext.Provider
       value={{
@@ -203,6 +233,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         restock,
         checkout,
         refresh,
+        receivingHistory,
+        receiveStock,
       }}
     >
       {children}

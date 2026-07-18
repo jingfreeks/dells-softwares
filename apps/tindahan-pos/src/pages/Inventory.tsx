@@ -1,8 +1,9 @@
 import { lazy, Suspense, useMemo, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { useStoreData } from "../lib/storeData";
 import { lowStockProducts, stockStatus } from "../lib/inventory";
 import { StockBadge } from "../components/StockBadge";
-import { CameraIcon } from "../components/icons";
+import { CameraIcon, TruckIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
 import type { Product } from "../lib/types";
 
@@ -135,13 +136,25 @@ export function Inventory() {
           <h1 className="text-lg font-semibold text-slate-900">Inventory</h1>
           <p className="text-sm text-slate-500">{products.length} products tracked.</p>
         </div>
-        <button
-          type="button"
-          onClick={openAddForm}
-          className="cursor-pointer rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)]"
-        >
-          Add product
-        </button>
+        <div className="flex gap-2">
+          <Link
+            to="/inventory/receiving"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            <TruckIcon className="h-4 w-4" />
+            Receive stock
+            <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+              v1.1
+            </span>
+          </Link>
+          <button
+            type="button"
+            onClick={openAddForm}
+            className="cursor-pointer rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)]"
+          >
+            Add product
+          </button>
+        </div>
       </div>
 
       {(error || actionError) && (
