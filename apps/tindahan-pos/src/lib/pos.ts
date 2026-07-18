@@ -23,8 +23,22 @@ export function setQuantity(cart: CartLine[], productId: string, quantity: numbe
   );
 }
 
+/**
+ * Amount charged for a cart line. Pack-priced products (e.g. "3 pcs for
+ * ₱5") are computed from the pack fraction directly and rounded once, so
+ * a full pack always totals to an exact amount instead of drifting by a
+ * centavo from qty * rounded-per-unit-price. Mirrors checkout_sale()'s
+ * server-side math so the cart preview always matches what gets charged.
+ */
+export function lineTotal(product: Product, quantity: number): number {
+  if (product.packQuantity != null && product.packPrice != null) {
+    return Math.round(((quantity * product.packPrice) / product.packQuantity) * 100) / 100;
+  }
+  return Math.round(product.price * quantity * 100) / 100;
+}
+
 export function cartTotal(cart: CartLine[]): number {
-  return cart.reduce((sum, line) => sum + line.product.price * line.quantity, 0);
+  return cart.reduce((sum, line) => sum + lineTotal(line.product, line.quantity), 0);
 }
 
 export function cartItemCount(cart: CartLine[]): number {

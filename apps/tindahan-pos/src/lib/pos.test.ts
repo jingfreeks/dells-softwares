@@ -5,6 +5,7 @@ import {
   cartTotal,
   computeChange,
   findProductByBarcode,
+  lineTotal,
   removeFromCart,
   searchProductsByName,
   setQuantity,
@@ -20,6 +21,8 @@ const chips: Product = {
   lowStockThreshold: 5,
   categoryId: "cat-snacks",
   category: "Snacks",
+  packQuantity: null,
+  packPrice: null,
 };
 
 const soda: Product = {
@@ -31,6 +34,21 @@ const soda: Product = {
   lowStockThreshold: 5,
   categoryId: "cat-drinks",
   category: "Drinks",
+  packQuantity: null,
+  packPrice: null,
+};
+
+const candy: Product = {
+  id: "p3",
+  barcode: null,
+  name: "Candy",
+  price: 1.67,
+  stock: 30,
+  lowStockThreshold: 5,
+  categoryId: "cat-snacks",
+  category: "Snacks",
+  packQuantity: 3,
+  packPrice: 5,
 };
 
 describe("addToCart", () => {
@@ -96,6 +114,30 @@ describe("cartTotal / cartItemCount", () => {
       { product: soda, quantity: 3 },
     ];
     expect(cartItemCount(cart)).toBe(5);
+  });
+
+  it("sums pack-priced lines using lineTotal, not qty * price", () => {
+    const cart: CartLine[] = [{ product: candy, quantity: 3 }];
+    expect(cartTotal(cart)).toBe(5);
+  });
+});
+
+describe("lineTotal (pack pricing, e.g. '3 pcs for ₱5')", () => {
+  it("charges the exact pack price when buying a full pack", () => {
+    expect(lineTotal(candy, 3)).toBe(5);
+  });
+
+  it("charges an exact multiple for multiple full packs", () => {
+    expect(lineTotal(candy, 6)).toBe(10);
+  });
+
+  it("is proportional for a partial-pack quantity, rounded to the centavo", () => {
+    expect(lineTotal(candy, 1)).toBeCloseTo(1.67, 2);
+    expect(lineTotal(candy, 2)).toBeCloseTo(3.33, 2);
+  });
+
+  it("falls back to price * quantity for a regular (non-pack) product", () => {
+    expect(lineTotal(chips, 2)).toBe(40);
   });
 });
 

@@ -12,6 +12,8 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     lowStockThreshold: 5,
     categoryId: "cat-misc",
     category: "Misc",
+    packQuantity: null,
+    packPrice: null,
     ...overrides,
   };
 }
@@ -36,8 +38,24 @@ describe("salesByCategory (story E5)", () => {
     const sales = [
       makeSale({
         items: [
-          { productId: "chips", name: "Chips", quantity: 2, price: 20, itemType: "product", fee: 0 },
-          { productId: "soda", name: "Soda", quantity: 1, price: 35, itemType: "product", fee: 0 },
+          {
+            productId: "chips",
+            name: "Chips",
+            quantity: 2,
+            price: 20,
+            itemType: "product",
+            fee: 0,
+            lineTotal: 40,
+          },
+          {
+            productId: "soda",
+            name: "Soda",
+            quantity: 1,
+            price: 35,
+            itemType: "product",
+            fee: 0,
+            lineTotal: 35,
+          },
         ],
       }),
     ];
@@ -53,7 +71,15 @@ describe("salesByCategory (story E5)", () => {
     const sales = [
       makeSale({
         items: [
-          { productId: "", name: "E-Load ₱100", quantity: 1, price: 100, itemType: "service", fee: 5 },
+          {
+            productId: "",
+            name: "E-Load ₱100",
+            quantity: 1,
+            price: 100,
+            itemType: "service",
+            fee: 5,
+            lineTotal: 105,
+          },
         ],
       }),
     ];
@@ -65,7 +91,15 @@ describe("salesByCategory (story E5)", () => {
     const sales = [
       makeSale({
         items: [
-          { productId: "deleted", name: "Gone", quantity: 1, price: 10, itemType: "product", fee: 0 },
+          {
+            productId: "deleted",
+            name: "Gone",
+            quantity: 1,
+            price: 10,
+            itemType: "product",
+            fee: 0,
+            lineTotal: 10,
+          },
         ],
       }),
     ];
@@ -81,13 +115,34 @@ describe("salesByCategory (story E5)", () => {
     const sales = [
       makeSale({
         items: [
-          { productId: "a", name: "A", quantity: 1, price: 10, itemType: "product", fee: 0 },
-          { productId: "b", name: "B", quantity: 1, price: 50, itemType: "product", fee: 0 },
+          { productId: "a", name: "A", quantity: 1, price: 10, itemType: "product", fee: 0, lineTotal: 10 },
+          { productId: "b", name: "B", quantity: 1, price: 50, itemType: "product", fee: 0, lineTotal: 50 },
         ],
       }),
     ];
     const result = salesByCategory(sales, products);
     expect(result.rows.map((r) => r.category)).toEqual(["Drinks", "Snacks"]);
+  });
+
+  it("uses lineTotal directly, so a pack-priced line's exact total is preserved", () => {
+    const products = [makeProduct({ id: "candy", category: "Snacks", packQuantity: 3, packPrice: 5 })];
+    const sales = [
+      makeSale({
+        items: [
+          {
+            productId: "candy",
+            name: "Candy",
+            quantity: 3,
+            price: 1.67,
+            itemType: "product",
+            fee: 0,
+            lineTotal: 5,
+          },
+        ],
+      }),
+    ];
+    const result = salesByCategory(sales, products);
+    expect(result.rows).toEqual([{ category: "Snacks", total: 5 }]);
   });
 
   it("returns empty rows and a zero grand total for no sales", () => {
