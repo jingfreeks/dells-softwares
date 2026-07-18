@@ -24,7 +24,7 @@ const SERVICE_TYPES = [
   { key: "eload", label: "E-Load", badge: "L", badgeClass: "bg-violet-100 text-violet-700" },
   { key: "cashin", label: "Cash-in", badge: "In", badgeClass: "bg-emerald-100 text-emerald-700" },
   { key: "cashout", label: "Cash-out", badge: "Out", badgeClass: "bg-amber-100 text-amber-700" },
-  { key: "print", label: "Print", badge: "P", badgeClass: "bg-sky-100 text-sky-700" },
+  { key: "print", label: "Print / Photocopy", badge: "P", badgeClass: "bg-sky-100 text-sky-700" },
 ] as const;
 
 export function Pos() {
