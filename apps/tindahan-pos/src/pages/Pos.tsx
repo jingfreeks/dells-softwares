@@ -6,10 +6,12 @@ import {
   cartTotal,
   computeChange,
   findProductByBarcode,
+  lineTotal,
   removeFromCart,
   searchProductsByName,
   setQuantity,
 } from "../lib/pos";
+import { packPriceLabel } from "../lib/inventory";
 import type { CartLine, ServiceLine } from "../lib/types";
 import { CameraIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
@@ -235,7 +237,9 @@ export function Pos() {
                         className="flex w-full cursor-pointer items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
                       >
                         <span>{product.name}</span>
-                        <span className="tabular-nums text-slate-500">{PESO.format(product.price)}</span>
+                        <span className="tabular-nums text-slate-500">
+                          {packPriceLabel(product) ?? PESO.format(product.price)}
+                        </span>
                       </button>
                     </li>
                   ))}
@@ -272,7 +276,9 @@ export function Pos() {
                     className="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm hover:border-[var(--color-brand)] hover:bg-[var(--color-brand)]/5"
                   >
                     <span className="block font-medium text-slate-800">{product.name}</span>
-                    <span className="tabular-nums text-xs text-slate-500">{PESO.format(product.price)}</span>
+                    <span className="tabular-nums text-xs text-slate-500">
+                      {packPriceLabel(product) ?? PESO.format(product.price)}
+                    </span>
                   </button>
                 ))}
                 {visibleQuickItems.length === 0 && (
@@ -366,7 +372,10 @@ export function Pos() {
                 <li key={line.product.id} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-800">{line.product.name}</p>
-                    <p className="tabular-nums text-xs text-slate-500">{PESO.format(line.product.price)} each</p>
+                    <p className="tabular-nums text-xs text-slate-500">
+                      {packPriceLabel(line.product) ?? `${PESO.format(line.product.price)} each`} ·{" "}
+                      {PESO.format(lineTotal(line.product, line.quantity))}
+                    </p>
                   </div>
                   <div className="flex items-center gap-1">
                     <button

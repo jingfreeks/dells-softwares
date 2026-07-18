@@ -30,8 +30,7 @@ export function salesByCategory(sales: SaleRecord[], products: Product[]): Sales
         item.itemType === "service"
           ? SERVICES_CATEGORY
           : (categoryByProductId.get(item.productId) ?? OTHER_CATEGORY);
-      const amount = item.quantity * item.price + item.fee;
-      totals.set(category, (totals.get(category) ?? 0) + amount);
+      totals.set(category, (totals.get(category) ?? 0) + item.lineTotal);
     }
   }
 

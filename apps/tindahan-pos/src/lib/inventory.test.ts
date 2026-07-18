@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   deductStockForSale,
+  findDuplicateBarcode,
   lowStockProducts,
+  packPriceLabel,
+  packUnitPrice,
   receiveStock,
   receivingTotalCost,
   stockPreview,
@@ -20,6 +23,8 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     lowStockThreshold: 5,
     categoryId: "cat-misc",
     category: "Misc",
+    packQuantity: null,
+    packPrice: null,
     ...overrides,
   };
 }
@@ -109,5 +114,49 @@ describe("stockPreview (story E2)", () => {
   it("returns null for a product that isn't loaded", () => {
     const products = [makeProduct({ id: "a", stock: 10 })];
     expect(stockPreview(products, "nonexistent", 5)).toBeNull();
+  });
+});
+
+describe("packUnitPrice", () => {
+  it("computes the effective per-unit price, rounded to the centavo", () => {
+    expect(packUnitPrice(3, 5)).toBeCloseTo(1.67, 2);
+  });
+
+  it("divides evenly when the pack price is a clean multiple", () => {
+    expect(packUnitPrice(2, 10)).toBe(5);
+  });
+});
+
+describe("packPriceLabel", () => {
+  it("describes a pack-priced product as '<qty> pcs for ₱<price>'", () => {
+    const product = makeProduct({ packQuantity: 3, packPrice: 5 });
+    expect(packPriceLabel(product)).toBe("3 pcs for ₱5.00");
+  });
+
+  it("returns null for a regular (non-pack) product", () => {
+    expect(packPriceLabel(makeProduct())).toBeNull();
+  });
+});
+
+describe("findDuplicateBarcode (story B1a)", () => {
+  const products = [
+    makeProduct({ id: "a", barcode: "1111" }),
+    makeProduct({ id: "b", barcode: "2222" }),
+  ];
+
+  it("finds another product already using the barcode", () => {
+    expect(findDuplicateBarcode(products, "1111", null)?.id).toBe("a");
+  });
+
+  it("excludes the product currently being edited", () => {
+    expect(findDuplicateBarcode(products, "1111", "a")).toBeNull();
+  });
+
+  it("returns null for a barcode nobody uses yet", () => {
+    expect(findDuplicateBarcode(products, "9999", null)).toBeNull();
+  });
+
+  it("returns null for a blank barcode", () => {
+    expect(findDuplicateBarcode(products, "   ", null)).toBeNull();
   });
 });
