@@ -32,3 +32,26 @@ export function deductStockForSale(
     return { ...p, stock: Math.max(0, p.stock - sold.quantity) };
   });
 }
+
+export interface ReceivingLine {
+  productId: string;
+  productName: string;
+  quantity: number;
+  costEach: number;
+}
+
+/** Total cost of a receiving entry (story E2 — "optionally cost"). */
+export function receivingTotalCost(lines: ReceivingLine[]): number {
+  return lines.reduce((sum, l) => sum + l.quantity * l.costEach, 0);
+}
+
+/** Preview of a product's stock before/after a pending receiving line. */
+export function stockPreview(
+  products: Product[],
+  productId: string,
+  quantity: number
+): { old: number; next: number } | null {
+  const product = products.find((p) => p.id === productId);
+  if (!product) return null;
+  return { old: product.stock, next: product.stock + quantity };
+}

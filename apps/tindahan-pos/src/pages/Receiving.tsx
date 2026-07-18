@@ -1,10 +1,10 @@
 import { lazy, Suspense, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useStoreData, type ReceivingLine } from "../lib/storeData";
+import { useStoreData } from "../lib/storeData";
+import { receivingTotalCost, stockPreview, type ReceivingLine } from "../lib/inventory";
 import { findProductByBarcode, searchProductsByName } from "../lib/pos";
 import { CameraIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
-import { V1_1Badge } from "../components/V1_1Badge";
 
 const BarcodeScanner = lazy(() =>
   import("../components/BarcodeScanner").then((m) => ({ default: m.BarcodeScanner }))
@@ -59,12 +59,6 @@ export function Receiving() {
     setLines((prev) => prev.filter((l) => l.productId !== productId));
   }
 
-  function stockPreview(productId: string, quantity: number) {
-    const product = products.find((p) => p.id === productId);
-    if (!product) return null;
-    return { old: product.stock, next: product.stock + quantity };
-  }
-
   async function handleSave() {
     if (lines.length === 0) return;
     setSaving(true);
@@ -90,14 +84,13 @@ export function Receiving() {
         <div>
           <h1 className="text-lg font-semibold text-slate-900">Receive stock</h1>
           <p className="text-sm text-slate-500">
-            Record new supply from a delivery. Stock updates are real —{" "}
+            Record new supply from a delivery.{" "}
             <Link to="/inventory" className="underline">
-              back to Inventory
+              Back to Inventory
             </Link>
             .
           </p>
         </div>
-        <V1_1Badge />
       </div>
 
       <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -190,7 +183,7 @@ export function Receiving() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {lines.map((line) => {
-                  const preview = stockPreview(line.productId, line.quantity);
+                  const preview = stockPreview(products, line.productId, line.quantity);
                   return (
                     <tr key={line.productId}>
                       <td className="px-3 py-2 font-medium text-slate-800">{line.productName}</td>
@@ -237,7 +230,7 @@ export function Receiving() {
             <div className="flex items-center justify-between border-t border-slate-200 px-3 py-2 text-sm">
               <span className="text-slate-500">Total cost</span>
               <span className="tabular-nums font-semibold text-slate-900">
-                {PESO.format(lines.reduce((sum, l) => sum + l.quantity * l.costEach, 0))}
+                {PESO.format(receivingTotalCost(lines))}
               </span>
             </div>
           </div>
@@ -262,7 +255,6 @@ export function Receiving() {
       <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 p-4">
           <h2 className="text-sm font-semibold text-slate-900">Recent receiving history</h2>
-          <p className="text-xs text-slate-500">Preview only — this list resets on reload for now.</p>
         </div>
         <ul className="divide-y divide-slate-100">
           {receivingHistory.map((entry) => (
