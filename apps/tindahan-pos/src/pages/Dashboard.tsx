@@ -7,6 +7,7 @@ import { STORE_NAME } from "../lib/mockData";
 import { PESO } from "../lib/money";
 import { StatCard } from "../components/StatCard";
 import { SectionCardHeader } from "../components/SectionCardHeader";
+import type { CardActions } from "../components/CardActionIcons";
 import { DocumentReportIcon, DownloadIcon, PrintIcon, ShareIcon } from "../components/icons";
 import type { CardSection } from "../lib/reportPdf";
 
@@ -45,14 +46,40 @@ export function Dashboard() {
     }
   }
 
-  async function printCard(section: CardSection) {
-    setReportNotice(null);
-    try {
-      const { printCardSectionPdf } = await import("../lib/reportPdf");
-      printCardSectionPdf(section, STORE_NAME, report.generatedAt);
-    } catch (err) {
-      setReportNotice(err instanceof Error ? err.message : "Could not generate the report.");
-    }
+  /** Download/print/share handlers for a single dashboard card's focused PDF. */
+  function cardActions(section: CardSection): CardActions {
+    return {
+      onDownload: async () => {
+        setReportNotice(null);
+        try {
+          const { downloadCardSectionPdf } = await import("../lib/reportPdf");
+          downloadCardSectionPdf(section, STORE_NAME, report.generatedAt);
+        } catch (err) {
+          setReportNotice(err instanceof Error ? err.message : "Could not generate the report.");
+        }
+      },
+      onPrint: async () => {
+        setReportNotice(null);
+        try {
+          const { printCardSectionPdf } = await import("../lib/reportPdf");
+          printCardSectionPdf(section, STORE_NAME, report.generatedAt);
+        } catch (err) {
+          setReportNotice(err instanceof Error ? err.message : "Could not generate the report.");
+        }
+      },
+      onShare: async () => {
+        setReportNotice(null);
+        try {
+          const { shareCardSectionPdf } = await import("../lib/reportPdf");
+          const result = await shareCardSectionPdf(section, STORE_NAME, report.generatedAt);
+          if (result === "downloaded") {
+            setReportNotice("Sharing isn't supported on this device — the PDF was downloaded instead.");
+          }
+        } catch (err) {
+          setReportNotice(err instanceof Error ? err.message : "Could not generate the report.");
+        }
+      },
+    };
   }
 
   return (
@@ -75,7 +102,7 @@ export function Dashboard() {
             <p className="text-sm font-semibold text-slate-900">Daily sales report</p>
             <p className="text-xs text-slate-500">
               Today's sales, low stock, best sellers, and recent transactions as a PDF. Prefer just
-              one section? Use the print icon on any card below instead.
+              one section? Use the icons on any card below instead.
             </p>
           </div>
         </div>
@@ -129,40 +156,38 @@ export function Dashboard() {
           <StatCard
             label="Today's sales"
             value={PESO.format(report.todaysSalesTotal)}
-            onPrint={() =>
-              printCard({
-                kind: "stat",
-                title: "Today's sales",
-                value: PESO.format(report.todaysSalesTotal),
-                hint: `${report.todaysTransactionCount} transaction${report.todaysTransactionCount === 1 ? "" : "s"}`,
-              })
-            }
+            {...cardActions({
+              kind: "stat",
+              title: "Today's sales",
+              value: PESO.format(report.todaysSalesTotal),
+              hint: `${report.todaysTransactionCount} transaction${report.todaysTransactionCount === 1 ? "" : "s"}`,
+            })}
           />
           <StatCard
             label="Transactions today"
             value={String(report.todaysTransactionCount)}
-            onPrint={() =>
-              printCard({ kind: "stat", title: "Transactions today", value: String(report.todaysTransactionCount) })
-            }
+            {...cardActions({
+              kind: "stat",
+              title: "Transactions today",
+              value: String(report.todaysTransactionCount),
+            })}
           />
           <StatCard
             label="Low stock"
             value={String(report.lowStock.length)}
             hint={report.lowStock.length > 0 ? "Needs restocking" : "All good"}
             tone={report.lowStock.length > 0 ? "warning" : "neutral"}
-            onPrint={() =>
-              printCard({
-                kind: "stat",
-                title: "Low stock",
-                value: String(report.lowStock.length),
-                hint: report.lowStock.length > 0 ? "Needs restocking" : "All good",
-              })
-            }
+            {...cardActions({
+              kind: "stat",
+              title: "Low stock",
+              value: String(report.lowStock.length),
+              hint: report.lowStock.length > 0 ? "Needs restocking" : "All good",
+            })}
           />
           <StatCard
             label="Total products"
             value={String(report.totalProducts)}
-            onPrint={() => printCard({ kind: "stat", title: "Total products", value: String(report.totalProducts) })}
+            {...cardActions({ kind: "stat", title: "Total products", value: String(report.totalProducts) })}
           />
         </div>
       )}
@@ -172,26 +197,24 @@ export function Dashboard() {
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
             <SectionCardHeader
               title="Recent sales"
-              onPrint={() =>
-                printCard({
-                  kind: "table",
-                  title: "Recent sales",
-                  head: ["Date & time", "Cashier", "Items", "Total"],
-                  rows: recentSales.map((sale) => [
-                    new Date(sale.timestamp).toLocaleString("en-PH", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    }),
-                    sale.cashierName,
-                    String(sale.items.length),
-                    PESO.format(sale.total),
-                  ]),
-                  emptyMessage: "No sales recorded yet.",
-                })
-              }
+              {...cardActions({
+                kind: "table",
+                title: "Recent sales",
+                head: ["Date & time", "Cashier", "Items", "Total"],
+                rows: recentSales.map((sale) => [
+                  new Date(sale.timestamp).toLocaleString("en-PH", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  }),
+                  sale.cashierName,
+                  String(sale.items.length),
+                  PESO.format(sale.total),
+                ]),
+                emptyMessage: "No sales recorded yet.",
+              })}
             />
             <ul className="divide-y divide-slate-100">
               {recentSales.map((sale) => (
@@ -221,23 +244,21 @@ export function Dashboard() {
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
             <SectionCardHeader
               title="Low stock alerts"
-              onPrint={() =>
-                printCard({
-                  kind: "table",
-                  title: "Low stock alerts",
-                  head: ["Product", "Category", "Stock", "Threshold", "Status"],
-                  rows: report.lowStock.map((p) => [
-                    p.name,
-                    p.category,
-                    String(p.stock),
-                    String(p.lowStockThreshold),
-                    stockStatus(p) === "out" ? "Out of stock" : "Low stock",
-                  ]),
-                  emptyMessage: "All products are adequately stocked.",
-                  dangerColumn: 4,
-                  dangerValue: "Out of stock",
-                })
-              }
+              {...cardActions({
+                kind: "table",
+                title: "Low stock alerts",
+                head: ["Product", "Category", "Stock", "Threshold", "Status"],
+                rows: report.lowStock.map((p) => [
+                  p.name,
+                  p.category,
+                  String(p.stock),
+                  String(p.lowStockThreshold),
+                  stockStatus(p) === "out" ? "Out of stock" : "Low stock",
+                ]),
+                emptyMessage: "All products are adequately stocked.",
+                dangerColumn: 4,
+                dangerValue: "Out of stock",
+              })}
             />
             <ul className="divide-y divide-slate-100">
               {report.lowStock.slice(0, 8).map((p) => (
@@ -266,15 +287,13 @@ export function Dashboard() {
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
             <SectionCardHeader
               title="Best sellers"
-              onPrint={() =>
-                printCard({
-                  kind: "table",
-                  title: "Best sellers",
-                  head: ["#", "Product", "Units sold"],
-                  rows: report.bestSellers.map((item, i) => [String(i + 1), item.name, String(item.quantity)]),
-                  emptyMessage: "No sales recorded yet.",
-                })
-              }
+              {...cardActions({
+                kind: "table",
+                title: "Best sellers",
+                head: ["#", "Product", "Units sold"],
+                rows: report.bestSellers.map((item, i) => [String(i + 1), item.name, String(item.quantity)]),
+                emptyMessage: "No sales recorded yet.",
+              })}
             />
             <ul className="divide-y divide-slate-100">
               {report.bestSellers.map((item, i) => (
@@ -295,15 +314,13 @@ export function Dashboard() {
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
             <SectionCardHeader
               title="Sales by category"
-              onPrint={() =>
-                printCard({
-                  kind: "table",
-                  title: "Sales by category",
-                  head: ["Category", "Total"],
-                  rows: categoryTotals.rows.map((row) => [row.category, PESO.format(row.total)]),
-                  emptyMessage: "No data yet.",
-                })
-              }
+              {...cardActions({
+                kind: "table",
+                title: "Sales by category",
+                head: ["Category", "Total"],
+                rows: categoryTotals.rows.map((row) => [row.category, PESO.format(row.total)]),
+                emptyMessage: "No data yet.",
+              })}
             />
             <ul className="divide-y divide-slate-100">
               {categoryTotals.rows.map((row) => {

@@ -95,25 +95,34 @@ function drawFooter(doc: jsPDF, storeName: string): void {
  */
 function printPdfDoc(doc: jsPDF): void {
   const blobUrl = doc.output("bloburl") as unknown as string;
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  iframe.src = blobUrl;
-  document.body.appendChild(iframe);
-  iframe.onload = () => {
-    iframe.contentWindow?.focus();
-    iframe.contentWindow?.print();
+  // A hidden 0x0 iframe's contentWindow.print() is unreliable across
+  // browsers (notably Safari and Firefox silently no-op it). Opening the
+  // PDF in its own tab and letting the browser's native PDF viewer show
+  // its own print/save controls works everywhere, including when the
+  // scripted print() call itself would have been blocked.
+  const win = window.open(blobUrl, "_blank");
+  if (!win) {
+    // Popup blocked — fall back to a normal download so the action still
+    // does something instead of silently failing.
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = "report.pdf";
+    link.click();
+    return;
+  }
+  const tryPrint = () => {
+    try {
+      win.focus();
+      win.print();
+    } catch {
+      // Some browsers' built-in PDF viewer blocks scripted print() —
+      // the tab is still open with the PDF's own print button available.
+    }
   };
-  // Give the print dialog time to open before tearing the iframe down;
-  // the browser keeps its own reference once printing has started.
-  setTimeout(() => {
-    document.body.removeChild(iframe);
-    URL.revokeObjectURL(blobUrl);
-  }, 60_000);
+  win.addEventListener("load", tryPrint);
+  // The PDF viewer's load event doesn't always fire reliably either;
+  // this is a best-effort second attempt, not the only path to print.
+  setTimeout(tryPrint, 1000);
 }
 
 /**
@@ -258,16 +267,18 @@ export function printDailyReportPdf(report: DailyReport, storeName: string): voi
   printPdfDoc(buildDailyReportPdf(report, storeName));
 }
 
+export type ShareResult = "shared" | "downloaded" | "cancelled";
+
 /**
- * Shares the report via the platform share sheet (Mail, Messages, etc.)
- * when the browser supports sharing files (Web Share API Level 2).
- * Falls back to a plain download so the feature still works everywhere,
- * just without the native share sheet.
+ * Shares a generated PDF via the platform share sheet (Mail, Messages,
+ * etc.) when the browser supports sharing files (Web Share API Level 2).
+ * Falls back to a plain download so sharing still works everywhere,
+ * just without the native share sheet. Shared by both the combined
+ * report and single-card exports.
  */
-export async function shareDailyReportPdf(report: DailyReport, storeName: string): Promise<"shared" | "downloaded" | "cancelled"> {
-  const doc = buildDailyReportPdf(report, storeName);
+async function sharePdfDoc(doc: jsPDF, fileName: string, title: string, text: string): Promise<ShareResult> {
   const blob = doc.output("blob") as Blob;
-  const file = new File([blob], reportFileName(report), { type: "application/pdf" });
+  const file = new File([blob], fileName, { type: "application/pdf" });
 
   const nav = navigator as Navigator & {
     canShare?: (data: { files: File[] }) => boolean;
@@ -276,11 +287,7 @@ export async function shareDailyReportPdf(report: DailyReport, storeName: string
 
   if (nav.canShare?.({ files: [file] }) && nav.share) {
     try {
-      await nav.share({
-        files: [file],
-        title: `${storeName} — Daily Sales Report`,
-        text: `Daily sales report for ${storeName}, generated ${formatDateTime(report.generatedAt)}.`,
-      });
+      await nav.share({ files: [file], title, text });
       return "shared";
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return "cancelled";
@@ -288,8 +295,21 @@ export async function shareDailyReportPdf(report: DailyReport, storeName: string
     }
   }
 
-  doc.save(reportFileName(report));
+  doc.save(fileName);
   return "downloaded";
+}
+
+/**
+ * Shares the combined report via the platform share sheet (Mail,
+ * Messages, etc.) when supported. Falls back to a plain download.
+ */
+export function shareDailyReportPdf(report: DailyReport, storeName: string): Promise<ShareResult> {
+  return sharePdfDoc(
+    buildDailyReportPdf(report, storeName),
+    reportFileName(report),
+    `${storeName} — Daily Sales Report`,
+    `Daily sales report for ${storeName}, generated ${formatDateTime(report.generatedAt)}.`
+  );
 }
 
 // ---------------------------------------------------------------------
@@ -382,4 +402,18 @@ export function downloadCardSectionPdf(section: CardSection, storeName: string, 
 /** Opens the system print dialog for a single dashboard card. */
 export function printCardSectionPdf(section: CardSection, storeName: string, generatedAt: string): void {
   printPdfDoc(buildCardSectionPdf(section, storeName, generatedAt));
+}
+
+/** Shares a single dashboard card's PDF via the platform share sheet, falling back to a download. */
+export function shareCardSectionPdf(
+  section: CardSection,
+  storeName: string,
+  generatedAt: string
+): Promise<ShareResult> {
+  return sharePdfDoc(
+    buildCardSectionPdf(section, storeName, generatedAt),
+    cardFileName(section, generatedAt),
+    `${storeName} — ${section.title}`,
+    `${section.title} for ${storeName}, generated ${formatDateTime(generatedAt)}.`
+  );
 }
