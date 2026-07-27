@@ -7,7 +7,10 @@ import { expect, type Page } from '@playwright/test'
 // /pos (see supabase/migrations/0001_init.sql header for the full setup).
 
 export function uniqueEmail(prefix: string) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`
+  // .test is the IANA-reserved TLD for exactly this purpose (RFC 2606).
+  // example.com looks equally "fake" but Supabase's signup validation
+  // specifically rejects it as invalid, unlike .test addresses.
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@e2e.test`
 }
 
 export const TEST_PASSWORD = 'testpass123'
@@ -28,7 +31,7 @@ export async function registerFreshStore(page: Page, opts?: { storeName?: string
 export async function login(page: Page, email: string, password = TEST_PASSWORD) {
   await page.goto('/login')
   await page.getByLabel('Email address').fill(email)
-  await page.getByLabel('Password').fill(password)
+  await page.getByLabel('Password', { exact: true }).fill(password)
   await page.getByRole('button', { name: 'Log in' }).click()
   await expect(page).toHaveURL(/\/pos/, { timeout: 15_000 })
 }
@@ -50,7 +53,20 @@ export async function addProduct(
   if (product.barcode) {
     await page.getByLabel(/Barcode/).fill(product.barcode)
   }
-  await page.getByLabel('Category').fill(product.category)
+
+  // Category is a dropdown of existing per-store categories (plus a
+  // "+ New category…" option), not free text — pick the existing option
+  // if there is one, otherwise create it inline the way an admin would.
+  const categorySelect = page.getByLabel('Category')
+  const hasCategory = await categorySelect.locator('option', { hasText: product.category }).count()
+  if (hasCategory > 0) {
+    await categorySelect.selectOption({ label: product.category })
+  } else {
+    await categorySelect.selectOption({ label: '+ New category…' })
+    await page.getByPlaceholder('New category name').fill(product.category)
+    await page.getByRole('button', { name: 'Add', exact: true }).click()
+  }
+
   await page.getByLabel('Price').fill(product.price)
   await page.getByLabel('Stock', { exact: true }).fill(product.stock)
   if (product.lowStockThreshold) {
