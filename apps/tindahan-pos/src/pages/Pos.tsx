@@ -13,6 +13,7 @@ import {
 } from "../lib/pos";
 import { packPriceLabel } from "../lib/inventory";
 import { PESO } from "../lib/money";
+import { selectOnFocus } from "../lib/dom";
 import type { CartLine, ServiceLine } from "../lib/types";
 import { CameraIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
@@ -35,7 +36,7 @@ export function Pos() {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [barcodeError, setBarcodeError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [tendered, setTendered] = useState("");
+  const [tendered, setTendered] = useState("0");
   const [lastReceiptTotal, setLastReceiptTotal] = useState<number | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -47,8 +48,8 @@ export function Pos() {
   const [selectedService, setSelectedService] = useState<(typeof SERVICE_TYPES)[number]["key"]>(
     SERVICE_TYPES[0].key
   );
-  const [serviceAmount, setServiceAmount] = useState("");
-  const [serviceFee, setServiceFee] = useState("");
+  const [serviceAmount, setServiceAmount] = useState("0");
+  const [serviceFee, setServiceFee] = useState("0");
 
   const total = useMemo(
     () => cartTotal(cart) + serviceLines.reduce((sum, l) => sum + l.amount + l.fee, 0),
@@ -111,8 +112,8 @@ export function Pos() {
     const service = SERVICE_TYPES.find((s) => s.key === selectedService)!;
     const label = fee > 0 ? `${service.label} ₱${amount} + ₱${fee} fee` : `${service.label} ₱${amount}`;
     setServiceLines((prev) => [...prev, { id: `svc-${Date.now()}`, label, amount, fee }]);
-    setServiceAmount("");
-    setServiceFee("");
+    setServiceAmount("0");
+    setServiceFee("0");
   }
 
   function removeServiceLine(id: string) {
@@ -128,7 +129,7 @@ export function Pos() {
       setLastReceiptTotal(total);
       setCart([]);
       setServiceLines([]);
-      setTendered("");
+      setTendered("0");
       setTimeout(() => setLastReceiptTotal(null), 4000);
     } catch (err) {
       setCheckoutError(err instanceof Error ? err.message : "Could not complete sale.");
@@ -140,7 +141,7 @@ export function Pos() {
   function handleCancelSale() {
     setCart([]);
     setServiceLines([]);
-    setTendered("");
+    setTendered("0");
   }
 
   return (
@@ -370,6 +371,7 @@ export function Pos() {
                     type="number"
                     min="0"
                     value={serviceAmount}
+                    onFocus={selectOnFocus}
                     onChange={(e) => setServiceAmount(e.target.value)}
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />
@@ -383,6 +385,7 @@ export function Pos() {
                     type="number"
                     min="0"
                     value={serviceFee}
+                    onFocus={selectOnFocus}
                     onChange={(e) => setServiceFee(e.target.value)}
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />
@@ -503,6 +506,7 @@ export function Pos() {
             min="0"
             inputMode="decimal"
             value={tendered}
+            onFocus={selectOnFocus}
             onChange={(e) => setTendered(e.target.value)}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
           />
