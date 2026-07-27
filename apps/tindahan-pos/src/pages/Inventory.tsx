@@ -10,6 +10,7 @@ import {
   stockStatus,
 } from "../lib/inventory";
 import { PESO } from "../lib/money";
+import { selectOnFocus } from "../lib/dom";
 import { StockBadge } from "../components/StockBadge";
 import { CameraIcon, TruckIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
@@ -25,13 +26,13 @@ const PAGE_SIZE = 20;
 const emptyForm = {
   name: "",
   barcode: "",
-  price: "",
-  stock: "",
+  price: "0",
+  stock: "0",
   lowStockThreshold: "5",
   categoryId: "",
   packEnabled: false,
-  packQuantity: "",
-  packPrice: "",
+  packQuantity: "0",
+  packPrice: "0",
 };
 
 const NEW_CATEGORY_VALUE = "__new__";
@@ -567,6 +568,7 @@ export function Inventory() {
                         min="2"
                         step="1"
                         value={form.packQuantity}
+                        onFocus={selectOnFocus}
                         onChange={(e) => setForm((f) => ({ ...f, packQuantity: e.target.value }))}
                         className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                       />
@@ -581,6 +583,7 @@ export function Inventory() {
                         min="0"
                         step="0.01"
                         value={form.packPrice}
+                        onFocus={selectOnFocus}
                         onChange={(e) => setForm((f) => ({ ...f, packPrice: e.target.value }))}
                         className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                       />
@@ -592,14 +595,20 @@ export function Inventory() {
                     )}
                   </div>
                 ) : (
-                  <input
-                    id="pprice"
-                    type="number"
-                    min="0"
-                    value={form.price}
-                    onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-                  />
+                  <>
+                    <label htmlFor="pprice" className="sr-only">
+                      Price
+                    </label>
+                    <input
+                      id="pprice"
+                      type="number"
+                      min="0"
+                      value={form.price}
+                      onFocus={selectOnFocus}
+                      onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                    />
+                  </>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -612,6 +621,7 @@ export function Inventory() {
                     type="number"
                     min="0"
                     value={form.stock}
+                    onFocus={selectOnFocus}
                     onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />
@@ -625,6 +635,7 @@ export function Inventory() {
                     type="number"
                     min="0"
                     value={form.lowStockThreshold}
+                    onFocus={selectOnFocus}
                     onChange={(e) => setForm((f) => ({ ...f, lowStockThreshold: e.target.value }))}
                     className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />

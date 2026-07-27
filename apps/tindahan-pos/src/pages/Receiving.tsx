@@ -4,6 +4,7 @@ import { useStoreData } from "../lib/storeData";
 import { receivingTotalCost, stockPreview, type ReceivingLine } from "../lib/inventory";
 import { findProductByBarcode, searchProductsByName } from "../lib/pos";
 import { PESO } from "../lib/money";
+import { selectOnFocus } from "../lib/dom";
 import { CameraIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
 
@@ -13,11 +14,32 @@ const BarcodeScanner = lazy(() =>
 
 const today = () => new Date().toISOString().slice(0, 10);
 
+// Quantity/cost are edited as free-form text while the entry is being
+// built (so backspacing a default "0"/"1" actually clears the field
+// instead of a controlled number input snapping straight back to a
+// coerced value on every keystroke); they're only parsed to numbers for
+// the live preview and on save.
+interface DraftLine {
+  productId: string;
+  productName: string;
+  quantity: string;
+  costEach: string;
+}
+
+function toReceivingLine(line: DraftLine): ReceivingLine {
+  return {
+    productId: line.productId,
+    productName: line.productName,
+    quantity: Number(line.quantity) || 0,
+    costEach: Number(line.costEach) || 0,
+  };
+}
+
 export function Receiving() {
   const { products, receivingHistory, receiveStock } = useStoreData();
   const [supplier, setSupplier] = useState("");
   const [date, setDate] = useState(today());
-  const [lines, setLines] = useState<ReceivingLine[]>([]);
+  const [lines, setLines] = useState<DraftLine[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -33,9 +55,11 @@ export function Receiving() {
     setLines((prev) => {
       const existing = prev.find((l) => l.productId === productId);
       if (existing) {
-        return prev.map((l) => (l.productId === productId ? { ...l, quantity: l.quantity + 1 } : l));
+        return prev.map((l) =>
+          l.productId === productId ? { ...l, quantity: String((Number(l.quantity) || 0) + 1) } : l
+        );
       }
-      return [...prev, { productId, productName, quantity: 1, costEach: 0 }];
+      return [...prev, { productId, productName, quantity: "1", costEach: "0" }];
     });
     setSearchQuery("");
   }
@@ -51,7 +75,7 @@ export function Receiving() {
     addLine(product.id, product.name);
   }
 
-  function updateLine(productId: string, patch: Partial<ReceivingLine>) {
+  function updateLine(productId: string, patch: Partial<DraftLine>) {
     setLines((prev) => prev.map((l) => (l.productId === productId ? { ...l, ...patch } : l)));
   }
 
@@ -61,12 +85,19 @@ export function Receiving() {
 
   async function handleSave() {
     if (lines.length === 0) return;
+    const receivingLines = lines.map(toReceivingLine);
+    const invalid = receivingLines.find((l) => !Number.isInteger(l.quantity) || l.quantity <= 0);
+    if (invalid) {
+      setError(`"${invalid.productName}" needs a quantity of at least 1.`);
+      return;
+    }
+
     setSaving(true);
     setError(null);
     try {
-      await receiveStock(supplier.trim() || "Unspecified supplier", date, lines);
+      await receiveStock(supplier.trim() || "Unspecified supplier", date, receivingLines);
       setSavedMessage(
-        `Saved — ${lines.length} product${lines.length === 1 ? "" : "s"}, ${lines.reduce((s, l) => s + l.quantity, 0)} units.`
+        `Saved — ${lines.length} product${lines.length === 1 ? "" : "s"}, ${receivingLines.reduce((s, l) => s + l.quantity, 0)} units.`
       );
       setLines([]);
       setSupplier("");
@@ -183,7 +214,7 @@ export function Receiving() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {lines.map((line) => {
-                  const preview = stockPreview(products, line.productId, line.quantity);
+                  const preview = stockPreview(products, line.productId, Number(line.quantity) || 0);
                   return (
                     <tr key={line.productId}>
                       <td className="px-3 py-2 font-medium text-slate-800">{line.productName}</td>
@@ -192,9 +223,8 @@ export function Receiving() {
                           type="number"
                           min="1"
                           value={line.quantity}
-                          onChange={(e) =>
-                            updateLine(line.productId, { quantity: Number(e.target.value) || 0 })
-                          }
+                          onFocus={selectOnFocus}
+                          onChange={(e) => updateLine(line.productId, { quantity: e.target.value })}
                           className="w-20 rounded-lg border border-slate-300 px-2 py-1 text-sm"
                         />
                       </td>
@@ -204,9 +234,8 @@ export function Receiving() {
                           min="0"
                           step="0.01"
                           value={line.costEach}
-                          onChange={(e) =>
-                            updateLine(line.productId, { costEach: Number(e.target.value) || 0 })
-                          }
+                          onFocus={selectOnFocus}
+                          onChange={(e) => updateLine(line.productId, { costEach: e.target.value })}
                           className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-sm"
                         />
                       </td>
@@ -230,7 +259,7 @@ export function Receiving() {
             <div className="flex items-center justify-between border-t border-slate-200 px-3 py-2 text-sm">
               <span className="text-slate-500">Total cost</span>
               <span className="tabular-nums font-semibold text-slate-900">
-                {PESO.format(receivingTotalCost(lines))}
+                {PESO.format(receivingTotalCost(lines.map(toReceivingLine)))}
               </span>
             </div>
           </div>
