@@ -283,6 +283,12 @@ export interface Database {
           },
         ];
       };
+      feature_flags: {
+        Row: { key: string; enabled: boolean; description: string; updated_at: string };
+        Insert: { key: string; enabled?: boolean; description?: string; updated_at?: string };
+        Update: { key?: string; enabled?: boolean; description?: string; updated_at?: string };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:perf": "playwright test performance.spec.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.7",
