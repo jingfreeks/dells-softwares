@@ -30,16 +30,22 @@ export function setQuantity(cart: CartLine[], productId: string, quantity: numbe
  * a full pack always totals to an exact amount instead of drifting by a
  * centavo from qty * rounded-per-unit-price. Mirrors checkout_sale()'s
  * server-side math so the cart preview always matches what gets charged.
+ *
+ * `packPricingEnabled` mirrors the `pack_pricing` feature flag that
+ * checkout_sale() itself checks (migration 0008) — pass the flag's
+ * current value through so a disabled flag falls back to regular price
+ * here too, instead of the preview showing pack pricing while the RPC
+ * charges regular price.
  */
-export function lineTotal(product: Product, quantity: number): number {
-  if (product.packQuantity != null && product.packPrice != null) {
+export function lineTotal(product: Product, quantity: number, packPricingEnabled = true): number {
+  if (packPricingEnabled && product.packQuantity != null && product.packPrice != null) {
     return roundMoney((quantity * product.packPrice) / product.packQuantity);
   }
   return roundMoney(product.price * quantity);
 }
 
-export function cartTotal(cart: CartLine[]): number {
-  return cart.reduce((sum, line) => sum + lineTotal(line.product, line.quantity), 0);
+export function cartTotal(cart: CartLine[], packPricingEnabled = true): number {
+  return cart.reduce((sum, line) => sum + lineTotal(line.product, line.quantity, packPricingEnabled), 0);
 }
 
 export function cartItemCount(cart: CartLine[]): number {

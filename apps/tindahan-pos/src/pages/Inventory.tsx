@@ -11,6 +11,7 @@ import {
 } from "../lib/inventory";
 import { PESO } from "../lib/money";
 import { selectOnFocus } from "../lib/dom";
+import { useFeatureFlag } from "../lib/featureFlags";
 import { StockBadge } from "../components/StockBadge";
 import { CameraIcon, TruckIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
@@ -49,6 +50,7 @@ export function Inventory() {
     restock,
     addCategory,
   } = useStoreData();
+  const packPricingEnabled = useFeatureFlag("pack_pricing");
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
   const [showForm, setShowForm] = useState(false);
@@ -182,7 +184,7 @@ export function Inventory() {
     let packQuantity: number | null = null;
     let packPrice: number | null = null;
 
-    if (form.packEnabled) {
+    if (form.packEnabled && packPricingEnabled) {
       packQuantity = Number(form.packQuantity);
       packPrice = Number(form.packPrice);
       if (!Number.isInteger(packQuantity) || packQuantity < 2) {
@@ -349,7 +351,7 @@ export function Inventory() {
                   </td>
                   <td className="tabular-nums px-4 py-3 text-slate-700">
                     {PESO.format(product.price)}
-                    {packPriceLabel(product) && (
+                    {packPricingEnabled && packPriceLabel(product) && (
                       <span className="block text-xs text-slate-400">{packPriceLabel(product)}</span>
                     )}
                   </td>
@@ -546,17 +548,19 @@ export function Inventory() {
               <div>
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-medium text-slate-700">Pricing</label>
-                  <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={form.packEnabled}
-                      onChange={(e) => setForm((f) => ({ ...f, packEnabled: e.target.checked }))}
-                      className="h-4 w-4 rounded border-slate-300"
-                    />
-                    Sell by pack (e.g. 3 pcs for ₱5)
-                  </label>
+                  {packPricingEnabled && (
+                    <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
+                      <input
+                        type="checkbox"
+                        checked={form.packEnabled}
+                        onChange={(e) => setForm((f) => ({ ...f, packEnabled: e.target.checked }))}
+                        className="h-4 w-4 rounded border-slate-300"
+                      />
+                      Sell by pack (e.g. 3 pcs for ₱5)
+                    </label>
+                  )}
                 </div>
-                {form.packEnabled ? (
+                {form.packEnabled && packPricingEnabled ? (
                   <div className="mt-1 grid grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="ppackqty" className="text-xs font-medium text-slate-700">

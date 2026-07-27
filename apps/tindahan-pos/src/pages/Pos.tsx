@@ -12,6 +12,7 @@ import {
   setQuantity,
 } from "../lib/pos";
 import { packPriceLabel } from "../lib/inventory";
+import { useFeatureFlag } from "../lib/featureFlags";
 import { PESO } from "../lib/money";
 import { selectOnFocus } from "../lib/dom";
 import type { CartLine, ServiceLine } from "../lib/types";
@@ -32,6 +33,8 @@ const SERVICE_TYPES = [
 export function Pos() {
   const { user } = useAuth();
   const { products, checkout } = useStoreData();
+  const packPricingEnabled = useFeatureFlag("pack_pricing");
+  const posServicesEnabled = useFeatureFlag("pos_services");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [barcodeInput, setBarcodeInput] = useState("");
   const [barcodeError, setBarcodeError] = useState<string | null>(null);
@@ -52,8 +55,8 @@ export function Pos() {
   const [serviceFee, setServiceFee] = useState("0");
 
   const total = useMemo(
-    () => cartTotal(cart) + serviceLines.reduce((sum, l) => sum + l.amount + l.fee, 0),
-    [cart, serviceLines]
+    () => cartTotal(cart, packPricingEnabled) + serviceLines.reduce((sum, l) => sum + l.amount + l.fee, 0),
+    [cart, serviceLines, packPricingEnabled]
   );
   const searchResults = useMemo(
     () => searchProductsByName(products, searchQuery).slice(0, 6),
@@ -68,6 +71,10 @@ export function Pos() {
     () => (activeCategory === "All" ? quickItems : quickItems.filter((p) => p.category === activeCategory)),
     [quickItems, activeCategory]
   );
+
+  function priceLabel(product: (typeof products)[number]) {
+    return packPricingEnabled ? packPriceLabel(product) : null;
+  }
 
   const tenderedNumber = Number(tendered);
   const change =
@@ -144,6 +151,8 @@ export function Pos() {
     setTendered("0");
   }
 
+  const effectiveTab = posServicesEnabled ? activeTab : "products";
+
   return (
     <div className="grid grid-cols-1 gap-6 p-6 lg:h-full lg:grid-cols-[1fr_360px]">
       <div className="flex flex-col gap-6">
@@ -152,34 +161,36 @@ export function Pos() {
           <p className="text-sm text-slate-500">Scan a barcode, search by name, or tap a quick item.</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setActiveTab("products")}
-              className={`cursor-pointer rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-                activeTab === "products"
-                  ? "bg-[var(--color-brand)] text-white"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              Products
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("services")}
-              className={`cursor-pointer rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-                activeTab === "services"
-                  ? "bg-[var(--color-brand)] text-white"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              Services
-            </button>
+        {posServicesEnabled && (
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setActiveTab("products")}
+                className={`cursor-pointer rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                  effectiveTab === "products"
+                    ? "bg-[var(--color-brand)] text-white"
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                Products
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("services")}
+                className={`cursor-pointer rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                  effectiveTab === "services"
+                    ? "bg-[var(--color-brand)] text-white"
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                Services
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        {activeTab === "products" ? (
+        {effectiveTab === "products" ? (
           <>
             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1">
@@ -281,7 +292,7 @@ export function Pos() {
                           >
                             <span>{product.name}</span>
                             <span className="tabular-nums text-slate-500">
-                              {packPriceLabel(product) ?? PESO.format(product.price)}
+                              {priceLabel(product) ?? PESO.format(product.price)}
                             </span>
                           </button>
                         </li>
@@ -321,7 +332,7 @@ export function Pos() {
                       >
                         <span className="block font-medium text-slate-800">{product.name}</span>
                         <span className="tabular-nums text-xs text-slate-500">
-                          {packPriceLabel(product) ?? PESO.format(product.price)}
+                          {priceLabel(product) ?? PESO.format(product.price)}
                         </span>
                       </button>
                     ))}
@@ -421,8 +432,8 @@ export function Pos() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-800">{line.product.name}</p>
                     <p className="tabular-nums text-xs text-slate-500">
-                      {packPriceLabel(line.product) ?? `${PESO.format(line.product.price)} each`} ·{" "}
-                      {PESO.format(lineTotal(line.product, line.quantity))}
+                      {priceLabel(line.product) ?? `${PESO.format(line.product.price)} each`} ·{" "}
+                      {PESO.format(lineTotal(line.product, line.quantity, packPricingEnabled))}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">

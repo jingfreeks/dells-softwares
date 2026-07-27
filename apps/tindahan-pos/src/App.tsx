@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./lib/auth";
+import { FeatureFlagsProvider } from "./lib/featureFlags";
 import { StoreDataProvider } from "./lib/storeData";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Login } from "./pages/Login";
@@ -13,59 +14,61 @@ import { Receiving } from "./pages/Receiving";
 
 function App() {
   return (
-    <AuthProvider>
-      <StoreDataProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route
-              path="/pos"
-              element={
-                <ProtectedRoute>
-                  <Pos />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/inventory"
-              element={
-                <ProtectedRoute>
-                  <Inventory />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/staff"
-              element={
-                <ProtectedRoute>
-                  <Staff />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/inventory/receiving"
-              element={
-                <ProtectedRoute>
-                  <Receiving />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/" element={<Navigate to="/pos" replace />} />
-            <Route path="*" element={<Navigate to="/pos" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </StoreDataProvider>
-    </AuthProvider>
+    <FeatureFlagsProvider>
+      <AuthProvider>
+        <StoreDataProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route
+                path="/pos"
+                element={
+                  <ProtectedRoute>
+                    <Pos />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/inventory"
+                element={
+                  <ProtectedRoute>
+                    <Inventory />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/staff"
+                element={
+                  <ProtectedRoute>
+                    <Staff />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/inventory/receiving"
+                element={
+                  <ProtectedRoute>
+                    <Receiving />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/" element={<Navigate to="/pos" replace />} />
+              <Route path="*" element={<Navigate to="/pos" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </StoreDataProvider>
+      </AuthProvider>
+    </FeatureFlagsProvider>
   );
 }
 
