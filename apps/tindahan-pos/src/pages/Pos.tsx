@@ -266,7 +266,7 @@ export function Pos() {
                   ))}
                 </div>
               )}
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2 flex max-h-48 flex-wrap gap-2 overflow-y-auto pr-1">
                 {visibleQuickItems.map((product) => (
                   <button
                     key={product.id}
