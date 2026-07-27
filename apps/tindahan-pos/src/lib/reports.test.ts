@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { salesByCategory } from "./reports";
+import { bestSellers, buildDailyReport, isToday, salesByCategory } from "./reports";
 import type { Product, SaleRecord } from "./types";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
@@ -168,5 +168,114 @@ describe("salesByCategory (story E5)", () => {
     ];
     const result = salesByCategory(sales, products);
     expect(result.rows).toEqual([{ category: "Snacks", total: 20 }]);
+  });
+});
+
+function makeSaleItem(overrides: Partial<SaleRecord["items"][number]> = {}): SaleRecord["items"][number] {
+  return {
+    productId: "p1",
+    name: "Item",
+    quantity: 1,
+    price: 10,
+    itemType: "product",
+    fee: 0,
+    lineTotal: 10,
+    ...overrides,
+  };
+}
+
+describe("isToday", () => {
+  const now = new Date("2026-07-27T15:00:00Z");
+
+  it("is true for a timestamp on the same calendar day", () => {
+    expect(isToday("2026-07-27T02:00:00Z", now)).toBe(true);
+  });
+
+  it("is false for a timestamp on a different day", () => {
+    expect(isToday("2026-07-26T23:59:00Z", now)).toBe(false);
+  });
+});
+
+describe("bestSellers (admin daily report)", () => {
+  it("sums quantities per product across sales and sorts highest first", () => {
+    const sales = [
+      makeSale({ items: [makeSaleItem({ productId: "a", name: "A", quantity: 2 })] }),
+      makeSale({ items: [makeSaleItem({ productId: "b", name: "B", quantity: 5 })] }),
+      makeSale({ items: [makeSaleItem({ productId: "a", name: "A", quantity: 1 })] }),
+    ];
+    expect(bestSellers(sales)).toEqual([
+      { name: "B", quantity: 5 },
+      { name: "A", quantity: 3 },
+    ]);
+  });
+
+  it("excludes service line items, which have no product to rank", () => {
+    const sales = [
+      makeSale({
+        items: [
+          makeSaleItem({ productId: "a", name: "A", quantity: 1 }),
+          makeSaleItem({ productId: "", name: "E-Load ₱100", quantity: 1, itemType: "service", fee: 5 }),
+        ],
+      }),
+    ];
+    expect(bestSellers(sales)).toEqual([{ name: "A", quantity: 1 }]);
+  });
+
+  it("caps results at the given limit", () => {
+    const sales = [
+      makeSale({
+        items: [
+          makeSaleItem({ productId: "a", name: "A", quantity: 3 }),
+          makeSaleItem({ productId: "b", name: "B", quantity: 2 }),
+          makeSaleItem({ productId: "c", name: "C", quantity: 1 }),
+        ],
+      }),
+    ];
+    expect(bestSellers(sales, 2)).toEqual([
+      { name: "A", quantity: 3 },
+      { name: "B", quantity: 2 },
+    ]);
+  });
+
+  it("returns an empty list for no sales", () => {
+    expect(bestSellers([])).toEqual([]);
+  });
+});
+
+describe("buildDailyReport (admin PDF/dashboard source of truth)", () => {
+  const now = new Date("2026-07-27T15:00:00Z");
+
+  it("aggregates today's sales, low stock, totals, best sellers, and recent sales", () => {
+    const products = [
+      makeProduct({ id: "low", name: "Low item", stock: 1, lowStockThreshold: 5 }),
+      makeProduct({ id: "ok", name: "OK item", stock: 50, lowStockThreshold: 5 }),
+    ];
+    const sales = [
+      makeSale({
+        id: "today",
+        timestamp: "2026-07-27T10:00:00Z",
+        total: 100,
+        items: [makeSaleItem({ productId: "ok", name: "OK item", quantity: 2, lineTotal: 100 })],
+      }),
+      makeSale({ id: "yesterday", timestamp: "2026-07-26T10:00:00Z", total: 50 }),
+    ];
+
+    const report = buildDailyReport(products, sales, now);
+
+    expect(report.todaysSalesTotal).toBe(100);
+    expect(report.todaysTransactionCount).toBe(1);
+    expect(report.totalProducts).toBe(2);
+    expect(report.lowStock.map((p) => p.id)).toEqual(["low"]);
+    expect(report.bestSellers).toEqual([{ name: "OK item", quantity: 2 }]);
+    expect(report.recentSales.map((s) => s.id)).toEqual(["today", "yesterday"]);
+    expect(report.generatedAt).toBe(now.toISOString());
+  });
+
+  it("caps recent sales at 10 even when there are more", () => {
+    const sales = Array.from({ length: 15 }, (_, i) =>
+      makeSale({ id: `s${i}`, timestamp: "2026-07-27T10:00:00Z" })
+    );
+    const report = buildDailyReport([], sales, now);
+    expect(report.recentSales).toHaveLength(10);
   });
 });
