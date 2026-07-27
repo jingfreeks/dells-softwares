@@ -6,6 +6,7 @@ import type { DailyReport } from "./reports";
 const BRAND: [number, number, number] = [201, 59, 46]; // #c93b2e — matches --color-brand
 const INK: [number, number, number] = [30, 41, 59]; // slate-800
 const MUTED: [number, number, number] = [100, 116, 139]; // slate-500
+const MARGIN = 40;
 
 /**
  * jspdf-autotable v5 dropped `doc.lastAutoTable` — the supported way to
@@ -44,6 +45,77 @@ function formatDateTime(iso: string): string {
   });
 }
 
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function dateStamp(iso: string): string {
+  return new Date(iso).toISOString().slice(0, 10);
+}
+
+/** Draws the shared brand header band and returns the y position to start content at. */
+function drawHeader(doc: jsPDF, storeName: string, subtitle: string, generatedAt: string): number {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  doc.setFillColor(...BRAND);
+  doc.rect(0, 0, pageWidth, 80, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text(storeName, MARGIN, 36);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.text(subtitle, MARGIN, 56);
+  doc.setFontSize(9);
+  doc.text(`Generated ${formatDateTime(generatedAt)}`, pageWidth - MARGIN, 56, { align: "right" });
+  return 104;
+}
+
+/** Draws "<store name>  ·  Page X of Y" on every page of the document. */
+function drawFooter(doc: jsPDF, storeName: string): void {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.setFontSize(8);
+    doc.setTextColor(...MUTED);
+    doc.text(storeName, MARGIN, pageHeight - 20);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth - MARGIN, pageHeight - 20, { align: "right" });
+  }
+}
+
+/**
+ * Opens the system print dialog for a generated PDF — the same dialog
+ * that offers "Save as PDF" and any physical printer already installed,
+ * so one code path covers both "print" and "PDF without downloading
+ * first". Shared by both the combined report and single-card exports.
+ */
+function printPdfDoc(doc: jsPDF): void {
+  const blobUrl = doc.output("bloburl") as unknown as string;
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  iframe.src = blobUrl;
+  document.body.appendChild(iframe);
+  iframe.onload = () => {
+    iframe.contentWindow?.focus();
+    iframe.contentWindow?.print();
+  };
+  // Give the print dialog time to open before tearing the iframe down;
+  // the browser keeps its own reference once printing has started.
+  setTimeout(() => {
+    document.body.removeChild(iframe);
+    URL.revokeObjectURL(blobUrl);
+  }, 60_000);
+}
+
 /**
  * Builds the daily sales report PDF. Kept as a pure function returning a
  * jsPDF instance so callers decide what to do with it — save, print, or
@@ -53,26 +125,13 @@ function formatDateTime(iso: string): string {
 export function buildDailyReportPdf(report: DailyReport, storeName: string): jsPDF {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 40;
-
-  // Header band
-  doc.setFillColor(...BRAND);
-  doc.rect(0, 0, pageWidth, 80, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text(storeName, margin, 36);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.text("Daily Sales Report", margin, 56);
-  doc.setFontSize(9);
-  doc.text(`Generated ${formatDateTime(report.generatedAt)}`, pageWidth - margin, 56, { align: "right" });
+  let cursorY = drawHeader(doc, storeName, "Daily Sales Report", report.generatedAt);
 
   // Stat cards
-  const statY = 104;
+  const statY = cursorY;
   const statH = 58;
   const gap = 12;
-  const statW = (pageWidth - margin * 2 - gap * 3) / 4;
+  const statW = (pageWidth - MARGIN * 2 - gap * 3) / 4;
   const stats: [string, string][] = [
     ["Today's sales", peso(report.todaysSalesTotal)],
     ["Transactions today", String(report.todaysTransactionCount)],
@@ -80,7 +139,7 @@ export function buildDailyReportPdf(report: DailyReport, storeName: string): jsP
     ["Total products", String(report.totalProducts)],
   ];
   stats.forEach(([label, value], i) => {
-    const x = margin + i * (statW + gap);
+    const x = MARGIN + i * (statW + gap);
     doc.setDrawColor(226, 232, 240); // slate-200
     doc.setFillColor(248, 250, 252); // slate-50
     doc.roundedRect(x, statY, statW, statH, 4, 4, "FD");
@@ -94,13 +153,13 @@ export function buildDailyReportPdf(report: DailyReport, storeName: string): jsP
     doc.setFont("helvetica", "normal");
   });
 
-  let cursorY = statY + statH + 28;
+  cursorY = statY + statH + 28;
 
   function sectionTitle(title: string) {
     doc.setTextColor(...INK);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.text(title, margin, cursorY);
+    doc.text(title, MARGIN, cursorY);
     cursorY += 10;
   }
 
@@ -110,7 +169,7 @@ export function buildDailyReportPdf(report: DailyReport, storeName: string): jsP
     cursorY =
       runTable(doc, {
         startY: cursorY,
-        margin: { left: margin, right: margin },
+        margin: { left: MARGIN, right: MARGIN },
         head: [["#", "Product", "Units sold"]],
         body: report.bestSellers.map((item, i) => [String(i + 1), item.name, String(item.quantity)]),
         theme: "striped",
@@ -121,7 +180,7 @@ export function buildDailyReportPdf(report: DailyReport, storeName: string): jsP
   } else {
     doc.setFontSize(9);
     doc.setTextColor(...MUTED);
-    doc.text("No sales recorded yet.", margin, cursorY + 4);
+    doc.text("No sales recorded yet.", MARGIN, cursorY + 4);
     cursorY += 28;
   }
 
@@ -131,7 +190,7 @@ export function buildDailyReportPdf(report: DailyReport, storeName: string): jsP
     cursorY =
       runTable(doc, {
         startY: cursorY,
-        margin: { left: margin, right: margin },
+        margin: { left: MARGIN, right: MARGIN },
         head: [["Product", "Category", "Stock", "Threshold", "Status"]],
         body: report.lowStock.map((p) => [
           p.name,
@@ -153,7 +212,7 @@ export function buildDailyReportPdf(report: DailyReport, storeName: string): jsP
   } else {
     doc.setFontSize(9);
     doc.setTextColor(...MUTED);
-    doc.text("All products are adequately stocked.", margin, cursorY + 4);
+    doc.text("All products are adequately stocked.", MARGIN, cursorY + 4);
     cursorY += 28;
   }
 
@@ -162,7 +221,7 @@ export function buildDailyReportPdf(report: DailyReport, storeName: string): jsP
   if (report.recentSales.length > 0) {
     runTable(doc, {
       startY: cursorY,
-      margin: { left: margin, right: margin },
+      margin: { left: MARGIN, right: MARGIN },
       head: [["Date & time", "Cashier", "Items", "Total"]],
       body: report.recentSales.map((sale) => [
         formatDateTime(sale.timestamp),
@@ -178,26 +237,15 @@ export function buildDailyReportPdf(report: DailyReport, storeName: string): jsP
   } else {
     doc.setFontSize(9);
     doc.setTextColor(...MUTED);
-    doc.text("No sales recorded yet.", margin, cursorY + 4);
+    doc.text("No sales recorded yet.", MARGIN, cursorY + 4);
   }
 
-  // Footer on every page
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setTextColor(...MUTED);
-    doc.text(storeName, margin, pageHeight - 20);
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 20, { align: "right" });
-  }
-
+  drawFooter(doc, storeName);
   return doc;
 }
 
 function reportFileName(report: DailyReport): string {
-  const date = new Date(report.generatedAt).toISOString().slice(0, 10);
-  return `daily-sales-report-${date}.pdf`;
+  return `daily-sales-report-${dateStamp(report.generatedAt)}.pdf`;
 }
 
 /** Triggers a normal browser download of the report as a PDF file. */
@@ -205,33 +253,9 @@ export function downloadDailyReportPdf(report: DailyReport, storeName: string): 
   buildDailyReportPdf(report, storeName).save(reportFileName(report));
 }
 
-/**
- * Opens the system print dialog for the report — the same dialog that
- * offers "Save as PDF" and any physical printer already installed, so
- * one code path covers both "print" and "PDF without downloading first".
- */
+/** Opens the system print dialog for the combined report. */
 export function printDailyReportPdf(report: DailyReport, storeName: string): void {
-  const doc = buildDailyReportPdf(report, storeName);
-  const blobUrl = doc.output("bloburl") as unknown as string;
-  const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  iframe.src = blobUrl;
-  document.body.appendChild(iframe);
-  iframe.onload = () => {
-    iframe.contentWindow?.focus();
-    iframe.contentWindow?.print();
-  };
-  // Give the print dialog time to open before tearing the iframe down;
-  // the browser keeps its own reference once printing has started.
-  setTimeout(() => {
-    document.body.removeChild(iframe);
-    URL.revokeObjectURL(blobUrl);
-  }, 60_000);
+  printPdfDoc(buildDailyReportPdf(report, storeName));
 }
 
 /**
@@ -266,4 +290,96 @@ export async function shareDailyReportPdf(report: DailyReport, storeName: string
 
   doc.save(reportFileName(report));
   return "downloaded";
+}
+
+// ---------------------------------------------------------------------
+// Single-card exports — a focused one-section PDF for a single dashboard
+// card's print icon, instead of the full combined report.
+// ---------------------------------------------------------------------
+
+export interface StatCardSection {
+  kind: "stat";
+  title: string;
+  value: string;
+  hint?: string;
+}
+
+export interface TableCardSection {
+  kind: "table";
+  title: string;
+  head: string[];
+  rows: (string | number)[][];
+  emptyMessage: string;
+  /** Column index whose "Out of stock"-style value should render in red. */
+  dangerColumn?: number;
+  dangerValue?: string;
+}
+
+export type CardSection = StatCardSection | TableCardSection;
+
+function buildCardSectionPdf(section: CardSection, storeName: string, generatedAt: string): jsPDF {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const cursorY = drawHeader(doc, storeName, section.title, generatedAt);
+
+  if (section.kind === "stat") {
+    doc.setDrawColor(226, 232, 240);
+    doc.setFillColor(248, 250, 252);
+    const boxW = pageWidth - MARGIN * 2;
+    doc.roundedRect(MARGIN, cursorY, boxW, 80, 6, 6, "FD");
+    doc.setTextColor(...MUTED);
+    doc.setFontSize(10);
+    doc.text(section.title.toUpperCase(), MARGIN + 16, cursorY + 26);
+    doc.setTextColor(...INK);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(28);
+    doc.text(section.value, MARGIN + 16, cursorY + 58);
+    if (section.hint) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(...MUTED);
+      doc.text(section.hint, MARGIN + 16, cursorY + 74);
+    }
+  } else if (section.rows.length > 0) {
+    autoTable(doc, {
+      startY: cursorY,
+      margin: { left: MARGIN, right: MARGIN },
+      head: [section.head],
+      body: section.rows,
+      theme: "striped",
+      headStyles: { fillColor: BRAND },
+      styles: { fontSize: 9, cellPadding: 6 },
+      didParseCell: (data) => {
+        if (
+          section.dangerColumn !== undefined &&
+          data.section === "body" &&
+          data.column.index === section.dangerColumn &&
+          data.cell.raw === section.dangerValue
+        ) {
+          data.cell.styles.textColor = [185, 28, 28]; // red-700
+        }
+      },
+    });
+  } else {
+    doc.setFontSize(10);
+    doc.setTextColor(...MUTED);
+    doc.text(section.emptyMessage, MARGIN, cursorY + 8);
+  }
+
+  drawFooter(doc, storeName);
+  return doc;
+}
+
+function cardFileName(section: CardSection, generatedAt: string): string {
+  return `${slugify(section.title)}-${dateStamp(generatedAt)}.pdf`;
+}
+
+/** Downloads a single dashboard card's data as its own focused PDF. */
+export function downloadCardSectionPdf(section: CardSection, storeName: string, generatedAt: string): void {
+  buildCardSectionPdf(section, storeName, generatedAt).save(cardFileName(section, generatedAt));
+}
+
+/** Opens the system print dialog for a single dashboard card. */
+export function printCardSectionPdf(section: CardSection, storeName: string, generatedAt: string): void {
+  printPdfDoc(buildCardSectionPdf(section, storeName, generatedAt));
 }
