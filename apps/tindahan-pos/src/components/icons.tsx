@@ -92,6 +92,47 @@ export function TruckIcon({ className }: IconProps) {
   );
 }
 
+export function DocumentReportIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden>
+      <path d="M6 2.5h8l4 4V20a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 20V4a1.5 1.5 0 0 1 1.5-1.5Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14 2.5V7h4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 12.5h8M8 15.5h8M8 18.5h5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function DownloadIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden>
+      <path d="M12 3v12" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 10l5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 19.5h16" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function PrintIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden>
+      <path d="M6 8.5V3h12v5.5" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="3.5" y="8.5" width="17" height="8" rx="1.5" />
+      <path d="M6 15.5V21h12v-5.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function ShareIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden>
+      <circle cx="18" cy="5.5" r="2.3" />
+      <circle cx="6" cy="12" r="2.3" />
+      <circle cx="18" cy="18.5" r="2.3" />
+      <path d="M8 10.7l8-4.2M8 13.3l8 4.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export const NAV_ICONS = {
   pos: PosIcon,
   inventory: InventoryIcon,

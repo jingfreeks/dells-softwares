@@ -1,3 +1,4 @@
+import { lowStockProducts } from "./inventory";
 import type { Product, SaleRecord } from "./types";
 
 export interface CategoryTotal {
@@ -45,4 +46,67 @@ export function salesByCategory(sales: SaleRecord[], products: Product[]): Sales
   const grandTotal = rows.reduce((sum, r) => sum + r.total, 0);
 
   return { rows, grandTotal };
+}
+
+/** True if the given ISO timestamp falls on the same calendar day as `now` (local time). */
+export function isToday(isoString: string, now: Date = new Date()): boolean {
+  const d = new Date(isoString);
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
+  );
+}
+
+export interface BestSeller {
+  name: string;
+  quantity: number;
+}
+
+/** Top-selling products by units sold across the given sales, highest first. */
+export function bestSellers(sales: SaleRecord[], limit = 5): BestSeller[] {
+  const counts = new Map<string, BestSeller>();
+  for (const sale of sales) {
+    for (const item of sale.items) {
+      if (item.itemType !== "product") continue;
+      const entry = counts.get(item.productId) ?? { name: item.name, quantity: 0 };
+      entry.quantity += item.quantity;
+      counts.set(item.productId, entry);
+    }
+  }
+  return Array.from(counts.values())
+    .sort((a, b) => b.quantity - a.quantity)
+    .slice(0, limit);
+}
+
+export interface DailyReport {
+  generatedAt: string;
+  todaysSalesTotal: number;
+  todaysTransactionCount: number;
+  totalProducts: number;
+  lowStock: Product[];
+  bestSellers: BestSeller[];
+  recentSales: SaleRecord[];
+}
+
+/**
+ * Single source of truth for the admin "Daily report" — both the
+ * dashboard cards and the PDF export are built from this, so the two
+ * can never drift apart.
+ */
+export function buildDailyReport(
+  products: Product[],
+  sales: SaleRecord[],
+  now: Date = new Date()
+): DailyReport {
+  const todaysSales = sales.filter((s) => isToday(s.timestamp, now));
+  return {
+    generatedAt: now.toISOString(),
+    todaysSalesTotal: todaysSales.reduce((sum, s) => sum + s.total, 0),
+    todaysTransactionCount: todaysSales.length,
+    totalProducts: products.length,
+    lowStock: lowStockProducts(products),
+    bestSellers: bestSellers(sales),
+    recentSales: sales.slice(0, 10),
+  };
 }
