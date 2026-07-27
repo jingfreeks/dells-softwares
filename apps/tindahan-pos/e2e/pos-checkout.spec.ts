@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { addProduct, registerFreshStore } from './helpers'
+import { addProduct, loginAsFreshStore } from './helpers'
 
 test.describe('POS checkout flow (Epic A)', () => {
-  test.beforeEach(async ({ page }) => {
-    await registerFreshStore(page)
+  test.beforeEach(async ({ page, request }) => {
+    await loginAsFreshStore(request, page)
     await addProduct(page, {
       name: 'Sardines in Tomato Sauce',
       category: 'Canned Goods',
@@ -29,6 +29,7 @@ test.describe('POS checkout flow (Epic A)', () => {
   test('adding a product by search shows it in the cart with the right total (stories A2, A5)', async ({
     page,
   }) => {
+    await page.getByRole('button', { name: 'Search by name' }).click()
     await page.getByPlaceholder('e.g. sardines').fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
 
@@ -40,6 +41,7 @@ test.describe('POS checkout flow (Epic A)', () => {
   })
 
   test('search clears after adding, ready for the next lookup (story A2)', async ({ page }) => {
+    await page.getByRole('button', { name: 'Search by name' }).click()
     const search = page.getByPlaceholder('e.g. sardines')
     await search.fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
@@ -49,6 +51,7 @@ test.describe('POS checkout flow (Epic A)', () => {
   })
 
   test('quantity can be adjusted without rescanning (story A3)', async ({ page }) => {
+    await page.getByRole('button', { name: 'Search by name' }).click()
     await page.getByPlaceholder('e.g. sardines').fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
 
@@ -57,11 +60,13 @@ test.describe('POS checkout flow (Epic A)', () => {
   })
 
   test('a no-barcode quick item (tingi) can be added directly (story A4)', async ({ page }) => {
+    await page.getByRole('button', { name: 'No-barcode quick items' }).click()
     await page.getByRole('button', { name: /Shampoo Sachet \(Tingi\)/ }).click()
     await expect(page.getByLabel('Cart items').getByText('Shampoo Sachet (Tingi)')).toBeVisible()
   })
 
   test('an item can be removed before checkout (story A7)', async ({ page }) => {
+    await page.getByRole('button', { name: 'Search by name' }).click()
     await page.getByPlaceholder('e.g. sardines').fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
     await page.getByRole('button', { name: /Remove Sardines/ }).click()
@@ -72,6 +77,7 @@ test.describe('POS checkout flow (Epic A)', () => {
   test('completing a sale clears the cart and records it on the dashboard (story A6, C5)', async ({
     page,
   }) => {
+    await page.getByRole('button', { name: 'Search by name' }).click()
     await page.getByPlaceholder('e.g. sardines').fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
     await page.getByLabel('Amount tendered').fill('50')
@@ -86,6 +92,7 @@ test.describe('POS checkout flow (Epic A)', () => {
   })
 
   test('the Complete sale button is disabled without sufficient payment', async ({ page }) => {
+    await page.getByRole('button', { name: 'Search by name' }).click()
     await page.getByPlaceholder('e.g. sardines').fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
     await page.getByLabel('Amount tendered').fill('5')
@@ -95,8 +102,8 @@ test.describe('POS checkout flow (Epic A)', () => {
 })
 
 test.describe('Inventory (Epic B)', () => {
-  test.beforeEach(async ({ page }) => {
-    await registerFreshStore(page)
+  test.beforeEach(async ({ page, request }) => {
+    await loginAsFreshStore(request, page)
     await addProduct(page, {
       name: 'Ube Crackers',
       category: 'Snacks & Chips',
@@ -114,7 +121,9 @@ test.describe('Inventory (Epic B)', () => {
   test('a new product can be added and appears in the table (story B1)', async ({ page }) => {
     await page.getByRole('button', { name: 'Add product' }).click()
     await page.getByLabel('Name').fill('Instant Noodles')
-    await page.getByLabel('Category').fill('Canned Goods')
+    // Category is a dropdown of existing per-store categories, not free
+    // text — "Snacks & Chips" already exists from beforeEach's addProduct.
+    await page.getByLabel('Category').selectOption({ label: 'Snacks & Chips' })
     await page.getByLabel('Price').fill('15')
     await page.getByLabel('Stock', { exact: true }).fill('40')
     await page.locator('form').getByRole('button', { name: 'Add product' }).click()
