@@ -38,7 +38,14 @@ test.describe('Login (stories D1-D3)', () => {
     await expect(page).toHaveURL(/\/forgot-password/)
 
     const email = uniqueEmail('reset')
-    await page.getByLabel('Email address').fill(email)
+    const emailInput = page.getByLabel('Email address')
+    await emailInput.fill(email)
+    // Under CPU load (e.g. mid-suite in CI) React's state commit from the
+    // fill()'s input event can still be in flight when the very next
+    // action fires — confirming the controlled input reflects the typed
+    // value first (toHaveValue polls/retries) avoids submitting the form
+    // while its onSubmit closure is still bound to the pre-fill "" state.
+    await expect(emailInput).toHaveValue(email)
     await page.getByRole('button', { name: 'Send reset link' }).click()
     await expect(page.getByRole('status')).toContainText(email)
   })
