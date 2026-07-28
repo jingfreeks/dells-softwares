@@ -1,0 +1,1 @@
+"$(git rev-parse --show-toplevel)/node_modules/.bin/lint-staged"

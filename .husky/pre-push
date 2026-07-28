@@ -1,0 +1,48 @@
+#!/usr/bin/env sh
+# Runs lint + type-check/build + unit tests for whichever app(s) this
+# push actually touches, before the push leaves the machine. Skips e2e
+# on purpose — those hit a real shared Supabase project and have proven
+# too slow/flaky for a blocking local hook (see recent CI history);
+# they stay a CI-only, non-blocking-locally check.
+
+set -e
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+BASE="origin/dev"
+git rev-parse --verify "$BASE" >/dev/null 2>&1 || BASE="$(git merge-base HEAD @{u} 2>/dev/null || echo '')"
+
+if [ -n "$BASE" ] && git rev-parse --verify "$BASE" >/dev/null 2>&1; then
+  CHANGED="$(git diff --name-only "$BASE"...HEAD)"
+else
+  # No usable base to diff against (e.g. pushing dev for the first time) —
+  # fail open and just check everything rather than skip checks silently.
+  CHANGED="apps/tindahan-pos/ apps/dells-sari-sari-store/"
+fi
+
+run_tindahan() {
+  echo "→ tindahan-pos: lint, type-check/build, unit tests"
+  cd "$ROOT/apps/tindahan-pos"
+  "$ROOT/node_modules/.bin/oxlint"
+  "$ROOT/node_modules/.bin/tsc" -b
+  "$ROOT/node_modules/.bin/vite" build
+  "$ROOT/node_modules/.bin/vitest" run
+  cd "$ROOT"
+}
+
+run_sari_sari() {
+  echo "→ dells-sari-sari-store: lint, build"
+  cd "$ROOT/apps/dells-sari-sari-store"
+  "$ROOT/node_modules/.bin/eslint" .
+  "$ROOT/node_modules/.bin/next" build
+  cd "$ROOT"
+}
+
+case "$CHANGED" in
+  *apps/tindahan-pos/*) run_tindahan ;;
+esac
+
+case "$CHANGED" in
+  *apps/dells-sari-sari-store/*) run_sari_sari ;;
+esac
