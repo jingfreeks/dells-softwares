@@ -13,6 +13,6 @@
     "lint-staged": "^17.2.0"
   },
   "scripts": {
-    "prepare": "node node_modules/husky/bin.js"
+    "prepare": "node node_modules/husky/bin.js || true"
   }
 }
