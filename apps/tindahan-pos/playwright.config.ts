@@ -24,7 +24,13 @@ export default defineConfig({
   // it for a POS app where a flaky "is checkout math correct" test is
   // worse than a slower CI run.
   workers: 1,
-  retries: 0,
+  // CI-only: the shared staging Supabase project has repeatedly shown
+  // transient failures under load (rate limiting, a briefly congested
+  // runner) that clear up on their own — a real regression fails
+  // consistently across retries, a transient one doesn't. Local runs
+  // stay at 0 retries so a real bug fails fast instead of hiding behind
+  // 3 slow attempts.
+  retries: process.env.CI ? 2 : 0,
   // 'list' for readable console output either way; 'html' (never
   // auto-opened) so CI can upload it as an artifact for post-mortem —
   // see .github/workflows/tindahan-pos-ci.yml.
