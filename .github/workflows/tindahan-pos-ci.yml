@@ -34,6 +34,16 @@ on:
 # flaking with "email rate limit exceeded", configure a custom SMTP
 # provider in the Supabase project's Auth settings — the built-in one is
 # not meant for CI-level signup volume.
+#
+# The e2e job runs with continue-on-error (see playwright.config.ts for
+# its matching retries: 2 on CI) — this project's shared staging
+# Supabase instance has repeatedly shown transient failures under load
+# (rate limiting, a briefly congested runner) unrelated to the actual
+# code. Results still show up on the PR and in the uploaded report; they
+# just don't block a merge on an external dependency's bad day. Treat a
+# red e2e job as "go look," not "something is broken" — build-and-unit-
+# test (real lint/type/build/unit-test correctness) still blocks
+# normally.
 
 jobs:
   build-and-unit-test:
@@ -70,6 +80,7 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     needs: build-and-unit-test
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
