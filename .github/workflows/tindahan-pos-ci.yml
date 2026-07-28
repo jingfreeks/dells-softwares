@@ -63,6 +63,9 @@ jobs:
       - name: Unit tests
         working-directory: apps/tindahan-pos
         run: npm run test
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.TINDAHAN_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.TINDAHAN_SUPABASE_ANON_KEY }}
 
   e2e:
     runs-on: ubuntu-latest
