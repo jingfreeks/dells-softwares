@@ -7,5 +7,12 @@
   "overrides": {
     "react": "19.2.4",
     "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.2.0"
+  },
+  "scripts": {
+    "prepare": "node node_modules/husky/bin.js || true"
   }
 }

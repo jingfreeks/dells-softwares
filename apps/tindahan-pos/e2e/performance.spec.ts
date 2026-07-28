@@ -112,6 +112,7 @@ test.describe('Performance', () => {
 
   test('POS add-to-cart and cart-update interaction latency', async () => {
     await page.goto('/pos')
+    await page.getByRole('button', { name: 'Search by name' }).click()
 
     const searchAddMs = await timeAction(async () => {
       await page.getByPlaceholder('e.g. sardines').fill('Kopiko')
@@ -136,5 +137,28 @@ test.describe('Performance', () => {
     // about writing another sale into the restored demo data.
     await page.getByRole('button', { name: 'Cancel sale' }).click()
     await expect(page.getByText('Cart is empty')).toBeVisible()
+  })
+
+  test('Daily sales report PDF generation against the real demo catalog', async () => {
+    // Report generation is CPU-bound client-side work (jsPDF/autotable,
+    // lazy-loaded) rather than a network round-trip, so this measures
+    // something perf.spec.ts's other timings don't: how long the browser
+    // spends building a real multi-page PDF from the full demo catalog
+    // (35 products, real sales/low-stock/best-seller data) — not an
+    // empty test store like the e2e reports.spec.ts suite uses.
+    await page.goto('/admin')
+    await expect(page.getByRole('heading', { name: 'Admin dashboard' })).toBeVisible()
+
+    const downloadMs = await timeAction(async () => {
+      const [download] = await Promise.all([
+        page.waitForEvent('download'),
+        page.getByRole('button', { name: 'Download report as PDF' }).click(),
+      ])
+      await download.path()
+    })
+    results['Daily report PDF generation (download)'] = downloadMs
+    expect(downloadMs, 'building and downloading the full report should feel instant (well under 3s)').toBeLessThan(
+      3000
+    )
   })
 })

@@ -93,34 +93,56 @@ function drawFooter(doc: jsPDF, storeName: string): void {
  * so one code path covers both "print" and "PDF without downloading
  * first". Shared by both the combined report and single-card exports.
  */
-function printPdfDoc(doc: jsPDF): void {
+/**
+ * Navigates a window to the generated PDF so the browser's native PDF
+ * viewer shows its own print/save controls (a hidden iframe calling
+ * contentWindow.print() is unreliable — Safari/Firefox silently no-op it
+ * in some cases).
+ *
+ * `targetWindow` must come from a window.open() call made synchronously
+ * inside the click handler, before any `await` — popup permission (and,
+ * separately, a fresh top-level browsing context's ability to load a
+ * blob: URL created by the current page) both depend on still being
+ * within the original user gesture. Generating the PDF is async (the
+ * jsPDF/autotable chunk is lazy-loaded), so by the time this function
+ * runs, that gesture is long gone — opening the window here would
+ * silently produce a window that never navigates anywhere. Callers open
+ * the window first and pass the handle in; if that's missing (popup
+ * blocked outright) this falls back to a direct download.
+ */
+function printPdfDoc(doc: jsPDF, targetWindow: Window | null): void {
   const blobUrl = doc.output("bloburl") as unknown as string;
-  // A hidden 0x0 iframe's contentWindow.print() is unreliable across
-  // browsers (notably Safari and Firefox silently no-op it). Opening the
-  // PDF in its own tab and letting the browser's native PDF viewer show
-  // its own print/save controls works everywhere, including when the
-  // scripted print() call itself would have been blocked.
-  const win = window.open(blobUrl, "_blank");
-  if (!win) {
-    // Popup blocked — fall back to a normal download so the action still
-    // does something instead of silently failing.
+  if (!targetWindow || targetWindow.closed) {
     const link = document.createElement("a");
     link.href = blobUrl;
     link.download = "report.pdf";
     link.click();
     return;
   }
+  // Chromium blocks navigating an already-open window's top-level
+  // document to a blob: URL from the opener's script (a security
+  // restriction against leaking blob URLs across browsing contexts) —
+  // targetWindow.location.href = blobUrl silently no-ops. Loading it as
+  // a subresource of a document written into that same about:blank
+  // window works instead, since the popup still shares the opener's
+  // origin/agent at that point.
+  targetWindow.document.write(
+    `<!DOCTYPE html><html><head><title>Print preview</title></head>` +
+      `<body style="margin:0"><embed src="${blobUrl}" type="application/pdf" ` +
+      `style="width:100%;height:100vh;border:0" /></body></html>`
+  );
+  targetWindow.document.close();
   const tryPrint = () => {
     try {
-      win.focus();
-      win.print();
+      targetWindow.focus();
+      targetWindow.print();
     } catch {
       // Some browsers' built-in PDF viewer blocks scripted print() —
       // the tab is still open with the PDF's own print button available.
     }
   };
-  win.addEventListener("load", tryPrint);
-  // The PDF viewer's load event doesn't always fire reliably either;
+  targetWindow.addEventListener("load", tryPrint);
+  // The embed's own load timing isn't always observable from here;
   // this is a best-effort second attempt, not the only path to print.
   setTimeout(tryPrint, 1000);
 }
@@ -262,9 +284,13 @@ export function downloadDailyReportPdf(report: DailyReport, storeName: string): 
   buildDailyReportPdf(report, storeName).save(reportFileName(report));
 }
 
-/** Opens the system print dialog for the combined report. */
-export function printDailyReportPdf(report: DailyReport, storeName: string): void {
-  printPdfDoc(buildDailyReportPdf(report, storeName));
+/**
+ * Opens the system print dialog for the combined report. `targetWindow`
+ * must be from a `window.open()` called synchronously in the click
+ * handler — see printPdfDoc's doc comment for why.
+ */
+export function printDailyReportPdf(report: DailyReport, storeName: string, targetWindow: Window | null): void {
+  printPdfDoc(buildDailyReportPdf(report, storeName), targetWindow);
 }
 
 export type ShareResult = "shared" | "downloaded" | "cancelled";
@@ -399,9 +425,18 @@ export function downloadCardSectionPdf(section: CardSection, storeName: string, 
   buildCardSectionPdf(section, storeName, generatedAt).save(cardFileName(section, generatedAt));
 }
 
-/** Opens the system print dialog for a single dashboard card. */
-export function printCardSectionPdf(section: CardSection, storeName: string, generatedAt: string): void {
-  printPdfDoc(buildCardSectionPdf(section, storeName, generatedAt));
+/**
+ * Opens the system print dialog for a single dashboard card. `targetWindow`
+ * must be from a `window.open()` called synchronously in the click
+ * handler — see printPdfDoc's doc comment for why.
+ */
+export function printCardSectionPdf(
+  section: CardSection,
+  storeName: string,
+  generatedAt: string,
+  targetWindow: Window | null
+): void {
+  printPdfDoc(buildCardSectionPdf(section, storeName, generatedAt), targetWindow);
 }
 
 /** Shares a single dashboard card's PDF via the platform share sheet, falling back to a download. */

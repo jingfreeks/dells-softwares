@@ -1,0 +1,122 @@
+name: Tindahan POS CI
+
+on:
+  push:
+    branches: [dev, main]
+    paths:
+      - "apps/tindahan-pos/**"
+      - ".github/workflows/tindahan-pos-ci.yml"
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - "apps/tindahan-pos/**"
+      - ".github/workflows/tindahan-pos-ci.yml"
+
+# All of this app's tests run against a real staging Supabase project
+# rather than mocks (see apps/tindahan-pos/e2e/helpers.ts), so this
+# workflow needs these repo secrets configured under Settings → Secrets
+# and variables → Actions:
+#
+#   TINDAHAN_SUPABASE_URL              staging project URL
+#   TINDAHAN_SUPABASE_ANON_KEY         staging project anon/public key
+#   TINDAHAN_SUPABASE_SERVICE_ROLE_KEY staging project service_role key —
+#     used ONLY server-side here (creating/inspecting test accounts and
+#     flag rows via the REST/Admin API), never exposed to a browser.
+#     Required for most of e2e/security.spec.ts, e2e/feature-flags.spec.ts,
+#     and e2e/reports.spec.ts — those suites skip themselves if it's absent.
+#   TINDAHAN_PERF_TEST_EMAIL / TINDAHAN_PERF_TEST_PASSWORD (optional)
+#     an existing staging account for performance.spec.ts to log into;
+#     falls back to a hardcoded staging demo account if unset.
+#
+# One test (login.spec.ts's registration test) still goes through the
+# real public /register form and consumes Supabase's built-in signup
+# email-send quota, which is small by default. If that test starts
+# flaking with "email rate limit exceeded", configure a custom SMTP
+# provider in the Supabase project's Auth settings — the built-in one is
+# not meant for CI-level signup volume.
+#
+# The e2e job is DISABLED for now (`if: false` below) — the shared
+# staging Supabase project's rate limits have made it noisy enough,
+# even with continue-on-error + retries: 2 (see playwright.config.ts),
+# that it wasn't worth the confusion of a red job that's never actually
+# blocking anything. Re-enable by deleting the `if: false` line once
+# either a custom SMTP provider is configured on staging (removes the
+# email-send cap) or e2e gets its own dedicated Supabase project. The
+# suite itself is unchanged and still runs fine locally in the
+# meantime — `cd apps/tindahan-pos && npx playwright test`.
+
+jobs:
+  build-and-unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        working-directory: apps/tindahan-pos
+        run: npm run lint
+
+      - name: Type-check and build
+        working-directory: apps/tindahan-pos
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.TINDAHAN_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.TINDAHAN_SUPABASE_ANON_KEY }}
+
+      - name: Unit tests
+        working-directory: apps/tindahan-pos
+        run: npm run test
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.TINDAHAN_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.TINDAHAN_SUPABASE_ANON_KEY }}
+
+  e2e:
+    if: false
+    runs-on: ubuntu-latest
+    needs: build-and-unit-test
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: apps/tindahan-pos
+        run: npx playwright install --with-deps chromium
+
+      # Covers functional e2e (pos-checkout, login, feature-flags,
+      # reports), performance (performance.spec.ts), and security
+      # (security.spec.ts) in one run — see playwright.config.ts for why
+      # this deliberately runs with a single worker (feature flags are
+      # global state, not per-test).
+      - name: Run Playwright suite
+        working-directory: apps/tindahan-pos
+        run: npx playwright test
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.TINDAHAN_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.TINDAHAN_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TINDAHAN_SUPABASE_SERVICE_ROLE_KEY }}
+          PERF_TEST_EMAIL: ${{ secrets.TINDAHAN_PERF_TEST_EMAIL }}
+          PERF_TEST_PASSWORD: ${{ secrets.TINDAHAN_PERF_TEST_PASSWORD }}
+          CI: true
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/tindahan-pos/playwright-report/
+          retention-days: 14
