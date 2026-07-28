@@ -120,8 +120,21 @@ export async function loginAsFreshStore(
 
 export async function login(page: Page, email: string, password = TEST_PASSWORD) {
   await page.goto('/login')
-  await page.getByLabel('Email address').fill(email)
-  await page.getByLabel('Password', { exact: true }).fill(password)
+  const emailInput = page.getByLabel('Email address')
+  const passwordInput = page.getByLabel('Password', { exact: true })
+  await emailInput.fill(email)
+  await passwordInput.fill(password)
+  // A DOM value check (toHaveValue) confirms the input's raw value, but
+  // these are React-controlled inputs — the browser applies fill()'s
+  // value immediately, while React's own state commit (which is what the
+  // submit handler's closure actually reads) can lag behind under CPU
+  // load, e.g. a busier CI runner. Waiting a tick for React's scheduler
+  // to catch up avoids submitting the form with a stale (empty) email/
+  // password captured in the handler, seen as a "missing email or
+  // phone" alert despite the field visibly having a value.
+  await expect(emailInput).toHaveValue(email)
+  await expect(passwordInput).toHaveValue(password)
+  await page.waitForTimeout(100)
   await page.getByRole('button', { name: 'Log in' }).click()
   await expect(page).toHaveURL(/\/pos/, { timeout: 15_000 })
 }

@@ -40,12 +40,15 @@ test.describe('Login (stories D1-D3)', () => {
     const email = uniqueEmail('reset')
     const emailInput = page.getByLabel('Email address')
     await emailInput.fill(email)
-    // Under CPU load (e.g. mid-suite in CI) React's state commit from the
-    // fill()'s input event can still be in flight when the very next
-    // action fires — confirming the controlled input reflects the typed
-    // value first (toHaveValue polls/retries) avoids submitting the form
-    // while its onSubmit closure is still bound to the pre-fill "" state.
+    // toHaveValue confirms the DOM's raw value, but this is a
+    // React-controlled input — the submit handler's closure reads
+    // React's own committed state, which can still lag behind that DOM
+    // value under CI CPU load. Confirmed via the login() helper hitting
+    // the same class of bug (a "missing email" alert despite the field
+    // visibly being filled) — an explicit tick after the DOM value
+    // check gives React's scheduler a chance to actually catch up.
     await expect(emailInput).toHaveValue(email)
+    await page.waitForTimeout(100)
     await page.getByRole('button', { name: 'Send reset link' }).click()
     await expect(page.getByRole('status')).toContainText(email)
   })
