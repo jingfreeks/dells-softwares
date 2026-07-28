@@ -132,8 +132,13 @@ export async function login(page: Page, email: string, password = TEST_PASSWORD)
   // to catch up avoids submitting the form with a stale (empty) email/
   // password captured in the handler, seen as a "missing email or
   // phone" alert despite the field visibly having a value.
-  await expect(emailInput).toHaveValue(email)
-  await expect(passwordInput).toHaveValue(password)
+  // Generous timeout: on a slow/congested CI runner, this whole file's
+  // other steps (nav, DB round-trips) have been observed taking 2x their
+  // normal time in the same run — 5s default margin isn't always enough
+  // headroom purely from infrastructure variance, independent of any
+  // actual app or test bug.
+  await expect(emailInput).toHaveValue(email, { timeout: 15_000 })
+  await expect(passwordInput).toHaveValue(password, { timeout: 15_000 })
   await page.waitForTimeout(100)
   await page.getByRole('button', { name: 'Log in' }).click()
   await expect(page).toHaveURL(/\/pos/, { timeout: 15_000 })

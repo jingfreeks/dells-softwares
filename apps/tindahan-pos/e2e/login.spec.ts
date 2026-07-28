@@ -47,7 +47,9 @@ test.describe('Login (stories D1-D3)', () => {
     // the same class of bug (a "missing email" alert despite the field
     // visibly being filled) — an explicit tick after the DOM value
     // check gives React's scheduler a chance to actually catch up.
-    await expect(emailInput).toHaveValue(email)
+    // Generous timeout: a congested CI runner has been observed running
+    // this whole suite ~2x slower end to end, independent of any app bug.
+    await expect(emailInput).toHaveValue(email, { timeout: 15_000 })
     await page.waitForTimeout(100)
     await page.getByRole('button', { name: 'Send reset link' }).click()
     await expect(page.getByRole('status')).toContainText(email)
