@@ -5,6 +5,7 @@
 
 export type StaffRole = "admin" | "cashier";
 export type SaleItemType = "product" | "service";
+export type PaymentType = "cash" | "credit";
 
 export interface Database {
   public: {
@@ -129,6 +130,8 @@ export interface Database {
           store_id: string;
           cashier_id: string;
           total: number;
+          customer_id: string | null;
+          payment_type: PaymentType;
           created_at: string;
         };
         Insert: {
@@ -136,6 +139,8 @@ export interface Database {
           store_id: string;
           cashier_id: string;
           total: number;
+          customer_id?: string | null;
+          payment_type?: PaymentType;
           created_at?: string;
         };
         Update: {
@@ -143,6 +148,8 @@ export interface Database {
           store_id?: string;
           cashier_id?: string;
           total?: number;
+          customer_id?: string | null;
+          payment_type?: PaymentType;
           created_at?: string;
         };
         Relationships: [
@@ -156,6 +163,129 @@ export interface Database {
             foreignKeyName: "sales_cashier_id_fkey";
             columns: ["cashier_id"];
             referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "sales_customer_id_fkey";
+            columns: ["customer_id"];
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      customers: {
+        Row: {
+          id: string;
+          store_id: string;
+          name: string;
+          phone: string | null;
+          credit_limit: number | null;
+          balance: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          name: string;
+          phone?: string | null;
+          credit_limit?: number | null;
+          balance?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          name?: string;
+          phone?: string | null;
+          credit_limit?: number | null;
+          balance?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "customers_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      credit_payments: {
+        Row: {
+          id: string;
+          store_id: string;
+          customer_id: string;
+          amount: number;
+          note: string | null;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          customer_id: string;
+          amount: number;
+          note?: string | null;
+          created_by: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          customer_id?: string;
+          amount?: number;
+          note?: string | null;
+          created_by?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "credit_payments_customer_id_fkey";
+            columns: ["customer_id"];
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "credit_payments_created_by_fkey";
+            columns: ["created_by"];
+            referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      suppliers: {
+        Row: {
+          id: string;
+          store_id: string;
+          name: string;
+          phone: string | null;
+          address: string | null;
+          scan_code: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          name: string;
+          phone?: string | null;
+          address?: string | null;
+          scan_code?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          name?: string;
+          phone?: string | null;
+          address?: string | null;
+          scan_code?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
             referencedColumns: ["id"];
           },
         ];
@@ -214,6 +344,7 @@ export interface Database {
           id: string;
           store_id: string;
           supplier: string;
+          supplier_id: string | null;
           received_on: string;
           created_by: string;
           created_at: string;
@@ -222,6 +353,7 @@ export interface Database {
           id?: string;
           store_id: string;
           supplier: string;
+          supplier_id?: string | null;
           received_on: string;
           created_by: string;
           created_at?: string;
@@ -230,6 +362,7 @@ export interface Database {
           id?: string;
           store_id?: string;
           supplier?: string;
+          supplier_id?: string | null;
           received_on?: string;
           created_by?: string;
           created_at?: string;
@@ -239,6 +372,12 @@ export interface Database {
             foreignKeyName: "receiving_entries_store_id_fkey";
             columns: ["store_id"];
             referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "receiving_entries_supplier_id_fkey";
+            columns: ["supplier_id"];
+            referencedRelation: "suppliers";
             referencedColumns: ["id"];
           },
         ];
@@ -296,8 +435,18 @@ export interface Database {
         Args: {
           p_items: { product_id: string; quantity: number }[];
           p_services?: { label: string; amount: number; fee?: number }[];
+          p_customer_id?: string | null;
+          p_payment_type?: PaymentType;
         };
         Returns: { sale_id: string; total: number }[];
+      };
+      record_credit_payment: {
+        Args: {
+          p_customer_id: string;
+          p_amount: number;
+          p_note?: string | null;
+        };
+        Returns: { customer_id: string; new_balance: number }[];
       };
     };
     Enums: {

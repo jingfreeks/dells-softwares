@@ -25,6 +25,8 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     total: 0,
     cashierName: "Cashier",
     items: [],
+    paymentType: "cash",
+    customerId: null,
     ...overrides,
   };
 }

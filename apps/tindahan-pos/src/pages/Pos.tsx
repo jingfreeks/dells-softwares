@@ -12,10 +12,11 @@ import {
   setQuantity,
 } from "../lib/pos";
 import { packPriceLabel } from "../lib/inventory";
+import { wouldExceedCreditLimit } from "../lib/customers";
 import { useFeatureFlag } from "../lib/featureFlags";
 import { PESO } from "../lib/money";
 import { selectOnFocus } from "../lib/dom";
-import type { CartLine, ServiceLine } from "../lib/types";
+import type { CartLine, PaymentType, ServiceLine } from "../lib/types";
 import { CameraIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
 
@@ -32,7 +33,7 @@ const SERVICE_TYPES = [
 
 export function Pos() {
   const { user } = useAuth();
-  const { products, checkout } = useStoreData();
+  const { products, customers, checkout, addCustomer } = useStoreData();
   const packPricingEnabled = useFeatureFlag("pack_pricing");
   const posServicesEnabled = useFeatureFlag("pos_services");
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -40,6 +41,11 @@ export function Pos() {
   const [barcodeError, setBarcodeError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [tendered, setTendered] = useState("0");
+  const [paymentType, setPaymentType] = useState<PaymentType>("cash");
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [addingCustomer, setAddingCustomer] = useState(false);
+  const [customerError, setCustomerError] = useState<string | null>(null);
   const [lastReceiptTotal, setLastReceiptTotal] = useState<number | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -81,6 +87,39 @@ export function Pos() {
     tendered.trim() !== "" && !Number.isNaN(tenderedNumber)
       ? computeChange(total, tenderedNumber)
       : null;
+
+  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId) ?? null;
+  const customerResults = useMemo(() => {
+    const q = customerQuery.trim().toLowerCase();
+    if (!q) return [];
+    return customers.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 6);
+  }, [customers, customerQuery]);
+
+  function selectCustomer(id: string) {
+    setSelectedCustomerId(id);
+    setCustomerQuery("");
+    setCustomerError(null);
+  }
+
+  function clearCustomer() {
+    setSelectedCustomerId(null);
+    setCustomerQuery("");
+  }
+
+  async function handleQuickAddCustomer() {
+    const name = customerQuery.trim();
+    if (!name) return;
+    setAddingCustomer(true);
+    setCustomerError(null);
+    try {
+      const customer = await addCustomer(name);
+      selectCustomer(customer.id);
+    } catch (err) {
+      setCustomerError(err instanceof Error ? err.message : "Could not add customer.");
+    } finally {
+      setAddingCustomer(false);
+    }
+  }
 
   function addByBarcode(barcode: string) {
     const product = findProductByBarcode(products, barcode);
@@ -129,14 +168,20 @@ export function Pos() {
 
   async function handleCompleteSale() {
     if (cart.length === 0 && serviceLines.length === 0) return;
+    if (paymentType === "credit" && !selectedCustomerId) return;
     setCheckingOut(true);
     setCheckoutError(null);
     try {
-      await checkout(cart, serviceLines, user?.name ?? "Cashier");
+      await checkout(cart, serviceLines, user?.name ?? "Cashier", {
+        type: paymentType,
+        customerId: selectedCustomerId,
+      });
       setLastReceiptTotal(total);
       setCart([]);
       setServiceLines([]);
       setTendered("0");
+      setPaymentType("cash");
+      clearCustomer();
       setTimeout(() => setLastReceiptTotal(null), 4000);
     } catch (err) {
       setCheckoutError(err instanceof Error ? err.message : "Could not complete sale.");
@@ -149,6 +194,8 @@ export function Pos() {
     setCart([]);
     setServiceLines([]);
     setTendered("0");
+    setPaymentType("cash");
+    clearCustomer();
   }
 
   const effectiveTab = posServicesEnabled ? activeTab : "products";
@@ -508,23 +555,133 @@ export function Pos() {
             </span>
           </div>
 
-          <label htmlFor="tendered" className="mt-3 block text-xs font-medium text-slate-700">
-            Amount tendered
-          </label>
-          <input
-            id="tendered"
-            type="number"
-            min="0"
-            inputMode="decimal"
-            value={tendered}
-            onFocus={selectOnFocus}
-            onChange={(e) => setTendered(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-          />
-          <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
-            <span>Change</span>
-            <span>{change === null ? "—" : PESO.format(change)}</span>
+          <div className="mt-3 flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentType("cash");
+                clearCustomer();
+              }}
+              className={`flex-1 cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
+                paymentType === "cash"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Cash
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentType("credit")}
+              className={`flex-1 cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
+                paymentType === "credit"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Utang
+            </button>
           </div>
+
+          {paymentType === "cash" ? (
+            <>
+              <label htmlFor="tendered" className="mt-3 block text-xs font-medium text-slate-700">
+                Amount tendered
+              </label>
+              <input
+                id="tendered"
+                type="number"
+                min="0"
+                inputMode="decimal"
+                value={tendered}
+                onFocus={selectOnFocus}
+                onChange={(e) => setTendered(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              />
+              <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
+                <span>Change</span>
+                <span>{change === null ? "—" : PESO.format(change)}</span>
+              </div>
+            </>
+          ) : (
+            <div className="mt-3">
+              {selectedCustomer ? (
+                <>
+                  <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">{selectedCustomer.name}</p>
+                      <p className="text-xs text-slate-500">
+                        Current balance: {PESO.format(selectedCustomer.balance)}
+                        {selectedCustomer.creditLimit !== null &&
+                          ` · limit ${PESO.format(selectedCustomer.creditLimit)}`}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearCustomer}
+                      className="cursor-pointer text-xs font-medium text-[var(--color-brand)] hover:underline"
+                    >
+                      Change
+                    </button>
+                  </div>
+                  {wouldExceedCreditLimit(selectedCustomer, total) && (
+                    <p className="mt-2 text-xs text-amber-600">
+                      This sale would put {selectedCustomer.name} over their{" "}
+                      {PESO.format(selectedCustomer.creditLimit ?? 0)} credit limit — not blocked, just a
+                      heads up.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <label htmlFor="customerSearch" className="text-xs font-medium text-slate-700">
+                    Charge to customer
+                  </label>
+                  <input
+                    id="customerSearch"
+                    type="text"
+                    placeholder="Search by name…"
+                    value={customerQuery}
+                    onChange={(e) => setCustomerQuery(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                  />
+                  {customerResults.length > 0 && (
+                    <ul className="mt-2 divide-y divide-slate-100 rounded-lg border border-slate-100">
+                      {customerResults.map((customer) => (
+                        <li key={customer.id}>
+                          <button
+                            type="button"
+                            onClick={() => selectCustomer(customer.id)}
+                            className="flex w-full cursor-pointer items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
+                          >
+                            <span>{customer.name}</span>
+                            <span className="tabular-nums text-xs text-slate-500">
+                              {PESO.format(customer.balance)}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {customerQuery.trim() !== "" && customerResults.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={handleQuickAddCustomer}
+                      disabled={addingCustomer}
+                      className="mt-2 flex w-full cursor-pointer items-center justify-center rounded-lg border border-dashed border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {addingCustomer ? "Adding…" : `+ Add "${customerQuery.trim()}" as a new customer`}
+                    </button>
+                  )}
+                  {customerError && (
+                    <p role="alert" className="mt-2 text-sm text-red-600">
+                      {customerError}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           {lastReceiptTotal !== null && (
             <p role="status" className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
@@ -557,7 +714,11 @@ export function Pos() {
             <button
               type="button"
               onClick={handleCompleteSale}
-              disabled={(cart.length === 0 && serviceLines.length === 0) || change === null || checkingOut}
+              disabled={
+                (cart.length === 0 && serviceLines.length === 0) ||
+                (paymentType === "cash" ? change === null : !selectedCustomerId) ||
+                checkingOut
+              }
               className="flex-1 cursor-pointer rounded-lg bg-[var(--color-brand)] py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {checkingOut ? "Processing…" : "Complete sale"}

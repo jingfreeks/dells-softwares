@@ -12,6 +12,10 @@ const BARCODE_FORMATS = [
   Html5QrcodeSupportedFormats.CODE_39,
   Html5QrcodeSupportedFormats.CODABAR,
   Html5QrcodeSupportedFormats.ITF,
+  // Supplier records are identified by a printed QR code (see Suppliers.tsx)
+  // rather than a 1D barcode — QR encodes the code far more compactly at a
+  // small printed size. Same shared scanner as product barcodes.
+  Html5QrcodeSupportedFormats.QR_CODE,
 ];
 
 interface BarcodeScannerProps {

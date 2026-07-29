@@ -8,6 +8,12 @@ const NAV_ITEMS_ALL = [
     icon: "inventory" as const,
     roles: ["admin", "cashier"] as Role[],
   },
+  {
+    to: "/customers",
+    label: "Customers",
+    icon: "customers" as const,
+    roles: ["admin", "cashier"] as Role[],
+  },
   { to: "/admin", label: "Admin", icon: "admin" as const, roles: ["admin"] as Role[] },
   { to: "/staff", label: "Staff", icon: "staff" as const, roles: ["admin"] as Role[] },
 ];
