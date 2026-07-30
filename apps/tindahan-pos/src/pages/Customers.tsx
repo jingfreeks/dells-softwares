@@ -121,36 +121,36 @@ export function Customers() {
 
   return (
     <div className="p-6">
-      <h1 className="text-lg font-semibold text-slate-900">Customers</h1>
+      <h1 className="text-xl font-bold tracking-tight text-slate-900">Customers</h1>
       <p className="text-sm text-slate-500">Track utang (credit) balances and payments.</p>
 
       <div className="mt-4 grid grid-cols-2 gap-4 sm:max-w-md">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="card p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Total outstanding</p>
           <p className="tabular-nums mt-2 text-2xl font-semibold text-slate-900">
             {PESO.format(totalOutstanding)}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="card p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Customers</p>
           <p className="tabular-nums mt-2 text-2xl font-semibold text-slate-900">{customers.length}</p>
         </div>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="card">
           <div className="flex items-center justify-between gap-2 border-b border-slate-200 p-4">
             <input
               type="text"
               placeholder="Search by name or phone"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
             />
             <button
               type="button"
               onClick={openAddForm}
-              className="shrink-0 cursor-pointer rounded-lg bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
+              className="shrink-0 cursor-pointer rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
             >
               Add customer
             </button>
@@ -188,7 +188,7 @@ export function Customers() {
         </div>
 
         {showAddForm ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="card p-4">
             <h2 className="text-sm font-semibold text-slate-900">Add customer</h2>
             <form className="mt-4 flex flex-col gap-3" onSubmit={handleAddSubmit} noValidate>
               <div>
@@ -201,7 +201,7 @@ export function Customers() {
                   autoFocus
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                 />
               </div>
               <div>
@@ -213,7 +213,7 @@ export function Customers() {
                   type="tel"
                   value={form.phone}
                   onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                 />
               </div>
               <div>
@@ -228,7 +228,7 @@ export function Customers() {
                   value={form.creditLimit}
                   onFocus={selectOnFocus}
                   onChange={(e) => setForm((f) => ({ ...f, creditLimit: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                 />
                 <p className="mt-1 text-xs text-slate-500">
                   Shown as a reference at checkout — not enforced automatically.
@@ -244,7 +244,7 @@ export function Customers() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="mt-1 flex h-10 cursor-pointer items-center justify-center rounded-lg bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-1 flex h-10 cursor-pointer items-center justify-center rounded-xl bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? "Adding…" : "Add customer"}
               </button>
@@ -252,12 +252,12 @@ export function Customers() {
           </div>
         ) : selected ? (
           <div className="flex flex-col gap-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="card p-4">
               <h2 className="text-sm font-semibold text-slate-900">{selected.name}</h2>
               <p className="text-xs text-slate-500">{selected.phone ?? "No phone on file"}</p>
-              <div className="mt-3 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+              <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
                 <span className="text-xs font-medium text-slate-500">Current balance</span>
-                <span className="tabular-nums text-lg font-semibold text-slate-900">
+                <span className="tabular-nums text-xl font-bold tracking-tight text-slate-900">
                   {PESO.format(selected.balance)}
                 </span>
               </div>
@@ -279,14 +279,14 @@ export function Customers() {
                     value={paymentForm.amount}
                     onFocus={selectOnFocus}
                     onChange={(e) => setPaymentForm((f) => ({ ...f, amount: e.target.value }))}
-                    className="w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                    className="w-28 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />
                   <input
                     type="text"
                     placeholder="Note (optional)"
                     value={paymentForm.note}
                     onChange={(e) => setPaymentForm((f) => ({ ...f, note: e.target.value }))}
-                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                    className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />
                 </div>
                 {paymentError && (
@@ -297,14 +297,14 @@ export function Customers() {
                 <button
                   type="submit"
                   disabled={recordingPayment}
-                  className="mt-1 flex h-10 cursor-pointer items-center justify-center rounded-lg bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-1 flex h-10 cursor-pointer items-center justify-center rounded-xl bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {recordingPayment ? "Recording…" : "Record payment"}
                 </button>
               </form>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="card">
               <div className="border-b border-slate-200 p-4">
                 <h2 className="text-sm font-semibold text-slate-900">Payment history</h2>
               </div>

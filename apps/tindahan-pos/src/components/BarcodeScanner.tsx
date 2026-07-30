@@ -94,7 +94,7 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
             type="button"
             onClick={onClose}
             aria-label="Close scanner"
-            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
+            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden>
               <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
@@ -110,7 +110,7 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
           <>
             <div
               id={SCAN_ELEMENT_ID}
-              className="mt-3 overflow-hidden rounded-lg bg-slate-900"
+              className="mt-3 overflow-hidden rounded-xl bg-slate-900"
             />
             <p className="mt-3 text-center text-xs text-slate-500">
               Point the camera at a barcode. It scans automatically.

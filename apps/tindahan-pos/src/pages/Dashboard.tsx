@@ -102,18 +102,18 @@ export function Dashboard() {
 
   return (
     <div className="p-6">
-      <h1 className="text-lg font-semibold text-slate-900">Admin dashboard</h1>
+      <h1 className="text-xl font-bold tracking-tight text-slate-900">Admin dashboard</h1>
       <p className="text-sm text-slate-500">Today's snapshot for the store.</p>
 
       {error && (
-        <div role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
-      <div className="mt-4 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-4 flex flex-col gap-3 card p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-brand)]/10 text-[var(--color-brand)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand)]/10 text-[var(--color-brand)]">
             <DocumentReportIcon className="h-5 w-5" />
           </div>
           <div>
@@ -131,7 +131,7 @@ export function Dashboard() {
             disabled={reportAction !== null}
             aria-label="Download report as PDF"
             title="Download PDF"
-            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <DownloadIcon className="h-5 w-5" />
           </button>
@@ -141,7 +141,7 @@ export function Dashboard() {
             disabled={reportAction !== null}
             aria-label="Print report"
             title="Print"
-            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <PrintIcon className="h-5 w-5" />
           </button>
@@ -151,7 +151,7 @@ export function Dashboard() {
             disabled={reportAction !== null}
             aria-label="Share report"
             title="Share"
-            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg bg-[var(--color-brand)] text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl bg-[var(--color-brand)] text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ShareIcon className="h-5 w-5" />
           </button>
@@ -212,7 +212,7 @@ export function Dashboard() {
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-6">
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="card">
             <SectionCardHeader
               title="Recent sales"
               {...cardActions({
@@ -259,7 +259,7 @@ export function Dashboard() {
             </ul>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="card">
             <SectionCardHeader
               title="Low stock alerts"
               {...cardActions({
@@ -302,7 +302,7 @@ export function Dashboard() {
         </div>
 
         <div className="flex flex-col gap-6">
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="card">
             <SectionCardHeader
               title="Best sellers"
               {...cardActions({
@@ -329,7 +329,7 @@ export function Dashboard() {
             </ul>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="card">
             <SectionCardHeader
               title="Sales by category"
               {...cardActions({
@@ -365,24 +365,24 @@ export function Dashboard() {
             </ul>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="card p-4">
             <h2 className="text-sm font-semibold text-slate-900">Quick actions</h2>
             <div className="mt-3 flex flex-col gap-2">
               <Link
                 to="/pos"
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 Start a sale
               </Link>
               <Link
                 to="/inventory"
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 Manage inventory
               </Link>
               <Link
                 to="/staff"
-                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 Manage staff
               </Link>
