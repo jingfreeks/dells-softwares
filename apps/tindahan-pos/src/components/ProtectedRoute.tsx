@@ -10,7 +10,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50">
+      <div className="flex h-screen items-center justify-center bg-[var(--color-canvas)]">
         <div
           role="status"
           aria-label="Loading"
@@ -25,8 +25,10 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-slate-50 lg:flex-row">
-      <Sidebar />
+    <div className="flex h-screen flex-col bg-[var(--color-canvas)] lg:flex-row lg:gap-3 lg:p-3">
+      <div className="shrink-0 overflow-hidden lg:rounded-2xl lg:shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_32px_-18px_rgba(201,59,46,0.22)]">
+        <Sidebar />
+      </div>
       <div className="flex min-h-0 flex-1 flex-col">
         <MobileHeader />
         <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">{children}</main>

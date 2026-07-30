@@ -15,7 +15,7 @@ export function MobileHeader() {
         type="button"
         onClick={logout}
         aria-label="Log out"
-        className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
+        className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100"
       >
         <LogoutIcon className="h-5 w-5" />
       </button>

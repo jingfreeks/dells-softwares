@@ -253,13 +253,13 @@ export function Inventory() {
     <div className="p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">Inventory</h1>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">Inventory</h1>
           <p className="text-sm text-slate-500">{products.length} products tracked.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
             to="/inventory/receiving"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="flex items-center gap-1.5 rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             <TruckIcon className="h-4 w-4" />
             Receive stock
@@ -270,14 +270,14 @@ export function Inventory() {
           <button
             type="button"
             onClick={() => setShowCategoryManager(true)}
-            className="cursor-pointer rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="cursor-pointer rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             Categories
           </button>
           <button
             type="button"
             onClick={openAddForm}
-            className="cursor-pointer rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)]"
+            className="cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)]"
           >
             Add product
           </button>
@@ -285,13 +285,13 @@ export function Inventory() {
       </div>
 
       {(error || actionError) && (
-        <div role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error ?? actionError}
         </div>
       )}
 
       {!loading && lowStock.length > 0 && (
-        <div role="alert" className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div role="alert" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           {lowStock.length} product{lowStock.length === 1 ? "" : "s"} running low or out of stock —{" "}
           {lowStock.map((p) => p.name).join(", ")}.
         </div>
@@ -303,12 +303,12 @@ export function Inventory() {
           placeholder="Search by name, category, or barcode"
           value={query}
           onChange={(e) => handleQueryChange(e.target.value)}
-          className="w-full max-w-sm rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+          className="w-full max-w-sm rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
         />
         <select
           value={categoryFilter}
           onChange={(e) => handleCategoryFilterChange(e.target.value)}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+          className="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
         >
           <option value="All">All categories</option>
           {categories.map((c) => (
@@ -319,7 +319,7 @@ export function Inventory() {
         </select>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="mt-4 overflow-x-auto card">
         <table className="w-full text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
             <tr>
@@ -408,7 +408,7 @@ export function Inventory() {
               type="button"
               onClick={() => setPage(Math.max(1, currentPage - 1))}
               disabled={currentPage <= 1}
-              className="cursor-pointer rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="cursor-pointer rounded-xl border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Previous
             </button>
@@ -419,7 +419,7 @@ export function Inventory() {
               type="button"
               onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage >= totalPages}
-              className="cursor-pointer rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="cursor-pointer rounded-xl border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Next
             </button>
@@ -443,7 +443,7 @@ export function Inventory() {
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                 />
               </div>
               <div>
@@ -460,13 +460,13 @@ export function Inventory() {
                       setForm((f) => ({ ...f, barcode: value }));
                       checkDuplicateBarcode(value);
                     }}
-                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                    className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm font-mono focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />
                   <button
                     type="button"
                     onClick={() => setShowScanner(true)}
                     aria-label="Scan with camera"
-                    className="flex h-[38px] w-10 cursor-pointer items-center justify-center rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100"
+                    className="flex h-[38px] w-10 cursor-pointer items-center justify-center rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100"
                   >
                     <CameraIcon className="h-4 w-4" />
                   </button>
@@ -474,7 +474,7 @@ export function Inventory() {
                 {duplicateProduct && (
                   <div
                     role="alert"
-                    className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+                    className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
                   >
                     This barcode is already used by <strong>{duplicateProduct.name}</strong>.{" "}
                     <button
@@ -509,19 +509,19 @@ export function Inventory() {
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreateCategory())}
-                      className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                      className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                     />
                     <button
                       type="button"
                       onClick={handleCreateCategory}
-                      className="cursor-pointer rounded-lg bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
+                      className="cursor-pointer rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
                     >
                       Add
                     </button>
                     <button
                       type="button"
                       onClick={() => setAddingCategory(false)}
-                      className="cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                      className="cursor-pointer rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
                     >
                       Cancel
                     </button>
@@ -531,7 +531,7 @@ export function Inventory() {
                     id="pcategory"
                     value={form.categoryId}
                     onChange={(e) => handleCategorySelect(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   >
                     <option value="" disabled>
                       Choose a category…
@@ -574,7 +574,7 @@ export function Inventory() {
                         value={form.packQuantity}
                         onFocus={selectOnFocus}
                         onChange={(e) => setForm((f) => ({ ...f, packQuantity: e.target.value }))}
-                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                        className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                       />
                     </div>
                     <div>
@@ -589,7 +589,7 @@ export function Inventory() {
                         value={form.packPrice}
                         onFocus={selectOnFocus}
                         onChange={(e) => setForm((f) => ({ ...f, packPrice: e.target.value }))}
-                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                        className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                       />
                     </div>
                     {packPreview !== null && (
@@ -610,7 +610,7 @@ export function Inventory() {
                       value={form.price}
                       onFocus={selectOnFocus}
                       onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                      className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                     />
                   </>
                 )}
@@ -627,7 +627,7 @@ export function Inventory() {
                     value={form.stock}
                     onFocus={selectOnFocus}
                     onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />
                 </div>
                 <div>
@@ -641,7 +641,7 @@ export function Inventory() {
                     value={form.lowStockThreshold}
                     onFocus={selectOnFocus}
                     onChange={(e) => setForm((f) => ({ ...f, lowStockThreshold: e.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />
                 </div>
               </div>
@@ -656,14 +656,14 @@ export function Inventory() {
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="cursor-pointer rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="cursor-pointer rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting || !!duplicateProduct}
-                  className="cursor-pointer rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? "Saving…" : editingId ? "Save changes" : "Add product"}
                 </button>

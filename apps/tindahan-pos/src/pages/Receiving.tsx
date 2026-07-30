@@ -132,7 +132,7 @@ export function Receiving() {
     <div className="p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">Receive stock</h1>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">Receive stock</h1>
           <p className="text-sm text-slate-500">
             Record new supply from a delivery.{" "}
             <Link to="/inventory" className="underline">
@@ -143,13 +143,13 @@ export function Receiving() {
         </div>
         <Link
           to="/suppliers"
-          className="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className="shrink-0 rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           Manage suppliers
         </Link>
       </div>
 
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mt-6 card p-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="supplier" className="text-xs font-medium text-slate-700">
@@ -168,14 +168,14 @@ export function Receiving() {
                   setSupplierId(null);
                 }}
                 placeholder="e.g. Mega Distribution"
-                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
               />
               <button
                 type="button"
                 onClick={() => setScanMode("supplier")}
                 aria-label="Scan supplier code"
                 title="Scan supplier code"
-                className="flex h-[38px] w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100"
+                className="flex h-[38px] w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100"
               >
                 <ScanIcon className="h-4 w-4" />
               </button>
@@ -193,7 +193,7 @@ export function Receiving() {
                     setSupplierId(null);
                   }
                 }}
-                className="mt-1.5 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600 focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600 focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
               >
                 <option value="">…or pick a saved supplier</option>
                 {suppliers.map((s) => (
@@ -213,7 +213,7 @@ export function Receiving() {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
             />
           </div>
         </div>
@@ -229,20 +229,20 @@ export function Receiving() {
               placeholder="Search by name…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
             />
             <button
               type="button"
               onClick={() => setScanMode("product")}
               aria-label="Scan item"
-              className="flex items-center gap-1.5 rounded-lg bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
+              className="flex items-center gap-1.5 rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
             >
               <CameraIcon className="h-4 w-4" />
               Scan item
             </button>
           </div>
           {searchResults.length > 0 && (
-            <ul className="mt-2 divide-y divide-slate-100 rounded-lg border border-slate-100">
+            <ul className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-100">
               {searchResults.map((product) => (
                 <li key={product.id}>
                   <button
@@ -266,7 +266,7 @@ export function Receiving() {
         )}
 
         {lines.length > 0 && (
-          <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200">
+          <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
             <table className="w-full text-sm">
               <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
                 <tr>
@@ -290,7 +290,7 @@ export function Receiving() {
                           value={line.quantity}
                           onFocus={selectOnFocus}
                           onChange={(e) => updateLine(line.productId, { quantity: e.target.value })}
-                          className="w-20 rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                          className="w-20 rounded-xl border border-slate-300 px-2 py-1 text-sm"
                         />
                       </td>
                       <td className="px-3 py-2">
@@ -301,7 +301,7 @@ export function Receiving() {
                           value={line.costEach}
                           onFocus={selectOnFocus}
                           onChange={(e) => updateLine(line.productId, { costEach: e.target.value })}
-                          className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                          className="w-24 rounded-xl border border-slate-300 px-2 py-1 text-sm"
                         />
                       </td>
                       <td className="tabular-nums px-3 py-2 font-medium text-[var(--color-brand)]">
@@ -331,7 +331,7 @@ export function Receiving() {
         )}
 
         {savedMessage && (
-          <p role="status" className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          <p role="status" className="mt-4 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
             {savedMessage}
           </p>
         )}
@@ -340,13 +340,13 @@ export function Receiving() {
           type="button"
           onClick={handleSave}
           disabled={lines.length === 0 || saving}
-          className="mt-4 cursor-pointer rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-40"
+          className="mt-4 cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {saving ? "Saving…" : "Save receiving entry"}
         </button>
       </div>
 
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="mt-6 card">
         <div className="border-b border-slate-200 p-4">
           <h2 className="text-sm font-semibold text-slate-900">Recent receiving history</h2>
         </div>

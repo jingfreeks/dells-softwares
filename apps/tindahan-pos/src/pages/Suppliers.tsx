@@ -119,19 +119,19 @@ export function Suppliers() {
 
   return (
     <div className="p-6">
-      <h1 className="text-lg font-semibold text-slate-900">Suppliers</h1>
+      <h1 className="text-xl font-bold tracking-tight text-slate-900">Suppliers</h1>
       <p className="text-sm text-slate-500">
         Manage suppliers and print a scannable code for quick selection during receiving.
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="card">
           <div className="flex items-center justify-between border-b border-slate-200 p-4">
             <h2 className="text-sm font-semibold text-slate-900">Suppliers</h2>
             <button
               type="button"
               onClick={openAddForm}
-              className="cursor-pointer rounded-lg bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
+              className="cursor-pointer rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
             >
               Add supplier
             </button>
@@ -161,7 +161,7 @@ export function Suppliers() {
         </div>
 
         {showForm ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="card p-4">
             <h2 className="text-sm font-semibold text-slate-900">
               {editingId ? "Edit supplier" : "Add supplier"}
             </h2>
@@ -176,7 +176,7 @@ export function Suppliers() {
                   autoFocus
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                 />
               </div>
               <div>
@@ -188,7 +188,7 @@ export function Suppliers() {
                   type="tel"
                   value={form.phone}
                   onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                 />
               </div>
               <div>
@@ -200,7 +200,7 @@ export function Suppliers() {
                   type="text"
                   value={form.address}
                   onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                 />
               </div>
 
@@ -213,14 +213,14 @@ export function Suppliers() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="mt-1 flex h-10 cursor-pointer items-center justify-center rounded-lg bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-1 flex h-10 cursor-pointer items-center justify-center rounded-xl bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? "Saving…" : editingId ? "Save changes" : "Add supplier"}
               </button>
             </form>
           </div>
         ) : selected ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="card p-4">
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-sm font-semibold text-slate-900">{selected.name}</h2>
@@ -236,7 +236,7 @@ export function Suppliers() {
               </button>
             </div>
 
-            <div className="mt-4 flex flex-col items-center rounded-lg bg-slate-50 p-4">
+            <div className="mt-4 flex flex-col items-center rounded-xl bg-slate-50 p-4">
               {qrDataUrl ? (
                 <img src={qrDataUrl} alt={`Scan code for ${selected.name}`} className="h-40 w-40" />
               ) : (
@@ -249,7 +249,7 @@ export function Suppliers() {
                 type="button"
                 onClick={handlePrint}
                 disabled={!qrDataUrl}
-                className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <PrintIcon className="h-4 w-4" />
                 Print code

@@ -17,7 +17,7 @@ export function CardActionIcons({ title, onDownload, onPrint, onShare }: CardAct
           onClick={onDownload}
           aria-label={`Download ${title} as PDF`}
           title="Download PDF"
-          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600"
         >
           <DownloadIcon className="h-4 w-4" />
         </button>
@@ -28,7 +28,7 @@ export function CardActionIcons({ title, onDownload, onPrint, onShare }: CardAct
           onClick={onPrint}
           aria-label={`Print ${title}`}
           title="Print"
-          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600"
         >
           <PrintIcon className="h-4 w-4" />
         </button>
@@ -39,7 +39,7 @@ export function CardActionIcons({ title, onDownload, onPrint, onShare }: CardAct
           onClick={onShare}
           aria-label={`Share ${title}`}
           title="Share"
-          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600"
         >
           <ShareIcon className="h-4 w-4" />
         </button>
