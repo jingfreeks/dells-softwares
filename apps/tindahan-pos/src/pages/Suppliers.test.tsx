@@ -126,10 +126,16 @@ describe("Suppliers", () => {
     });
   });
 
-  it("prints the supplier's QR code", async () => {
+  it("prints the supplier's QR code by building the print document via DOM APIs", async () => {
     const user = userEvent.setup();
+    // A real (detached) Document, not a hand-rolled mock — handlePrint now
+    // builds the print window via createElement/textContent rather than
+    // document.write(), specifically so a supplier name can never be
+    // interpreted as markup. Exercising the real DOM APIs here catches a
+    // regression back to the unsafe pattern.
+    const fakeDoc = document.implementation.createHTMLDocument("");
     const openSpy = vi.spyOn(window, "open").mockReturnValue({
-      document: { write: vi.fn(), close: vi.fn() },
+      document: fakeDoc,
       focus: vi.fn(),
       print: vi.fn(),
     } as unknown as Window);
@@ -142,6 +148,35 @@ describe("Suppliers", () => {
     await user.click(screen.getByRole("button", { name: "Print code" }));
 
     expect(openSpy).toHaveBeenCalledWith("", "_blank");
+    expect(fakeDoc.title).toBe("Mega Distribution — Supplier code");
+    expect(fakeDoc.body.textContent).toContain("Mega Distribution");
+    expect(fakeDoc.querySelector("img")?.getAttribute("alt")).toBe("Scan code for Mega Distribution");
+    openSpy.mockRestore();
+  });
+
+  it("escapes a supplier name containing markup instead of injecting it", async () => {
+    const user = userEvent.setup();
+    const maliciousSuppliers = [
+      makeSupplier({ id: "s9", name: '<img src=x onerror="window.__pwned=true">' }),
+    ];
+    const fakeDoc = document.implementation.createHTMLDocument("");
+    const openSpy = vi.spyOn(window, "open").mockReturnValue({
+      document: fakeDoc,
+      focus: vi.fn(),
+      print: vi.fn(),
+    } as unknown as Window);
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ role: "admin" }) }));
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ suppliers: maliciousSuppliers }));
+    renderPage();
+
+    await user.click(screen.getByText('<img src=x onerror="window.__pwned=true">'));
+    await screen.findByAltText('Scan code for <img src=x onerror="window.__pwned=true">');
+    await user.click(screen.getByRole("button", { name: "Print code" }));
+
+    // The malicious name must render as inert text, not as a second <img>
+    // element with an onerror handler.
+    expect(fakeDoc.querySelectorAll("img")).toHaveLength(1);
+    expect(fakeDoc.body.textContent).toContain('<img src=x onerror="window.__pwned=true">');
     openSpy.mockRestore();
   });
 

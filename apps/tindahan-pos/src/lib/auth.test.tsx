@@ -45,8 +45,8 @@ function Probe() {
             storeName: "Dell's",
             ownerName: "Nena",
             email: "nena@example.com",
-            password: "secret1",
-            confirmPassword: "secret1",
+            password: "secret123",
+            confirmPassword: "secret123",
           })
         }
       >
@@ -175,8 +175,8 @@ describe("AuthProvider", () => {
               storeName: "",
               ownerName: "Nena",
               email: "a@b.com",
-              password: "secret1",
-              confirmPassword: "secret1",
+              password: "secret123",
+              confirmPassword: "secret123",
             }))
           }
         >
@@ -222,7 +222,7 @@ describe("AuthProvider", () => {
     );
     screen.getByText("go").click();
     await waitFor(() =>
-      expect(result).toEqual({ ok: false, error: "Password must be at least 6 characters." })
+      expect(result).toEqual({ ok: false, error: "Password must be at least 8 characters." })
     );
   });
 
@@ -238,8 +238,8 @@ describe("AuthProvider", () => {
               storeName: "Dell's",
               ownerName: "Nena",
               email: "a@b.com",
-              password: "secret1",
-              confirmPassword: "secret2",
+              password: "secret123",
+              confirmPassword: "secret234",
             }))
           }
         >
@@ -269,8 +269,8 @@ describe("AuthProvider", () => {
               storeName: "Dell's",
               ownerName: "Nena",
               email: "a@b.com",
-              password: "secret1",
-              confirmPassword: "secret1",
+              password: "secret123",
+              confirmPassword: "secret123",
             }))
           }
         >
@@ -303,8 +303,8 @@ describe("AuthProvider", () => {
               storeName: "Dell's",
               ownerName: "Nena",
               email: "a@b.com",
-              password: "secret1",
-              confirmPassword: "secret1",
+              password: "secret123",
+              confirmPassword: "secret123",
             }))
           }
         >

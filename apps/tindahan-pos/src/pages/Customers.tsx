@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useLocation } from "react-router-dom";
 import { useStoreData } from "../lib/storeData";
 import { PESO } from "../lib/money";
 import { selectOnFocus } from "../lib/dom";
@@ -9,7 +10,21 @@ const emptyPaymentForm = { amount: "0", note: "" };
 
 export function Customers() {
   const { customers, addCustomer, recordCreditPayment, fetchCreditPayments } = useStoreData();
-  const [query, setQuery] = useState("");
+  const location = useLocation();
+  const [query, setQuery] = useState(
+    () => (location.state as { initialQuery?: string } | null)?.initialQuery ?? ""
+  );
+
+  // The topbar's quick search navigates here with a query in
+  // location.state rather than a URL param, so a second search from the
+  // dashboard while already on this page (same route, new state) needs
+  // its own effect — the useState initializer above only runs once, on
+  // mount.
+  useEffect(() => {
+    const initialQuery = (location.state as { initialQuery?: string } | null)?.initialQuery;
+    if (initialQuery) setQuery(initialQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
