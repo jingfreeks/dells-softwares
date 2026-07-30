@@ -77,6 +77,19 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.TINDAHAN_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.TINDAHAN_SUPABASE_ANON_KEY }}
 
+      # Non-blocking (continue-on-error) so a new advisory doesn't silently
+      # gate every PR forever if there's no fix available yet — surfaced in
+      # the Actions log for a human to triage instead. Scoped to this
+      # workspace so dells-sari-sari-store's separate dependency tree
+      # doesn't produce noise here. As of this writing the one open finding
+      # is react-router's RSC-mode CSRF advisory (GHSA-qwww-vcr4-c8h2, no
+      # fix in the 7.x line yet) — not exploitable here since this app uses
+      # plain client-side routing, never RSC/framework mode.
+      - name: Dependency audit
+        working-directory: apps/tindahan-pos
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
   e2e:
     if: false
     runs-on: ubuntu-latest
