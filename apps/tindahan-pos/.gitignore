@@ -25,6 +25,9 @@ supabase/.temp
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+/coverage/
+# reportPdf tests exercise jsPDF's real save(), which writes actual files
+*.pdf
 
 # Editor directories and files
 .vscode/*
