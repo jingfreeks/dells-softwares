@@ -1,5 +1,5 @@
-import { lazy, Suspense, useMemo, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useStoreData } from "../lib/storeData";
 import {
   buildBarcodeIndex,
@@ -51,7 +51,10 @@ export function Inventory() {
     addCategory,
   } = useStoreData();
   const packPricingEnabled = useFeatureFlag("pack_pricing");
-  const [query, setQuery] = useState("");
+  const location = useLocation();
+  const [query, setQuery] = useState(
+    () => (location.state as { initialQuery?: string } | null)?.initialQuery ?? ""
+  );
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
   const [showForm, setShowForm] = useState(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
@@ -65,6 +68,20 @@ export function Inventory() {
   const [showScanner, setShowScanner] = useState(false);
   const [duplicateProduct, setDuplicateProduct] = useState<Product | null>(null);
   const [page, setPage] = useState(1);
+
+  // The topbar's quick search navigates here with a query in
+  // location.state rather than a URL param, so a second search from the
+  // dashboard while already on this page (same route, new state) needs
+  // its own effect — the useState initializer above only runs once, on
+  // mount.
+  useEffect(() => {
+    const initialQuery = (location.state as { initialQuery?: string } | null)?.initialQuery;
+    if (initialQuery) {
+      setQuery(initialQuery);
+      setPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
 
   const lowStock = useMemo(() => lowStockProducts(products), [products]);
   const filtered = useMemo(() => {

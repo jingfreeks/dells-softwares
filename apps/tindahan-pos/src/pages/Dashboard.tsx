@@ -6,6 +6,7 @@ import { stockStatus } from "../lib/inventory";
 import { STORE_NAME } from "../lib/mockData";
 import { PESO } from "../lib/money";
 import { StatCard } from "../components/StatCard";
+import { Topbar } from "../components/Topbar";
 import { SectionCardHeader } from "../components/SectionCardHeader";
 import type { CardActions } from "../components/CardActionIcons";
 import { DocumentReportIcon, DownloadIcon, PrintIcon, ShareIcon } from "../components/icons";
@@ -102,7 +103,9 @@ export function Dashboard() {
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-bold tracking-tight text-slate-900">Admin dashboard</h1>
+      <Topbar />
+
+      <h1 className="mt-6 text-xl font-bold tracking-tight text-slate-900">Admin dashboard</h1>
       <p className="text-sm text-slate-500">Today's snapshot for the store.</p>
 
       {error && (
