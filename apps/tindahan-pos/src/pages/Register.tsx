@@ -114,7 +114,7 @@ export function Register() {
                 type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
                 required
-                minLength={6}
+                minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 px-3 py-2 pr-10 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
@@ -128,7 +128,7 @@ export function Register() {
                 {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
               </button>
             </div>
-            <p className="mt-1 text-xs text-slate-500">At least 6 characters.</p>
+            <p className="mt-1 text-xs text-slate-500">At least 8 characters.</p>
           </div>
           <div>
             <label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">

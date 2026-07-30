@@ -52,8 +52,8 @@ export function Staff() {
       setFormError("Name and email are required.");
       return;
     }
-    if (form.password.length < 6) {
-      setFormError("Password must be at least 6 characters.");
+    if (form.password.length < 8) {
+      setFormError("Password must be at least 8 characters.");
       return;
     }
 
@@ -199,12 +199,12 @@ export function Staff() {
                 id="staffPassword"
                 type="password"
                 autoComplete="new-password"
-                minLength={6}
+                minLength={8}
                 value={form.password}
                 onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                 className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
               />
-              <p className="mt-1 text-xs text-slate-500">At least 6 characters.</p>
+              <p className="mt-1 text-xs text-slate-500">At least 8 characters.</p>
             </div>
 
             {formError && (
