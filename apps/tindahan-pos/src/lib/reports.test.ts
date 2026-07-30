@@ -14,6 +14,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     category: "Misc",
     packQuantity: null,
     packPrice: null,
+    imageUrl: null,
     ...overrides,
   };
 }

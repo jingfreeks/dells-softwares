@@ -91,14 +91,25 @@ describe("Register", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("already exists");
   });
 
-  it("toggles password visibility for both password fields", async () => {
+  it("toggles password visibility independently for password and confirm password", async () => {
     const user = userEvent.setup();
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null }));
     renderRegister();
 
     const passwordInput = screen.getByLabelText("Password") as HTMLInputElement;
+    const confirmInput = screen.getByLabelText("Confirm password") as HTMLInputElement;
     expect(passwordInput.type).toBe("password");
+    expect(confirmInput.type).toBe("password");
+
     await user.click(screen.getByRole("button", { name: "Show password" }));
     expect(passwordInput.type).toBe("text");
+    expect(confirmInput.type).toBe("password");
+
+    await user.click(screen.getByRole("button", { name: "Show confirm password" }));
+    expect(confirmInput.type).toBe("text");
+
+    await user.click(screen.getByRole("button", { name: "Hide password" }));
+    expect(passwordInput.type).toBe("password");
+    expect(confirmInput.type).toBe("text");
   });
 });

@@ -13,6 +13,7 @@ import { Staff } from "./pages/Staff";
 import { Receiving } from "./pages/Receiving";
 import { Customers } from "./pages/Customers";
 import { Suppliers } from "./pages/Suppliers";
+import { Profile } from "./pages/Profile";
 
 function App() {
   return (
@@ -77,6 +78,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Suppliers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
                   </ProtectedRoute>
                 }
               />

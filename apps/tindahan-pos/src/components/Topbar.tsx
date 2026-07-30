@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useStoreData } from "../lib/storeData";
 import { SearchIcon } from "./icons";
@@ -130,15 +130,22 @@ export function Topbar() {
         )}
       </form>
 
-      <div className="flex shrink-0 items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-brand)]/10 text-sm font-bold text-[var(--color-brand)]">
-          {user?.name?.charAt(0).toUpperCase() ?? "?"}
-        </span>
+      <Link
+        to="/profile"
+        className="flex shrink-0 items-center gap-3 rounded-xl px-1 py-1 hover:bg-slate-50"
+      >
+        {user?.avatarUrl ? (
+          <img src={user.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
+        ) : (
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-brand)]/10 text-sm font-bold text-[var(--color-brand)]">
+            {user?.name?.charAt(0).toUpperCase() ?? "?"}
+          </span>
+        )}
         <div className="min-w-0 text-right">
           <p className="truncate text-sm font-semibold text-slate-800">{user?.name}</p>
           {user?.role && <p className="text-xs capitalize text-slate-400">{user.role}</p>}
         </div>
-      </div>
+      </Link>
     </div>
   );
 }

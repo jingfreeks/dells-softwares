@@ -22,6 +22,7 @@ interface AuthContextValue {
   }) => Promise<RegisterResult>;
   logout: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<AuthResult>;
+  updateProfile: (patch: { name?: string; phone?: string | null; avatarUrl?: string | null }) => Promise<AuthResult>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -29,7 +30,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
   const { data, error } = await supabase
     .from("staff")
-    .select("id, store_id, name, email, role")
+    .select("id, store_id, name, email, role, avatar_url, phone")
     .eq("id", userId)
     .single();
 
@@ -41,6 +42,8 @@ async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
     name: data.name,
     email: data.email,
     role: data.role,
+    avatarUrl: data.avatar_url,
+    phone: data.phone,
   };
 }
 
@@ -146,9 +149,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
+  async function updateProfile(patch: {
+    name?: string;
+    phone?: string | null;
+    avatarUrl?: string | null;
+  }): Promise<AuthResult> {
+    if (!user) return { ok: false, error: "Not signed in." };
+    const { error } = await supabase
+      .from("staff")
+      .update({
+        ...(patch.name !== undefined && { name: patch.name }),
+        ...(patch.phone !== undefined && { phone: patch.phone }),
+        ...(patch.avatarUrl !== undefined && { avatar_url: patch.avatarUrl }),
+      })
+      .eq("id", user.id);
+    if (error) return { ok: false, error: error.message };
+    const profile = await loadStaffProfile(user.id);
+    setUser(profile);
+    return { ok: true };
+  }
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, requestPasswordReset }}
+      value={{ user, loading, login, register, logout, requestPasswordReset, updateProfile }}
     >
       {children}
     </AuthContext.Provider>
