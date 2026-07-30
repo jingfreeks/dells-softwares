@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { useStoreData } from "../lib/storeData";
 import { makeCreditPayment, makeCustomer, makeStoreDataValue } from "../test/testUtils";
 import { Customers } from "./Customers";
@@ -17,10 +18,18 @@ async function submitAddForm(user: ReturnType<typeof userEvent.setup>) {
   await user.click(buttons[buttons.length - 1]);
 }
 
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <Customers />
+    </MemoryRouter>
+  );
+}
+
 describe("Customers", () => {
   it("shows total outstanding balance and customer count", () => {
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ customers }));
-    render(<Customers />);
+    renderPage();
     expect(screen.getByText("Total outstanding")).toBeInTheDocument();
     const totals = screen.getAllByText("₱300.00");
     expect(totals.length).toBeGreaterThan(0);
@@ -30,7 +39,7 @@ describe("Customers", () => {
   it("filters the customer list by search query", async () => {
     const user = userEvent.setup();
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ customers }));
-    render(<Customers />);
+    renderPage();
 
     await user.type(screen.getByPlaceholderText("Search by name or phone"), "Jose");
     expect(screen.getByText("Mang Jose")).toBeInTheDocument();
@@ -40,14 +49,14 @@ describe("Customers", () => {
   it("shows an empty state when no customers match", async () => {
     const user = userEvent.setup();
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ customers }));
-    render(<Customers />);
+    renderPage();
     await user.type(screen.getByPlaceholderText("Search by name or phone"), "nobody");
     expect(screen.getByText('No customers match "nobody".')).toBeInTheDocument();
   });
 
   it("shows a top-level empty state with no customers at all", () => {
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ customers: [] }));
-    render(<Customers />);
+    renderPage();
     expect(screen.getByText("No customers yet.")).toBeInTheDocument();
   });
 
@@ -58,7 +67,7 @@ describe("Customers", () => {
     vi.mocked(useStoreData).mockReturnValue(
       makeStoreDataValue({ customers, addCustomer, fetchCreditPayments })
     );
-    render(<Customers />);
+    renderPage();
 
     await user.click(screen.getByRole("button", { name: "Add customer" }));
     await user.type(screen.getByLabelText("Name"), "Bimbo");
@@ -71,7 +80,7 @@ describe("Customers", () => {
   it("shows a validation error when the add form name is blank", async () => {
     const user = userEvent.setup();
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ customers: [] }));
-    render(<Customers />);
+    renderPage();
 
     await user.click(screen.getByRole("button", { name: "Add customer" }));
     await submitAddForm(user);
@@ -82,7 +91,7 @@ describe("Customers", () => {
   it("shows a validation error for a negative credit limit", async () => {
     const user = userEvent.setup();
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ customers: [] }));
-    render(<Customers />);
+    renderPage();
 
     await user.click(screen.getByRole("button", { name: "Add customer" }));
     await user.type(screen.getByLabelText("Name"), "Bimbo");
@@ -96,7 +105,7 @@ describe("Customers", () => {
     const user = userEvent.setup();
     const addCustomer = vi.fn().mockRejectedValue(new Error("Network error"));
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ customers: [], addCustomer }));
-    render(<Customers />);
+    renderPage();
 
     await user.click(screen.getByRole("button", { name: "Add customer" }));
     await user.type(screen.getByLabelText("Name"), "Bimbo");
@@ -111,7 +120,7 @@ describe("Customers", () => {
     vi.mocked(useStoreData).mockReturnValue(
       makeStoreDataValue({ customers, fetchCreditPayments })
     );
-    render(<Customers />);
+    renderPage();
 
     await user.click(screen.getByText("Mang Jose"));
     expect(await screen.findByText("Current balance")).toBeInTheDocument();
@@ -126,7 +135,7 @@ describe("Customers", () => {
     vi.mocked(useStoreData).mockReturnValue(
       makeStoreDataValue({ customers, fetchCreditPayments })
     );
-    render(<Customers />);
+    renderPage();
     await user.click(screen.getByText("Mang Jose"));
     expect(await screen.findByText("No payments recorded yet.")).toBeInTheDocument();
   });
@@ -138,7 +147,7 @@ describe("Customers", () => {
     vi.mocked(useStoreData).mockReturnValue(
       makeStoreDataValue({ customers, recordCreditPayment, fetchCreditPayments })
     );
-    render(<Customers />);
+    renderPage();
 
     await user.click(screen.getByText("Mang Jose"));
     await screen.findByText("Current balance");
@@ -158,7 +167,7 @@ describe("Customers", () => {
     vi.mocked(useStoreData).mockReturnValue(
       makeStoreDataValue({ customers, fetchCreditPayments })
     );
-    render(<Customers />);
+    renderPage();
 
     await user.click(screen.getByText("Mang Jose"));
     await screen.findByText("Current balance");
@@ -177,7 +186,7 @@ describe("Customers", () => {
     vi.mocked(useStoreData).mockReturnValue(
       makeStoreDataValue({ customers, recordCreditPayment, fetchCreditPayments })
     );
-    render(<Customers />);
+    renderPage();
 
     await user.click(screen.getByText("Mang Jose"));
     await screen.findByText("Current balance");
@@ -191,7 +200,7 @@ describe("Customers", () => {
 
   it("shows a placeholder when nothing is selected", () => {
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ customers }));
-    render(<Customers />);
+    renderPage();
     expect(screen.getByText("Select a customer to view their balance and record a payment.")).toBeInTheDocument();
   });
 
@@ -201,7 +210,7 @@ describe("Customers", () => {
     vi.mocked(useStoreData).mockReturnValue(
       makeStoreDataValue({ customers, fetchCreditPayments })
     );
-    render(<Customers />);
+    renderPage();
     await user.click(screen.getByText("Mang Jose"));
     expect(await screen.findByText(/Credit limit: ₱500\.00/)).toBeInTheDocument();
   });

@@ -1,11 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { useAuth } from "../lib/auth";
 import { useStoreData } from "../lib/storeData";
-import { makeProduct, makeSaleRecord, makeStoreDataValue } from "../test/testUtils";
+import { makeAuthValue, makeProduct, makeSaleRecord, makeStoreDataValue } from "../test/testUtils";
 import { Dashboard } from "./Dashboard";
 
+vi.mock("../lib/auth", () => ({ useAuth: vi.fn() }));
 vi.mock("../lib/storeData", () => ({ useStoreData: vi.fn() }));
 
 const downloadDailyReportPdf = vi.fn();
@@ -35,6 +37,10 @@ function renderPage() {
 }
 
 describe("Dashboard", () => {
+  beforeEach(() => {
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue());
+  });
+
   it("shows a loading skeleton while data loads", () => {
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ loading: true }));
     renderPage();
