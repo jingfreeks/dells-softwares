@@ -5,7 +5,7 @@
 
 export type StaffRole = "admin" | "cashier";
 export type SaleItemType = "product" | "service";
-export type PaymentType = "cash" | "credit";
+export type PaymentType = "cash" | "credit" | "qr";
 
 export interface Database {
   public: {
@@ -132,6 +132,7 @@ export interface Database {
           total: number;
           customer_id: string | null;
           payment_type: PaymentType;
+          reference_no: string | null;
           created_at: string;
         };
         Insert: {
@@ -141,6 +142,7 @@ export interface Database {
           total: number;
           customer_id?: string | null;
           payment_type?: PaymentType;
+          reference_no?: string | null;
           created_at?: string;
         };
         Update: {
@@ -150,6 +152,7 @@ export interface Database {
           total?: number;
           customer_id?: string | null;
           payment_type?: PaymentType;
+          reference_no?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -437,6 +440,7 @@ export interface Database {
           p_services?: { label: string; amount: number; fee?: number }[];
           p_customer_id?: string | null;
           p_payment_type?: PaymentType;
+          p_reference_no?: string | null;
         };
         Returns: { sale_id: string; total: number }[];
       };

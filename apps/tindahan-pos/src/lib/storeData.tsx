@@ -36,6 +36,8 @@ export interface CheckoutPayment {
   type: PaymentType;
   /** Required when type is "credit" — which customer's utang this sale is charged to. */
   customerId?: string | null;
+  /** Required when type is "qr" — the GCash/Maya transaction number the cashier read off their phone. */
+  referenceNo?: string;
 }
 
 interface StoreDataContextValue {
@@ -148,7 +150,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     const { data, error: err } = await supabase
       .from("sales")
       .select(
-        "id, created_at, total, customer_id, payment_type, staff:cashier_id(name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)"
+        "id, created_at, total, customer_id, payment_type, reference_no, staff:cashier_id(name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)"
       )
       .order("created_at", { ascending: false })
       .limit(100);
@@ -164,6 +166,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
           cashierName: cashierName ?? "Unknown",
           paymentType: row.payment_type,
           customerId: row.customer_id,
+          referenceNo: row.reference_no,
           items: (row.sale_items ?? []).map((item) => ({
             productId: item.product_id ?? "",
             name: item.name,
@@ -351,11 +354,15 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     if (payment.type === "credit" && !payment.customerId) {
       throw new Error("A customer is required for a credit sale.");
     }
+    if (payment.type === "qr" && !payment.referenceNo?.trim()) {
+      throw new Error("A reference number is required for a QR payment.");
+    }
     const { data, error: err } = await supabase.rpc("checkout_sale", {
       p_items: cart.map((line) => ({ product_id: line.product.id, quantity: line.quantity })),
       p_services: services.map((line) => ({ label: line.label, amount: line.amount, fee: line.fee })),
       p_customer_id: payment.type === "credit" ? payment.customerId : null,
       p_payment_type: payment.type,
+      p_reference_no: payment.type === "qr" ? payment.referenceNo!.trim() : null,
     });
     if (err) throw err;
     const result = data?.[0];
@@ -397,6 +404,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       cashierName,
       paymentType: payment.type,
       customerId: payment.type === "credit" ? (payment.customerId ?? null) : null,
+      referenceNo: payment.type === "qr" ? (payment.referenceNo?.trim() ?? null) : null,
     };
   }
 
