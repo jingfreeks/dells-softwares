@@ -6,6 +6,8 @@ export interface StaffAccount {
   name: string;
   email: string;
   role: Role;
+  avatarUrl: string | null;
+  phone: string | null;
 }
 
 export interface Category {
@@ -25,6 +27,7 @@ export interface Product {
   /** Pack pricing (e.g. "3 pcs for ₱5"). Both set together or both null. */
   packQuantity: number | null;
   packPrice: number | null;
+  imageUrl: string | null;
 }
 
 export interface CartLine {

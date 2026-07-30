@@ -48,7 +48,7 @@ interface StoreDataContextValue {
   suppliers: Supplier[];
   loading: boolean;
   error: string | null;
-  addProduct: (product: Omit<Product, "id" | "category">) => Promise<void>;
+  addProduct: (product: Omit<Product, "id" | "category">) => Promise<Product>;
   updateProduct: (id: string, patch: Partial<Omit<Product, "category">>) => Promise<void>;
   removeProduct: (id: string) => Promise<void>;
   restock: (id: string, quantity: number) => Promise<void>;
@@ -92,6 +92,7 @@ function mapProductRow(row: {
   category_id: string;
   pack_quantity: number | null;
   pack_price: number | null;
+  image_url: string | null;
   categories: { name: string } | { name: string }[] | null;
 }): Product {
   const cat = Array.isArray(row.categories) ? row.categories[0] : row.categories;
@@ -106,6 +107,7 @@ function mapProductRow(row: {
     category: cat?.name ?? "Uncategorized",
     packQuantity: row.pack_quantity,
     packPrice: row.pack_price,
+    imageUrl: row.image_url,
   };
 }
 
@@ -131,7 +133,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     const { data, error: err } = await supabase
       .from("products")
       .select(
-        "id, barcode, name, price, stock, low_stock_threshold, category_id, pack_quantity, pack_price, categories(name)"
+        "id, barcode, name, price, stock, low_stock_threshold, category_id, pack_quantity, pack_price, image_url, categories(name)"
       )
       .order("name");
     if (err) throw err;
@@ -291,21 +293,27 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     return data.store_id;
   }
 
-  async function addProduct(product: Omit<Product, "id" | "category">) {
+  async function addProduct(product: Omit<Product, "id" | "category">): Promise<Product> {
     const storeId = await currentStoreId();
-    const { error: err } = await supabase.from("products").insert({
-      store_id: storeId,
-      barcode: product.barcode,
-      name: product.name,
-      price: product.price,
-      stock: product.stock,
-      low_stock_threshold: product.lowStockThreshold,
-      category_id: product.categoryId,
-      pack_quantity: product.packQuantity,
-      pack_price: product.packPrice,
-    });
+    const { data, error: err } = await supabase
+      .from("products")
+      .insert({
+        store_id: storeId,
+        barcode: product.barcode,
+        name: product.name,
+        price: product.price,
+        stock: product.stock,
+        low_stock_threshold: product.lowStockThreshold,
+        category_id: product.categoryId,
+        pack_quantity: product.packQuantity,
+        pack_price: product.packPrice,
+        image_url: product.imageUrl,
+      })
+      .select("id, barcode, name, price, stock, low_stock_threshold, category_id, pack_quantity, pack_price, image_url, categories(name)")
+      .single();
     if (err) throw friendlyProductError(err);
     await fetchProducts();
+    return mapProductRow(data);
   }
 
   async function updateProduct(id: string, patch: Partial<Omit<Product, "category">>) {
@@ -322,6 +330,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         ...(patch.categoryId !== undefined && { category_id: patch.categoryId }),
         ...(patch.packQuantity !== undefined && { pack_quantity: patch.packQuantity }),
         ...(patch.packPrice !== undefined && { pack_price: patch.packPrice }),
+        ...(patch.imageUrl !== undefined && { image_url: patch.imageUrl }),
       })
       .eq("id", id);
     if (err) throw friendlyProductError(err);

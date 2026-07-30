@@ -23,6 +23,8 @@ export interface Database {
           name: string;
           email: string;
           role: StaffRole;
+          avatar_url: string | null;
+          phone: string | null;
           created_at: string;
         };
         Insert: {
@@ -31,6 +33,8 @@ export interface Database {
           name: string;
           email: string;
           role?: StaffRole;
+          avatar_url?: string | null;
+          phone?: string | null;
           created_at?: string;
         };
         Update: {
@@ -39,6 +43,8 @@ export interface Database {
           name?: string;
           email?: string;
           role?: StaffRole;
+          avatar_url?: string | null;
+          phone?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -76,6 +82,7 @@ export interface Database {
           category_id: string;
           pack_quantity: number | null;
           pack_price: number | null;
+          image_url: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -91,6 +98,7 @@ export interface Database {
           category_id: string;
           pack_quantity?: number | null;
           pack_price?: number | null;
+          image_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -106,6 +114,7 @@ export interface Database {
           category_id?: string;
           pack_quantity?: number | null;
           pack_price?: number | null;
+          image_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };

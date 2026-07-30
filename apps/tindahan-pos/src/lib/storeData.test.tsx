@@ -314,10 +314,26 @@ describe("StoreDataProvider", () => {
   });
 
   it("adds a product", async () => {
+    tableResults.products.single = {
+      data: {
+        id: "p-new",
+        barcode: "999",
+        name: "Bread",
+        price: 40,
+        stock: 10,
+        low_stock_threshold: 5,
+        category_id: "cat1",
+        pack_quantity: null,
+        pack_price: null,
+        image_url: null,
+        categories: { name: "Baked" },
+      },
+      error: null,
+    };
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
 
-    await captured!.addProduct({
+    const created = await captured!.addProduct({
       barcode: "999",
       name: "Bread",
       price: 40,
@@ -326,7 +342,9 @@ describe("StoreDataProvider", () => {
       categoryId: "cat1",
       packQuantity: null,
       packPrice: null,
+      imageUrl: null,
     });
+    expect(created.id).toBe("p-new");
     expect(mockedSupabase.from).toHaveBeenCalledWith("products");
   });
 
@@ -334,8 +352,11 @@ describe("StoreDataProvider", () => {
     tableResults.products.single = { data: null, error: null };
     const chain = makeChain("products");
     chain.insert = vi.fn(() => ({
-      then: (resolve: (v: unknown) => void) =>
-        Promise.resolve({ error: { code: "23505", message: "duplicate key" } }).then(resolve),
+      select: vi.fn(() => ({
+        single: vi.fn(() =>
+          Promise.resolve({ data: null, error: { code: "23505", message: "duplicate key" } })
+        ),
+      })),
     }));
     mockedSupabase.from.mockImplementation((table: string) => (table === "products" ? chain : makeChain(table)));
     renderProvider(<Capture />);
@@ -351,6 +372,7 @@ describe("StoreDataProvider", () => {
         categoryId: "cat1",
         packQuantity: null,
         packPrice: null,
+        imageUrl: null,
       })
     ).rejects.toThrow("That barcode is already used by another product.");
   });
@@ -436,7 +458,7 @@ describe("StoreDataProvider", () => {
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
 
-    const product = { id: "p1", barcode: null, name: "Sardines", price: 25, stock: 20, lowStockThreshold: 5, categoryId: "cat1", category: "Canned", packQuantity: null, packPrice: null };
+    const product = { id: "p1", barcode: null, name: "Sardines", price: 25, stock: 20, lowStockThreshold: 5, categoryId: "cat1", category: "Canned", packQuantity: null, packPrice: null, imageUrl: null };
     const sale = await captured!.checkout([{ product, quantity: 2 }], [], "Aling Nena");
     expect(sale.total).toBe(50);
     expect(sale.paymentType).toBe("cash");

@@ -1,6 +1,9 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../lib/auth";
 import { useStoreData } from "../lib/storeData";
+import { supabase } from "../lib/supabaseClient";
+import { uploadImage, validateAndOptimizeImage } from "../lib/imageUpload";
 import {
   buildBarcodeIndex,
   findDuplicateBarcodeFast,
@@ -13,10 +16,12 @@ import { PESO } from "../lib/money";
 import { selectOnFocus } from "../lib/dom";
 import { useFeatureFlag } from "../lib/featureFlags";
 import { StockBadge } from "../components/StockBadge";
-import { CameraIcon, TruckIcon } from "../components/icons";
+import { CameraIcon, ImagePlaceholderIcon, TruckIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
 import { CategoryManager } from "../components/CategoryManager";
 import type { Product } from "../lib/types";
+
+const PRODUCT_IMAGE_MAX_DIMENSION = 800;
 
 const BarcodeScanner = lazy(() =>
   import("../components/BarcodeScanner").then((m) => ({ default: m.BarcodeScanner }))
@@ -39,6 +44,7 @@ const emptyForm = {
 const NEW_CATEGORY_VALUE = "__new__";
 
 export function Inventory() {
+  const { user } = useAuth();
   const {
     products,
     categories,
@@ -68,6 +74,18 @@ export function Inventory() {
   const [showScanner, setShowScanner] = useState(false);
   const [duplicateProduct, setDuplicateProduct] = useState<Product | null>(null);
   const [page, setPage] = useState(1);
+  const [imageBlob, setImageBlob] = useState<Blob | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [processingImage, setProcessingImage] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+    };
+  }, [imagePreview]);
 
   // The topbar's quick search navigates here with a query in
   // location.state rather than a URL param, so a second search from the
@@ -126,12 +144,21 @@ export function Inventory() {
     setDuplicateProduct(findDuplicateBarcodeFast(barcodeIndex, barcode, editingId));
   }
 
+  function resetImageState(existingUrl: string | null) {
+    setImageBlob(null);
+    setImagePreview(null);
+    setExistingImageUrl(existingUrl);
+    setRemoveImage(false);
+    setImageError(null);
+  }
+
   function openAddForm() {
     setEditingId(null);
     setForm({ ...emptyForm, categoryId: categories[0]?.id ?? "" });
     setAddingCategory(false);
     setFormError(null);
     setDuplicateProduct(null);
+    resetImageState(null);
     setShowForm(true);
   }
 
@@ -151,7 +178,32 @@ export function Inventory() {
     setAddingCategory(false);
     setFormError(null);
     setDuplicateProduct(null);
+    resetImageState(product.imageUrl);
     setShowForm(true);
+  }
+
+  async function handleImageSelect(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setImageError(null);
+    setProcessingImage(true);
+    try {
+      const blob = await validateAndOptimizeImage(file, { maxDimension: PRODUCT_IMAGE_MAX_DIMENSION });
+      setImageBlob(blob);
+      setRemoveImage(false);
+      setImagePreview(URL.createObjectURL(blob));
+    } catch (err) {
+      setImageError(err instanceof Error ? err.message : "Could not process that image.");
+    } finally {
+      setProcessingImage(false);
+    }
+  }
+
+  function handleRemoveImage() {
+    setImageBlob(null);
+    setImagePreview(null);
+    setRemoveImage(true);
   }
 
   function handleCategorySelect(value: string) {
@@ -235,11 +287,22 @@ export function Inventory() {
     setSubmitting(true);
     setFormError(null);
     try {
+      let productId = editingId;
       if (editingId) {
         await updateProduct(editingId, payload);
       } else {
-        await addProduct(payload);
+        const created = await addProduct({ ...payload, imageUrl: null });
+        productId = created.id;
       }
+
+      if (imageBlob && productId && user) {
+        const path = `${user.storeId}/${productId}/image.webp`;
+        const imageUrl = await uploadImage(supabase, "product-images", path, imageBlob);
+        await updateProduct(productId, { imageUrl });
+      } else if (removeImage && productId) {
+        await updateProduct(productId, { imageUrl: null });
+      }
+
       setShowForm(false);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Could not save product.");
@@ -361,7 +424,18 @@ export function Inventory() {
             {!loading &&
               pageProducts.map((product) => (
                 <tr key={product.id} className="hover:bg-slate-50/60">
-                  <td className="px-4 py-3 font-medium text-slate-800">{product.name}</td>
+                  <td className="px-4 py-3 font-medium text-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                        {product.imageUrl ? (
+                          <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <ImagePlaceholderIcon className="h-4 w-4 text-slate-300" />
+                        )}
+                      </div>
+                      {product.name}
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-slate-500">{product.category}</td>
                   <td className="px-4 py-3 font-mono text-xs text-slate-500">
                     {product.barcode ?? "—"}
@@ -451,6 +525,52 @@ export function Inventory() {
               {editingId ? "Edit product" : "Add product"}
             </h2>
             <form className="mt-4 flex flex-col gap-3" onSubmit={handleSubmit} noValidate>
+              <div>
+                <span className="text-xs font-medium text-slate-700">Photo</span>
+                <div className="mt-1 flex items-center gap-3">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                    {imagePreview || (existingImageUrl && !removeImage) ? (
+                      <img
+                        src={imagePreview ?? existingImageUrl ?? undefined}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <ImagePlaceholderIcon className="h-6 w-6 text-slate-300" />
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label
+                      htmlFor="pimage"
+                      className="cursor-pointer rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      {processingImage ? "Processing…" : "Choose photo"}
+                    </label>
+                    <input
+                      id="pimage"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      disabled={processingImage}
+                      className="sr-only"
+                    />
+                    {(imagePreview || (existingImageUrl && !removeImage)) && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="cursor-pointer text-left text-xs text-red-600 hover:underline"
+                      >
+                        Remove photo
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {imageError && (
+                  <p role="alert" className="mt-1 text-xs text-red-600">
+                    {imageError}
+                  </p>
+                )}
+              </div>
               <div>
                 <label htmlFor="pname" className="text-xs font-medium text-slate-700">
                   Name
@@ -679,7 +799,7 @@ export function Inventory() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting || !!duplicateProduct}
+                  disabled={submitting || processingImage || !!duplicateProduct}
                   className="cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? "Saving…" : editingId ? "Save changes" : "Add product"}

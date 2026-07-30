@@ -19,6 +19,8 @@ export function makeStaffAccount(overrides: Partial<StaffAccount> = {}): StaffAc
     name: "Aling Nena",
     email: "nena@example.com",
     role: "admin" as Role,
+    avatarUrl: null,
+    phone: null,
     ...overrides,
   };
 }
@@ -35,6 +37,7 @@ export function makeProduct(overrides: Partial<Product> = {}): Product {
     category: "Canned goods",
     packQuantity: null,
     packPrice: null,
+    imageUrl: null,
     ...overrides,
   };
 }
@@ -110,6 +113,7 @@ function baseAuthValue() {
     register: vi.fn().mockResolvedValue({ ok: true, needsEmailConfirmation: false }),
     logout: vi.fn().mockResolvedValue(undefined),
     requestPasswordReset: vi.fn().mockResolvedValue({ ok: true }),
+    updateProfile: vi.fn().mockResolvedValue({ ok: true }),
   };
 }
 
@@ -127,7 +131,7 @@ function baseStoreDataValue() {
     suppliers: [] as Supplier[],
     loading: false,
     error: null as string | null,
-    addProduct: vi.fn().mockResolvedValue(undefined),
+    addProduct: vi.fn().mockResolvedValue(makeProduct()),
     updateProduct: vi.fn().mockResolvedValue(undefined),
     removeProduct: vi.fn().mockResolvedValue(undefined),
     restock: vi.fn().mockResolvedValue(undefined),
