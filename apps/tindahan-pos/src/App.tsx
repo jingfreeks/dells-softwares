@@ -11,6 +11,8 @@ import { Inventory } from "./pages/Inventory";
 import { Dashboard } from "./pages/Dashboard";
 import { Staff } from "./pages/Staff";
 import { Receiving } from "./pages/Receiving";
+import { Customers } from "./pages/Customers";
+import { Suppliers } from "./pages/Suppliers";
 
 function App() {
   return (
@@ -59,6 +61,22 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Receiving />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/customers"
+                element={
+                  <ProtectedRoute>
+                    <Customers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/suppliers"
+                element={
+                  <ProtectedRoute>
+                    <Suppliers />
                   </ProtectedRoute>
                 }
               />

@@ -43,12 +43,16 @@ export interface SaleItem {
   lineTotal: number;
 }
 
+export type PaymentType = "cash" | "credit";
+
 export interface SaleRecord {
   id: string;
   timestamp: string;
   items: SaleItem[];
   total: number;
   cashierName: string;
+  paymentType: PaymentType;
+  customerId: string | null;
 }
 
 export interface ServiceLine {
@@ -56,4 +60,31 @@ export interface ServiceLine {
   label: string;
   amount: number;
   fee: number;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string | null;
+  creditLimit: number | null;
+  /** Running utang balance — how much this customer currently owes the store. */
+  balance: number;
+}
+
+export interface CreditPayment {
+  id: string;
+  customerId: string;
+  amount: number;
+  note: string | null;
+  createdByName: string;
+  timestamp: string;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  phone: string | null;
+  address: string | null;
+  /** Encoded into the printable QR code; scanned back to select this supplier during receiving. */
+  scanCode: string;
 }

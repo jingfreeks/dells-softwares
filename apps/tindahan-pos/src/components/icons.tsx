@@ -133,9 +133,40 @@ export function ShareIcon({ className }: IconProps) {
   );
 }
 
+export function CustomersIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden>
+      <rect x="2.5" y="6" width="19" height="13" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2.5 10.5h19" strokeLinecap="round" />
+      <path d="M6 14.5h5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function ScanIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden>
+      <path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 12h16" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function QrCodeIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20v.01" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export const NAV_ICONS = {
   pos: PosIcon,
   inventory: InventoryIcon,
   admin: AdminIcon,
   staff: StaffIcon,
+  customers: CustomersIcon,
 };

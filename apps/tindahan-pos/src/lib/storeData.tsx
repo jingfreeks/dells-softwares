@@ -10,7 +10,17 @@ import { useAuth } from "./auth";
 import { lineTotal } from "./pos";
 import { supabase } from "./supabaseClient";
 import type { ReceivingLine } from "./inventory";
-import type { CartLine, Category, Product, SaleRecord, ServiceLine } from "./types";
+import type {
+  CartLine,
+  Category,
+  CreditPayment,
+  Customer,
+  PaymentType,
+  Product,
+  SaleRecord,
+  ServiceLine,
+  Supplier,
+} from "./types";
 
 export type { ReceivingLine } from "./inventory";
 
@@ -18,26 +28,54 @@ export interface ReceivingEntry {
   id: string;
   date: string;
   supplier: string;
+  supplierId: string | null;
   lines: ReceivingLine[];
+}
+
+export interface CheckoutPayment {
+  type: PaymentType;
+  /** Required when type is "credit" — which customer's utang this sale is charged to. */
+  customerId?: string | null;
 }
 
 interface StoreDataContextValue {
   products: Product[];
   sales: SaleRecord[];
   categories: Category[];
+  customers: Customer[];
+  suppliers: Supplier[];
   loading: boolean;
   error: string | null;
   addProduct: (product: Omit<Product, "id" | "category">) => Promise<void>;
   updateProduct: (id: string, patch: Partial<Omit<Product, "category">>) => Promise<void>;
   removeProduct: (id: string) => Promise<void>;
   restock: (id: string, quantity: number) => Promise<void>;
-  checkout: (cart: CartLine[], services: ServiceLine[], cashierName: string) => Promise<SaleRecord>;
+  checkout: (
+    cart: CartLine[],
+    services: ServiceLine[],
+    cashierName: string,
+    payment?: CheckoutPayment
+  ) => Promise<SaleRecord>;
   refresh: () => Promise<void>;
   addCategory: (name: string) => Promise<Category>;
   renameCategory: (id: string, name: string) => Promise<void>;
   removeCategory: (id: string) => Promise<void>;
   receivingHistory: ReceivingEntry[];
-  receiveStock: (supplier: string, date: string, lines: ReceivingLine[]) => Promise<void>;
+  receiveStock: (
+    supplier: string,
+    date: string,
+    lines: ReceivingLine[],
+    supplierId?: string | null
+  ) => Promise<void>;
+  addCustomer: (name: string, phone?: string | null, creditLimit?: number | null) => Promise<Customer>;
+  recordCreditPayment: (customerId: string, amount: number, note?: string) => Promise<void>;
+  fetchCreditPayments: (customerId: string) => Promise<CreditPayment[]>;
+  addSupplier: (name: string, phone?: string | null, address?: string | null) => Promise<Supplier>;
+  updateSupplier: (
+    id: string,
+    patch: Partial<{ name: string; phone: string | null; address: string | null }>
+  ) => Promise<void>;
+  findSupplierByScanCode: (scanCode: string) => Promise<Supplier | null>;
 }
 
 const StoreDataContext = createContext<StoreDataContextValue | null>(null);
@@ -81,6 +119,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [receivingHistory, setReceivingHistory] = useState<ReceivingEntry[]>([]);
@@ -108,7 +148,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     const { data, error: err } = await supabase
       .from("sales")
       .select(
-        "id, created_at, total, staff:cashier_id(name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)"
+        "id, created_at, total, customer_id, payment_type, staff:cashier_id(name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)"
       )
       .order("created_at", { ascending: false })
       .limit(100);
@@ -122,6 +162,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
           timestamp: row.created_at,
           total: row.total,
           cashierName: cashierName ?? "Unknown",
+          paymentType: row.payment_type,
+          customerId: row.customer_id,
           items: (row.sale_items ?? []).map((item) => ({
             productId: item.product_id ?? "",
             name: item.name,
@@ -136,12 +178,48 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const fetchCustomers = useCallback(async () => {
+    const { data, error: err } = await supabase
+      .from("customers")
+      .select("id, name, phone, credit_limit, balance")
+      .order("name");
+    if (err) throw err;
+    setCustomers(
+      (data ?? []).map((row) => ({
+        id: row.id,
+        name: row.name,
+        phone: row.phone,
+        creditLimit: row.credit_limit,
+        balance: row.balance,
+      }))
+    );
+  }, []);
+
+  const fetchSuppliers = useCallback(async () => {
+    const { data, error: err } = await supabase
+      .from("suppliers")
+      .select("id, name, phone, address, scan_code")
+      .order("name");
+    if (err) throw err;
+    setSuppliers(
+      (data ?? []).map((row) => ({
+        id: row.id,
+        name: row.name,
+        phone: row.phone,
+        address: row.address,
+        scanCode: row.scan_code,
+      }))
+    );
+  }, []);
+
   // Receiving history is admin-only at the RLS level for insert, but any
   // staff can read it (mirrors products' view policy).
   const fetchReceivingHistory = useCallback(async () => {
     const { data, error: err } = await supabase
       .from("receiving_entries")
-      .select("id, supplier, received_on, receiving_lines(product_id, product_name, quantity, cost_each)")
+      .select(
+        "id, supplier, supplier_id, received_on, receiving_lines(product_id, product_name, quantity, cost_each)"
+      )
       .order("received_on", { ascending: false })
       .limit(50);
     if (err) throw err;
@@ -150,6 +228,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         id: row.id,
         date: row.received_on,
         supplier: row.supplier,
+        supplierId: row.supplier_id,
         lines: (row.receiving_lines ?? []).map((line) => ({
           productId: line.product_id ?? "",
           productName: line.product_name,
@@ -163,11 +242,18 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setError(null);
     try {
-      await Promise.all([fetchProducts(), fetchCategories(), fetchSales(), fetchReceivingHistory()]);
+      await Promise.all([
+        fetchProducts(),
+        fetchCategories(),
+        fetchSales(),
+        fetchReceivingHistory(),
+        fetchCustomers(),
+        fetchSuppliers(),
+      ]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load store data.");
     }
-  }, [fetchProducts, fetchCategories, fetchSales, fetchReceivingHistory]);
+  }, [fetchProducts, fetchCategories, fetchSales, fetchReceivingHistory, fetchCustomers, fetchSuppliers]);
 
   // Re-fetch whenever the signed-in user changes (including the initial
   // login itself). Supabase's session restore/sign-in resolves after this
@@ -181,6 +267,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       setSales([]);
       setCategories([]);
       setReceivingHistory([]);
+      setCustomers([]);
+      setSuppliers([]);
       setLoading(false);
       return;
     }
@@ -257,17 +345,30 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   async function checkout(
     cart: CartLine[],
     services: ServiceLine[],
-    cashierName: string
+    cashierName: string,
+    payment: CheckoutPayment = { type: "cash" }
   ): Promise<SaleRecord> {
+    if (payment.type === "credit" && !payment.customerId) {
+      throw new Error("A customer is required for a credit sale.");
+    }
     const { data, error: err } = await supabase.rpc("checkout_sale", {
       p_items: cart.map((line) => ({ product_id: line.product.id, quantity: line.quantity })),
       p_services: services.map((line) => ({ label: line.label, amount: line.amount, fee: line.fee })),
+      p_customer_id: payment.type === "credit" ? payment.customerId : null,
+      p_payment_type: payment.type,
     });
     if (err) throw err;
     const result = data?.[0];
     if (!result) throw new Error("Checkout did not return a result.");
 
-    await Promise.all([fetchProducts(), fetchSales()]);
+    // A credit sale changes a customer's balance server-side, alongside
+    // products/sales — refresh all three so the UI never shows a stale
+    // balance right after checkout.
+    await Promise.all([
+      fetchProducts(),
+      fetchSales(),
+      ...(payment.type === "credit" ? [fetchCustomers()] : []),
+    ]);
 
     return {
       id: result.sale_id,
@@ -294,6 +395,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       ],
       total: result.total,
       cashierName,
+      paymentType: payment.type,
+      customerId: payment.type === "credit" ? (payment.customerId ?? null) : null,
     };
   }
 
@@ -338,7 +441,12 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     await fetchCategories();
   }
 
-  async function receiveStock(supplier: string, date: string, lines: ReceivingLine[]) {
+  async function receiveStock(
+    supplier: string,
+    date: string,
+    lines: ReceivingLine[],
+    supplierId: string | null = null
+  ) {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) throw new Error("Not signed in.");
     const storeId = await currentStoreId();
@@ -352,6 +460,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       .insert({
         store_id: storeId,
         supplier: supplier.trim() || "Unspecified supplier",
+        supplier_id: supplierId,
         received_on: date,
         created_by: userData.user.id,
       })
@@ -373,12 +482,127 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     await fetchReceivingHistory();
   }
 
+  async function addCustomer(
+    name: string,
+    phone: string | null = null,
+    creditLimit: number | null = null
+  ): Promise<Customer> {
+    const storeId = await currentStoreId();
+    const { data, error: err } = await supabase
+      .from("customers")
+      .insert({ store_id: storeId, name: name.trim(), phone, credit_limit: creditLimit })
+      .select("id, name, phone, credit_limit, balance")
+      .single();
+    if (err) throw err;
+    await fetchCustomers();
+    return {
+      id: data.id,
+      name: data.name,
+      phone: data.phone,
+      creditLimit: data.credit_limit,
+      balance: data.balance,
+    };
+  }
+
+  async function recordCreditPayment(customerId: string, amount: number, note?: string) {
+    const { error: err } = await supabase.rpc("record_credit_payment", {
+      p_customer_id: customerId,
+      p_amount: amount,
+      p_note: note ?? null,
+    });
+    if (err) throw err;
+    await fetchCustomers();
+  }
+
+  async function fetchCreditPayments(customerId: string): Promise<CreditPayment[]> {
+    const { data, error: err } = await supabase
+      .from("credit_payments")
+      .select("id, customer_id, amount, note, created_at, staff:created_by(name)")
+      .eq("customer_id", customerId)
+      .order("created_at", { ascending: false });
+    if (err) throw err;
+    return (data ?? []).map((row) => {
+      const staff = row.staff as unknown as { name: string } | { name: string }[] | null;
+      const createdByName = Array.isArray(staff) ? staff[0]?.name : staff?.name;
+      return {
+        id: row.id,
+        customerId: row.customer_id,
+        amount: row.amount,
+        note: row.note,
+        createdByName: createdByName ?? "Unknown",
+        timestamp: row.created_at,
+      };
+    });
+  }
+
+  async function addSupplier(
+    name: string,
+    phone: string | null = null,
+    address: string | null = null
+  ): Promise<Supplier> {
+    const storeId = await currentStoreId();
+    const { data, error: err } = await supabase
+      .from("suppliers")
+      .insert({ store_id: storeId, name: name.trim(), phone, address })
+      .select("id, name, phone, address, scan_code")
+      .single();
+    if (err) throw err;
+    await fetchSuppliers();
+    return {
+      id: data.id,
+      name: data.name,
+      phone: data.phone,
+      address: data.address,
+      scanCode: data.scan_code,
+    };
+  }
+
+  async function updateSupplier(
+    id: string,
+    patch: Partial<{ name: string; phone: string | null; address: string | null }>
+  ) {
+    const { error: err } = await supabase
+      .from("suppliers")
+      .update({
+        ...(patch.name !== undefined && { name: patch.name }),
+        ...(patch.phone !== undefined && { phone: patch.phone }),
+        ...(patch.address !== undefined && { address: patch.address }),
+      })
+      .eq("id", id);
+    if (err) throw err;
+    await fetchSuppliers();
+  }
+
+  // Looks up a supplier by their scan_code — used by the "scan supplier"
+  // flow in Receiving. A dedicated query (not a client-side find() over
+  // `suppliers`) so it also works right after adding a supplier this
+  // session, and so a not-found scan reads as "no such supplier", not a
+  // stale-cache bug.
+  async function findSupplierByScanCode(scanCode: string): Promise<Supplier | null> {
+    const { data, error: err } = await supabase
+      .from("suppliers")
+      .select("id, name, phone, address, scan_code")
+      .eq("scan_code", scanCode)
+      .maybeSingle();
+    if (err) throw err;
+    if (!data) return null;
+    return {
+      id: data.id,
+      name: data.name,
+      phone: data.phone,
+      address: data.address,
+      scanCode: data.scan_code,
+    };
+  }
+
   return (
     <StoreDataContext.Provider
       value={{
         products,
         sales,
         categories,
+        customers,
+        suppliers,
         loading,
         error,
         addProduct,
@@ -392,6 +616,12 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         removeCategory,
         receivingHistory,
         receiveStock,
+        addCustomer,
+        recordCreditPayment,
+        fetchCreditPayments,
+        addSupplier,
+        updateSupplier,
+        findSupplierByScanCode,
       }}
     >
       {children}

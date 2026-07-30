@@ -98,11 +98,11 @@ export function Staff() {
 
   return (
     <div className="p-6">
-      <h1 className="text-lg font-semibold text-slate-900">Staff</h1>
+      <h1 className="text-xl font-bold tracking-tight text-slate-900">Staff</h1>
       <p className="text-sm text-slate-500">Manage who can log in to this store.</p>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="card">
           <div className="border-b border-slate-200 p-4">
             <h2 className="text-sm font-semibold text-slate-900">Roster</h2>
           </div>
@@ -158,7 +158,7 @@ export function Staff() {
           </ul>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="card p-4">
           <h2 className="text-sm font-semibold text-slate-900">Add a cashier</h2>
           <p className="mt-1 text-xs text-slate-500">
             Creates a login for this store only — they'll be able to use POS but not view sales
@@ -175,7 +175,7 @@ export function Staff() {
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
               />
             </div>
             <div>
@@ -188,7 +188,7 @@ export function Staff() {
                 autoComplete="off"
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
               />
             </div>
             <div>
@@ -202,7 +202,7 @@ export function Staff() {
                 minLength={6}
                 value={form.password}
                 onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
               />
               <p className="mt-1 text-xs text-slate-500">At least 6 characters.</p>
             </div>
@@ -216,7 +216,7 @@ export function Staff() {
             <button
               type="submit"
               disabled={submitting}
-              className="mt-1 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-1 flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting && (
                 <span

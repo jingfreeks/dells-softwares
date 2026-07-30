@@ -25,6 +25,8 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     total: 0,
     cashierName: "Cashier",
     items: [],
+    paymentType: "cash",
+    customerId: null,
     ...overrides,
   };
 }
@@ -192,7 +194,10 @@ describe("isToday", () => {
   });
 
   it("is false for a timestamp on a different day", () => {
-    expect(isToday("2026-07-26T23:59:00Z", now)).toBe(false);
+    // A full day earlier so this holds regardless of the runner's local
+    // timezone (isToday() intentionally compares in local time, since
+    // that's what "today" means to a real store).
+    expect(isToday("2026-07-25T15:00:00Z", now)).toBe(false);
   });
 });
 

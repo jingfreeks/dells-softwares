@@ -86,13 +86,13 @@ export function CategoryManager({ onClose }: CategoryManagerProps) {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+            className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
           />
           <button
             type="button"
             onClick={handleAdd}
             disabled={!newName.trim() || adding}
-            className="cursor-pointer rounded-lg bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="cursor-pointer rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Add
           </button>
@@ -104,7 +104,7 @@ export function CategoryManager({ onClose }: CategoryManagerProps) {
           </p>
         )}
 
-        <ul className="mt-4 max-h-80 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-100">
+        <ul className="mt-4 max-h-80 divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-100">
           {categories.map((category) => {
             const count = usageCount(category.id);
             const isEditing = editingId === category.id;
@@ -118,7 +118,7 @@ export function CategoryManager({ onClose }: CategoryManagerProps) {
                     onChange={(e) => setEditName(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleRename(category.id)}
                     autoFocus
-                    className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+                    className="min-w-0 flex-1 rounded-xl border border-slate-300 px-2 py-1 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                   />
                 ) : (
                   <span className="min-w-0 flex-1 truncate text-sm text-slate-800">

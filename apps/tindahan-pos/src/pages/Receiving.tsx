@@ -5,7 +5,7 @@ import { receivingTotalCost, stockPreview, type ReceivingLine } from "../lib/inv
 import { findProductByBarcode, searchProductsByName } from "../lib/pos";
 import { PESO } from "../lib/money";
 import { selectOnFocus } from "../lib/dom";
-import { CameraIcon } from "../components/icons";
+import { CameraIcon, ScanIcon } from "../components/icons";
 import { ScannerLoadingOverlay } from "../components/ScannerLoadingOverlay";
 
 const BarcodeScanner = lazy(() =>
@@ -36,12 +36,13 @@ function toReceivingLine(line: DraftLine): ReceivingLine {
 }
 
 export function Receiving() {
-  const { products, receivingHistory, receiveStock } = useStoreData();
+  const { products, suppliers, receivingHistory, receiveStock, findSupplierByScanCode } = useStoreData();
   const [supplier, setSupplier] = useState("");
+  const [supplierId, setSupplierId] = useState<string | null>(null);
   const [date, setDate] = useState(today());
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showScanner, setShowScanner] = useState(false);
+  const [scanMode, setScanMode] = useState<"product" | "supplier" | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
@@ -64,11 +65,28 @@ export function Receiving() {
     setSearchQuery("");
   }
 
-  function handleScanDetected(barcode: string) {
-    setShowScanner(false);
-    const product = findProductByBarcode(products, barcode);
+  async function handleScanDetected(code: string) {
+    const mode = scanMode;
+    setScanMode(null);
+    if (mode === "supplier") {
+      try {
+        const found = await findSupplierByScanCode(code);
+        if (!found) {
+          setError("No supplier matches that code. Add them under Suppliers first.");
+          return;
+        }
+        setError(null);
+        setSupplier(found.name);
+        setSupplierId(found.id);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not look up that supplier code.");
+      }
+      return;
+    }
+
+    const product = findProductByBarcode(products, code);
     if (!product) {
-      setError(`No product found for barcode "${barcode}".`);
+      setError(`No product found for barcode "${code}".`);
       return;
     }
     setError(null);
@@ -95,12 +113,13 @@ export function Receiving() {
     setSaving(true);
     setError(null);
     try {
-      await receiveStock(supplier.trim() || "Unspecified supplier", date, receivingLines);
+      await receiveStock(supplier.trim() || "Unspecified supplier", date, receivingLines, supplierId);
       setSavedMessage(
         `Saved — ${lines.length} product${lines.length === 1 ? "" : "s"}, ${receivingLines.reduce((s, l) => s + l.quantity, 0)} units.`
       );
       setLines([]);
       setSupplier("");
+      setSupplierId(null);
       setTimeout(() => setSavedMessage(null), 4000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save receiving entry.");
@@ -113,7 +132,7 @@ export function Receiving() {
     <div className="p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">Receive stock</h1>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">Receive stock</h1>
           <p className="text-sm text-slate-500">
             Record new supply from a delivery.{" "}
             <Link to="/inventory" className="underline">
@@ -122,22 +141,68 @@ export function Receiving() {
             .
           </p>
         </div>
+        <Link
+          to="/suppliers"
+          className="shrink-0 rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          Manage suppliers
+        </Link>
       </div>
 
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mt-6 card p-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="supplier" className="text-xs font-medium text-slate-700">
               Supplier (optional)
             </label>
-            <input
-              id="supplier"
-              type="text"
-              value={supplier}
-              onChange={(e) => setSupplier(e.target.value)}
-              placeholder="e.g. Mega Distribution"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-            />
+            <div className="mt-1 flex gap-2">
+              <input
+                id="supplier"
+                type="text"
+                value={supplier}
+                onChange={(e) => {
+                  // Typing directly is a free-text entry — no longer tied
+                  // to whichever supplier record was previously picked or
+                  // scanned.
+                  setSupplier(e.target.value);
+                  setSupplierId(null);
+                }}
+                placeholder="e.g. Mega Distribution"
+                className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              />
+              <button
+                type="button"
+                onClick={() => setScanMode("supplier")}
+                aria-label="Scan supplier code"
+                title="Scan supplier code"
+                className="flex h-[38px] w-10 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100"
+              >
+                <ScanIcon className="h-4 w-4" />
+              </button>
+            </div>
+            {suppliers.length > 0 && (
+              <select
+                aria-label="Pick a saved supplier"
+                value={supplierId ?? ""}
+                onChange={(e) => {
+                  const found = suppliers.find((s) => s.id === e.target.value);
+                  if (found) {
+                    setSupplier(found.name);
+                    setSupplierId(found.id);
+                  } else {
+                    setSupplierId(null);
+                  }
+                }}
+                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600 focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              >
+                <option value="">…or pick a saved supplier</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           <div>
             <label htmlFor="recvDate" className="text-xs font-medium text-slate-700">
@@ -148,7 +213,7 @@ export function Receiving() {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
             />
           </div>
         </div>
@@ -164,20 +229,20 @@ export function Receiving() {
               placeholder="Search by name…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
             />
             <button
               type="button"
-              onClick={() => setShowScanner(true)}
+              onClick={() => setScanMode("product")}
               aria-label="Scan item"
-              className="flex items-center gap-1.5 rounded-lg bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
+              className="flex items-center gap-1.5 rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
             >
               <CameraIcon className="h-4 w-4" />
               Scan item
             </button>
           </div>
           {searchResults.length > 0 && (
-            <ul className="mt-2 divide-y divide-slate-100 rounded-lg border border-slate-100">
+            <ul className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-100">
               {searchResults.map((product) => (
                 <li key={product.id}>
                   <button
@@ -201,7 +266,7 @@ export function Receiving() {
         )}
 
         {lines.length > 0 && (
-          <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200">
+          <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
             <table className="w-full text-sm">
               <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
                 <tr>
@@ -225,7 +290,7 @@ export function Receiving() {
                           value={line.quantity}
                           onFocus={selectOnFocus}
                           onChange={(e) => updateLine(line.productId, { quantity: e.target.value })}
-                          className="w-20 rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                          className="w-20 rounded-xl border border-slate-300 px-2 py-1 text-sm"
                         />
                       </td>
                       <td className="px-3 py-2">
@@ -236,7 +301,7 @@ export function Receiving() {
                           value={line.costEach}
                           onFocus={selectOnFocus}
                           onChange={(e) => updateLine(line.productId, { costEach: e.target.value })}
-                          className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-sm"
+                          className="w-24 rounded-xl border border-slate-300 px-2 py-1 text-sm"
                         />
                       </td>
                       <td className="tabular-nums px-3 py-2 font-medium text-[var(--color-brand)]">
@@ -266,7 +331,7 @@ export function Receiving() {
         )}
 
         {savedMessage && (
-          <p role="status" className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          <p role="status" className="mt-4 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
             {savedMessage}
           </p>
         )}
@@ -275,13 +340,13 @@ export function Receiving() {
           type="button"
           onClick={handleSave}
           disabled={lines.length === 0 || saving}
-          className="mt-4 cursor-pointer rounded-lg bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-40"
+          className="mt-4 cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {saving ? "Saving…" : "Save receiving entry"}
         </button>
       </div>
 
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="mt-6 card">
         <div className="border-b border-slate-200 p-4">
           <h2 className="text-sm font-semibold text-slate-900">Recent receiving history</h2>
         </div>
@@ -306,9 +371,9 @@ export function Receiving() {
         </ul>
       </div>
 
-      {showScanner && (
+      {scanMode && (
         <Suspense fallback={<ScannerLoadingOverlay />}>
-          <BarcodeScanner onDetected={handleScanDetected} onClose={() => setShowScanner(false)} />
+          <BarcodeScanner onDetected={handleScanDetected} onClose={() => setScanMode(null)} />
         </Suspense>
       )}
     </div>
