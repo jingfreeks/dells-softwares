@@ -29,6 +29,7 @@ const baseReport: DailyReport = {
       cashierName: "Aling Nena",
       paymentType: "cash",
       customerId: null,
+      referenceNo: null,
     },
   ],
 };

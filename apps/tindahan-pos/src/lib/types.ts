@@ -43,7 +43,7 @@ export interface SaleItem {
   lineTotal: number;
 }
 
-export type PaymentType = "cash" | "credit";
+export type PaymentType = "cash" | "credit" | "qr";
 
 export interface SaleRecord {
   id: string;
@@ -53,6 +53,8 @@ export interface SaleRecord {
   cashierName: string;
   paymentType: PaymentType;
   customerId: string | null;
+  /** GCash/Maya transaction number the cashier entered — set only for a "qr" sale. */
+  referenceNo: string | null;
 }
 
 export interface ServiceLine {

@@ -275,6 +275,27 @@ describe("StoreDataProvider", () => {
     expect(captured?.sales[0].items[0].productId).toBe("p1");
   });
 
+  it("maps a QR sale's reference_no column onto referenceNo", async () => {
+    tableResults.sales.list = {
+      data: [
+        {
+          id: "sale1",
+          created_at: "2026-07-27T10:00:00Z",
+          total: 50,
+          customer_id: null,
+          payment_type: "qr",
+          reference_no: "0123456789012",
+          staff: { name: "Aling Nena" },
+          sale_items: [],
+        },
+      ],
+      error: null,
+    };
+    renderProvider(<Capture />);
+    await waitFor(() => expect(captured?.loading).toBe(false));
+    expect(captured?.sales[0].referenceNo).toBe("0123456789012");
+  });
+
   it("maps receiving history rows", async () => {
     tableResults.receiving_entries.list = {
       data: [
@@ -444,6 +465,31 @@ describe("StoreDataProvider", () => {
     });
     expect(sale.paymentType).toBe("credit");
     expect(sale.customerId).toBe("c1");
+  });
+
+  it("throws when a QR sale has no reference number", async () => {
+    renderProvider(<Capture />);
+    await waitFor(() => expect(captured?.loading).toBe(false));
+    await expect(
+      captured!.checkout([], [], "Aling Nena", { type: "qr", referenceNo: "   " })
+    ).rejects.toThrow("A reference number is required for a QR payment.");
+  });
+
+  it("checks out a QR sale, trimming and forwarding the reference number", async () => {
+    mockedSupabase.rpc.mockResolvedValue({ data: [{ sale_id: "sale-1", total: 50 }], error: null });
+    renderProvider(<Capture />);
+    await waitFor(() => expect(captured?.loading).toBe(false));
+
+    const sale = await captured!.checkout([], [], "Aling Nena", {
+      type: "qr",
+      referenceNo: "  0123456789012  ",
+    });
+    expect(sale.paymentType).toBe("qr");
+    expect(sale.referenceNo).toBe("0123456789012");
+    expect(mockedSupabase.rpc).toHaveBeenCalledWith(
+      "checkout_sale",
+      expect.objectContaining({ p_payment_type: "qr", p_reference_no: "0123456789012" })
+    );
   });
 
   it("throws when checkout_sale returns no result row", async () => {

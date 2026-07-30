@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../lib/auth";
 import { useStoreData } from "../lib/storeData";
 import {
@@ -42,6 +42,7 @@ export function Pos() {
   const [searchQuery, setSearchQuery] = useState("");
   const [tendered, setTendered] = useState("0");
   const [paymentType, setPaymentType] = useState<PaymentType>("cash");
+  const [referenceNo, setReferenceNo] = useState("");
   const [customerQuery, setCustomerQuery] = useState("");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [addingCustomer, setAddingCustomer] = useState(false);
@@ -59,6 +60,40 @@ export function Pos() {
   );
   const [serviceAmount, setServiceAmount] = useState("0");
   const [serviceFee, setServiceFee] = useState("0");
+
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Laptop/desktop shortcuts to jump straight into a browse mode without
+  // reaching for the mouse — F2 for barcode scan, F3 for name search.
+  // Skipped while the barcode-scanner camera overlay is open (it has its
+  // own close control) and never fires while the user is already typing
+  // in some other field, so it can't clobber in-progress input elsewhere
+  // on the page.
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== "F2" && e.key !== "F3") return;
+      const active = document.activeElement;
+      const isTyping =
+        active instanceof HTMLInputElement ||
+        active instanceof HTMLTextAreaElement ||
+        active instanceof HTMLSelectElement;
+      if (isTyping && active !== barcodeInputRef.current && active !== searchInputRef.current) return;
+      if (showScanner) return;
+
+      e.preventDefault();
+      if (posServicesEnabled) setActiveTab("products");
+      if (e.key === "F2") {
+        setBrowseMode("scan");
+        requestAnimationFrame(() => barcodeInputRef.current?.focus());
+      } else {
+        setBrowseMode("search");
+        requestAnimationFrame(() => searchInputRef.current?.focus());
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [posServicesEnabled, showScanner]);
 
   const total = useMemo(
     () => cartTotal(cart, packPricingEnabled) + serviceLines.reduce((sum, l) => sum + l.amount + l.fee, 0),
@@ -169,18 +204,21 @@ export function Pos() {
   async function handleCompleteSale() {
     if (cart.length === 0 && serviceLines.length === 0) return;
     if (paymentType === "credit" && !selectedCustomerId) return;
+    if (paymentType === "qr" && !referenceNo.trim()) return;
     setCheckingOut(true);
     setCheckoutError(null);
     try {
       await checkout(cart, serviceLines, user?.name ?? "Cashier", {
         type: paymentType,
         customerId: selectedCustomerId,
+        ...(paymentType === "qr" ? { referenceNo: referenceNo.trim() } : {}),
       });
       setLastReceiptTotal(total);
       setCart([]);
       setServiceLines([]);
       setTendered("0");
       setPaymentType("cash");
+      setReferenceNo("");
       clearCustomer();
       setTimeout(() => setLastReceiptTotal(null), 4000);
     } catch (err) {
@@ -195,6 +233,7 @@ export function Pos() {
     setServiceLines([]);
     setTendered("0");
     setPaymentType("cash");
+    setReferenceNo("");
     clearCustomer();
   }
 
@@ -243,25 +282,33 @@ export function Pos() {
               <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1">
                 <button
                   type="button"
-                  onClick={() => setBrowseMode("scan")}
+                  onClick={() => {
+                    setBrowseMode("scan");
+                    requestAnimationFrame(() => barcodeInputRef.current?.focus());
+                  }}
+                  title="Shortcut: F2"
                   className={`flex-1 cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
                     browseMode === "scan"
                       ? "bg-white text-slate-900 shadow-sm"
                       : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
-                  Scan barcode
+                  Scan barcode <span className="text-slate-400">(F2)</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setBrowseMode("search")}
+                  onClick={() => {
+                    setBrowseMode("search");
+                    requestAnimationFrame(() => searchInputRef.current?.focus());
+                  }}
+                  title="Shortcut: F3"
                   className={`flex-1 cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
                     browseMode === "search"
                       ? "bg-white text-slate-900 shadow-sm"
                       : "text-slate-500 hover:text-slate-700"
                   }`}
                 >
-                  Search by name
+                  Search by name <span className="text-slate-400">(F3)</span>
                 </button>
                 <button
                   type="button"
@@ -284,6 +331,7 @@ export function Pos() {
                   <div className="flex gap-2">
                     <input
                       id="barcode"
+                      ref={barcodeInputRef}
                       type="text"
                       placeholder="Scan or type a barcode, then press Enter"
                       autoFocus
@@ -321,6 +369,7 @@ export function Pos() {
                   </label>
                   <input
                     id="search"
+                    ref={searchInputRef}
                     type="text"
                     placeholder="e.g. sardines"
                     autoFocus
@@ -560,6 +609,7 @@ export function Pos() {
               type="button"
               onClick={() => {
                 setPaymentType("cash");
+                setReferenceNo("");
                 clearCustomer();
               }}
               className={`flex-1 cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
@@ -572,7 +622,24 @@ export function Pos() {
             </button>
             <button
               type="button"
-              onClick={() => setPaymentType("credit")}
+              onClick={() => {
+                setPaymentType("qr");
+                clearCustomer();
+              }}
+              className={`flex-1 cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
+                paymentType === "qr"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              QR
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentType("credit");
+                setReferenceNo("");
+              }}
               className={`flex-1 cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
                 paymentType === "credit"
                   ? "bg-white text-slate-900 shadow-sm"
@@ -583,7 +650,7 @@ export function Pos() {
             </button>
           </div>
 
-          {paymentType === "cash" ? (
+          {paymentType === "cash" && (
             <>
               <label htmlFor="tendered" className="mt-3 block text-xs font-medium text-slate-700">
                 Amount tendered
@@ -603,7 +670,31 @@ export function Pos() {
                 <span>{change === null ? "—" : PESO.format(change)}</span>
               </div>
             </>
-          ) : (
+          )}
+
+          {paymentType === "qr" && (
+            <div className="mt-3">
+              <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                Let the customer scan the store's GCash/Maya QR code for{" "}
+                <span className="font-semibold text-slate-800">{PESO.format(total)}</span>. Once you
+                see the payment notification on your phone, enter its reference number below.
+              </p>
+              <label htmlFor="qrReference" className="mt-3 block text-xs font-medium text-slate-700">
+                Reference / transaction no.
+              </label>
+              <input
+                id="qrReference"
+                type="text"
+                placeholder="e.g. 0123456789012"
+                autoFocus
+                value={referenceNo}
+                onChange={(e) => setReferenceNo(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              />
+            </div>
+          )}
+
+          {paymentType === "credit" && (
             <div className="mt-3">
               {selectedCustomer ? (
                 <>
@@ -716,7 +807,11 @@ export function Pos() {
               onClick={handleCompleteSale}
               disabled={
                 (cart.length === 0 && serviceLines.length === 0) ||
-                (paymentType === "cash" ? change === null : !selectedCustomerId) ||
+                (paymentType === "cash"
+                  ? change === null
+                  : paymentType === "qr"
+                    ? referenceNo.trim() === ""
+                    : !selectedCustomerId) ||
                 checkingOut
               }
               className="flex-1 cursor-pointer rounded-xl bg-[var(--color-brand)] py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-40"
