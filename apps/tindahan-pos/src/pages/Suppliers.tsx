@@ -100,19 +100,38 @@ export function Suppliers() {
     // the full story on why this burned us before.
     const win = window.open("", "_blank");
     if (!win || !selected || !qrDataUrl) return;
-    win.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head><title>${selected.name} — Supplier code</title></head>
-        <body style="font-family: sans-serif; text-align: center; padding: 40px;">
-          <h2>${STORE_NAME}</h2>
-          <p style="font-size: 18px; font-weight: 600;">${selected.name}</p>
-          <img src="${qrDataUrl}" width="240" height="240" style="margin: 24px 0;" />
-          <p style="color: #64748b; font-size: 13px;">Scan this at Receiving to select this supplier.</p>
-        </body>
-      </html>
-    `);
-    win.document.close();
+
+    // Built via DOM APIs rather than a document.write() template string —
+    // selected.name is store-entered data, and interpolating it straight
+    // into HTML would let a supplier name like `<img onerror=...>` run
+    // script in a window that's same-origin with the app (and so able to
+    // read the Supabase session out of localStorage). textContent never
+    // parses its input as markup, so this is safe regardless of what a
+    // supplier is named.
+    const doc = win.document;
+    doc.title = `${selected.name} — Supplier code`;
+    doc.body.style.cssText = "font-family: sans-serif; text-align: center; padding: 40px;";
+
+    const heading = doc.createElement("h2");
+    heading.textContent = STORE_NAME;
+
+    const name = doc.createElement("p");
+    name.style.cssText = "font-size: 18px; font-weight: 600;";
+    name.textContent = selected.name;
+
+    const img = doc.createElement("img");
+    img.src = qrDataUrl;
+    img.width = 240;
+    img.height = 240;
+    img.style.margin = "24px 0";
+    img.alt = `Scan code for ${selected.name}`;
+
+    const hint = doc.createElement("p");
+    hint.style.cssText = "color: #64748b; font-size: 13px;";
+    hint.textContent = "Scan this at Receiving to select this supplier.";
+
+    doc.body.append(heading, name, img, hint);
+
     win.focus();
     win.print();
   }

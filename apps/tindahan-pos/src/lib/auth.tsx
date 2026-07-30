@@ -105,8 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!input.storeName.trim() || !input.ownerName.trim() || !input.email.trim()) {
       return { ok: false, error: "All fields are required." };
     }
-    if (input.password.length < 6) {
-      return { ok: false, error: "Password must be at least 6 characters." };
+    if (input.password.length < 8) {
+      return { ok: false, error: "Password must be at least 8 characters." };
     }
     if (input.password !== input.confirmPassword) {
       return { ok: false, error: "Passwords do not match." };

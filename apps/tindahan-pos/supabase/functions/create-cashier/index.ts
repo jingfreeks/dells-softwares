@@ -24,14 +24,37 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Comma-separated allow-list, e.g. "https://tindahan-pos.vercel.app,https://app.example.com".
+// Set via `supabase secrets set ALLOWED_ORIGINS=...`. A wildcard here would
+// let ANY origin's JavaScript read this endpoint's response in a browser —
+// low practical risk today (the endpoint still requires a real bearer JWT
+// no cross-origin page can forge without a separate XSS), but this is a
+// privileged, account-creating endpoint, so origin is pinned as
+// defense-in-depth rather than left wide open.
+const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("Origin") ?? "";
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    Vary: "Origin",
+  };
+  if (allowedOrigins.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
+}
 
 Deno.serve(async (req) => {
+  const cors = corsHeaders(req);
+  const json = (body: unknown, status: number) =>
+    new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: cors });
   }
 
   try {
@@ -48,9 +71,9 @@ Deno.serve(async (req) => {
     }
 
     const { name, email, password } = body;
-    if (!name?.trim() || !email?.trim() || !password || password.length < 6) {
+    if (!name?.trim() || !email?.trim() || !password || password.length < 8) {
       return json(
-        { error: "name, email, and a password of at least 6 characters are required" },
+        { error: "name, email, and a password of at least 8 characters are required" },
         400
       );
     }
@@ -137,10 +160,3 @@ Deno.serve(async (req) => {
     return json({ error: err instanceof Error ? err.message : "Unexpected error" }, 500);
   }
 });
-
-function json(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}

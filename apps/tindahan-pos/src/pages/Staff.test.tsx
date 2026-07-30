@@ -105,7 +105,7 @@ describe("Staff", () => {
     await user.type(screen.getByLabelText("Temporary password"), "123");
     await user.click(screen.getByRole("button", { name: "Create cashier account" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("at least 6 characters");
+    expect(await screen.findByRole("alert")).toHaveTextContent("at least 8 characters");
   });
 
   it("creates a cashier account", async () => {
@@ -119,7 +119,7 @@ describe("Staff", () => {
 
     await user.type(screen.getByLabelText("Name"), "Joy");
     await user.type(screen.getByLabelText("Email address"), "joy2@example.com");
-    await user.type(screen.getByLabelText("Temporary password"), "secret6");
+    await user.type(screen.getByLabelText("Temporary password"), "secret678");
     await user.click(screen.getByRole("button", { name: "Create cashier account" }));
 
     await waitFor(() => expect(mockedSupabase.functions.invoke).toHaveBeenCalled());
@@ -139,7 +139,7 @@ describe("Staff", () => {
 
     await user.type(screen.getByLabelText("Name"), "Joy");
     await user.type(screen.getByLabelText("Email address"), "joy2@example.com");
-    await user.type(screen.getByLabelText("Temporary password"), "secret6");
+    await user.type(screen.getByLabelText("Temporary password"), "secret678");
     await user.click(screen.getByRole("button", { name: "Create cashier account" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Email already in use");
