@@ -8,6 +8,16 @@ export interface StaffAccount {
   role: Role;
   avatarUrl: string | null;
   phone: string | null;
+  address: string | null;
+  /** Set once this admin finishes the post-registration onboarding wizard. */
+  onboardedAt: string | null;
+}
+
+export interface Store {
+  id: string;
+  name: string;
+  address: string | null;
+  photoUrl: string | null;
 }
 
 export interface Category {
