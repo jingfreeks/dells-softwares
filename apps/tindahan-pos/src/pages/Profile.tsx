@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabaseClient";
 import { uploadImage, validateAndOptimizeImage } from "../lib/imageUpload";
@@ -7,7 +8,8 @@ import { ImagePlaceholderIcon } from "../components/icons";
 const AVATAR_MAX_DIMENSION = 512;
 
 export function Profile() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, deleteAccount } = useAuth();
+  const navigate = useNavigate();
   const [name, setName] = useState(user?.name ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
   const [avatarBlob, setAvatarBlob] = useState<Blob | null>(null);
@@ -18,6 +20,10 @@ export function Profile() {
   const [formError, setFormError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     setName(user?.name ?? "");
@@ -92,6 +98,18 @@ export function Profile() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    setDeleteError(null);
+    const result = await deleteAccount();
+    if (!result.ok) {
+      setDeleteError(result.error);
+      setDeleting(false);
+      return;
+    }
+    navigate("/login", { replace: true });
   }
 
   const displayedAvatar = avatarPreview ?? (!removeAvatar ? user?.avatarUrl : null);
@@ -204,6 +222,61 @@ export function Profile() {
           </button>
         </form>
       </div>
+
+      <div className="mt-6 max-w-md rounded-xl border border-red-200 bg-red-50 p-4">
+        <h2 className="text-sm font-semibold text-red-800">Danger zone</h2>
+        <p className="mt-1 text-xs text-red-700">
+          Permanently delete your account and login access. This cannot be undone.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setDeleteError(null);
+            setShowDeleteModal(true);
+          }}
+          className="mt-3 cursor-pointer rounded-xl border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
+        >
+          Delete my account
+        </button>
+      </div>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+            <h2 className="text-base font-semibold text-slate-900">Delete your account?</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              This permanently deletes your login and profile. It cannot be undone. Sales and
+              other records you created stay in the store's history, just no longer attributed to
+              you by name.
+            </p>
+
+            {deleteError && (
+              <p role="alert" className="mt-3 text-sm text-red-600">
+                {deleteError}
+              </p>
+            )}
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="cursor-pointer rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="cursor-pointer rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deleting ? "Deleting…" : "Delete my account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

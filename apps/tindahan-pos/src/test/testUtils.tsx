@@ -130,6 +130,7 @@ function baseAuthValue() {
     updateProfile: vi.fn().mockResolvedValue({ ok: true }),
     updateStore: vi.fn().mockResolvedValue({ ok: true }),
     completeOnboarding: vi.fn().mockResolvedValue({ ok: true }),
+    deleteAccount: vi.fn().mockResolvedValue({ ok: true }),
   };
 }
 
