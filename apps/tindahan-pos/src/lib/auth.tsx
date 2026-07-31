@@ -37,6 +37,8 @@ interface AuthContextValue {
   }) => Promise<AuthResult>;
   /** Marks the signed-in admin's onboarding wizard as finished. */
   completeOnboarding: () => Promise<AuthResult>;
+  /** Permanently deletes the signed-in staff member's own account. */
+  deleteAccount: () => Promise<AuthResult>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -241,6 +243,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
+  async function deleteAccount(): Promise<AuthResult> {
+    if (!user) return { ok: false, error: "Not signed in." };
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) return { ok: false, error: "Not signed in." };
+
+    const { data, error } = await supabase.functions.invoke("delete-account", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (error) return { ok: false, error: error.message };
+    if (data?.error) return { ok: false, error: data.error };
+
+    await supabase.auth.signOut();
+    setUser(null);
+    setStore(null);
+    return { ok: true };
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -254,6 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateProfile,
         updateStore,
         completeOnboarding,
+        deleteAccount,
       }}
     >
       {children}

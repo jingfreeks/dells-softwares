@@ -6,6 +6,7 @@ import { supabase } from "./supabaseClient";
 vi.mock("./supabaseClient", () => ({
   supabase: {
     from: vi.fn(),
+    functions: { invoke: vi.fn() },
     auth: {
       getSession: vi.fn(),
       onAuthStateChange: vi.fn(),
@@ -19,6 +20,7 @@ vi.mock("./supabaseClient", () => ({
 
 const mockedSupabase = supabase as unknown as {
   from: ReturnType<typeof vi.fn>;
+  functions: { invoke: ReturnType<typeof vi.fn> };
   auth: Record<string, ReturnType<typeof vi.fn>>;
 };
 
@@ -735,5 +737,115 @@ describe("AuthProvider", () => {
     await waitFor(() => screen.getByText("go"));
     screen.getByText("go").click();
     await waitFor(() => expect(result).toEqual({ ok: false, error: "onboard boom" }));
+  });
+
+  it("returns an error from deleteAccount when not signed in", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({ data: { session: null } });
+    let result: unknown;
+    function Capture() {
+      const { deleteAccount } = useAuth();
+      return <button onClick={async () => (result = await deleteAccount())}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    screen.getByText("go").click();
+    await waitFor(() => expect(result).toEqual({ ok: false, error: "Not signed in." }));
+  });
+
+  it("deletes the account, signs out, and clears local state", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" }, access_token: "tok-1" } },
+    });
+    mockedSupabase.from.mockReturnValue(
+      staffSelectChain({ id: "u1", store_id: "s1", name: "Nena", email: "nena@example.com", role: "cashier" })
+    );
+    mockedSupabase.functions.invoke.mockResolvedValue({ data: { ok: true }, error: null });
+    mockedSupabase.auth.signOut.mockResolvedValue({ error: null });
+
+    let result: unknown;
+    function Capture() {
+      const { deleteAccount, user } = useAuth();
+      return (
+        <>
+          <p data-testid="user">{user ? user.name : "none"}</p>
+          <button onClick={async () => (result = await deleteAccount())}>go</button>
+        </>
+      );
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("user")).toHaveTextContent("Nena"));
+    screen.getByText("go").click();
+
+    await waitFor(() => expect(result).toEqual({ ok: true }));
+    expect(mockedSupabase.functions.invoke).toHaveBeenCalledWith("delete-account", {
+      headers: { Authorization: "Bearer tok-1" },
+    });
+    expect(mockedSupabase.auth.signOut).toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByTestId("user")).toHaveTextContent("none"));
+  });
+
+  it("returns the server's error when deleting the sole admin's account is blocked", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" }, access_token: "tok-1" } },
+    });
+    mockedSupabase.from.mockReturnValue(
+      staffSelectChain({ id: "u1", store_id: "s1", name: "Nena", email: "nena@example.com", role: "admin" })
+    );
+    mockedSupabase.functions.invoke.mockResolvedValue({
+      data: { error: "You're the only admin for this store." },
+      error: null,
+    });
+    const signOutCallsBefore = mockedSupabase.auth.signOut.mock.calls.length;
+
+    let result: unknown;
+    function Capture() {
+      const { deleteAccount } = useAuth();
+      return <button onClick={async () => (result = await deleteAccount())}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => screen.getByText("go"));
+    screen.getByText("go").click();
+    await waitFor(() =>
+      expect(result).toEqual({ ok: false, error: "You're the only admin for this store." })
+    );
+    expect(mockedSupabase.auth.signOut.mock.calls.length).toBe(signOutCallsBefore);
+  });
+
+  it("returns an error when the delete-account function call itself fails", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" }, access_token: "tok-1" } },
+    });
+    mockedSupabase.from.mockReturnValue(
+      staffSelectChain({ id: "u1", store_id: "s1", name: "Nena", email: "nena@example.com", role: "cashier" })
+    );
+    mockedSupabase.functions.invoke.mockResolvedValue({
+      data: null,
+      error: { message: "network down" },
+    });
+
+    let result: unknown;
+    function Capture() {
+      const { deleteAccount } = useAuth();
+      return <button onClick={async () => (result = await deleteAccount())}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => screen.getByText("go"));
+    screen.getByText("go").click();
+    await waitFor(() => expect(result).toEqual({ ok: false, error: "network down" }));
   });
 });
