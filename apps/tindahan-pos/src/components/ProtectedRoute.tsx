@@ -24,6 +24,13 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
+  // Admins who haven't finished the post-registration onboarding wizard get
+  // bounced there from any other protected route — cashiers never see it
+  // since only the registering admin sets up store info.
+  if (user.role === "admin" && !user.onboardedAt) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   return (
     <div className="flex h-screen flex-col bg-[var(--color-canvas)] lg:flex-row lg:gap-3 lg:p-3">
       <div className="shrink-0 overflow-hidden lg:rounded-2xl lg:shadow-[0_1px_2px_rgba(15,23,42,0.04),0_14px_32px_-18px_rgba(201,59,46,0.22)]">

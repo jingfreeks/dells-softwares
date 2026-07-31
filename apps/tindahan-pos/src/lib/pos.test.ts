@@ -23,6 +23,7 @@ const chips: Product = {
   category: "Snacks",
   packQuantity: null,
   packPrice: null,
+  imageUrl: null,
 };
 
 const soda: Product = {
@@ -36,6 +37,7 @@ const soda: Product = {
   category: "Drinks",
   packQuantity: null,
   packPrice: null,
+  imageUrl: null,
 };
 
 const candy: Product = {
@@ -49,6 +51,7 @@ const candy: Product = {
   category: "Snacks",
   packQuantity: 3,
   packPrice: 5,
+  imageUrl: null,
 };
 
 describe("addToCart", () => {

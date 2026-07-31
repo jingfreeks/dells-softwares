@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { STORE_NAME } from "../lib/mockData";
 import { navItemsForRole } from "../lib/nav";
@@ -44,14 +44,24 @@ export function Sidebar() {
         })}
       </nav>
       <div className="m-3 rounded-xl bg-slate-50 p-3">
-        <div className="flex items-center justify-between px-1">
-          <p className="truncate text-xs font-semibold text-slate-700">{user?.name}</p>
+        <Link
+          to="/profile"
+          className="flex items-center gap-2 rounded-lg px-1 py-1 hover:bg-white"
+        >
+          {user?.avatarUrl ? (
+            <img src={user.avatarUrl} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
+          ) : (
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-slate-500">
+              {user?.name?.charAt(0).toUpperCase() ?? "?"}
+            </span>
+          )}
+          <p className="min-w-0 flex-1 truncate text-xs font-semibold text-slate-700">{user?.name}</p>
           {user?.role && (
             <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
               {user.role}
             </span>
           )}
-        </div>
+        </Link>
         <button
           type="button"
           onClick={logout}

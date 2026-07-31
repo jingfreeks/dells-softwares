@@ -9,6 +9,7 @@ import type {
   Role,
   SaleRecord,
   StaffAccount,
+  Store,
   Supplier,
 } from "../lib/types";
 
@@ -19,6 +20,20 @@ export function makeStaffAccount(overrides: Partial<StaffAccount> = {}): StaffAc
     name: "Aling Nena",
     email: "nena@example.com",
     role: "admin" as Role,
+    avatarUrl: null,
+    phone: null,
+    address: null,
+    onboardedAt: "2026-07-27T10:00:00Z",
+    ...overrides,
+  };
+}
+
+export function makeStore(overrides: Partial<Store> = {}): Store {
+  return {
+    id: "store-1",
+    name: "Dell's Sari-Sari Store",
+    address: null,
+    photoUrl: null,
     ...overrides,
   };
 }
@@ -35,6 +50,7 @@ export function makeProduct(overrides: Partial<Product> = {}): Product {
     category: "Canned goods",
     packQuantity: null,
     packPrice: null,
+    imageUrl: null,
     ...overrides,
   };
 }
@@ -58,6 +74,7 @@ export function makeSaleRecord(overrides: Partial<SaleRecord> = {}): SaleRecord 
     cashierName: "Aling Nena",
     paymentType: "cash",
     customerId: null,
+    referenceNo: null,
     ...overrides,
   };
 }
@@ -104,11 +121,15 @@ export function makeAuthValue(overrides: Partial<ReturnType<typeof baseAuthValue
 function baseAuthValue() {
   return {
     user: makeStaffAccount() as StaffAccount | null,
+    store: makeStore() as Store | null,
     loading: false,
     login: vi.fn().mockResolvedValue({ ok: true }),
     register: vi.fn().mockResolvedValue({ ok: true, needsEmailConfirmation: false }),
     logout: vi.fn().mockResolvedValue(undefined),
     requestPasswordReset: vi.fn().mockResolvedValue({ ok: true }),
+    updateProfile: vi.fn().mockResolvedValue({ ok: true }),
+    updateStore: vi.fn().mockResolvedValue({ ok: true }),
+    completeOnboarding: vi.fn().mockResolvedValue({ ok: true }),
   };
 }
 
@@ -126,7 +147,7 @@ function baseStoreDataValue() {
     suppliers: [] as Supplier[],
     loading: false,
     error: null as string | null,
-    addProduct: vi.fn().mockResolvedValue(undefined),
+    addProduct: vi.fn().mockResolvedValue(makeProduct()),
     updateProduct: vi.fn().mockResolvedValue(undefined),
     removeProduct: vi.fn().mockResolvedValue(undefined),
     restock: vi.fn().mockResolvedValue(undefined),

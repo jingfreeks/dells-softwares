@@ -32,6 +32,11 @@ function staffSelectChain(row: unknown, error: unknown = null) {
   };
 }
 
+/** Dispatches `.from(table)` to a different chain per table, for tests that touch both staff and stores. */
+function multiTableFrom(map: Record<string, unknown>) {
+  return (table: string) => map[table];
+}
+
 function Probe() {
   const { user, loading, login, register, logout, requestPasswordReset } = useAuth();
   return (
@@ -387,5 +392,348 @@ describe("AuthProvider", () => {
     );
     screen.getByText("go").click();
     await waitFor(() => expect(result).toEqual({ ok: true }));
+  });
+
+  it("returns an error from updateProfile when not signed in", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({ data: { session: null } });
+    let result: unknown;
+    function Capture() {
+      const { updateProfile } = useAuth();
+      return <button onClick={async () => (result = await updateProfile({ name: "New" }))}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    screen.getByText("go").click();
+    await waitFor(() => expect(result).toEqual({ ok: false, error: "Not signed in." }));
+  });
+
+  it("updates the staff row and reloads the profile", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" } } },
+    });
+    const updateEq = vi.fn().mockResolvedValue({ error: null });
+    const chain = {
+      select: staffSelectChain(
+        { id: "u1", store_id: "s1", name: "New Name", email: "nena@example.com", role: "admin", avatar_url: "https://x/y.webp", phone: "0917" }
+      ).select,
+      update: vi.fn(() => ({ eq: updateEq })),
+    };
+    mockedSupabase.from.mockReturnValue(chain);
+
+    let result: unknown;
+    function Capture() {
+      const { updateProfile, user } = useAuth();
+      return (
+        <>
+          <p data-testid="name">{user?.name}</p>
+          <button
+            onClick={async () =>
+              (result = await updateProfile({ name: "New Name", phone: "0917", avatarUrl: "https://x/y.webp" }))
+            }
+          >
+            go
+          </button>
+        </>
+      );
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("name")).toHaveTextContent("New Name"));
+    screen.getByText("go").click();
+
+    await waitFor(() => expect(result).toEqual({ ok: true }));
+    expect(chain.update).toHaveBeenCalledWith({
+      name: "New Name",
+      phone: "0917",
+      avatar_url: "https://x/y.webp",
+    });
+  });
+
+  it("returns an error when the staff update fails", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" } } },
+    });
+    const chain = {
+      select: staffSelectChain({ id: "u1", store_id: "s1", name: "Nena", email: "nena@example.com", role: "admin" })
+        .select,
+      update: vi.fn(() => ({ eq: vi.fn().mockResolvedValue({ error: { message: "boom" } }) })),
+    };
+    mockedSupabase.from.mockReturnValue(chain);
+
+    let result: unknown;
+    function Capture() {
+      const { updateProfile } = useAuth();
+      return <button onClick={async () => (result = await updateProfile({ name: "New" }))}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => screen.getByText("go"));
+    screen.getByText("go").click();
+    await waitFor(() => expect(result).toEqual({ ok: false, error: "boom" }));
+  });
+
+  it("loads the store alongside the staff profile", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" } } },
+    });
+    mockedSupabase.from.mockImplementation(
+      multiTableFrom({
+        staff: staffSelectChain({
+          id: "u1",
+          store_id: "s1",
+          name: "Aling Nena",
+          email: "nena@example.com",
+          role: "admin",
+        }),
+        stores: staffSelectChain({
+          id: "s1",
+          name: "Dell's Store",
+          address: "123 Main St",
+          photo_url: "https://cdn.test/store.webp",
+        }),
+      })
+    );
+
+    let capturedStore: unknown;
+    function Capture() {
+      const { store } = useAuth();
+      capturedStore = store;
+      return <p data-testid="store-name">{store?.name}</p>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("store-name")).toHaveTextContent("Dell's Store"));
+    expect(capturedStore).toEqual({
+      id: "s1",
+      name: "Dell's Store",
+      address: "123 Main St",
+      photoUrl: "https://cdn.test/store.webp",
+    });
+  });
+
+  it("includes address in the profile update patch", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" } } },
+    });
+    const updateEq = vi.fn().mockResolvedValue({ error: null });
+    const chain = {
+      select: staffSelectChain({ id: "u1", store_id: "s1", name: "Nena", email: "nena@example.com", role: "admin" })
+        .select,
+      update: vi.fn(() => ({ eq: updateEq })),
+    };
+    mockedSupabase.from.mockReturnValue(chain);
+
+    let result: unknown;
+    function Capture() {
+      const { updateProfile } = useAuth();
+      return (
+        <button onClick={async () => (result = await updateProfile({ address: "456 Side St" }))}>go</button>
+      );
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => screen.getByText("go"));
+    screen.getByText("go").click();
+    await waitFor(() => expect(result).toEqual({ ok: true }));
+    expect(chain.update).toHaveBeenCalledWith({ address: "456 Side St" });
+  });
+
+  it("returns an error from updateStore when not signed in", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({ data: { session: null } });
+    let result: unknown;
+    function Capture() {
+      const { updateStore } = useAuth();
+      return <button onClick={async () => (result = await updateStore({ name: "New Store" }))}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    screen.getByText("go").click();
+    await waitFor(() => expect(result).toEqual({ ok: false, error: "Not signed in." }));
+  });
+
+  it("updates the store row and reloads it", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" } } },
+    });
+    const storeUpdateEq = vi.fn().mockResolvedValue({ error: null });
+    mockedSupabase.from.mockImplementation(
+      multiTableFrom({
+        staff: staffSelectChain({ id: "u1", store_id: "s1", name: "Nena", email: "nena@example.com", role: "admin" }),
+        stores: {
+          select: staffSelectChain({
+            id: "s1",
+            name: "New Store",
+            address: "789 New Ave",
+            photo_url: "https://cdn.test/new.webp",
+          }).select,
+          update: vi.fn(() => ({ eq: storeUpdateEq })),
+        },
+      })
+    );
+
+    let result: unknown;
+    let capturedStore: unknown;
+    function Capture() {
+      const { updateStore, store } = useAuth();
+      capturedStore = store;
+      return (
+        <button
+          onClick={async () =>
+            (result = await updateStore({
+              name: "New Store",
+              address: "789 New Ave",
+              photoUrl: "https://cdn.test/new.webp",
+            }))
+          }
+        >
+          go
+        </button>
+      );
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => screen.getByText("go"));
+    screen.getByText("go").click();
+
+    await waitFor(() => expect(result).toEqual({ ok: true }));
+    expect(storeUpdateEq).toHaveBeenCalledWith("id", "s1");
+    await waitFor(() =>
+      expect(capturedStore).toEqual({
+        id: "s1",
+        name: "New Store",
+        address: "789 New Ave",
+        photoUrl: "https://cdn.test/new.webp",
+      })
+    );
+  });
+
+  it("returns an error when the store update fails", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" } } },
+    });
+    mockedSupabase.from.mockImplementation(
+      multiTableFrom({
+        staff: staffSelectChain({ id: "u1", store_id: "s1", name: "Nena", email: "nena@example.com", role: "admin" }),
+        stores: {
+          select: staffSelectChain({ id: "s1", name: "X", address: null, photo_url: null }).select,
+          update: vi.fn(() => ({ eq: vi.fn().mockResolvedValue({ error: { message: "store boom" } }) })),
+        },
+      })
+    );
+
+    let result: unknown;
+    function Capture() {
+      const { updateStore } = useAuth();
+      return <button onClick={async () => (result = await updateStore({ name: "X" }))}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => screen.getByText("go"));
+    screen.getByText("go").click();
+    await waitFor(() => expect(result).toEqual({ ok: false, error: "store boom" }));
+  });
+
+  it("returns an error from completeOnboarding when not signed in", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({ data: { session: null } });
+    let result: unknown;
+    function Capture() {
+      const { completeOnboarding } = useAuth();
+      return <button onClick={async () => (result = await completeOnboarding())}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    screen.getByText("go").click();
+    await waitFor(() => expect(result).toEqual({ ok: false, error: "Not signed in." }));
+  });
+
+  it("marks onboarding complete and reloads the profile", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" } } },
+    });
+    const onboardedEq = vi.fn().mockResolvedValue({ error: null });
+    const chain = {
+      select: staffSelectChain({
+        id: "u1",
+        store_id: "s1",
+        name: "Nena",
+        email: "nena@example.com",
+        role: "admin",
+        onboarded_at: "2026-07-31T00:00:00Z",
+      }).select,
+      update: vi.fn(() => ({ eq: onboardedEq })),
+    };
+    mockedSupabase.from.mockReturnValue(chain);
+
+    let result: unknown;
+    let capturedUser: unknown;
+    function Capture() {
+      const { completeOnboarding, user } = useAuth();
+      capturedUser = user;
+      return <button onClick={async () => (result = await completeOnboarding())}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => screen.getByText("go"));
+    screen.getByText("go").click();
+
+    await waitFor(() => expect(result).toEqual({ ok: true }));
+    expect(chain.update).toHaveBeenCalledWith({ onboarded_at: expect.any(String) });
+    await waitFor(() => expect((capturedUser as { onboardedAt: string })?.onboardedAt).toBe("2026-07-31T00:00:00Z"));
+  });
+
+  it("returns an error when completing onboarding fails", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" } } },
+    });
+    const chain = {
+      select: staffSelectChain({ id: "u1", store_id: "s1", name: "Nena", email: "nena@example.com", role: "admin" })
+        .select,
+      update: vi.fn(() => ({ eq: vi.fn().mockResolvedValue({ error: { message: "onboard boom" } }) })),
+    };
+    mockedSupabase.from.mockReturnValue(chain);
+
+    let result: unknown;
+    function Capture() {
+      const { completeOnboarding } = useAuth();
+      return <button onClick={async () => (result = await completeOnboarding())}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => screen.getByText("go"));
+    screen.getByText("go").click();
+    await waitFor(() => expect(result).toEqual({ ok: false, error: "onboard boom" }));
   });
 });

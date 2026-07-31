@@ -3,6 +3,7 @@ import { AuthProvider } from "./lib/auth";
 import { FeatureFlagsProvider } from "./lib/featureFlags";
 import { StoreDataProvider } from "./lib/storeData";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { OnboardingRoute } from "./components/OnboardingRoute";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { ForgotPassword } from "./pages/ForgotPassword";
@@ -13,6 +14,8 @@ import { Staff } from "./pages/Staff";
 import { Receiving } from "./pages/Receiving";
 import { Customers } from "./pages/Customers";
 import { Suppliers } from "./pages/Suppliers";
+import { Profile } from "./pages/Profile";
+import { Onboarding } from "./pages/Onboarding";
 
 function App() {
   return (
@@ -78,6 +81,22 @@ function App() {
                   <ProtectedRoute>
                     <Suppliers />
                   </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/onboarding"
+                element={
+                  <OnboardingRoute>
+                    <Onboarding />
+                  </OnboardingRoute>
                 }
               />
               <Route path="/" element={<Navigate to="/pos" replace />} />

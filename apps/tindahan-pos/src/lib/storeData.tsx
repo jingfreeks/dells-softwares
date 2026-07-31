@@ -36,6 +36,8 @@ export interface CheckoutPayment {
   type: PaymentType;
   /** Required when type is "credit" — which customer's utang this sale is charged to. */
   customerId?: string | null;
+  /** Required when type is "qr" — the GCash/Maya transaction number the cashier read off their phone. */
+  referenceNo?: string;
 }
 
 interface StoreDataContextValue {
@@ -46,7 +48,7 @@ interface StoreDataContextValue {
   suppliers: Supplier[];
   loading: boolean;
   error: string | null;
-  addProduct: (product: Omit<Product, "id" | "category">) => Promise<void>;
+  addProduct: (product: Omit<Product, "id" | "category">) => Promise<Product>;
   updateProduct: (id: string, patch: Partial<Omit<Product, "category">>) => Promise<void>;
   removeProduct: (id: string) => Promise<void>;
   restock: (id: string, quantity: number) => Promise<void>;
@@ -90,6 +92,7 @@ function mapProductRow(row: {
   category_id: string;
   pack_quantity: number | null;
   pack_price: number | null;
+  image_url: string | null;
   categories: { name: string } | { name: string }[] | null;
 }): Product {
   const cat = Array.isArray(row.categories) ? row.categories[0] : row.categories;
@@ -104,6 +107,7 @@ function mapProductRow(row: {
     category: cat?.name ?? "Uncategorized",
     packQuantity: row.pack_quantity,
     packPrice: row.pack_price,
+    imageUrl: row.image_url,
   };
 }
 
@@ -129,7 +133,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     const { data, error: err } = await supabase
       .from("products")
       .select(
-        "id, barcode, name, price, stock, low_stock_threshold, category_id, pack_quantity, pack_price, categories(name)"
+        "id, barcode, name, price, stock, low_stock_threshold, category_id, pack_quantity, pack_price, image_url, categories(name)"
       )
       .order("name");
     if (err) throw err;
@@ -148,7 +152,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     const { data, error: err } = await supabase
       .from("sales")
       .select(
-        "id, created_at, total, customer_id, payment_type, staff:cashier_id(name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)"
+        "id, created_at, total, customer_id, payment_type, reference_no, staff:cashier_id(name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)"
       )
       .order("created_at", { ascending: false })
       .limit(100);
@@ -164,6 +168,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
           cashierName: cashierName ?? "Unknown",
           paymentType: row.payment_type,
           customerId: row.customer_id,
+          referenceNo: row.reference_no,
           items: (row.sale_items ?? []).map((item) => ({
             productId: item.product_id ?? "",
             name: item.name,
@@ -288,21 +293,27 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     return data.store_id;
   }
 
-  async function addProduct(product: Omit<Product, "id" | "category">) {
+  async function addProduct(product: Omit<Product, "id" | "category">): Promise<Product> {
     const storeId = await currentStoreId();
-    const { error: err } = await supabase.from("products").insert({
-      store_id: storeId,
-      barcode: product.barcode,
-      name: product.name,
-      price: product.price,
-      stock: product.stock,
-      low_stock_threshold: product.lowStockThreshold,
-      category_id: product.categoryId,
-      pack_quantity: product.packQuantity,
-      pack_price: product.packPrice,
-    });
+    const { data, error: err } = await supabase
+      .from("products")
+      .insert({
+        store_id: storeId,
+        barcode: product.barcode,
+        name: product.name,
+        price: product.price,
+        stock: product.stock,
+        low_stock_threshold: product.lowStockThreshold,
+        category_id: product.categoryId,
+        pack_quantity: product.packQuantity,
+        pack_price: product.packPrice,
+        image_url: product.imageUrl,
+      })
+      .select("id, barcode, name, price, stock, low_stock_threshold, category_id, pack_quantity, pack_price, image_url, categories(name)")
+      .single();
     if (err) throw friendlyProductError(err);
     await fetchProducts();
+    return mapProductRow(data);
   }
 
   async function updateProduct(id: string, patch: Partial<Omit<Product, "category">>) {
@@ -319,6 +330,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         ...(patch.categoryId !== undefined && { category_id: patch.categoryId }),
         ...(patch.packQuantity !== undefined && { pack_quantity: patch.packQuantity }),
         ...(patch.packPrice !== undefined && { pack_price: patch.packPrice }),
+        ...(patch.imageUrl !== undefined && { image_url: patch.imageUrl }),
       })
       .eq("id", id);
     if (err) throw friendlyProductError(err);
@@ -351,11 +363,15 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     if (payment.type === "credit" && !payment.customerId) {
       throw new Error("A customer is required for a credit sale.");
     }
+    if (payment.type === "qr" && !payment.referenceNo?.trim()) {
+      throw new Error("A reference number is required for a QR payment.");
+    }
     const { data, error: err } = await supabase.rpc("checkout_sale", {
       p_items: cart.map((line) => ({ product_id: line.product.id, quantity: line.quantity })),
       p_services: services.map((line) => ({ label: line.label, amount: line.amount, fee: line.fee })),
       p_customer_id: payment.type === "credit" ? payment.customerId : null,
       p_payment_type: payment.type,
+      p_reference_no: payment.type === "qr" ? payment.referenceNo!.trim() : null,
     });
     if (err) throw err;
     const result = data?.[0];
@@ -397,6 +413,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       cashierName,
       paymentType: payment.type,
       customerId: payment.type === "credit" ? (payment.customerId ?? null) : null,
+      referenceNo: payment.type === "qr" ? (payment.referenceNo?.trim() ?? null) : null,
     };
   }
 

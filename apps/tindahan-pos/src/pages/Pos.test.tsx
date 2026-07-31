@@ -75,7 +75,7 @@ describe("Pos", () => {
     setup();
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: "Search by name" }));
+    await user.click(screen.getByRole("button", { name: /Search by name/ }));
     await user.type(screen.getByLabelText("Search by name"), "sardines");
     await user.click(screen.getByRole("button", { name: /Sardines/ }));
 
@@ -301,8 +301,119 @@ describe("Pos", () => {
     );
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: "Search by name" }));
+    await user.click(screen.getByRole("button", { name: /Search by name/ }));
     await user.type(screen.getByLabelText("Search by name"), "egg");
     expect(screen.getByText(/for/)).toBeInTheDocument();
+  });
+
+  it("requires a reference number before completing a QR sale, then submits it", async () => {
+    const user = userEvent.setup();
+    const checkout = vi.fn().mockResolvedValue({});
+    setup({ checkout });
+    renderPage();
+
+    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "QR" }));
+
+    expect(screen.getByRole("button", { name: "Complete sale" })).toBeDisabled();
+
+    await user.type(screen.getByLabelText("Reference / transaction no."), "  0123456789012  ");
+    expect(screen.getByRole("button", { name: "Complete sale" })).toBeEnabled();
+
+    await user.click(screen.getByRole("button", { name: "Complete sale" }));
+
+    expect(checkout).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array),
+      "Aling Nena",
+      { type: "qr", customerId: null, referenceNo: "0123456789012" }
+    );
+  });
+
+  it("clears the reference number when switching away from QR to Cash", async () => {
+    const user = userEvent.setup();
+    setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "QR" }));
+    await user.type(screen.getByLabelText("Reference / transaction no."), "12345");
+
+    await user.click(screen.getByRole("button", { name: "Cash" }));
+    await user.click(screen.getByRole("button", { name: "QR" }));
+
+    expect(screen.getByLabelText("Reference / transaction no.")).toHaveValue("");
+  });
+
+  it("clears a selected Utang customer when switching to QR", async () => {
+    const user = userEvent.setup();
+    const customers = [makeCustomer({ id: "c1", name: "Mang Jose" })];
+    setup({ customers });
+    renderPage();
+
+    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "Utang" }));
+    await user.type(screen.getByLabelText("Charge to customer"), "Jose");
+    await user.click(screen.getByText("Mang Jose"));
+
+    await user.click(screen.getByRole("button", { name: "QR" }));
+    await user.click(screen.getByRole("button", { name: "Utang" }));
+
+    expect(screen.getByLabelText("Charge to customer")).toBeInTheDocument();
+  });
+
+  it("jumps to the barcode field on F2 and the search field on F3", async () => {
+    const user = userEvent.setup();
+    setup();
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: /Search by name/ }));
+    expect(screen.getByLabelText("Search by name")).toBeInTheDocument();
+
+    await user.keyboard("{F2}");
+    expect(screen.getByLabelText("Scan barcode")).toHaveFocus();
+
+    await user.keyboard("{F3}");
+    expect(screen.getByLabelText("Search by name")).toHaveFocus();
+  });
+
+  it("switches back to the Products tab on F2/F3 while on Services", async () => {
+    const user = userEvent.setup();
+    setup();
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Services" }));
+    expect(screen.getByRole("button", { name: "Add to cart" })).toBeInTheDocument();
+
+    await user.keyboard("{F2}");
+    expect(screen.getByLabelText("Scan barcode")).toHaveFocus();
+  });
+
+  it("ignores F2/F3 while the camera scanner overlay is open", async () => {
+    const user = userEvent.setup();
+    setup();
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Scan with camera" }));
+    expect(await screen.findByText("Fake scan")).toBeInTheDocument();
+
+    await user.keyboard("{F3}");
+    expect(screen.queryByLabelText("Search by name")).not.toBeInTheDocument();
+  });
+
+  it("ignores F2/F3 while typing in an unrelated field", async () => {
+    const user = userEvent.setup();
+    const customers = [makeCustomer({ id: "c1", name: "Mang Jose" })];
+    setup({ customers });
+    renderPage();
+
+    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "Utang" }));
+    const customerSearch = screen.getByLabelText("Charge to customer");
+    await user.click(customerSearch);
+    await user.keyboard("{F3}");
+
+    expect(customerSearch).toHaveFocus();
+    expect(screen.queryByLabelText("Search by name")).not.toBeInTheDocument();
   });
 });

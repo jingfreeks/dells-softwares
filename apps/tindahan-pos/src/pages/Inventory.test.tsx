@@ -1,14 +1,22 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { useAuth } from "../lib/auth";
 import { useStoreData } from "../lib/storeData";
 import { useFeatureFlag } from "../lib/featureFlags";
-import { makeProduct, makeStoreDataValue } from "../test/testUtils";
+import { validateAndOptimizeImage, uploadImage } from "../lib/imageUpload";
+import { makeAuthValue, makeProduct, makeStaffAccount, makeStoreDataValue } from "../test/testUtils";
 import { Inventory } from "./Inventory";
 
+vi.mock("../lib/auth", () => ({ useAuth: vi.fn() }));
 vi.mock("../lib/storeData", () => ({ useStoreData: vi.fn() }));
 vi.mock("../lib/featureFlags", () => ({ useFeatureFlag: vi.fn() }));
+vi.mock("../lib/supabaseClient", () => ({ supabase: {} }));
+vi.mock("../lib/imageUpload", () => ({
+  validateAndOptimizeImage: vi.fn(),
+  uploadImage: vi.fn(),
+}));
 
 vi.mock("../components/BarcodeScanner", () => ({
   BarcodeScanner: ({ onDetected, onClose }: { onDetected: (c: string) => void; onClose: () => void }) => (
@@ -45,6 +53,10 @@ function renderPage() {
 }
 
 describe("Inventory", () => {
+  beforeEach(() => {
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue());
+  });
+
   it("shows a low-stock banner and the product table", () => {
     vi.mocked(useFeatureFlag).mockReturnValue(true);
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, categories }));
@@ -493,5 +505,86 @@ describe("Inventory", () => {
     await user.click(screen.getByRole("button", { name: "Categories" }));
     await user.click(screen.getByRole("button", { name: "Close" }));
     expect(screen.queryByText("Manage categories")).not.toBeInTheDocument();
+  });
+
+  describe("product photo", () => {
+    beforeEach(() => {
+      vi.stubGlobal("URL", { ...URL, createObjectURL: vi.fn(() => "blob:preview"), revokeObjectURL: vi.fn() });
+      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-1" }) }));
+      vi.mocked(useFeatureFlag).mockReturnValue(true);
+    });
+
+    function makeImageFile() {
+      return new File([new Uint8Array([1, 2, 3])], "sardines.jpg", { type: "image/jpeg" });
+    }
+
+    it("optimizes, uploads, and attaches a photo when adding a new product", async () => {
+      const user = userEvent.setup();
+      const addProduct = vi.fn().mockResolvedValue(makeProduct({ id: "p-new" }));
+      const updateProduct = vi.fn().mockResolvedValue(undefined);
+      vi.mocked(useStoreData).mockReturnValue(
+        makeStoreDataValue({ products: [], categories, addProduct, updateProduct })
+      );
+      const blob = new Blob(["x"], { type: "image/webp" });
+      vi.mocked(validateAndOptimizeImage).mockResolvedValue(blob);
+      vi.mocked(uploadImage).mockResolvedValue("https://cdn.test/store-1/p-new/image.webp");
+      renderPage();
+
+      await user.click(screen.getByRole("button", { name: "Add product" }));
+      await user.type(screen.getByLabelText("Name"), "Bread");
+      const fileInput = document.getElementById("pimage") as HTMLInputElement;
+      await user.upload(fileInput, makeImageFile());
+      expect(await screen.findByRole("button", { name: "Remove photo" })).toBeInTheDocument();
+
+      const submit = screen.getAllByRole("button", { name: "Add product" });
+      await user.click(submit[submit.length - 1]);
+
+      expect(validateAndOptimizeImage).toHaveBeenCalledWith(expect.any(File), { maxDimension: 800 });
+      expect(uploadImage).toHaveBeenCalledWith(expect.anything(), "product-images", "store-1/p-new/image.webp", blob);
+      expect(updateProduct).toHaveBeenCalledWith("p-new", { imageUrl: "https://cdn.test/store-1/p-new/image.webp" });
+    });
+
+    it("shows an error when the selected file isn't a valid image", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products: [], categories }));
+      vi.mocked(validateAndOptimizeImage).mockRejectedValue(
+        new Error("That file doesn't look like a valid image.")
+      );
+      renderPage();
+
+      await user.click(screen.getByRole("button", { name: "Add product" }));
+      const fileInput = document.getElementById("pimage") as HTMLInputElement;
+      await user.upload(fileInput, makeImageFile());
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "That file doesn't look like a valid image."
+      );
+    });
+
+    it("removes an existing photo when editing", async () => {
+      const user = userEvent.setup();
+      const updateProduct = vi.fn().mockResolvedValue(undefined);
+      const withPhoto = [makeProduct({ id: "p1", name: "Sardines", imageUrl: "https://cdn.test/existing.webp" })];
+      vi.mocked(useStoreData).mockReturnValue(
+        makeStoreDataValue({ products: withPhoto, categories, updateProduct })
+      );
+      renderPage();
+
+      await user.click(screen.getAllByRole("button", { name: "Edit" })[0]);
+      await user.click(screen.getByRole("button", { name: "Remove photo" }));
+      const submit = screen.getAllByRole("button", { name: "Save changes" });
+      await user.click(submit[submit.length - 1]);
+
+      expect(updateProduct).toHaveBeenCalledWith("p1", { imageUrl: null });
+    });
+
+    it("shows a product thumbnail in the table when the product has a photo", () => {
+      const withPhoto = [makeProduct({ id: "p1", name: "Sardines", imageUrl: "https://cdn.test/existing.webp" })];
+      vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products: withPhoto, categories }));
+      renderPage();
+
+      const thumbnail = screen.getByRole("row", { name: /Sardines/ }).querySelector("img");
+      expect(thumbnail).toHaveAttribute("src", "https://cdn.test/existing.webp");
+    });
   });
 });

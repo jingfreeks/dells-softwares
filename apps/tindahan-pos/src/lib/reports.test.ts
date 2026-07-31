@@ -14,6 +14,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     category: "Misc",
     packQuantity: null,
     packPrice: null,
+    imageUrl: null,
     ...overrides,
   };
 }
@@ -27,6 +28,7 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     items: [],
     paymentType: "cash",
     customerId: null,
+    referenceNo: null,
     ...overrides,
   };
 }

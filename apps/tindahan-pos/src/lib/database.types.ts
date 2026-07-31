@@ -5,15 +5,27 @@
 
 export type StaffRole = "admin" | "cashier";
 export type SaleItemType = "product" | "service";
-export type PaymentType = "cash" | "credit";
+export type PaymentType = "cash" | "credit" | "qr";
 
 export interface Database {
   public: {
     Tables: {
       stores: {
-        Row: { id: string; name: string; created_at: string };
-        Insert: { id?: string; name: string; created_at?: string };
-        Update: { id?: string; name?: string; created_at?: string };
+        Row: { id: string; name: string; address: string | null; photo_url: string | null; created_at: string };
+        Insert: {
+          id?: string;
+          name: string;
+          address?: string | null;
+          photo_url?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          address?: string | null;
+          photo_url?: string | null;
+          created_at?: string;
+        };
         Relationships: [];
       };
       staff: {
@@ -23,6 +35,10 @@ export interface Database {
           name: string;
           email: string;
           role: StaffRole;
+          avatar_url: string | null;
+          phone: string | null;
+          address: string | null;
+          onboarded_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -31,6 +47,10 @@ export interface Database {
           name: string;
           email: string;
           role?: StaffRole;
+          avatar_url?: string | null;
+          phone?: string | null;
+          address?: string | null;
+          onboarded_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -39,6 +59,10 @@ export interface Database {
           name?: string;
           email?: string;
           role?: StaffRole;
+          avatar_url?: string | null;
+          phone?: string | null;
+          address?: string | null;
+          onboarded_at?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -76,6 +100,7 @@ export interface Database {
           category_id: string;
           pack_quantity: number | null;
           pack_price: number | null;
+          image_url: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -91,6 +116,7 @@ export interface Database {
           category_id: string;
           pack_quantity?: number | null;
           pack_price?: number | null;
+          image_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -106,6 +132,7 @@ export interface Database {
           category_id?: string;
           pack_quantity?: number | null;
           pack_price?: number | null;
+          image_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -132,6 +159,7 @@ export interface Database {
           total: number;
           customer_id: string | null;
           payment_type: PaymentType;
+          reference_no: string | null;
           created_at: string;
         };
         Insert: {
@@ -141,6 +169,7 @@ export interface Database {
           total: number;
           customer_id?: string | null;
           payment_type?: PaymentType;
+          reference_no?: string | null;
           created_at?: string;
         };
         Update: {
@@ -150,6 +179,7 @@ export interface Database {
           total?: number;
           customer_id?: string | null;
           payment_type?: PaymentType;
+          reference_no?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -437,6 +467,7 @@ export interface Database {
           p_services?: { label: string; amount: number; fee?: number }[];
           p_customer_id?: string | null;
           p_payment_type?: PaymentType;
+          p_reference_no?: string | null;
         };
         Returns: { sale_id: string; total: number }[];
       };
