@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "./supabaseClient";
-import type { StaffAccount } from "./types";
+import type { StaffAccount, Store } from "./types";
 
 type AuthResult = { ok: true } | { ok: false; error: string };
 type RegisterResult =
@@ -9,6 +9,8 @@ type RegisterResult =
 
 interface AuthContextValue {
   user: StaffAccount | null;
+  /** The signed-in staff member's store — loaded alongside the profile. */
+  store: Store | null;
   /** True until the initial session check completes — avoids a false
    * redirect-to-login flash while Supabase restores a persisted session. */
   loading: boolean;
@@ -22,7 +24,19 @@ interface AuthContextValue {
   }) => Promise<RegisterResult>;
   logout: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<AuthResult>;
-  updateProfile: (patch: { name?: string; phone?: string | null; avatarUrl?: string | null }) => Promise<AuthResult>;
+  updateProfile: (patch: {
+    name?: string;
+    phone?: string | null;
+    address?: string | null;
+    avatarUrl?: string | null;
+  }) => Promise<AuthResult>;
+  updateStore: (patch: {
+    name?: string;
+    address?: string | null;
+    photoUrl?: string | null;
+  }) => Promise<AuthResult>;
+  /** Marks the signed-in admin's onboarding wizard as finished. */
+  completeOnboarding: () => Promise<AuthResult>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -30,7 +44,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
   const { data, error } = await supabase
     .from("staff")
-    .select("id, store_id, name, email, role, avatar_url, phone")
+    .select("id, store_id, name, email, role, avatar_url, phone, address, onboarded_at")
     .eq("id", userId)
     .single();
 
@@ -44,6 +58,25 @@ async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
     role: data.role,
     avatarUrl: data.avatar_url,
     phone: data.phone,
+    address: data.address,
+    onboardedAt: data.onboarded_at,
+  };
+}
+
+async function loadStore(storeId: string): Promise<Store | null> {
+  const { data, error } = await supabase
+    .from("stores")
+    .select("id, name, address, photo_url")
+    .eq("id", storeId)
+    .single();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    name: data.name,
+    address: data.address,
+    photoUrl: data.photo_url,
   };
 }
 
@@ -59,16 +92,21 @@ function friendlyAuthError(message: string): string {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<StaffAccount | null>(null);
+  const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
+    async function loadSessionUser(userId: string) {
+      const profile = await loadStaffProfile(userId);
+      if (cancelled) return;
+      setUser(profile);
+      setStore(profile ? await loadStore(profile.storeId) : null);
+    }
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const profile = await loadStaffProfile(session.user.id);
-        if (!cancelled) setUser(profile);
-      }
+      if (session?.user) await loadSessionUser(session.user.id);
       if (!cancelled) setLoading(false);
     });
 
@@ -76,10 +114,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const profile = await loadStaffProfile(session.user.id);
-        if (!cancelled) setUser(profile);
-      } else {
-        if (!cancelled) setUser(null);
+        await loadSessionUser(session.user.id);
+      } else if (!cancelled) {
+        setUser(null);
+        setStore(null);
       }
     });
 
@@ -135,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function logout() {
     await supabase.auth.signOut();
     setUser(null);
+    setStore(null);
   }
 
   async function requestPasswordReset(email: string): Promise<AuthResult> {
@@ -152,6 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function updateProfile(patch: {
     name?: string;
     phone?: string | null;
+    address?: string | null;
     avatarUrl?: string | null;
   }): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
@@ -160,6 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .update({
         ...(patch.name !== undefined && { name: patch.name }),
         ...(patch.phone !== undefined && { phone: patch.phone }),
+        ...(patch.address !== undefined && { address: patch.address }),
         ...(patch.avatarUrl !== undefined && { avatar_url: patch.avatarUrl }),
       })
       .eq("id", user.id);
@@ -169,9 +210,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
+  async function updateStore(patch: {
+    name?: string;
+    address?: string | null;
+    photoUrl?: string | null;
+  }): Promise<AuthResult> {
+    if (!user) return { ok: false, error: "Not signed in." };
+    const { error } = await supabase
+      .from("stores")
+      .update({
+        ...(patch.name !== undefined && { name: patch.name }),
+        ...(patch.address !== undefined && { address: patch.address }),
+        ...(patch.photoUrl !== undefined && { photo_url: patch.photoUrl }),
+      })
+      .eq("id", user.storeId);
+    if (error) return { ok: false, error: error.message };
+    setStore(await loadStore(user.storeId));
+    return { ok: true };
+  }
+
+  async function completeOnboarding(): Promise<AuthResult> {
+    if (!user) return { ok: false, error: "Not signed in." };
+    const { error } = await supabase
+      .from("staff")
+      .update({ onboarded_at: new Date().toISOString() })
+      .eq("id", user.id);
+    if (error) return { ok: false, error: error.message };
+    const profile = await loadStaffProfile(user.id);
+    setUser(profile);
+    return { ok: true };
+  }
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, requestPasswordReset, updateProfile }}
+      value={{
+        user,
+        store,
+        loading,
+        login,
+        register,
+        logout,
+        requestPasswordReset,
+        updateProfile,
+        updateStore,
+        completeOnboarding,
+      }}
     >
       {children}
     </AuthContext.Provider>

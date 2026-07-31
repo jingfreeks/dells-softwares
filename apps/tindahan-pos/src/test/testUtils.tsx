@@ -9,6 +9,7 @@ import type {
   Role,
   SaleRecord,
   StaffAccount,
+  Store,
   Supplier,
 } from "../lib/types";
 
@@ -21,6 +22,18 @@ export function makeStaffAccount(overrides: Partial<StaffAccount> = {}): StaffAc
     role: "admin" as Role,
     avatarUrl: null,
     phone: null,
+    address: null,
+    onboardedAt: "2026-07-27T10:00:00Z",
+    ...overrides,
+  };
+}
+
+export function makeStore(overrides: Partial<Store> = {}): Store {
+  return {
+    id: "store-1",
+    name: "Dell's Sari-Sari Store",
+    address: null,
+    photoUrl: null,
     ...overrides,
   };
 }
@@ -108,12 +121,15 @@ export function makeAuthValue(overrides: Partial<ReturnType<typeof baseAuthValue
 function baseAuthValue() {
   return {
     user: makeStaffAccount() as StaffAccount | null,
+    store: makeStore() as Store | null,
     loading: false,
     login: vi.fn().mockResolvedValue({ ok: true }),
     register: vi.fn().mockResolvedValue({ ok: true, needsEmailConfirmation: false }),
     logout: vi.fn().mockResolvedValue(undefined),
     requestPasswordReset: vi.fn().mockResolvedValue({ ok: true }),
     updateProfile: vi.fn().mockResolvedValue({ ok: true }),
+    updateStore: vi.fn().mockResolvedValue({ ok: true }),
+    completeOnboarding: vi.fn().mockResolvedValue({ ok: true }),
   };
 }
 

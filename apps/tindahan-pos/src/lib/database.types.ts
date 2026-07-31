@@ -11,9 +11,21 @@ export interface Database {
   public: {
     Tables: {
       stores: {
-        Row: { id: string; name: string; created_at: string };
-        Insert: { id?: string; name: string; created_at?: string };
-        Update: { id?: string; name?: string; created_at?: string };
+        Row: { id: string; name: string; address: string | null; photo_url: string | null; created_at: string };
+        Insert: {
+          id?: string;
+          name: string;
+          address?: string | null;
+          photo_url?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          address?: string | null;
+          photo_url?: string | null;
+          created_at?: string;
+        };
         Relationships: [];
       };
       staff: {
@@ -25,6 +37,8 @@ export interface Database {
           role: StaffRole;
           avatar_url: string | null;
           phone: string | null;
+          address: string | null;
+          onboarded_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -35,6 +49,8 @@ export interface Database {
           role?: StaffRole;
           avatar_url?: string | null;
           phone?: string | null;
+          address?: string | null;
+          onboarded_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -45,6 +61,8 @@ export interface Database {
           role?: StaffRole;
           avatar_url?: string | null;
           phone?: string | null;
+          address?: string | null;
+          onboarded_at?: string | null;
           created_at?: string;
         };
         Relationships: [
