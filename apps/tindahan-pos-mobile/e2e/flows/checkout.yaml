@@ -1,0 +1,23 @@
+# Requires a real cashier account + product already seeded in the target
+# Supabase project. Run with:
+#   maestro test e2e/flows/checkout.yaml \
+#     -e CASHIER_EMAIL=cashier@teststore.com \
+#     -e CASHIER_PASSWORD=... \
+#     -e PRODUCT_NAME="Chips"
+appId: com.tindahanpos.mobile
+---
+- launchApp
+- tapOn: "Email"
+- inputText: ${CASHIER_EMAIL}
+- tapOn: "Password"
+- inputText: ${CASHIER_PASSWORD}
+- tapOn: "Sign in"
+- assertVisible: "Search products"
+- tapOn: "Search products"
+- inputText: ${PRODUCT_NAME}
+- tapOn: ${PRODUCT_NAME}
+- tapOn: "Amount tendered"
+- eraseText
+- inputText: "1000"
+- tapOn: "Complete sale"
+- assertVisible: "Sale recorded"

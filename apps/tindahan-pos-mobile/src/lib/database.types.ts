@@ -1,0 +1,488 @@
+// Hand-written to match supabase/migrations/0001_init.sql.
+//
+// Once the project is live, prefer regenerating this from the real schema:
+//   npx supabase gen types typescript --project-id <ref> > src/lib/database.types.ts
+
+export type StaffRole = "admin" | "cashier";
+export type SaleItemType = "product" | "service";
+export type PaymentType = "cash" | "credit" | "qr";
+
+export interface Database {
+  public: {
+    Tables: {
+      stores: {
+        Row: { id: string; name: string; address: string | null; photo_url: string | null; created_at: string };
+        Insert: {
+          id?: string;
+          name: string;
+          address?: string | null;
+          photo_url?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          address?: string | null;
+          photo_url?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      staff: {
+        Row: {
+          id: string;
+          store_id: string;
+          name: string;
+          email: string;
+          role: StaffRole;
+          avatar_url: string | null;
+          phone: string | null;
+          address: string | null;
+          onboarded_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          store_id: string;
+          name: string;
+          email: string;
+          role?: StaffRole;
+          avatar_url?: string | null;
+          phone?: string | null;
+          address?: string | null;
+          onboarded_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          name?: string;
+          email?: string;
+          role?: StaffRole;
+          avatar_url?: string | null;
+          phone?: string | null;
+          address?: string | null;
+          onboarded_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "staff_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      categories: {
+        Row: { id: string; store_id: string; name: string; created_at: string };
+        Insert: { id?: string; store_id: string; name: string; created_at?: string };
+        Update: { id?: string; store_id?: string; name?: string; created_at?: string };
+        Relationships: [
+          {
+            foreignKeyName: "categories_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      products: {
+        Row: {
+          id: string;
+          store_id: string;
+          barcode: string | null;
+          name: string;
+          price: number;
+          stock: number;
+          low_stock_threshold: number;
+          category: string;
+          category_id: string;
+          pack_quantity: number | null;
+          pack_price: number | null;
+          image_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          barcode?: string | null;
+          name: string;
+          price: number;
+          stock?: number;
+          low_stock_threshold?: number;
+          category?: string;
+          category_id: string;
+          pack_quantity?: number | null;
+          pack_price?: number | null;
+          image_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          barcode?: string | null;
+          name?: string;
+          price?: number;
+          stock?: number;
+          low_stock_threshold?: number;
+          category?: string;
+          category_id?: string;
+          pack_quantity?: number | null;
+          pack_price?: number | null;
+          image_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "products_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "products_category_id_fkey";
+            columns: ["category_id"];
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      sales: {
+        Row: {
+          id: string;
+          store_id: string;
+          cashier_id: string;
+          total: number;
+          customer_id: string | null;
+          payment_type: PaymentType;
+          reference_no: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          cashier_id: string;
+          total: number;
+          customer_id?: string | null;
+          payment_type?: PaymentType;
+          reference_no?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          cashier_id?: string;
+          total?: number;
+          customer_id?: string | null;
+          payment_type?: PaymentType;
+          reference_no?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sales_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "sales_cashier_id_fkey";
+            columns: ["cashier_id"];
+            referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "sales_customer_id_fkey";
+            columns: ["customer_id"];
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      customers: {
+        Row: {
+          id: string;
+          store_id: string;
+          name: string;
+          phone: string | null;
+          credit_limit: number | null;
+          balance: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          name: string;
+          phone?: string | null;
+          credit_limit?: number | null;
+          balance?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          name?: string;
+          phone?: string | null;
+          credit_limit?: number | null;
+          balance?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "customers_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      credit_payments: {
+        Row: {
+          id: string;
+          store_id: string;
+          customer_id: string;
+          amount: number;
+          note: string | null;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          customer_id: string;
+          amount: number;
+          note?: string | null;
+          created_by: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          customer_id?: string;
+          amount?: number;
+          note?: string | null;
+          created_by?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "credit_payments_customer_id_fkey";
+            columns: ["customer_id"];
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "credit_payments_created_by_fkey";
+            columns: ["created_by"];
+            referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      suppliers: {
+        Row: {
+          id: string;
+          store_id: string;
+          name: string;
+          phone: string | null;
+          address: string | null;
+          scan_code: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          name: string;
+          phone?: string | null;
+          address?: string | null;
+          scan_code?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          name?: string;
+          phone?: string | null;
+          address?: string | null;
+          scan_code?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      sale_items: {
+        Row: {
+          id: string;
+          sale_id: string;
+          product_id: string | null;
+          name: string;
+          quantity: number;
+          price: number;
+          item_type: SaleItemType;
+          fee: number;
+          line_total: number;
+        };
+        Insert: {
+          id?: string;
+          sale_id: string;
+          product_id?: string | null;
+          name: string;
+          quantity: number;
+          price: number;
+          item_type?: SaleItemType;
+          fee?: number;
+          line_total: number;
+        };
+        Update: {
+          id?: string;
+          sale_id?: string;
+          product_id?: string | null;
+          name?: string;
+          quantity?: number;
+          price?: number;
+          item_type?: SaleItemType;
+          fee?: number;
+          line_total?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sale_items_sale_id_fkey";
+            columns: ["sale_id"];
+            referencedRelation: "sales";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "sale_items_product_id_fkey";
+            columns: ["product_id"];
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      receiving_entries: {
+        Row: {
+          id: string;
+          store_id: string;
+          supplier: string;
+          supplier_id: string | null;
+          received_on: string;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          supplier: string;
+          supplier_id?: string | null;
+          received_on: string;
+          created_by: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          supplier?: string;
+          supplier_id?: string | null;
+          received_on?: string;
+          created_by?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "receiving_entries_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "receiving_entries_supplier_id_fkey";
+            columns: ["supplier_id"];
+            referencedRelation: "suppliers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      receiving_lines: {
+        Row: {
+          id: string;
+          receiving_entry_id: string;
+          product_id: string | null;
+          product_name: string;
+          quantity: number;
+          cost_each: number;
+        };
+        Insert: {
+          id?: string;
+          receiving_entry_id: string;
+          product_id?: string | null;
+          product_name: string;
+          quantity: number;
+          cost_each?: number;
+        };
+        Update: {
+          id?: string;
+          receiving_entry_id?: string;
+          product_id?: string | null;
+          product_name?: string;
+          quantity?: number;
+          cost_each?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "receiving_lines_receiving_entry_id_fkey";
+            columns: ["receiving_entry_id"];
+            referencedRelation: "receiving_entries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "receiving_lines_product_id_fkey";
+            columns: ["product_id"];
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      feature_flags: {
+        Row: { key: string; enabled: boolean; description: string; updated_at: string };
+        Insert: { key: string; enabled?: boolean; description?: string; updated_at?: string };
+        Update: { key?: string; enabled?: boolean; description?: string; updated_at?: string };
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: {
+      checkout_sale: {
+        Args: {
+          p_items: { product_id: string; quantity: number }[];
+          p_services?: { label: string; amount: number; fee?: number }[];
+          p_customer_id?: string | null;
+          p_payment_type?: PaymentType;
+          p_reference_no?: string | null;
+        };
+        Returns: { sale_id: string; total: number }[];
+      };
+      record_credit_payment: {
+        Args: {
+          p_customer_id: string;
+          p_amount: number;
+          p_note?: string | null;
+        };
+        Returns: { customer_id: string; new_balance: number }[];
+      };
+    };
+    Enums: {
+      staff_role: StaffRole;
+    };
+    CompositeTypes: Record<string, never>;
+  };
+}
