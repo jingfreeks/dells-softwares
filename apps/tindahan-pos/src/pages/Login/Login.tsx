@@ -28,7 +28,7 @@ import {
   TEXT_LOGIN_PREVIEW_RECENT_SALES,
 } from "@/lib";
 import { useLoginForm } from "./hooks";
-import "./login.css";
+import "../authTheme.css";
 
 const PREVIEW_BULLETS = [TEXT_LOGIN_PREVIEW_BULLET_1, TEXT_LOGIN_PREVIEW_BULLET_2, TEXT_LOGIN_PREVIEW_BULLET_3];
 
