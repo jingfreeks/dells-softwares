@@ -3,9 +3,10 @@
 // Once the project is live, prefer regenerating this from the real schema:
 //   npx supabase gen types typescript --project-id <ref> > src/lib/database.types.ts
 
+import type { PaymentType } from "./types";
+
 export type StaffRole = "admin" | "cashier";
 export type SaleItemType = "product" | "service";
-export type PaymentType = "cash" | "credit" | "qr";
 
 export interface Database {
   public: {
