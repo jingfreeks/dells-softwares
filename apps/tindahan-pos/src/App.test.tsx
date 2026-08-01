@@ -30,6 +30,6 @@ import App from "./App";
 describe("App", () => {
   it("redirects an unauthenticated visitor to the login page", async () => {
     render(<App />);
-    expect(await screen.findByText(/Log in to/)).toBeInTheDocument();
+    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
   });
 });

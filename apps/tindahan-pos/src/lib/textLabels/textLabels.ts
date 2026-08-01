@@ -43,9 +43,29 @@ export const LINK_REGISTER = "Register";
 export const LINK_FORGOT_PASSWORD = "Forgot password?";
 
 // Login page
-export const PAGE_HEADING_LOGIN_PREFIX = "Log in to";
-export const BUTTON_LOGGING_IN = "Logging in…";
-export const TEXT_NEW_STORE_PROMPT = "New store?";
+export const SEG_SIGN_IN = "Sign in";
+export const SEG_CREATE_ACCOUNT = "Create account";
+export const PAGE_HEADING_WELCOME_BACK = "Welcome back";
+export const TEXT_LOGIN_SUBHEAD = "Sign in to open the register and see today's sales.";
+export const BUTTON_CONTINUE_WITH_GOOGLE = "Continue with Google";
+export const TEXT_OR = "OR";
+export const BUTTON_SIGNING_IN = "Signing in…";
+export const LABEL_KEEP_SIGNED_IN = "Keep me signed in on this device";
+export const TEXT_NEW_TO_APP_PROMPT = "New to Tindahan POS?";
+export const LINK_CREATE_AN_ACCOUNT = "Create an account";
+export const TEXT_CONTACT_SUPPORT = "Contact support";
+
+// Login page — preview pane (right side, sells the product to a
+// first-time visitor and reassures a returning owner)
+export const TEXT_LOGIN_PREVIEW_HEADLINE = "Run your tindahan from one screen.";
+export const TEXT_LOGIN_PREVIEW_TAGLINE =
+  "Ring up sales, track stock, and see exactly how the day went — without a single notebook.";
+export const TEXT_LOGIN_PREVIEW_BULLET_1 = "Low-stock alerts before you run out";
+export const TEXT_LOGIN_PREVIEW_BULLET_2 = "Daily sales report, ready to print or share";
+export const TEXT_LOGIN_PREVIEW_BULLET_3 = "Staff accounts with their own permissions";
+export const TEXT_LOGIN_PREVIEW_DASHBOARD_LABEL = "Admin dashboard";
+export const TEXT_LOGIN_PREVIEW_LIVE = "Live";
+export const TEXT_LOGIN_PREVIEW_RECENT_SALES = "Recent sales";
 
 // Register page
 export const PAGE_HEADING_REGISTER = "Set up your store";

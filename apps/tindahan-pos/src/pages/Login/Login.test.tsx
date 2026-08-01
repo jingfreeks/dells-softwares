@@ -36,10 +36,24 @@ describe("Login", () => {
 
     await user.type(screen.getByLabelText("Email address"), "nena@example.com");
     await user.type(screen.getByLabelText("Password"), "secret123");
-    await user.click(screen.getByRole("button", { name: "Log in" }));
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
 
-    expect(login).toHaveBeenCalledWith("nena@example.com", "secret123");
+    expect(login).toHaveBeenCalledWith("nena@example.com", "secret123", true);
     expect(await screen.findByText("POS page")).toBeInTheDocument();
+  });
+
+  it("passes keepSignedIn as false when the checkbox is unticked", async () => {
+    const user = userEvent.setup();
+    const login = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, login }));
+    renderLogin();
+
+    await user.type(screen.getByLabelText("Email address"), "nena@example.com");
+    await user.type(screen.getByLabelText("Password"), "secret123");
+    await user.click(screen.getByLabelText("Keep me signed in on this device"));
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+
+    expect(login).toHaveBeenCalledWith("nena@example.com", "secret123", false);
   });
 
   it("shows an error message on failed login", async () => {
@@ -50,7 +64,7 @@ describe("Login", () => {
 
     await user.type(screen.getByLabelText("Email address"), "nena@example.com");
     await user.type(screen.getByLabelText("Password"), "wrong");
-    await user.click(screen.getByRole("button", { name: "Log in" }));
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Incorrect email or password.");
   });
@@ -72,7 +86,15 @@ describe("Login", () => {
     const user = userEvent.setup();
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null }));
     renderLogin();
-    await user.click(screen.getByText("Register"));
+    await user.click(screen.getByText("Create an account"));
+    expect(screen.getByText("Register page")).toBeInTheDocument();
+  });
+
+  it("navigates to register from the segmented tab", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null }));
+    renderLogin();
+    await user.click(screen.getByRole("tab", { name: "Create account" }));
     expect(screen.getByText("Register page")).toBeInTheDocument();
   });
 });
