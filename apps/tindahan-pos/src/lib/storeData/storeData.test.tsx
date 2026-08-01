@@ -468,6 +468,39 @@ describe("StoreDataProvider", () => {
     );
   });
 
+  it("patches product stock and prepends the sale locally instead of refetching", async () => {
+    tableResults.products.list = {
+      data: [
+        {
+          id: "p1",
+          barcode: null,
+          name: "Sardines",
+          price: 25,
+          stock: 20,
+          low_stock_threshold: 5,
+          category_id: "cat1",
+          pack_quantity: null,
+          pack_price: null,
+          image_url: null,
+          categories: { name: "Canned" },
+        },
+      ],
+      error: null,
+    };
+    mockedSupabase.rpc.mockResolvedValue({ data: [{ sale_id: "sale-1", total: 50 }], error: null });
+    renderProvider(<Capture />);
+    await waitFor(() => expect(captured?.loading).toBe(false));
+    const fromCallsBeforeCheckout = mockedSupabase.from.mock.calls.filter((c) => c[0] === "products").length;
+
+    const product = captured!.products.find((p) => p.id === "p1")!;
+    await captured!.checkout([{ product, quantity: 2 }], [], "Aling Nena");
+
+    await waitFor(() => expect(captured!.products.find((p) => p.id === "p1")?.stock).toBe(18));
+    expect(captured!.sales[0]?.id).toBe("sale-1");
+    const fromCallsAfterCheckout = mockedSupabase.from.mock.calls.filter((c) => c[0] === "products").length;
+    expect(fromCallsAfterCheckout).toBe(fromCallsBeforeCheckout);
+  });
+
   it("throws when a credit sale has no customer", async () => {
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
@@ -476,7 +509,11 @@ describe("StoreDataProvider", () => {
     );
   });
 
-  it("checks out a credit sale and refetches customers", async () => {
+  it("checks out a credit sale and patches the customer's balance locally", async () => {
+    tableResults.customers.list = {
+      data: [{ id: "c1", name: "Mang Jose", phone: null, credit_limit: null, balance: 100 }],
+      error: null,
+    };
     mockedSupabase.rpc.mockResolvedValue({ data: [{ sale_id: "sale-1", total: 50 }], error: null });
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
@@ -487,6 +524,7 @@ describe("StoreDataProvider", () => {
     });
     expect(sale.paymentType).toBe("credit");
     expect(sale.customerId).toBe("c1");
+    await waitFor(() => expect(captured!.customers.find((c) => c.id === "c1")?.balance).toBe(150));
   });
 
   it("throws when a QR sale has no reference number", async () => {
@@ -616,7 +654,7 @@ describe("StoreDataProvider", () => {
   });
 
   it("throws when there is no signed-in user for receiveStock", async () => {
-    mockedSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null }));
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
     await expect(captured!.receiveStock("Mega", "2026-07-20", [])).rejects.toThrow("Not signed in.");
@@ -838,20 +876,11 @@ describe("StoreDataProvider", () => {
     await expect(captured!.findSupplierByScanCode("abc")).rejects.toEqual({ message: "boom" });
   });
 
-  it("throws from currentStoreId when not signed in (via addCategory)", async () => {
-    mockedSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
+  it("throws when not signed in (via addCategory)", async () => {
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null }));
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
     await expect(captured!.addCategory("Snacks")).rejects.toThrow("Not signed in.");
-  });
-
-  it("throws from currentStoreId when the staff lookup fails", async () => {
-    const staffChain = makeChain("staff");
-    staffChain.single = vi.fn().mockResolvedValue({ data: null, error: { message: "no staff" } });
-    mockedSupabase.from.mockImplementation((table: string) => (table === "staff" ? staffChain : makeChain(table)));
-    renderProvider(<Capture />);
-    await waitFor(() => expect(captured?.loading).toBe(false));
-    await expect(captured!.addCategory("Snacks")).rejects.toThrow("Could not resolve your store.");
   });
 
   it("manually refreshes", async () => {
