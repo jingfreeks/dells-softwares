@@ -1,10 +1,10 @@
 /*
- * Scoped styles for the redesigned Login screen only ("Tindahan POS
- * interface redesign", 1 Aug 2026 — dark glassy blue design system).
- * Every selector is prefixed `tpl-` (Tindahan POS Login) instead of
- * reusing bare names like `.card`/`.btn` so nothing here can collide
- * with the app's existing Tailwind utilities (e.g. the `card` utility
- * in src/index.css) or bleed into other pages.
+ * Shared styles for the redesigned auth screens — Login and Register
+ * ("Tindahan POS interface redesign", 1 Aug 2026 — dark glassy blue
+ * design system). Every selector is prefixed `tpl-` (Tindahan POS
+ * Login) instead of reusing bare names like `.card`/`.btn` so nothing
+ * here can collide with the app's existing Tailwind utilities (e.g.
+ * the `card` utility in src/index.css) or bleed into other pages.
  */
 
 .tpl-root {
@@ -23,6 +23,7 @@
   --tpl-t5: #94a2b8;
   --tpl-t6: #7c8aa5;
   --tpl-t7: #66738a;
+  --tpl-t8: #4a5567;
   --tpl-t9: #5b677e;
   --tpl-ok: #4ade80;
   --tpl-okd: #7fcfa0;
@@ -221,6 +222,14 @@
   box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.12);
   background: rgba(248, 113, 113, 0.06);
 }
+.tpl-fld.tpl-good {
+  border: 0.5px solid rgba(74, 222, 128, 0.45);
+  background: rgba(74, 222, 128, 0.05);
+}
+.tpl-fld-ok {
+  color: var(--tpl-ok);
+  flex: none;
+}
 .tpl-eye-btn {
   background: none;
   border: none;
@@ -305,6 +314,135 @@
 .tpl-check-label {
   color: var(--tpl-t4);
   font-size: 13px;
+}
+
+/* Password strength meter (Register) */
+.tpl-strength-row {
+  display: flex;
+  gap: 5px;
+  margin: 10px 0 6px;
+}
+.tpl-strength-row span {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.tpl-strength-row span.tpl-on {
+  background: var(--tpl-ok);
+}
+.tpl-strength-hint {
+  color: var(--tpl-t7);
+  font-size: 11.5px;
+  margin: 0 0 16px;
+}
+.tpl-strength-hint .tpl-ok {
+  color: var(--tpl-ok);
+  font-weight: 500;
+}
+
+/* Terms-of-service checkbox row (Register) — multi-line label variant
+   of .tpl-check-row/.tpl-checkbox, so long text wraps under itself. */
+.tpl-terms-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.tpl-terms-row .tpl-checkbox {
+  margin-top: 1px;
+}
+.tpl-terms-label {
+  color: var(--tpl-t4);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Onboarding step list + avatars (Register preview pane) */
+.tpl-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+.tpl-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.tpl-av {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 12px;
+  flex: none;
+}
+.tpl-av.tpl-b {
+  background: rgba(76, 141, 255, 0.2);
+  color: var(--tpl-a4);
+  border: 0.5px solid rgba(76, 141, 255, 0.4);
+}
+.tpl-av.tpl-n {
+  background: rgba(255, 255, 255, 0.06);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  color: var(--tpl-t5);
+}
+.tpl-step-title {
+  font-size: 14px;
+  margin: 0;
+}
+.tpl-step-title.tpl-active {
+  color: var(--tpl-t3);
+}
+.tpl-step-title.tpl-pending {
+  color: var(--tpl-t5);
+}
+
+/* Setup checklist card (Register preview pane) */
+.tpl-checklist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+.tpl-checklist-row i.ti {
+  font-size: 17px;
+  flex: none;
+}
+.tpl-checklist-label {
+  font-size: 13px;
+}
+.tpl-checklist-label.tpl-done {
+  color: var(--tpl-t5);
+  text-decoration: line-through;
+}
+.tpl-checklist-label.tpl-active {
+  color: var(--tpl-t3);
+}
+.tpl-checklist-label.tpl-todo {
+  color: var(--tpl-t7);
+}
+.tpl-bar {
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.tpl-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--tpl-a1), #60a5fa);
 }
 
 .tpl-btnp {
@@ -602,4 +740,16 @@
 .ti-notebook {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%203h12v18H6zM6%208h4M6%2012h4M10%203v18%22%2F%3E%3C%2Fsvg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%203h12v18H6zM6%208h4M6%2012h4M10%203v18%22%2F%3E%3C%2Fsvg%3E");
+}
+.ti-circle-check {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%2021a9%209%200%201%200%200-18a9%209%200%200%200%200%2018M9%2012l2%202%204-4%22%2F%3E%3C%2Fsvg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%2021a9%209%200%201%200%200-18a9%209%200%200%200%200%2018M9%2012l2%202%204-4%22%2F%3E%3C%2Fsvg%3E");
+}
+.ti-circle-dashed {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M8.6%203.6a9%209%200%200%200-5%205M3%2012.9a9%209%200%200%200%202%205.7M9.1%2020.7a9%209%200%200%200%206%200M19%2018.6a9%209%200%200%200%202-5.7M15.4%203.6a9%209%200%200%201%205%205%22%2F%3E%3C%2Fsvg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M8.6%203.6a9%209%200%200%200-5%205M3%2012.9a9%209%200%200%200%202%205.7M9.1%2020.7a9%209%200%200%200%206%200M19%2018.6a9%209%200%200%200%202-5.7M15.4%203.6a9%209%200%200%201%205%205%22%2F%3E%3C%2Fsvg%3E");
+}
+.ti-circle {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%2021a9%209%200%201%200%200-18a9%209%200%200%200%200%2018%22%2F%3E%3C%2Fsvg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%2021a9%209%200%201%200%200-18a9%209%200%200%200%200%2018%22%2F%3E%3C%2Fsvg%3E");
 }

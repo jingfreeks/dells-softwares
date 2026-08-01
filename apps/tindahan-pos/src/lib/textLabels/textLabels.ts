@@ -25,14 +25,11 @@ export const APP_NAME = "Tindahan POS";
 // Shared form field labels — reused across Login/Register/Staff/etc.
 export const LABEL_EMAIL_ADDRESS = "Email address";
 export const LABEL_PASSWORD = "Password";
-export const LABEL_CONFIRM_PASSWORD = "Confirm password";
 
-// Shared password-visibility toggle aria-labels — Login/Register both
-// have a show/hide eye icon button on their password field(s).
+// Shared password-visibility toggle aria-label — Login/Register both
+// have a show/hide eye icon button on their password field.
 export const ARIA_SHOW_PASSWORD = "Show password";
 export const ARIA_HIDE_PASSWORD = "Hide password";
-export const ARIA_SHOW_CONFIRM_PASSWORD = "Show confirm password";
-export const ARIA_HIDE_CONFIRM_PASSWORD = "Hide confirm password";
 
 // Shared auth navigation link text — LABEL_LOG_IN doubles as the Login
 // page's submit button text and Register's "already have an account?"
@@ -68,17 +65,48 @@ export const TEXT_LOGIN_PREVIEW_LIVE = "Live";
 export const TEXT_LOGIN_PREVIEW_RECENT_SALES = "Recent sales";
 
 // Register page
-export const PAGE_HEADING_REGISTER = "Set up your store";
+export const PAGE_HEADING_REGISTER = "Create your store";
 export const PAGE_HEADING_CHECK_YOUR_EMAIL = "Check your email";
+export const TEXT_TAGLINE_FREE_FIRST_STORE = "Free for your first store";
+export const TEXT_REGISTER_SUBHEAD = "Takes about a minute. No card needed.";
+export const BUTTON_SIGNUP_WITH_GOOGLE = "Sign up with Google";
 export const LABEL_STORE_NAME = "Store name";
 export const LABEL_OWNER_NAME = "Your name";
+export const HINT_EMAIL_RECEIPT = "We'll send your receipt template here.";
 export const HINT_PASSWORD_MIN_LENGTH = "At least 8 characters.";
+export const TEXT_PASSWORD_STRENGTH_WEAK = "Too weak";
+export const TEXT_PASSWORD_STRENGTH_FAIR = "Fair";
+export const TEXT_PASSWORD_STRENGTH_GOOD = "Strong";
+export const TEXT_PASSWORD_STRENGTH_STRONG = "Very strong";
+export const HINT_ADD_SYMBOL_TO_MAX_OUT = "add a symbol to max it out";
+export const LABEL_AGREE_TO_TERMS_PREFIX = "I agree to the";
+export const LINK_TERMS_OF_SERVICE = "Terms of Service";
+export const TEXT_AND = "and";
+export const LINK_PRIVACY_POLICY = "Privacy Policy";
 export const BUTTON_CREATE_ACCOUNT = "Create account";
 export const BUTTON_CREATING_ACCOUNT = "Creating account…";
-export const TEXT_HAVE_ACCOUNT_PROMPT = "Already have an account?";
+export const TEXT_HAVE_ACCOUNT_PROMPT = "Already have a store?";
 export const TEXT_CONFIRMATION_EMAIL_SENT_PREFIX = "We sent a confirmation link to";
 export const TEXT_CONFIRMATION_EMAIL_SENT_SUFFIX =
   ". Open it to activate your store, then come back and log in.";
+
+// Register page — preview pane (right side)
+export const TEXT_REGISTER_PREVIEW_HEADLINE = "You're three steps from your first sale.";
+export const TEXT_REGISTER_PREVIEW_TAGLINE = "Set up once, then just open the register each morning.";
+export const TEXT_REGISTER_STEP_1_TITLE = "Create your account";
+export const TEXT_REGISTER_STEP_1_SUB = "Store name and login";
+export const TEXT_REGISTER_STEP_2_TITLE = "Add your products";
+export const TEXT_REGISTER_STEP_2_SUB = "Type them in or import a list";
+export const TEXT_REGISTER_STEP_3_TITLE = "Open the register";
+export const TEXT_REGISTER_STEP_3_SUB = "Cash, GCash, or utang";
+export const TEXT_REGISTER_PREVIEW_DAY_LABEL = "Your first day, typically";
+export const TEXT_REGISTER_PREVIEW_LIVE_IN = "Live in ~15 min";
+export const TEXT_REGISTER_CHECKLIST_LABEL = "Setup checklist";
+export const TEXT_REGISTER_CHECKLIST_1 = "Store profile and currency";
+export const TEXT_REGISTER_CHECKLIST_2 = "Import product list";
+export const TEXT_REGISTER_CHECKLIST_3 = "Set low-stock thresholds";
+export const TEXT_REGISTER_CHECKLIST_4 = "Invite your staff";
+export const TEXT_REGISTER_CHECKLIST_PROGRESS = "2 of 4 done";
 
 // Forgot password page
 export const PAGE_HEADING_FORGOT_PASSWORD = "Reset your password";
