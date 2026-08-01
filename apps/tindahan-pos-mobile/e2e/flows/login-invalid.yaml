@@ -1,0 +1,10 @@
+appId: com.tindahanpos.mobile
+---
+- launchApp
+- assertVisible: "Tindahan POS"
+- tapOn: "Email"
+- inputText: "nobody@example.com"
+- tapOn: "Password"
+- inputText: "wrong-password"
+- tapOn: "Sign in"
+- assertVisible: "Incorrect email or password."
