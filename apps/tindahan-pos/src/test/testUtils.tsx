@@ -11,7 +11,7 @@ import type {
   StaffAccount,
   Store,
   Supplier,
-} from "../lib/types";
+} from "@/lib/types";
 
 export function makeStaffAccount(overrides: Partial<StaffAccount> = {}): StaffAccount {
   return {
