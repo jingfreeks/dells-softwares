@@ -1,73 +1,61 @@
-import { useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
-import { useAuth } from "@/lib";
-import { EyeIcon, EyeOffIcon } from "@/components";
+import { Link, Navigate } from "react-router-dom";
+import {
+  APP_NAME,
+  PAGE_HEADING_REGISTER,
+  LABEL_STORE_NAME,
+  LABEL_OWNER_NAME,
+  LABEL_EMAIL_ADDRESS,
+  LABEL_PASSWORD,
+  LABEL_CONFIRM_PASSWORD,
+  HINT_PASSWORD_MIN_LENGTH,
+  ARIA_SHOW_PASSWORD,
+  ARIA_HIDE_PASSWORD,
+  ARIA_SHOW_CONFIRM_PASSWORD,
+  ARIA_HIDE_CONFIRM_PASSWORD,
+  BUTTON_CREATE_ACCOUNT,
+  BUTTON_CREATING_ACCOUNT,
+  TEXT_HAVE_ACCOUNT_PROMPT,
+  LABEL_LOG_IN,
+} from "@/lib";
+import { PasswordField, ConfirmationSentScreen, AuthErrorMessage } from "./component";
+import { useRegisterForm } from "./hooks";
 
 export function Register() {
-  const { user, register } = useAuth();
-  const navigate = useNavigate();
-  const [storeName, setStoreName] = useState("");
-  const [ownerName, setOwnerName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const {
+    user,
+    storeName,
+    setStoreName,
+    ownerName,
+    setOwnerName,
+    email,
+    setEmail,
+    password,
+    setPassword,
+    confirmPassword,
+    setConfirmPassword,
+    showPassword,
+    toggleShowPassword,
+    showConfirmPassword,
+    toggleShowConfirmPassword,
+    error,
+    submitting,
+    awaitingConfirmation,
+    handleSubmit,
+  } = useRegisterForm();
 
   if (user) return <Navigate to="/pos" replace />;
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSubmitting(true);
-    const result = await register({ storeName, ownerName, email, password, confirmPassword });
-    setSubmitting(false);
-
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    if (result.needsEmailConfirmation) {
-      setAwaitingConfirmation(true);
-      return;
-    }
-    navigate("/pos");
-  }
-
-  if (awaitingConfirmation) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-        <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <p className="text-sm font-medium text-[var(--color-brand)]">Tindahan POS</p>
-          <h1 className="mt-1 text-xl font-semibold text-slate-900">Check your email</h1>
-          <p role="status" className="mt-3 text-sm text-slate-600">
-            We sent a confirmation link to <span className="font-medium">{email}</span>. Open it
-            to activate your store, then come back and log in.
-          </p>
-          <Link
-            to="/login"
-            className="mt-6 inline-block font-medium text-[var(--color-brand)] hover:underline"
-          >
-            Back to login
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  if (awaitingConfirmation) return <ConfirmationSentScreen email={email} />;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-sm font-medium text-[var(--color-brand)]">Tindahan POS</p>
-        <h1 className="mt-1 text-xl font-semibold text-slate-900">Set up your store</h1>
+        <p className="text-sm font-medium text-[var(--color-brand)]">{APP_NAME}</p>
+        <h1 className="mt-1 text-xl font-semibold text-slate-900">{PAGE_HEADING_REGISTER}</h1>
 
         <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
           <div>
             <label htmlFor="storeName" className="text-sm font-medium text-slate-700">
-              Store name
+              {LABEL_STORE_NAME}
             </label>
             <input
               id="storeName"
@@ -80,7 +68,7 @@ export function Register() {
           </div>
           <div>
             <label htmlFor="ownerName" className="text-sm font-medium text-slate-700">
-              Your name
+              {LABEL_OWNER_NAME}
             </label>
             <input
               id="ownerName"
@@ -93,7 +81,7 @@ export function Register() {
           </div>
           <div>
             <label htmlFor="regEmail" className="text-sm font-medium text-slate-700">
-              Email address
+              {LABEL_EMAIL_ADDRESS}
             </label>
             <input
               id="regEmail"
@@ -107,60 +95,38 @@ export function Register() {
           </div>
           <div>
             <label htmlFor="regPassword" className="text-sm font-medium text-slate-700">
-              Password
+              {LABEL_PASSWORD}
             </label>
-            <div className="relative mt-1">
-              <input
-                id="regPassword"
-                type={showPassword ? "text" : "password"}
-                autoComplete="new-password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 pr-10 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute inset-y-0 right-0 flex w-10 cursor-pointer items-center justify-center text-slate-400 hover:text-slate-600"
-              >
-                {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-              </button>
-            </div>
-            <p className="mt-1 text-xs text-slate-500">At least 8 characters.</p>
+            <PasswordField
+              id="regPassword"
+              autoComplete="new-password"
+              value={password}
+              onChange={setPassword}
+              visible={showPassword}
+              onToggleVisible={toggleShowPassword}
+              ariaShowLabel={ARIA_SHOW_PASSWORD}
+              ariaHideLabel={ARIA_HIDE_PASSWORD}
+              minLength={8}
+            />
+            <p className="mt-1 text-xs text-slate-500">{HINT_PASSWORD_MIN_LENGTH}</p>
           </div>
           <div>
             <label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">
-              Confirm password
+              {LABEL_CONFIRM_PASSWORD}
             </label>
-            <div className="relative mt-1">
-              <input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                autoComplete="new-password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 pr-10 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword((v) => !v)}
-                aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
-                className="absolute inset-y-0 right-0 flex w-10 cursor-pointer items-center justify-center text-slate-400 hover:text-slate-600"
-              >
-                {showConfirmPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-              </button>
-            </div>
+            <PasswordField
+              id="confirmPassword"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              visible={showConfirmPassword}
+              onToggleVisible={toggleShowConfirmPassword}
+              ariaShowLabel={ARIA_SHOW_CONFIRM_PASSWORD}
+              ariaHideLabel={ARIA_HIDE_CONFIRM_PASSWORD}
+            />
           </div>
 
-          {error && (
-            <p role="alert" className="text-sm text-red-600">
-              {error}
-            </p>
-          )}
+          <AuthErrorMessage error={error} />
 
           <button
             type="submit"
@@ -173,14 +139,14 @@ export function Register() {
                 className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
               />
             )}
-            {submitting ? "Creating account…" : "Create account"}
+            {submitting ? BUTTON_CREATING_ACCOUNT : BUTTON_CREATE_ACCOUNT}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-600">
-          Already have an account?{" "}
+          {TEXT_HAVE_ACCOUNT_PROMPT}{" "}
           <Link to="/login" className="font-medium text-[var(--color-brand)] hover:underline">
-            Log in
+            {LABEL_LOG_IN}
           </Link>
         </p>
       </div>

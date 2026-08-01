@@ -1,6 +1,14 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth, useStoreData } from "@/lib";
+import {
+  useAuth,
+  useStoreData,
+  PLACEHOLDER_SEARCH_PRODUCTS_OR_CUSTOMERS,
+  TEXT_NO_MATCHES_FOR_PREFIX,
+  LABEL_PRODUCTS_TAB,
+  NAV_LABEL_CUSTOMERS,
+  TEXT_NO_PHONE,
+} from "@/lib";
 import { SearchIcon } from "@/components/icons";
 
 const MAX_RESULTS_PER_GROUP = 4;
@@ -72,7 +80,7 @@ export function Topbar() {
         <input
           ref={inputRef}
           type="search"
-          placeholder="Search products or customers…"
+          placeholder={PLACEHOLDER_SEARCH_PRODUCTS_OR_CUSTOMERS}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -85,12 +93,14 @@ export function Topbar() {
         {open && query.trim() !== "" && (
           <div className="card absolute left-0 right-0 top-full z-30 mt-2 max-h-80 overflow-y-auto p-1.5">
             {!hasResults && (
-              <p className="px-3 py-4 text-center text-sm text-slate-400">No matches for "{query.trim()}".</p>
+              <p className="px-3 py-4 text-center text-sm text-slate-400">
+                {TEXT_NO_MATCHES_FOR_PREFIX} "{query.trim()}".
+              </p>
             )}
             {productMatches.length > 0 && (
               <div className="mb-1">
                 <p className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                  Products
+                  {LABEL_PRODUCTS_TAB}
                 </p>
                 {productMatches.map((product) => (
                   <button
@@ -109,7 +119,7 @@ export function Topbar() {
             {customerMatches.length > 0 && (
               <div>
                 <p className="px-3 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                  Customers
+                  {NAV_LABEL_CUSTOMERS}
                 </p>
                 {customerMatches.map((customer) => (
                   <button
@@ -120,7 +130,7 @@ export function Topbar() {
                     className="flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-50"
                   >
                     <span className="truncate text-slate-700">{customer.name}</span>
-                    <span className="shrink-0 text-xs text-slate-400">{customer.phone ?? "No phone"}</span>
+                    <span className="shrink-0 text-xs text-slate-400">{customer.phone ?? TEXT_NO_PHONE}</span>
                   </button>
                 ))}
               </div>

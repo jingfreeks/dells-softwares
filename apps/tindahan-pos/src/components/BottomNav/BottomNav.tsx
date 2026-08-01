@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { useAuth, navItemsForRole } from "@/lib";
+import { useAuth, navItemsForRole, ARIA_MAIN_NAV } from "@/lib";
 import { NAV_ICONS } from "@/components/icons";
 
 export function BottomNav() {
@@ -8,7 +8,7 @@ export function BottomNav() {
 
   return (
     <nav
-      aria-label="Main"
+      aria-label={ARIA_MAIN_NAV}
       className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-100 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-16px_rgba(15,23,42,0.15)] lg:hidden"
     >
       {navItems.map((item) => {

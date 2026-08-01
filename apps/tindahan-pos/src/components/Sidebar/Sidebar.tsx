@@ -1,5 +1,13 @@
 import { Link, NavLink } from "react-router-dom";
-import { useAuth, STORE_NAME, navItemsForRole } from "@/lib";
+import {
+  useAuth,
+  STORE_NAME,
+  navItemsForRole,
+  APP_NAME,
+  ARIA_MAIN_NAV,
+  LABEL_MENU,
+  LABEL_LOG_OUT,
+} from "@/lib";
 import { NAV_ICONS, LogoutIcon } from "@/components/icons";
 
 export function Sidebar() {
@@ -14,12 +22,12 @@ export function Sidebar() {
         </span>
         <div className="min-w-0">
           <p className="truncate text-sm font-bold text-slate-900">{STORE_NAME}</p>
-          <p className="text-xs text-slate-400">Tindahan POS</p>
+          <p className="text-xs text-slate-400">{APP_NAME}</p>
         </div>
       </div>
-      <nav className="flex flex-1 flex-col gap-1 px-3" aria-label="Main">
+      <nav className="flex flex-1 flex-col gap-1 px-3" aria-label={ARIA_MAIN_NAV}>
         <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-          Menu
+          {LABEL_MENU}
         </p>
         {navItems.map((item) => {
           const Icon = NAV_ICONS[item.icon];
@@ -66,7 +74,7 @@ export function Sidebar() {
           className="mt-1.5 flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-1 py-1.5 text-left text-sm font-medium text-slate-500 hover:text-[var(--color-brand)]"
         >
           <LogoutIcon className="h-4 w-4 shrink-0" />
-          Log out
+          {LABEL_LOG_OUT}
         </button>
       </div>
     </aside>

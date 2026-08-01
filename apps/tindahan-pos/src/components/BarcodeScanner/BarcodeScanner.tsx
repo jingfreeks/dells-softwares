@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
+import {
+  LABEL_SCAN_BARCODE,
+  ARIA_CLOSE_SCANNER,
+  TEXT_SCAN_HINT,
+  ERROR_CAMERA_DENIED,
+  ERROR_CAMERA_NOT_FOUND,
+  ERROR_CAMERA_IN_USE,
+  ERROR_CAMERA_GENERIC,
+} from "@/lib";
 
 const SCAN_ELEMENT_ID = "barcode-scanner-viewport";
 
@@ -58,19 +67,13 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
       .catch((err: unknown) => {
         const name = err instanceof Error ? err.name : "";
         if (name === "NotAllowedError") {
-          setError(
-            "Camera access was denied. Allow camera access for this site in your browser settings, or use manual entry below."
-          );
+          setError(ERROR_CAMERA_DENIED);
         } else if (name === "NotFoundError" || name === "OverconstrainedError") {
-          setError("No camera was found on this device. Use manual entry below instead.");
+          setError(ERROR_CAMERA_NOT_FOUND);
         } else if (name === "NotReadableError") {
-          setError(
-            "The camera is already in use by another app or tab. Close it and try again, or use manual entry below."
-          );
+          setError(ERROR_CAMERA_IN_USE);
         } else {
-          setError(
-            "Could not access the camera. Check that you've allowed camera access for this site, or use manual entry below."
-          );
+          setError(ERROR_CAMERA_GENERIC);
         }
       });
 
@@ -89,11 +92,11 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
     <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-sm rounded-xl bg-white p-4 shadow-xl">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-900">Scan barcode</h2>
+          <h2 className="text-sm font-semibold text-slate-900">{LABEL_SCAN_BARCODE}</h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close scanner"
+            aria-label={ARIA_CLOSE_SCANNER}
             className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5" aria-hidden>
@@ -112,9 +115,7 @@ export function BarcodeScanner({ onDetected, onClose }: BarcodeScannerProps) {
               id={SCAN_ELEMENT_ID}
               className="mt-3 overflow-hidden rounded-xl bg-slate-900"
             />
-            <p className="mt-3 text-center text-xs text-slate-500">
-              Point the camera at a barcode. It scans automatically.
-            </p>
+            <p className="mt-3 text-center text-xs text-slate-500">{TEXT_SCAN_HINT}</p>
           </>
         )}
       </div>

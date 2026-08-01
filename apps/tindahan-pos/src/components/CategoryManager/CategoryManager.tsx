@@ -1,5 +1,21 @@
 import { useState } from "react";
-import { useStoreData, type Category } from "@/lib";
+import {
+  useStoreData,
+  LABEL_MANAGE_CATEGORIES,
+  BUTTON_CLOSE,
+  PLACEHOLDER_NEW_CATEGORY_NAME,
+  BUTTON_ADD,
+  BUTTON_SAVE,
+  BUTTON_CANCEL,
+  BUTTON_RENAME,
+  BUTTON_DELETE,
+  TITLE_REASSIGN_PRODUCTS_FIRST,
+  EMPTY_STATE_NO_CATEGORIES,
+  ERROR_COULD_NOT_ADD_CATEGORY,
+  ERROR_COULD_NOT_RENAME_CATEGORY,
+  ERROR_COULD_NOT_DELETE_CATEGORY,
+  type Category,
+} from "@/lib";
 
 interface CategoryManagerProps {
   onClose: () => void;
@@ -26,7 +42,7 @@ export function CategoryManager({ onClose }: CategoryManagerProps) {
       await addCategory(newName);
       setNewName("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not add category.");
+      setError(err instanceof Error ? err.message : ERROR_COULD_NOT_ADD_CATEGORY);
     } finally {
       setAdding(false);
     }
@@ -46,7 +62,7 @@ export function CategoryManager({ onClose }: CategoryManagerProps) {
       await renameCategory(id, editName);
       setEditingId(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not rename category.");
+      setError(err instanceof Error ? err.message : ERROR_COULD_NOT_RENAME_CATEGORY);
     } finally {
       setBusyId(null);
     }
@@ -58,7 +74,7 @@ export function CategoryManager({ onClose }: CategoryManagerProps) {
     try {
       await removeCategory(id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete category.");
+      setError(err instanceof Error ? err.message : ERROR_COULD_NOT_DELETE_CATEGORY);
     } finally {
       setBusyId(null);
     }
@@ -68,20 +84,20 @@ export function CategoryManager({ onClose }: CategoryManagerProps) {
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-900">Manage categories</h2>
+          <h2 className="text-base font-semibold text-slate-900">{LABEL_MANAGE_CATEGORIES}</h2>
           <button
             type="button"
             onClick={onClose}
             className="cursor-pointer text-sm text-slate-500 hover:text-slate-700"
           >
-            Close
+            {BUTTON_CLOSE}
           </button>
         </div>
 
         <div className="mt-4 flex gap-2">
           <input
             type="text"
-            placeholder="New category name"
+            placeholder={PLACEHOLDER_NEW_CATEGORY_NAME}
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
@@ -93,7 +109,7 @@ export function CategoryManager({ onClose }: CategoryManagerProps) {
             disabled={!newName.trim() || adding}
             className="cursor-pointer rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Add
+            {BUTTON_ADD}
           </button>
         </div>
 
@@ -136,14 +152,14 @@ export function CategoryManager({ onClose }: CategoryManagerProps) {
                       disabled={isBusy}
                       className="cursor-pointer text-xs font-medium text-[var(--color-brand)] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      Save
+                      {BUTTON_SAVE}
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditingId(null)}
                       className="cursor-pointer text-xs text-slate-500 hover:underline"
                     >
-                      Cancel
+                      {BUTTON_CANCEL}
                     </button>
                   </>
                 ) : (
@@ -153,16 +169,16 @@ export function CategoryManager({ onClose }: CategoryManagerProps) {
                       onClick={() => startEdit(category)}
                       className="cursor-pointer text-xs font-medium text-slate-600 hover:underline"
                     >
-                      Rename
+                      {BUTTON_RENAME}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(category.id)}
                       disabled={count > 0 || isBusy}
-                      title={count > 0 ? "Reassign or remove its products first" : undefined}
+                      title={count > 0 ? TITLE_REASSIGN_PRODUCTS_FIRST : undefined}
                       className="cursor-pointer text-xs font-medium text-red-600 hover:underline disabled:cursor-not-allowed disabled:text-slate-300 disabled:no-underline"
                     >
-                      Delete
+                      {BUTTON_DELETE}
                     </button>
                   </>
                 )}
@@ -170,7 +186,7 @@ export function CategoryManager({ onClose }: CategoryManagerProps) {
             );
           })}
           {categories.length === 0 && (
-            <li className="px-3 py-8 text-center text-sm text-slate-400">No categories yet.</li>
+            <li className="px-3 py-8 text-center text-sm text-slate-400">{EMPTY_STATE_NO_CATEGORIES}</li>
           )}
         </ul>
       </div>
