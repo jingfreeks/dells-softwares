@@ -1,4 +1,4 @@
-import { useAuth, STORE_NAME } from "@/lib";
+import { useAuth, STORE_NAME, APP_NAME, LABEL_LOG_OUT } from "@/lib";
 import { LogoutIcon } from "@/components/icons";
 
 export function MobileHeader() {
@@ -8,12 +8,12 @@ export function MobileHeader() {
     <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
       <div>
         <p className="text-sm font-semibold text-slate-900">{STORE_NAME}</p>
-        <p className="text-xs text-slate-500">Tindahan POS</p>
+        <p className="text-xs text-slate-500">{APP_NAME}</p>
       </div>
       <button
         type="button"
         onClick={logout}
-        aria-label="Log out"
+        aria-label={LABEL_LOG_OUT}
         className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100"
       >
         <LogoutIcon className="h-5 w-5" />

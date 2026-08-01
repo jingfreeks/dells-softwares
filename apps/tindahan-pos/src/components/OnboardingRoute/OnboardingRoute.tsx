@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/lib";
+import { useAuth, ARIA_LOADING } from "@/lib";
 
 /**
  * Guards /onboarding specifically — deliberately doesn't reuse
@@ -28,7 +28,7 @@ export function OnboardingRoute({ children }: { children: ReactNode }) {
       <div className="flex h-screen items-center justify-center bg-[var(--color-canvas)]">
         <div
           role="status"
-          aria-label="Loading"
+          aria-label={ARIA_LOADING}
           className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-[var(--color-brand)]"
         />
       </div>

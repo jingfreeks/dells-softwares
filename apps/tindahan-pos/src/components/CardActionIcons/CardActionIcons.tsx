@@ -1,3 +1,10 @@
+import {
+  ARIA_DOWNLOAD_PREFIX,
+  ARIA_AS_PDF_SUFFIX,
+  LABEL_DOWNLOAD_PDF,
+  LABEL_PRINT,
+  LABEL_SHARE,
+} from "@/lib";
 import { DownloadIcon, PrintIcon, ShareIcon } from "@/components/icons";
 
 export interface CardActions {
@@ -15,8 +22,8 @@ export function CardActionIcons({ title, onDownload, onPrint, onShare }: CardAct
         <button
           type="button"
           onClick={onDownload}
-          aria-label={`Download ${title} as PDF`}
-          title="Download PDF"
+          aria-label={`${ARIA_DOWNLOAD_PREFIX} ${title} ${ARIA_AS_PDF_SUFFIX}`}
+          title={LABEL_DOWNLOAD_PDF}
           className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600"
         >
           <DownloadIcon className="h-4 w-4" />
@@ -26,8 +33,8 @@ export function CardActionIcons({ title, onDownload, onPrint, onShare }: CardAct
         <button
           type="button"
           onClick={onPrint}
-          aria-label={`Print ${title}`}
-          title="Print"
+          aria-label={`${LABEL_PRINT} ${title}`}
+          title={LABEL_PRINT}
           className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600"
         >
           <PrintIcon className="h-4 w-4" />
@@ -37,8 +44,8 @@ export function CardActionIcons({ title, onDownload, onPrint, onShare }: CardAct
         <button
           type="button"
           onClick={onShare}
-          aria-label={`Share ${title}`}
-          title="Share"
+          aria-label={`${LABEL_SHARE} ${title}`}
+          title={LABEL_SHARE}
           className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600"
         >
           <ShareIcon className="h-4 w-4" />

@@ -1,42 +1,47 @@
-import { useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
-import { useAuth, STORE_NAME } from "@/lib";
-import { EyeIcon, EyeOffIcon } from "@/components";
+import { Link, Navigate } from "react-router-dom";
+import {
+  STORE_NAME,
+  APP_NAME,
+  PAGE_HEADING_LOGIN_PREFIX,
+  LABEL_EMAIL_ADDRESS,
+  LABEL_PASSWORD,
+  LINK_FORGOT_PASSWORD,
+  LABEL_LOG_IN,
+  BUTTON_LOGGING_IN,
+  TEXT_NEW_STORE_PROMPT,
+  LINK_REGISTER,
+} from "@/lib";
+import { AuthErrorMessage, PasswordField } from "./component";
+import { useLoginForm } from "./hooks";
 
 export function Login() {
-  const { user, login } = useAuth();
-  const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const {
+    user,
+    email,
+    setEmail,
+    password,
+    setPassword,
+    showPassword,
+    toggleShowPassword,
+    error,
+    submitting,
+    handleSubmit,
+  } = useLoginForm();
 
   if (user) return <Navigate to="/pos" replace />;
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSubmitting(true);
-    const result = await login(email, password);
-    setSubmitting(false);
-    if (result.ok) {
-      navigate("/pos");
-    } else {
-      setError(result.error);
-    }
-  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-sm font-medium text-[var(--color-brand)]">Tindahan POS</p>
-        <h1 className="mt-1 text-xl font-semibold text-slate-900">Log in to {STORE_NAME}</h1>
+        <p className="text-sm font-medium text-[var(--color-brand)]">{APP_NAME}</p>
+        <h1 className="mt-1 text-xl font-semibold text-slate-900">
+          {PAGE_HEADING_LOGIN_PREFIX} {STORE_NAME}
+        </h1>
 
         <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
           <div>
             <label htmlFor="email" className="text-sm font-medium text-slate-700">
-              Email address
+              {LABEL_EMAIL_ADDRESS}
             </label>
             <input
               id="email"
@@ -51,38 +56,23 @@ export function Login() {
           <div>
             <div className="flex items-center justify-between">
               <label htmlFor="password" className="text-sm font-medium text-slate-700">
-                Password
+                {LABEL_PASSWORD}
               </label>
               <Link to="/forgot-password" className="text-xs text-[var(--color-brand)] hover:underline">
-                Forgot password?
+                {LINK_FORGOT_PASSWORD}
               </Link>
             </div>
-            <div className="relative mt-1">
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 pr-10 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute inset-y-0 right-0 flex w-10 cursor-pointer items-center justify-center text-slate-400 hover:text-slate-600"
-              >
-                {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
-              </button>
-            </div>
+            <PasswordField
+              id="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={setPassword}
+              visible={showPassword}
+              onToggleVisible={toggleShowPassword}
+            />
           </div>
 
-          {error && (
-            <p role="alert" className="text-sm text-red-600">
-              {error}
-            </p>
-          )}
+          <AuthErrorMessage error={error} />
 
           <button
             type="submit"
@@ -95,14 +85,14 @@ export function Login() {
                 className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
               />
             )}
-            {submitting ? "Logging in…" : "Log in"}
+            {submitting ? BUTTON_LOGGING_IN : LABEL_LOG_IN}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-600">
-          New store?{" "}
+          {TEXT_NEW_STORE_PROMPT}{" "}
           <Link to="/register" className="font-medium text-[var(--color-brand)] hover:underline">
-            Register
+            {LINK_REGISTER}
           </Link>
         </p>
       </div>
