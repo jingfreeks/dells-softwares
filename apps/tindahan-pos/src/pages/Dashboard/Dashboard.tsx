@@ -1,115 +1,143 @@
 import {
+  useAuth,
   useStoreData,
   PESO,
-  PAGE_HEADING_ADMIN_DASHBOARD,
-  TEXT_DASHBOARD_DESCRIPTION,
+  TEXT_GREETING_MORNING,
+  TEXT_GREETING_AFTERNOON,
+  TEXT_GREETING_EVENING,
+  TEXT_SALES_SO_FAR_SUFFIX,
+  LABEL_PERIOD_TODAY,
+  BUTTON_EXPORT_REPORT,
+  ARIA_EXPORT_REPORT,
   LABEL_TODAYS_SALES,
+  TEXT_VS_YESTERDAY_SUFFIX,
   LABEL_TRANSACTIONS_TODAY,
+  TEXT_AVERAGE_BASKET_SUFFIX,
   LABEL_LOW_STOCK,
-  LABEL_NEEDS_RESTOCKING,
+  LABEL_RESTOCK_TODAY,
   LABEL_ALL_GOOD,
-  LABEL_TOTAL_PRODUCTS,
+  LABEL_UTANG_OUTSTANDING,
 } from "@/lib";
-import { StatCard, Topbar } from "@/components";
 import {
   DashboardError,
   ReportNotice,
   DashboardLoadingSkeleton,
-  DailyReportCard,
   RecentSalesCard,
-  LowStockAlertsCard,
-  SuggestedRestockCard,
+  NeedsRestockingCard,
   BestSellersCard,
   SalesByCategoryCard,
-  QuickActionsCard,
 } from "./component";
 import { useDashboardReport } from "./hooks";
+import "../authTheme.css";
+
+function greetingForHour(hour: number): string {
+  if (hour < 12) return TEXT_GREETING_MORNING;
+  if (hour < 18) return TEXT_GREETING_AFTERNOON;
+  return TEXT_GREETING_EVENING;
+}
 
 export function Dashboard() {
-  const { products, sales, loading, error } = useStoreData();
-  const {
-    report,
-    categoryTotals,
-    restockSuggestions,
-    recentSales,
-    reportAction,
-    reportNotice,
-    runReportAction,
-    buildCardActions,
-  } = useDashboardReport(products, sales);
+  const { user } = useAuth();
+  const { products, sales, customers, loading, error } = useStoreData();
+  const { report, restockRows, exporting, reportNotice, exportReport } = useDashboardReport(
+    products,
+    sales,
+    customers
+  );
+
+  const now = new Date();
+  const dateLabel = now.toLocaleDateString("en-PH", { weekday: "long", day: "numeric", month: "long" });
+  const firstName = user?.name?.split(" ")[0] ?? "";
+  const customersOwing = customers.filter((c) => c.balance > 0).length;
+  const averageBasket = report.todaysTransactionCount > 0 ? report.todaysSalesTotal / report.todaysTransactionCount : 0;
 
   return (
-    <div className="p-6">
-      <Topbar />
-
-      <h1 className="mt-6 text-xl font-bold tracking-tight text-slate-900">{PAGE_HEADING_ADMIN_DASHBOARD}</h1>
-      <p className="text-sm text-slate-500">{TEXT_DASHBOARD_DESCRIPTION}</p>
+    <div className="tpl-root">
+      <div className="tpl-hd">
+        <div>
+          <p className="tpl-h1">
+            {greetingForHour(now.getHours())} {firstName}
+          </p>
+          <p className="tpl-sub">
+            {dateLabel} · {report.todaysTransactionCount} {TEXT_SALES_SO_FAR_SUFFIX}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            className="tpl-btn"
+            disabled
+            title="More periods coming soon"
+            style={{ width: "auto", height: 34, padding: "0 12px", fontSize: 13, marginBottom: 0 }}
+          >
+            {LABEL_PERIOD_TODAY}
+            <i className="ti ti-chevron-down" aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="tpl-btnp"
+            onClick={exportReport}
+            disabled={exporting}
+            aria-label={ARIA_EXPORT_REPORT}
+            style={{ width: "auto", height: 34, padding: "0 14px", fontSize: 13 }}
+          >
+            {exporting ? <span aria-hidden className="tpl-spinner" /> : <i className="ti ti-database-export" aria-hidden />}
+            {BUTTON_EXPORT_REPORT}
+          </button>
+        </div>
+      </div>
 
       <DashboardError error={error} />
-
-      <DailyReportCard
-        reportAction={reportAction}
-        onDownload={() => runReportAction("download")}
-        onPrint={() => runReportAction("print")}
-        onShare={() => runReportAction("share")}
-      />
-
       <ReportNotice notice={reportNotice} />
 
       {loading ? (
         <DashboardLoadingSkeleton />
       ) : (
-        <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard
-            label={LABEL_TODAYS_SALES}
-            value={PESO.format(report.todaysSalesTotal)}
-            {...buildCardActions({
-              kind: "stat",
-              title: LABEL_TODAYS_SALES,
-              value: PESO.format(report.todaysSalesTotal),
-              hint: `${report.todaysTransactionCount} transaction${report.todaysTransactionCount === 1 ? "" : "s"}`,
-            })}
-          />
-          <StatCard
-            label={LABEL_TRANSACTIONS_TODAY}
-            value={String(report.todaysTransactionCount)}
-            {...buildCardActions({
-              kind: "stat",
-              title: LABEL_TRANSACTIONS_TODAY,
-              value: String(report.todaysTransactionCount),
-            })}
-          />
-          <StatCard
-            label={LABEL_LOW_STOCK}
-            value={String(report.lowStock.length)}
-            hint={report.lowStock.length > 0 ? LABEL_NEEDS_RESTOCKING : LABEL_ALL_GOOD}
-            tone={report.lowStock.length > 0 ? "warning" : "neutral"}
-            {...buildCardActions({
-              kind: "stat",
-              title: LABEL_LOW_STOCK,
-              value: String(report.lowStock.length),
-              hint: report.lowStock.length > 0 ? LABEL_NEEDS_RESTOCKING : LABEL_ALL_GOOD,
-            })}
-          />
-          <StatCard
-            label={LABEL_TOTAL_PRODUCTS}
-            value={String(report.totalProducts)}
-            {...buildCardActions({ kind: "stat", title: LABEL_TOTAL_PRODUCTS, value: String(report.totalProducts) })}
-          />
+        <div className="tpl-g4">
+          <div className="tpl-metric">
+            <p className="tpl-mlbl">{LABEL_TODAYS_SALES.toUpperCase()}</p>
+            <p className="tpl-mval">{PESO.format(report.todaysSalesTotal)}</p>
+            {report.salesChangePercent !== null && (
+              <p className={`tpl-mfoot ${report.salesChangePercent >= 0 ? "tpl-ok" : "tpl-bad"}`}>
+                {report.salesChangePercent >= 0 ? "▲" : "▼"} {Math.abs(report.salesChangePercent)}%{" "}
+                {TEXT_VS_YESTERDAY_SUFFIX}
+              </p>
+            )}
+          </div>
+          <div className="tpl-metric">
+            <p className="tpl-mlbl">{LABEL_TRANSACTIONS_TODAY.toUpperCase()}</p>
+            <p className="tpl-mval">{report.todaysTransactionCount}</p>
+            <p className="tpl-mfoot">
+              {PESO.format(averageBasket)} {TEXT_AVERAGE_BASKET_SUFFIX}
+            </p>
+          </div>
+          <div className="tpl-metric tpl-w">
+            <p className="tpl-mlbl" style={{ color: "var(--tpl-warn)" }}>
+              {LABEL_LOW_STOCK.toUpperCase()}
+            </p>
+            <p className="tpl-mval tpl-warn">{report.lowStock.length}</p>
+            <p className="tpl-mfoot" style={{ color: "#b08a2e" }}>
+              {report.lowStock.length > 0 ? LABEL_RESTOCK_TODAY : LABEL_ALL_GOOD}
+            </p>
+          </div>
+          <div className="tpl-metric">
+            <p className="tpl-mlbl">{LABEL_UTANG_OUTSTANDING.toUpperCase()}</p>
+            <p className="tpl-mval">{PESO.format(report.utangOutstanding)}</p>
+            <p className="tpl-mfoot">
+              {customersOwing} customer{customersOwing === 1 ? "" : "s"}
+            </p>
+          </div>
         </div>
       )}
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="flex flex-col gap-6">
-          <RecentSalesCard recentSales={recentSales} buildCardActions={buildCardActions} />
-          <LowStockAlertsCard lowStock={report.lowStock} buildCardActions={buildCardActions} />
-          <SuggestedRestockCard suggestions={restockSuggestions} buildCardActions={buildCardActions} />
+      <div className="tpl-dash-grid">
+        <div className="tpl-dash-col">
+          <RecentSalesCard recentSales={report.recentSales.slice(0, 6)} />
+          <NeedsRestockingCard rows={restockRows} />
         </div>
-
-        <div className="flex flex-col gap-6">
-          <BestSellersCard bestSellers={report.bestSellers} buildCardActions={buildCardActions} />
-          <SalesByCategoryCard categoryTotals={categoryTotals} buildCardActions={buildCardActions} />
-          <QuickActionsCard />
+        <div className="tpl-dash-col">
+          <BestSellersCard bestSellers={report.bestSellers} />
+          <SalesByCategoryCard categoryTotals={report.categoryTotals} />
         </div>
       </div>
     </div>

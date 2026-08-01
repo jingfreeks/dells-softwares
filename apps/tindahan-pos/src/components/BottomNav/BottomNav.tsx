@@ -1,40 +1,26 @@
 import { NavLink } from "react-router-dom";
 import { useAuth, navItemsForRole, ARIA_MAIN_NAV } from "@/lib";
 import { NAV_ICONS } from "@/components/icons";
+import "@/pages/authTheme.css";
 
 export function BottomNav() {
   const { user } = useAuth();
   const navItems = navItemsForRole(user?.role);
 
   return (
-    <nav
-      aria-label={ARIA_MAIN_NAV}
-      className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-100 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-16px_rgba(15,23,42,0.15)] lg:hidden"
-    >
+    <nav aria-label={ARIA_MAIN_NAV} className="tpl-root tpl-bottom-nav flex lg:hidden">
       {navItems.map((item) => {
         const Icon = NAV_ICONS[item.icon];
         return (
           <NavLink
             key={item.to}
             to={item.to}
-            className={({ isActive }) =>
-              `flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 text-xs font-medium ${
-                isActive ? "text-[var(--color-brand)]" : "text-slate-400"
-              }`
-            }
+            className={({ isActive }) => (isActive ? "tpl-on" : "")}
           >
-            {({ isActive }) => (
-              <>
-                <span
-                  className={`flex h-7 w-11 items-center justify-center rounded-full transition-colors ${
-                    isActive ? "bg-[var(--color-brand)]/10" : ""
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                </span>
-                {item.label}
-              </>
-            )}
+            <span className="tpl-bottom-nav-icon">
+              <Icon />
+            </span>
+            {item.label}
           </NavLink>
         );
       })}

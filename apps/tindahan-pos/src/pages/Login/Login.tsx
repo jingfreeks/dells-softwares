@@ -181,7 +181,7 @@ export function Login() {
       </div>
 
       <div className="tpl-preview">
-        <span className="tpl-chip tpl-on">
+        <span className="tpl-chip tpl-on" style={{ alignSelf: "flex-start", marginBottom: 20 }}>
           {APP_NAME}
           <span className="tpl-dotg" />
         </span>

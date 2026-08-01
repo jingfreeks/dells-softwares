@@ -215,39 +215,32 @@ export const ERROR_COULD_NOT_ADD_CUSTOMER = "Could not add customer.";
 export const ERROR_PAYMENT_AMOUNT_INVALID = "Enter a payment amount greater than zero.";
 export const ERROR_COULD_NOT_RECORD_PAYMENT = "Could not record payment.";
 
-// Dashboard page — several of these repeat 2-4 times within the page
-// itself (a stat card's visible label and its download/print/share menu
-// title are the same word, table headers reuse the same empty-state
-// message, etc.), independent of any cross-page duplication.
+// Dashboard page
 export const TEXT_DASHBOARD_DESCRIPTION = "Today's snapshot for the store.";
 export const TEXT_SHARE_NOT_SUPPORTED =
   "Sharing isn't supported on this device — the PDF was downloaded instead.";
 export const ERROR_COULD_NOT_GENERATE_REPORT = "Could not generate the report.";
-export const LABEL_DAILY_SALES_REPORT = "Daily sales report";
-export const TEXT_DAILY_REPORT_DESCRIPTION =
-  "Today's sales, low stock, best sellers, and recent transactions as a PDF. Prefer just one section? Use the icons on any card below instead.";
-export const ARIA_DOWNLOAD_REPORT = "Download report as PDF";
-export const LABEL_DOWNLOAD_PDF = "Download PDF";
-export const ARIA_PRINT_REPORT = "Print report";
-export const LABEL_PRINT = "Print";
-export const ARIA_SHARE_REPORT = "Share report";
-export const LABEL_SHARE = "Share";
+export const TEXT_GREETING_MORNING = "Good morning,";
+export const TEXT_GREETING_AFTERNOON = "Good afternoon,";
+export const TEXT_GREETING_EVENING = "Good evening,";
+export const TEXT_SALES_SO_FAR_SUFFIX = "sales so far";
+export const LABEL_PERIOD_TODAY = "Today";
+export const BUTTON_EXPORT_REPORT = "Export report";
+export const ARIA_EXPORT_REPORT = "Export report as PDF";
 export const LABEL_TODAYS_SALES = "Today's sales";
+export const TEXT_VS_YESTERDAY_SUFFIX = "vs yesterday";
 export const LABEL_TRANSACTIONS_TODAY = "Transactions today";
+export const TEXT_AVERAGE_BASKET_SUFFIX = "average basket";
 export const LABEL_LOW_STOCK = "Low stock";
 export const LABEL_NEEDS_RESTOCKING = "Needs restocking";
+export const LABEL_RESTOCK_TODAY = "Restock today";
 export const LABEL_ALL_GOOD = "All good";
-export const LABEL_TOTAL_PRODUCTS = "Total products";
+export const LABEL_UTANG_OUTSTANDING = "Utang outstanding";
 export const LABEL_RECENT_SALES = "Recent sales";
-export const TABLE_HEADER_DATE_TIME = "Date & time";
-export const TABLE_HEADER_CASHIER = "Cashier";
-export const TABLE_HEADER_ITEMS = "Items";
 export const TABLE_HEADER_TOTAL = "Total";
 export const EMPTY_STATE_NO_SALES = "No sales recorded yet.";
-export const LABEL_LOW_STOCK_ALERTS = "Low stock alerts";
 export const TABLE_HEADER_PRODUCT = "Product";
 export const TABLE_HEADER_STOCK = "Stock";
-export const TABLE_HEADER_THRESHOLD = "Threshold";
 export const TABLE_HEADER_STATUS = "Status";
 export const LABEL_STATUS_OUT_OF_STOCK = "Out of stock";
 export const LABEL_STATUS_LOW_STOCK = "Low stock";
@@ -258,16 +251,6 @@ export const TABLE_HEADER_UNITS_SOLD = "Units sold";
 export const TEXT_SOLD_SUFFIX = "sold";
 export const EMPTY_STATE_NO_DATA = "No data yet.";
 export const LABEL_SALES_BY_CATEGORY = "Sales by category";
-export const LABEL_QUICK_ACTIONS = "Quick actions";
-export const LINK_START_A_SALE = "Start a sale";
-export const LINK_MANAGE_INVENTORY = "Manage inventory";
-export const LINK_MANAGE_STAFF = "Manage staff";
-export const LABEL_SUGGESTED_RESTOCK = "Suggested restock";
-export const TEXT_SUGGESTED_RESTOCK_DESCRIPTION = "Based on how fast each product has been selling.";
-export const TABLE_HEADER_SUGGESTED_QTY = "Suggested qty";
-export const TEXT_DAYS_LEFT_SUFFIX = "days left";
-export const TEXT_UNITS_PER_DAY_SUFFIX = "/day";
-export const EMPTY_STATE_NO_RESTOCK_NEEDED = "Nothing needs restocking right now.";
 export const LINK_RECEIVE = "Receive";
 
 // Receiving page
@@ -438,10 +421,6 @@ export const ARIA_LOADING = "Loading";
 export const LABEL_LOG_OUT = "Log out";
 export const LABEL_MENU = "Menu";
 
-// CardActionIcons (download/print/share icon row shared by StatCard/SectionCardHeader)
-export const ARIA_DOWNLOAD_PREFIX = "Download";
-export const ARIA_AS_PDF_SUFFIX = "as PDF";
-
 // CategoryManager
 export const LABEL_MANAGE_CATEGORIES = "Manage categories";
 export const BUTTON_CLOSE = "Close";
@@ -456,11 +435,6 @@ export const TEXT_LOADING_CAMERA = "Loading camera…";
 
 // StockBadge
 export const LABEL_STATUS_IN_STOCK = "In stock";
-
-// Topbar
-export const PLACEHOLDER_SEARCH_PRODUCTS_OR_CUSTOMERS = "Search products or customers…";
-export const TEXT_NO_MATCHES_FOR_PREFIX = "No matches for";
-export const TEXT_NO_PHONE = "No phone";
 
 // BarcodeScanner
 export const ARIA_CLOSE_SCANNER = "Close scanner";

@@ -1,45 +1,49 @@
 import type { SalesByCategory } from "@/lib";
-import { PESO, LABEL_SALES_BY_CATEGORY, LABEL_CATEGORY, TABLE_HEADER_TOTAL, EMPTY_STATE_NO_DATA } from "@/lib";
-import type { CardSection } from "@/lib/reportPdf";
-import { SectionCardHeader, type CardActions } from "@/components";
+import { PESO, LABEL_SALES_BY_CATEGORY, EMPTY_STATE_NO_DATA } from "@/lib";
 
-interface SalesByCategoryCardProps {
-  categoryTotals: SalesByCategory;
-  buildCardActions: (section: CardSection) => CardActions;
-}
+const SEGMENT_COLORS = ["#3B82F6", "#60A5FA", "#93C5FD", "rgba(255,255,255,.14)"];
 
-export function SalesByCategoryCard({ categoryTotals, buildCardActions }: SalesByCategoryCardProps) {
+export function SalesByCategoryCard({ categoryTotals }: { categoryTotals: SalesByCategory }) {
   return (
-    <div className="card">
-      <SectionCardHeader
-        title={LABEL_SALES_BY_CATEGORY}
-        {...buildCardActions({
-          kind: "table",
-          title: LABEL_SALES_BY_CATEGORY,
-          head: [LABEL_CATEGORY, TABLE_HEADER_TOTAL],
-          rows: categoryTotals.rows.map((row) => [row.category, PESO.format(row.total)]),
-          emptyMessage: EMPTY_STATE_NO_DATA,
-        })}
-      />
-      <ul className="divide-y divide-slate-100">
-        {categoryTotals.rows.map((row) => {
-          const pct = categoryTotals.grandTotal > 0 ? (row.total / categoryTotals.grandTotal) * 100 : 0;
-          return (
-            <li key={row.category} className="px-4 py-3 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-700">{row.category}</span>
-                <span className="tabular-nums font-medium text-slate-900">{PESO.format(row.total)}</span>
-              </div>
-              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                <div className="h-full rounded-full bg-[var(--color-brand)]" style={{ width: `${pct}%` }} />
-              </div>
-            </li>
-          );
-        })}
-        {categoryTotals.rows.length === 0 && (
-          <li className="px-4 py-8 text-center text-sm text-slate-400">{EMPTY_STATE_NO_DATA}</li>
-        )}
-      </ul>
+    <div className="tpl-card">
+      <p className="tpl-h3" style={{ marginBottom: 14 }}>
+        {LABEL_SALES_BY_CATEGORY}
+      </p>
+      {categoryTotals.rows.length > 0 && (
+        <div style={{ display: "flex", height: 9, borderRadius: 5, overflow: "hidden", marginBottom: 12 }}>
+          {categoryTotals.rows.map((row, i) => (
+            <span
+              key={row.category}
+              style={{
+                width: `${(row.total / categoryTotals.grandTotal) * 100}%`,
+                background: SEGMENT_COLORS[i % SEGMENT_COLORS.length],
+              }}
+            />
+          ))}
+        </div>
+      )}
+      {categoryTotals.rows.map((row, i) => (
+        <div className="tpl-sp" key={row.category} style={{ padding: "4px 0" }}>
+          <span style={{ color: "var(--tpl-t4)", fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 2,
+                background: SEGMENT_COLORS[i % SEGMENT_COLORS.length],
+                display: "inline-block",
+              }}
+            />
+            {row.category}
+          </span>
+          <span style={{ color: "var(--tpl-t2)", fontSize: 13 }}>{PESO.format(row.total)}</span>
+        </div>
+      ))}
+      {categoryTotals.rows.length === 0 && (
+        <p className="tpl-ts" style={{ padding: "16px 0", textAlign: "center" }}>
+          {EMPTY_STATE_NO_DATA}
+        </p>
+      )}
     </div>
   );
 }
