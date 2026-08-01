@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { buildDailyReport, salesByCategory, STORE_NAME, TEXT_SHARE_NOT_SUPPORTED, ERROR_COULD_NOT_GENERATE_REPORT } from "@/lib";
 import type { Product, SaleRecord } from "@/lib";
+import { computeRestockSuggestions } from "@/lib/inventory";
 import type { CardSection } from "@/lib/reportPdf";
 import type { CardActions } from "@/components";
 
@@ -12,6 +13,7 @@ export function useDashboardReport(products: Product[], sales: SaleRecord[]) {
 
   const report = useMemo(() => buildDailyReport(products, sales), [products, sales]);
   const categoryTotals = useMemo(() => salesByCategory(sales, products), [sales, products]);
+  const restockSuggestions = useMemo(() => computeRestockSuggestions(products, sales), [products, sales]);
   const recentSales = sales.slice(0, 8);
 
   // Warms the lazy reportPdf chunk ahead of any click, so by the time
@@ -92,5 +94,14 @@ export function useDashboardReport(products: Product[], sales: SaleRecord[]) {
     };
   }
 
-  return { report, categoryTotals, recentSales, reportAction, reportNotice, runReportAction, buildCardActions };
+  return {
+    report,
+    categoryTotals,
+    restockSuggestions,
+    recentSales,
+    reportAction,
+    reportNotice,
+    runReportAction,
+    buildCardActions,
+  };
 }

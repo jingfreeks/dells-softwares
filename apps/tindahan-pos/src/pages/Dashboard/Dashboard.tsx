@@ -18,6 +18,7 @@ import {
   DailyReportCard,
   RecentSalesCard,
   LowStockAlertsCard,
+  SuggestedRestockCard,
   BestSellersCard,
   SalesByCategoryCard,
   QuickActionsCard,
@@ -26,8 +27,16 @@ import { useDashboardReport } from "./hooks";
 
 export function Dashboard() {
   const { products, sales, loading, error } = useStoreData();
-  const { report, categoryTotals, recentSales, reportAction, reportNotice, runReportAction, buildCardActions } =
-    useDashboardReport(products, sales);
+  const {
+    report,
+    categoryTotals,
+    restockSuggestions,
+    recentSales,
+    reportAction,
+    reportNotice,
+    runReportAction,
+    buildCardActions,
+  } = useDashboardReport(products, sales);
 
   return (
     <div className="p-6">
@@ -94,6 +103,7 @@ export function Dashboard() {
         <div className="flex flex-col gap-6">
           <RecentSalesCard recentSales={recentSales} buildCardActions={buildCardActions} />
           <LowStockAlertsCard lowStock={report.lowStock} buildCardActions={buildCardActions} />
+          <SuggestedRestockCard suggestions={restockSuggestions} buildCardActions={buildCardActions} />
         </div>
 
         <div className="flex flex-col gap-6">

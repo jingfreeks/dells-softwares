@@ -4,6 +4,7 @@ export * from "./DashboardLoadingSkeleton";
 export * from "./DailyReportCard";
 export * from "./RecentSalesCard";
 export * from "./LowStockAlertsCard";
+export * from "./SuggestedRestockCard";
 export * from "./BestSellersCard";
 export * from "./SalesByCategoryCard";
 export * from "./QuickActionsCard";

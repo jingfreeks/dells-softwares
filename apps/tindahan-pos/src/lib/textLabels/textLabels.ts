@@ -214,6 +214,13 @@ export const LABEL_QUICK_ACTIONS = "Quick actions";
 export const LINK_START_A_SALE = "Start a sale";
 export const LINK_MANAGE_INVENTORY = "Manage inventory";
 export const LINK_MANAGE_STAFF = "Manage staff";
+export const LABEL_SUGGESTED_RESTOCK = "Suggested restock";
+export const TEXT_SUGGESTED_RESTOCK_DESCRIPTION = "Based on how fast each product has been selling.";
+export const TABLE_HEADER_SUGGESTED_QTY = "Suggested qty";
+export const TEXT_DAYS_LEFT_SUFFIX = "days left";
+export const TEXT_UNITS_PER_DAY_SUFFIX = "/day";
+export const EMPTY_STATE_NO_RESTOCK_NEEDED = "Nothing needs restocking right now.";
+export const LINK_RECEIVE = "Receive";
 
 // Receiving page
 export const TEXT_RECEIVING_DESCRIPTION_PREFIX = "Record new supply from a delivery.";
