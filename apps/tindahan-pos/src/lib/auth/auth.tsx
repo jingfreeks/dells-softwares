@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { togglablePersistenceStorage } from "@/lib/supabaseClient/togglablePersistenceStorage";
 import type { StaffAccount, Store } from "@/lib/types";
 
 type AuthResult = { ok: true } | { ok: false; error: string };
@@ -14,7 +15,9 @@ interface AuthContextValue {
   /** True until the initial session check completes — avoids a false
    * redirect-to-login flash while Supabase restores a persisted session. */
   loading: boolean;
-  login: (email: string, password: string) => Promise<AuthResult>;
+  /** keepSignedIn (default true) controls whether the session survives
+   * closing the browser — see togglablePersistenceStorage. */
+  login: (email: string, password: string, keepSignedIn?: boolean) => Promise<AuthResult>;
   register: (input: {
     storeName: string;
     ownerName: string;
@@ -129,7 +132,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  async function login(email: string, password: string): Promise<AuthResult> {
+  async function login(email: string, password: string, keepSignedIn = true): Promise<AuthResult> {
+    togglablePersistenceStorage.setPersistenceEnabled(keepSignedIn);
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
@@ -174,6 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     await supabase.auth.signOut();
+    togglablePersistenceStorage.setPersistenceEnabled(true);
     setUser(null);
     setStore(null);
   }

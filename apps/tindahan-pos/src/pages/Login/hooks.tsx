@@ -8,6 +8,7 @@ export function useLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -15,7 +16,7 @@ export function useLoginForm() {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    const result = await login(email, password);
+    const result = await login(email, password, keepSignedIn);
     setSubmitting(false);
     if (result.ok) {
       navigate("/pos");
@@ -32,6 +33,8 @@ export function useLoginForm() {
     setPassword,
     showPassword,
     toggleShowPassword: () => setShowPassword((v) => !v),
+    keepSignedIn,
+    setKeepSignedIn,
     error,
     submitting,
     handleSubmit,
