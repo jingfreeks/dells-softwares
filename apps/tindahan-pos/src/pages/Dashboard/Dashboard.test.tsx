@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { useAuth, useStoreData } from "@/lib";
 import { makeAuthValue, makeProduct, makeSaleRecord, makeStoreDataValue } from "../../test/testUtils";
 import { Dashboard } from "./Dashboard";
@@ -30,6 +30,25 @@ function renderPage() {
     <MemoryRouter>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+      </Routes>
+    </MemoryRouter>
+  );
+}
+
+function SeededReceivingStub() {
+  const location = useLocation();
+  const prefill = (
+    location.state as { prefillProduct?: { productId: string; productName: string; quantity: number } } | null
+  )?.prefillProduct;
+  return <p>Receiving page, prefill: {JSON.stringify(prefill ?? null)}</p>;
+}
+
+function renderPageWithReceivingRoute() {
+  return render(
+    <MemoryRouter>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/inventory/receiving" element={<SeededReceivingStub />} />
       </Routes>
     </MemoryRouter>
   );
@@ -83,6 +102,30 @@ describe("Dashboard", () => {
         expect.anything(),
         expect.anything()
       )
+    );
+  });
+
+  it("links a suggested restock row to Receiving, pre-filling the product and quantity", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useStoreData).mockReturnValue(
+      makeStoreDataValue({
+        products: [makeProduct({ id: "p1", name: "Sardines", stock: 2, lowStockThreshold: 5 })],
+        sales: [
+          makeSaleRecord({
+            timestamp: new Date().toISOString(),
+            items: [
+              { productId: "p1", name: "Sardines", quantity: 10, price: 25, itemType: "product", fee: 0, lineTotal: 250 },
+            ],
+          }),
+        ],
+      })
+    );
+    renderPageWithReceivingRoute();
+
+    await user.click(screen.getByRole("link", { name: "Receive" }));
+    // avgDailySales 10/day * 3-day lead time + threshold 5 = reorder point 35; stock 2 -> suggest 33.
+    expect(await screen.findByText(/Receiving page, prefill:/)).toHaveTextContent(
+      '{"productId":"p1","productName":"Sardines","quantity":33}'
     );
   });
 

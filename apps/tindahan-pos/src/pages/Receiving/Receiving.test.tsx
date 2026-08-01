@@ -34,6 +34,16 @@ function renderPage() {
   );
 }
 
+function renderPageWithState(state: unknown) {
+  return render(
+    <MemoryRouter initialEntries={[{ pathname: "/", state }]}>
+      <Routes>
+        <Route path="/" element={<Receiving />} />
+      </Routes>
+    </MemoryRouter>
+  );
+}
+
 describe("Receiving", () => {
   it("adds a product via search and saves the entry", async () => {
     const user = userEvent.setup();
@@ -54,6 +64,16 @@ describe("Receiving", () => {
       { productId: "p1", productName: "Sardines", quantity: 1, costEach: 0 },
     ], null);
     expect(await screen.findByText(/Saved — 1 product/)).toBeInTheDocument();
+  });
+
+  it("pre-fills a line from navigation state (arriving from Dashboard's suggested restock)", async () => {
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, suppliers }));
+    renderPageWithState({
+      prefillProduct: { productId: "p1", productName: "Sardines", quantity: 24 },
+    });
+
+    expect(await screen.findByText("Sardines")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("24")).toBeInTheDocument();
   });
 
   it("increments quantity when the same product is added twice", async () => {

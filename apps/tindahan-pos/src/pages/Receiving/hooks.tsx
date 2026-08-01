@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   useStoreData,
   findProductByBarcode,
@@ -35,8 +36,15 @@ export function toReceivingLine(line: DraftLine): ReceivingLine {
   };
 }
 
+interface PrefillProductState {
+  productId: string;
+  productName: string;
+  quantity: number;
+}
+
 export function useReceivingPage() {
   const { products, suppliers, receivingHistory, receiveStock, findSupplierByScanCode } = useStoreData();
+  const location = useLocation();
   const [supplier, setSupplier] = useState("");
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [date, setDate] = useState(today());
@@ -52,18 +60,44 @@ export function useReceivingPage() {
     [products, searchQuery]
   );
 
-  function addLine(productId: string, productName: string) {
+  function addLine(productId: string, productName: string, quantity = 1) {
     setLines((prev) => {
       const existing = prev.find((l) => l.productId === productId);
       if (existing) {
         return prev.map((l) =>
-          l.productId === productId ? { ...l, quantity: String((Number(l.quantity) || 0) + 1) } : l
+          l.productId === productId
+            ? { ...l, quantity: String((Number(l.quantity) || 0) + quantity) }
+            : l
         );
       }
-      return [...prev, { productId, productName, quantity: "1", costEach: "0" }];
+      return [...prev, { productId, productName, quantity: String(quantity), costEach: "0" }];
     });
     setSearchQuery("");
   }
+
+  // Arriving here from the Dashboard's "Suggested restock" card carries a
+  // product + quantity in navigation state rather than a URL param (same
+  // pattern as the topbar's quick search into Inventory/Customers) — this
+  // pre-fills a draft line for it so admins can review/adjust cost and
+  // save, rather than re-searching for the product themselves.
+  //
+  // addLine() is additive (repeat calls bump the quantity, not replace it),
+  // so this effect must run at most once per navigation — a ref (not
+  // state, which would itself trigger a re-render/re-run) tracks the last
+  // location.key already handled. Without this guard, StrictMode's
+  // deliberate double-invoke of effects in development would silently
+  // double the pre-filled quantity.
+  const prefillHandledKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prefillHandledKeyRef.current === location.key) return;
+    const state = location.state as { prefillProduct?: PrefillProductState } | null;
+    const prefill = state?.prefillProduct;
+    if (prefill) {
+      prefillHandledKeyRef.current = location.key;
+      addLine(prefill.productId, prefill.productName, prefill.quantity);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
 
   function handleSupplierNameChange(value: string) {
     // Typing directly is a free-text entry — no longer tied
