@@ -1,21 +1,20 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { AuthProvider } from "./lib/auth";
-import { FeatureFlagsProvider } from "./lib/featureFlags";
-import { StoreDataProvider } from "./lib/storeData";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { OnboardingRoute } from "./components/OnboardingRoute";
-import { Login } from "./pages/Login";
-import { Register } from "./pages/Register";
-import { ForgotPassword } from "./pages/ForgotPassword";
-import { Pos } from "./pages/Pos";
-import { Inventory } from "./pages/Inventory";
-import { Dashboard } from "./pages/Dashboard";
-import { Staff } from "./pages/Staff";
-import { Receiving } from "./pages/Receiving";
-import { Customers } from "./pages/Customers";
-import { Suppliers } from "./pages/Suppliers";
-import { Profile } from "./pages/Profile";
-import { Onboarding } from "./pages/Onboarding";
+import { AuthProvider, FeatureFlagsProvider, StoreDataProvider } from "@/lib";
+import { ProtectedRoute, OnboardingRoute } from "@/components";
+import {
+  Login,
+  Register,
+  ForgotPassword,
+  Pos,
+  Inventory,
+  Dashboard,
+  Staff,
+  Receiving,
+  Customers,
+  Suppliers,
+  Profile,
+  Onboarding,
+} from "@/pages";
 
 function App() {
   return (

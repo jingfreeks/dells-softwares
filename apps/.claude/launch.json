@@ -1,0 +1,24 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "inventory-app",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "inventory-app", "run", "dev", "--", "--port", "5174"],
+      "port": 5174
+    },
+    {
+      "name": "tindahan-pos",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "tindahan-pos", "run", "dev", "--", "--port", "5173"],
+      "port": 5173
+    },
+    {
+      "name": "tindahan-pos-mobile-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "web", "--prefix", "tindahan-pos-mobile"],
+      "port": 8081,
+      "autoPort": true
+    }
+  ]
+}

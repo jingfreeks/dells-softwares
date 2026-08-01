@@ -11,7 +11,7 @@ import type {
   StaffAccount,
   Store,
   Supplier,
-} from "../lib/types";
+} from "@/lib/types";
 
 export function makeStaffAccount(overrides: Partial<StaffAccount> = {}): StaffAccount {
   return {
@@ -130,6 +130,7 @@ function baseAuthValue() {
     updateProfile: vi.fn().mockResolvedValue({ ok: true }),
     updateStore: vi.fn().mockResolvedValue({ ok: true }),
     completeOnboarding: vi.fn().mockResolvedValue({ ok: true }),
+    deleteAccount: vi.fn().mockResolvedValue({ ok: true }),
   };
 }
 
