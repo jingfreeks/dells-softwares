@@ -1,6 +1,6 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, FeatureFlagsProvider, StoreDataProvider, EloadWalletProvider } from "@/lib";
-import { ProtectedRoute, OnboardingRoute, HomeRedirect } from "@/components";
+import { ProtectedRoute, OnboardingRoute } from "@/components";
 import {
   Login,
   Register,
@@ -99,8 +99,8 @@ function App() {
                     </OnboardingRoute>
                   }
                 />
-                <Route path="/" element={<HomeRedirect />} />
-                <Route path="*" element={<HomeRedirect />} />
+                <Route path="/" element={<Navigate to="/pos" replace />} />
+                <Route path="*" element={<Navigate to="/pos" replace />} />
               </Routes>
             </BrowserRouter>
           </EloadWalletProvider>
