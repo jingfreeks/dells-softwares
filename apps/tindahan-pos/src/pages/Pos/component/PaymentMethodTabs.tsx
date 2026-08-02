@@ -8,31 +8,17 @@ interface PaymentMethodTabsProps {
 
 export function PaymentMethodTabs({ paymentType, onSelect }: PaymentMethodTabsProps) {
   return (
-    <div className="mt-3 flex rounded-xl border border-slate-200 bg-slate-50 p-1">
-      <button
-        type="button"
-        onClick={() => onSelect("cash")}
-        className={`flex-1 cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
-          paymentType === "cash" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-        }`}
-      >
+    <div className="tpl-seg" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
+      <button type="button" onClick={() => onSelect("cash")} className={paymentType === "cash" ? "tpl-on" : ""}>
         {LABEL_PAYMENT_CASH}
       </button>
-      <button
-        type="button"
-        onClick={() => onSelect("qr")}
-        className={`flex-1 cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
-          paymentType === "qr" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-        }`}
-      >
+      <button type="button" onClick={() => onSelect("qr")} className={paymentType === "qr" ? "tpl-on" : ""}>
         {LABEL_PAYMENT_QR}
       </button>
       <button
         type="button"
         onClick={() => onSelect("credit")}
-        className={`flex-1 cursor-pointer rounded-md px-2 py-1.5 text-sm font-medium transition-colors ${
-          paymentType === "credit" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-        }`}
+        className={paymentType === "credit" ? "tpl-on" : ""}
       >
         {LABEL_PAYMENT_UTANG}
       </button>

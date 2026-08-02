@@ -10,20 +10,22 @@ export function CheckoutStatusMessages({ lastReceiptTotal, checkoutError, hasSer
   return (
     <>
       {lastReceiptTotal !== null && (
-        <p role="status" className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <p role="status" className="tpl-note tpl-g" style={{ marginTop: 14, color: "var(--tpl-okd)", fontSize: 13 }}>
           {TEXT_SALE_RECORDED_PREFIX} {PESO.format(lastReceiptTotal)}
           {TEXT_SALE_RECORDED_SUFFIX}
         </p>
       )}
 
       {checkoutError && (
-        <p role="alert" className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="tpl-alert" style={{ marginTop: 14, marginBottom: 0 }}>
           {checkoutError}
         </p>
       )}
 
       {hasServiceLines && (
-        <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">{TEXT_SERVICES_NOTICE}</p>
+        <p className="tpl-status-note" style={{ marginTop: 14 }}>
+          {TEXT_SERVICES_NOTICE}
+        </p>
       )}
     </>
   );

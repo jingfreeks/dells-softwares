@@ -970,6 +970,148 @@
   margin: -4px 0 14px;
 }
 
+/* ---------------------------------------------------------------------
+ * POS page — service tiles, e-load panel, checkout rail
+ * --------------------------------------------------------------------- */
+.tpl-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tpl-g5 {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+.tpl-g6 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+@media (min-width: 480px) {
+  .tpl-g6 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* Service type tiles (E-load / Cash-in / Cash-out / Print) */
+.tpl-tile {
+  background: var(--tpl-gl);
+  border: 0.5px solid var(--tpl-bd);
+  border-radius: 11px;
+  padding: 11px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: inherit;
+}
+.tpl-tile i.ti {
+  font-size: 20px;
+  color: var(--tpl-t6);
+}
+.tpl-tile.tpl-on {
+  background: rgba(76, 141, 255, 0.1);
+  border: 1px solid rgba(76, 141, 255, 0.42);
+}
+.tpl-tile.tpl-on i.ti {
+  color: var(--tpl-a4);
+}
+.tpl-tn {
+  color: var(--tpl-t3);
+  font-size: 12px;
+  margin: 0;
+}
+.tpl-tile.tpl-on .tpl-tn {
+  color: var(--tpl-t2);
+}
+.tpl-tpr {
+  color: var(--tpl-t2);
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0;
+}
+.tpl-tile.tpl-on .tpl-tpr {
+  color: var(--tpl-a4);
+}
+
+/* Small pill option button — network picker, quick-cash tiles */
+.tpl-opt {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--tpl-gl);
+  border: 0.5px solid rgba(255, 255, 255, 0.11);
+  color: var(--tpl-t4);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.tpl-opt.tpl-on {
+  background: rgba(76, 141, 255, 0.18);
+  border-color: rgba(76, 141, 255, 0.45);
+  color: var(--tpl-a4);
+  font-weight: 500;
+}
+
+/* Two-line denomination tile (e-load amount / quick-cash with a sub-line) */
+.tpl-denom {
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  border-radius: 9px;
+  background: var(--tpl-gl);
+  border: 0.5px solid rgba(255, 255, 255, 0.11);
+  color: var(--tpl-t2);
+  cursor: pointer;
+  font-family: inherit;
+}
+.tpl-denom span:first-child {
+  font-size: 13px;
+}
+.tpl-denom span:last-child {
+  font-size: 10px;
+  opacity: 0.7;
+}
+.tpl-denom.tpl-on {
+  background: rgba(76, 141, 255, 0.18);
+  border-color: rgba(76, 141, 255, 0.45);
+  color: var(--tpl-a4);
+}
+.tpl-denom.tpl-dash {
+  background: rgba(255, 255, 255, 0.03);
+  border: 0.5px dashed rgba(255, 255, 255, 0.16);
+  color: var(--tpl-t6);
+  font-size: 12px;
+}
+
+.tpl-mono {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  letter-spacing: 0.6px;
+}
+
+/* Callout box — used for the "Change" readout */
+.tpl-note {
+  border-radius: 10px;
+  padding: 11px 13px;
+  display: flex;
+  gap: 11px;
+  align-items: center;
+}
+.tpl-note.tpl-g {
+  background: rgba(74, 222, 128, 0.06);
+  border: 0.5px solid rgba(74, 222, 128, 0.28);
+}
+
 /* Icon font — mask-based, subset of the design review's icon set
    (only the glyphs this screen actually uses). */
 .ti {
@@ -1040,4 +1182,20 @@
 .ti-chart-bar {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M4%2020V10M9%2020V4M14%2020v-7M19%2020V8%22%2F%3E%3C%2Fsvg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M4%2020V10M9%2020V4M14%2020v-7M19%2020V8%22%2F%3E%3C%2Fsvg%3E");
+}
+.ti-device-mobile-charging {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M7%203h10v18H7zM11%208l-1.5%203h3L11%2014%22%2F%3E%3C%2Fsvg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M7%203h10v18H7zM11%208l-1.5%203h3L11%2014%22%2F%3E%3C%2Fsvg%3E");
+}
+.ti-arrow-down-circle {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%2021a9%209%200%201%200%200-18a9%209%200%200%200%200%2018M12%208v8M8%2012l4%204%204-4%22%2F%3E%3C%2Fsvg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%2021a9%209%200%201%200%200-18a9%209%200%200%200%200%2018M12%208v8M8%2012l4%204%204-4%22%2F%3E%3C%2Fsvg%3E");
+}
+.ti-arrow-up-circle {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%2021a9%209%200%201%200%200-18a9%209%200%200%200%200%2018M12%2016V8M8%2012l4-4%204%204%22%2F%3E%3C%2Fsvg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%2021a9%209%200%201%200%200-18a9%209%200%200%200%200%2018M12%2016V8M8%2012l4-4%204%204%22%2F%3E%3C%2Fsvg%3E");
+}
+.ti-printer {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M7%208V3h10v5M7%2018H5a2%202%200%200%201-2-2v-4a2%202%200%200%201%202-2h14a2%202%200%200%201%202%202v4a2%202%200%200%201-2%202h-2M7%2014h10v7H7z%22%2F%3E%3C%2Fsvg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M7%208V3h10v5M7%2018H5a2%202%200%200%201-2-2v-4a2%202%200%200%201%202-2h14a2%202%200%200%201%202%202v4a2%202%200%200%201-2%202h-2M7%2014h10v7H7z%22%2F%3E%3C%2Fsvg%3E");
 }

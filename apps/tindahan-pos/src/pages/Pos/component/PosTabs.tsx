@@ -11,27 +11,21 @@ export function PosTabs({ visible, activeTab, onTabChange }: PosTabsProps) {
   if (!visible) return null;
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-        <button
-          type="button"
-          onClick={() => onTabChange("products")}
-          className={`cursor-pointer rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-            activeTab === "products" ? "bg-[var(--color-brand)] text-white" : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          {LABEL_PRODUCTS_TAB}
-        </button>
-        <button
-          type="button"
-          onClick={() => onTabChange("services")}
-          className={`cursor-pointer rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
-            activeTab === "services" ? "bg-[var(--color-brand)] text-white" : "text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          {LABEL_SERVICES_TAB}
-        </button>
-      </div>
+    <div className="tpl-seg" style={{ maxWidth: 230, marginBottom: 0 }}>
+      <button
+        type="button"
+        onClick={() => onTabChange("products")}
+        className={activeTab === "products" ? "tpl-on" : ""}
+      >
+        {LABEL_PRODUCTS_TAB}
+      </button>
+      <button
+        type="button"
+        onClick={() => onTabChange("services")}
+        className={activeTab === "services" ? "tpl-on" : ""}
+      >
+        {LABEL_SERVICES_TAB}
+      </button>
     </div>
   );
 }

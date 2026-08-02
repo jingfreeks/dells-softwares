@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   useAuth,
   useStoreData,
+  useEloadWallet,
   packPriceLabel,
   useFeatureFlag,
   ERROR_PRODUCT_NOT_FOUND_BARCODE_PREFIX,
@@ -24,6 +25,7 @@ import {
   removeFromCart,
   searchProductsByName,
   setQuantity,
+  suggestedCashAmounts,
 } from "@/lib/pos";
 
 export const SERVICE_TYPES = [
@@ -39,6 +41,7 @@ export type PosTab = "products" | "services";
 export function usePosPage() {
   const { user } = useAuth();
   const { products, customers, checkout, addCustomer } = useStoreData();
+  const { balance: walletBalance, deduct: deductWallet } = useEloadWallet();
   const packPricingEnabled = useFeatureFlag("pack_pricing");
   const posServicesEnabled = useFeatureFlag("pos_services");
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -121,6 +124,8 @@ export function usePosPage() {
   function priceLabel(product: Product) {
     return packPricingEnabled ? packPriceLabel(product) : null;
   }
+
+  const quickCashAmounts = useMemo(() => suggestedCashAmounts(total), [total]);
 
   const tenderedNumber = Number(tendered);
   const change =
@@ -212,6 +217,16 @@ export function usePosPage() {
 
   function removeServiceLine(id: string) {
     setServiceLines((prev) => prev.filter((l) => l.id !== id));
+  }
+
+  // The e-load float is spent the moment the cashier sends the load —
+  // same as in real life, before the customer has necessarily paid —
+  // so the wallet deducts here, not at final checkout, and isn't
+  // refunded if the line is later removed (an actual load can't be
+  // unsent either).
+  function addEloadService(label: string, amount: number, fee: number) {
+    setServiceLines((prev) => [...prev, { id: `svc-${Date.now()}`, label, amount, fee }]);
+    deductWallet(amount);
   }
 
   function selectPaymentType(type: PaymentType) {
@@ -328,7 +343,10 @@ export function usePosPage() {
     incrementLine,
     removeLine,
     handleAddService,
+    addEloadService,
     removeServiceLine,
+    walletBalance,
+    quickCashAmounts,
     handleCompleteSale,
     handleCancelSale,
     effectiveTab,

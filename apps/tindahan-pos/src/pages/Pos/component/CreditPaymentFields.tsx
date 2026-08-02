@@ -40,28 +40,24 @@ export function CreditPaymentFields({
   customerError,
 }: CreditPaymentFieldsProps) {
   return (
-    <div className="mt-3">
+    <div style={{ marginTop: 14 }}>
       {selectedCustomer ? (
         <>
-          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+          <div className="tpl-sp tpl-card">
             <div>
-              <p className="text-sm font-medium text-slate-800">{selectedCustomer.name}</p>
-              <p className="text-xs text-slate-500">
+              <p className="tpl-tp">{selectedCustomer.name}</p>
+              <p className="tpl-ts" style={{ margin: 0 }}>
                 {LABEL_CURRENT_BALANCE}: {PESO.format(selectedCustomer.balance)}
                 {selectedCustomer.creditLimit !== null &&
                   ` ${TEXT_LIMIT_PREFIX} ${PESO.format(selectedCustomer.creditLimit)}`}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onClearCustomer}
-              className="cursor-pointer text-xs font-medium text-[var(--color-brand)] hover:underline"
-            >
+            <button type="button" onClick={onClearCustomer} className="tpl-lnk">
               {BUTTON_CHANGE}
             </button>
           </div>
           {wouldExceedCreditLimit(selectedCustomer, total) && (
-            <p className="mt-2 text-xs text-amber-600">
+            <p style={{ marginTop: 8, fontSize: 12, color: "var(--tpl-warn)" }}>
               This sale would put {selectedCustomer.name} {TEXT_CREDIT_LIMIT_WARNING_MIDDLE}{" "}
               {PESO.format(selectedCustomer.creditLimit ?? 0)} {TEXT_CREDIT_LIMIT_WARNING_SUFFIX}
             </p>
@@ -69,47 +65,43 @@ export function CreditPaymentFields({
         </>
       ) : (
         <>
-          <label htmlFor="customerSearch" className="text-xs font-medium text-slate-700">
+          <label htmlFor="customerSearch" className="tpl-lbl">
             {LABEL_CHARGE_TO_CUSTOMER}
           </label>
-          <input
-            id="customerSearch"
-            type="text"
-            placeholder={PLACEHOLDER_SEARCH_BY_NAME}
-            value={customerQuery}
-            onChange={(e) => onCustomerQueryChange(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-          />
+          <div className="tpl-fld">
+            <input
+              id="customerSearch"
+              type="text"
+              placeholder={PLACEHOLDER_SEARCH_BY_NAME}
+              value={customerQuery}
+              onChange={(e) => onCustomerQueryChange(e.target.value)}
+            />
+          </div>
           {customerResults.length > 0 && (
-            <ul className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-100">
+            <div className="tpl-card" style={{ marginTop: 8, padding: 4 }}>
               {customerResults.map((customer) => (
-                <li key={customer.id}>
-                  <button
-                    type="button"
-                    onClick={() => onSelectCustomer(customer.id)}
-                    className="flex w-full cursor-pointer items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
-                  >
-                    <span>{customer.name}</span>
-                    <span className="tabular-nums text-xs text-slate-500">{PESO.format(customer.balance)}</span>
-                  </button>
-                </li>
+                <button
+                  key={customer.id}
+                  type="button"
+                  onClick={() => onSelectCustomer(customer.id)}
+                  className="tpl-lr"
+                  style={{ width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
+                >
+                  <span className="tpl-tp">{customer.name}</span>
+                  <span className="tpl-ts">{PESO.format(customer.balance)}</span>
+                </button>
               ))}
-            </ul>
+            </div>
           )}
           {customerQuery.trim() !== "" && customerResults.length === 0 && (
-            <button
-              type="button"
-              onClick={onQuickAddCustomer}
-              disabled={addingCustomer}
-              className="mt-2 flex w-full cursor-pointer items-center justify-center rounded-xl border border-dashed border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
+            <button type="button" onClick={onQuickAddCustomer} disabled={addingCustomer} className="tpl-btn" style={{ marginTop: 8 }}>
               {addingCustomer
                 ? BUTTON_ADDING
                 : `${TEXT_ADD_AS_NEW_CUSTOMER_PREFIX} "${customerQuery.trim()}" ${TEXT_ADD_AS_NEW_CUSTOMER_SUFFIX}`}
             </button>
           )}
           {customerError && (
-            <p role="alert" className="mt-2 text-sm text-red-600">
+            <p role="alert" style={{ marginTop: 8, fontSize: 13, color: "var(--tpl-bad)" }}>
               {customerError}
             </p>
           )}

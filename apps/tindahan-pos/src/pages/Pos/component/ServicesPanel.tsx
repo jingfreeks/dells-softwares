@@ -1,5 +1,6 @@
 import { selectOnFocus, LABEL_AMOUNT_PESO, LABEL_FEE_PESO, BUTTON_ADD_TO_CART } from "@/lib";
 import { SERVICE_TYPES } from "../hooks";
+import { EloadServicePanel } from "./EloadServicePanel";
 
 interface ServicesPanelProps {
   selectedService: (typeof SERVICE_TYPES)[number]["key"];
@@ -9,6 +10,8 @@ interface ServicesPanelProps {
   serviceFee: string;
   onServiceFeeChange: (value: string) => void;
   onAddService: () => void;
+  walletBalance: number;
+  onAddEloadService: (label: string, amount: number, fee: number) => void;
 }
 
 export function ServicesPanel({
@@ -19,72 +22,82 @@ export function ServicesPanel({
   serviceFee,
   onServiceFeeChange,
   onAddService,
+  walletBalance,
+  onAddEloadService,
 }: ServicesPanelProps) {
   return (
-    <div className="card p-4">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="flex flex-col gap-3">
+      <div className="tpl-g4" style={{ gap: 9, marginBottom: 0 }}>
         {SERVICE_TYPES.map((service) => (
           <button
             key={service.key}
             type="button"
             onClick={() => onSelectService(service.key)}
-            className={`flex cursor-pointer flex-col items-center gap-2 rounded-xl border p-3 transition-colors sm:p-4 ${
-              selectedService === service.key
-                ? "border-[var(--color-brand)] bg-[var(--color-brand)]/5"
-                : "border-slate-200 hover:bg-slate-50"
-            }`}
+            className={`tpl-tile${selectedService === service.key ? " tpl-on" : ""}`}
           >
-            <span className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold ${service.badgeClass}`}>
-              {service.badge}
-            </span>
-            <span className="text-sm font-medium text-slate-800">{service.label}</span>
+            <i className={`ti ${SERVICE_TILE_ICON[service.key]}`} aria-hidden />
+            <p className="tpl-tn">{service.label}</p>
           </button>
         ))}
       </div>
 
-      <div className="mt-4 border-t border-slate-100 pt-4">
-        <p className="text-sm font-semibold text-slate-900">
-          {SERVICE_TYPES.find((s) => s.key === selectedService)?.label}
-        </p>
-        <div className="mt-2 grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="svcAmount" className="text-xs font-medium text-slate-700">
-              {LABEL_AMOUNT_PESO}
-            </label>
-            <input
-              id="svcAmount"
-              type="number"
-              min="0"
-              value={serviceAmount}
-              onFocus={selectOnFocus}
-              onChange={(e) => onServiceAmountChange(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-            />
+      {selectedService === "eload" ? (
+        <EloadServicePanel walletBalance={walletBalance} onAdd={onAddEloadService} />
+      ) : (
+        <div className="tpl-card">
+          <p className="tpl-h3" style={{ marginBottom: 14 }}>
+            {SERVICE_TYPES.find((s) => s.key === selectedService)?.label}
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="svcAmount" className="tpl-lbl">
+                {LABEL_AMOUNT_PESO}
+              </label>
+              <div className="tpl-fld">
+                <input
+                  id="svcAmount"
+                  type="number"
+                  min="0"
+                  value={serviceAmount}
+                  onFocus={selectOnFocus}
+                  onChange={(e) => onServiceAmountChange(e.target.value)}
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="svcFee" className="tpl-lbl">
+                {LABEL_FEE_PESO}
+              </label>
+              <div className="tpl-fld">
+                <input
+                  id="svcFee"
+                  type="number"
+                  min="0"
+                  value={serviceFee}
+                  onFocus={selectOnFocus}
+                  onChange={(e) => onServiceFeeChange(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
-          <div>
-            <label htmlFor="svcFee" className="text-xs font-medium text-slate-700">
-              {LABEL_FEE_PESO}
-            </label>
-            <input
-              id="svcFee"
-              type="number"
-              min="0"
-              value={serviceFee}
-              onFocus={selectOnFocus}
-              onChange={(e) => onServiceFeeChange(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-            />
-          </div>
+          <button
+            type="button"
+            onClick={onAddService}
+            disabled={!serviceAmount || Number(serviceAmount) <= 0}
+            className="tpl-btnp"
+            style={{ marginTop: 14, width: "auto", height: 38, padding: "0 16px", fontSize: 13 }}
+          >
+            {BUTTON_ADD_TO_CART}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onAddService}
-          disabled={!serviceAmount || Number(serviceAmount) <= 0}
-          className="mt-3 cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {BUTTON_ADD_TO_CART}
-        </button>
-      </div>
+      )}
     </div>
   );
 }
+
+const SERVICE_TILE_ICON: Record<(typeof SERVICE_TYPES)[number]["key"], string> = {
+  eload: "ti-device-mobile-charging",
+  cashin: "ti-arrow-down-circle",
+  cashout: "ti-arrow-up-circle",
+  print: "ti-printer",
+};

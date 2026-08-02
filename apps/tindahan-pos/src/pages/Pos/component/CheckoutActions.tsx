@@ -10,22 +10,27 @@ interface CheckoutActionsProps {
 
 export function CheckoutActions({ cartEmpty, checkingOut, disableComplete, onCancel, onComplete }: CheckoutActionsProps) {
   return (
-    <div className="mt-3 flex gap-2">
+    <div style={{ marginTop: 14 }}>
+      <button type="button" onClick={onComplete} disabled={disableComplete} className="tpl-btnp">
+        {checkingOut ? BUTTON_PROCESSING : BUTTON_COMPLETE_SALE}
+      </button>
       <button
         type="button"
         onClick={onCancel}
         disabled={cartEmpty || checkingOut}
-        className="flex-1 cursor-pointer rounded-xl border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+        style={{
+          display: "block",
+          width: "100%",
+          textAlign: "center",
+          marginTop: 10,
+          background: "none",
+          border: "none",
+          color: "var(--tpl-t6)",
+          fontSize: 13,
+          cursor: "pointer",
+        }}
       >
         {BUTTON_CANCEL_SALE}
-      </button>
-      <button
-        type="button"
-        onClick={onComplete}
-        disabled={disableComplete}
-        className="flex-1 cursor-pointer rounded-xl bg-[var(--color-brand)] py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {checkingOut ? BUTTON_PROCESSING : BUTTON_COMPLETE_SALE}
       </button>
     </div>
   );

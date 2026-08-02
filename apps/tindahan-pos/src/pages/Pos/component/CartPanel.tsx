@@ -21,6 +21,7 @@ interface CartPanelProps {
   onSelectPaymentType: (type: PaymentType) => void;
   tendered: string;
   onTenderedChange: (value: string) => void;
+  quickCashAmounts: number[];
   change: number | null;
   referenceNo: string;
   onReferenceNoChange: (value: string) => void;
@@ -53,6 +54,7 @@ export function CartPanel({
   onSelectPaymentType,
   tendered,
   onTenderedChange,
+  quickCashAmounts,
   change,
   referenceNo,
   onReferenceNoChange,
@@ -82,15 +84,15 @@ export function CartPanel({
     checkingOut;
 
   return (
-    <div className="flex flex-col card">
-      <div className="border-b border-slate-200 p-4">
-        <h2 className="text-sm font-semibold text-slate-900">
-          {LABEL_CURRENT_SALE}
-          {cart.length + serviceLines.length > 0 && ` (${cart.length + serviceLines.length} items)`}
-        </h2>
+    <div className="tpl-root flex flex-col tpl-card" style={{ padding: 0 }}>
+      <div className="tpl-sp" style={{ padding: 14 }}>
+        <p className="tpl-h3">{LABEL_CURRENT_SALE}</p>
+        {cart.length + serviceLines.length > 0 && (
+          <span className="tpl-chip tpl-on">{cart.length + serviceLines.length} items</span>
+        )}
       </div>
 
-      <div className="p-4 lg:flex-1 lg:overflow-y-auto">
+      <div className="lg:flex-1 lg:overflow-y-auto" style={{ padding: "0 14px" }}>
         <CartItemsList
           cart={cart}
           serviceLines={serviceLines}
@@ -102,10 +104,10 @@ export function CartPanel({
         />
       </div>
 
-      <div className="border-t border-slate-200 p-4">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-500">{TABLE_HEADER_TOTAL}</span>
-          <span data-testid="cart-total" className="tabular-nums text-xl font-bold tracking-tight text-slate-900">
+      <div style={{ padding: 14 }}>
+        <div className="tpl-sp" style={{ marginBottom: 14 }}>
+          <span className="tpl-h3">{TABLE_HEADER_TOTAL}</span>
+          <span data-testid="cart-total" style={{ color: "var(--tpl-t1)", fontSize: 28, fontWeight: 500 }}>
             {PESO.format(total)}
           </span>
         </div>
@@ -113,7 +115,12 @@ export function CartPanel({
         <PaymentMethodTabs paymentType={paymentType} onSelect={onSelectPaymentType} />
 
         {paymentType === "cash" && (
-          <CashPaymentFields tendered={tendered} onTenderedChange={onTenderedChange} change={change} />
+          <CashPaymentFields
+            tendered={tendered}
+            onTenderedChange={onTenderedChange}
+            quickCashAmounts={quickCashAmounts}
+            change={change}
+          />
         )}
 
         {paymentType === "qr" && (

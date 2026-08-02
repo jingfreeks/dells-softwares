@@ -1,5 +1,6 @@
 export * from "./auth";
 export * from "./customers";
+export * from "./eloadWallet";
 export * from "./dom";
 export * from "./featureFlags";
 export * from "./imageUpload";

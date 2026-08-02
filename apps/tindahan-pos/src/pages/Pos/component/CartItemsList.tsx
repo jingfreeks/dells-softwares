@@ -1,5 +1,5 @@
 import type { CartLine, Product, ServiceLine } from "@/lib";
-import { PESO, EMPTY_STATE_CART, TEXT_EACH_SUFFIX, ARIA_DECREASE_QUANTITY_PREFIX, ARIA_INCREASE_QUANTITY_PREFIX, ARIA_REMOVE_PREFIX, BUTTON_REMOVE, LABEL_SERVICE } from "@/lib";
+import { PESO, EMPTY_STATE_CART, TEXT_EACH_SUFFIX, ARIA_DECREASE_QUANTITY_PREFIX, ARIA_INCREASE_QUANTITY_PREFIX, ARIA_REMOVE_PREFIX, BUTTON_REMOVE } from "@/lib";
 import { lineTotal } from "@/lib/pos";
 
 interface CartItemsListProps {
@@ -22,35 +22,75 @@ export function CartItemsList({
   onRemoveService,
 }: CartItemsListProps) {
   if (cart.length === 0 && serviceLines.length === 0) {
-    return <p className="text-sm text-slate-400">{EMPTY_STATE_CART}</p>;
+    return (
+      <p className="tpl-ts" style={{ padding: "16px 0" }}>
+        {EMPTY_STATE_CART}
+      </p>
+    );
   }
 
   return (
-    <ul className="flex flex-col gap-3" aria-label="Cart items">
+    <ul className="flex flex-col" aria-label="Cart items">
+      {serviceLines.map((line) => {
+        const [title, ...rest] = line.label.split(" · ");
+        const detail = rest.join(" · ");
+        return (
+          <li key={line.id} className="tpl-lr" style={{ alignItems: "flex-start" }}>
+            <div className="tpl-flex1">
+              <p className="tpl-tp">{title}</p>
+              {detail && (
+                <p className="tpl-ts tpl-mono" style={{ margin: 0 }}>
+                  {detail}
+                </p>
+              )}
+              {line.fee > 0 && (
+                <p className="tpl-ts" style={{ color: "var(--tpl-ok)", margin: 0 }}>
+                  fee {PESO.format(line.fee)}
+                </p>
+              )}
+            </div>
+            <div className="tpl-row">
+              <span className="tpl-tp">{PESO.format(line.amount + line.fee)}</span>
+              <button
+                type="button"
+                aria-label={`${ARIA_REMOVE_PREFIX} ${line.label}`}
+                onClick={() => onRemoveService(line.id)}
+                style={{ color: "var(--tpl-bad)", fontSize: 12, background: "none", border: "none", cursor: "pointer" }}
+              >
+                {BUTTON_REMOVE}
+              </button>
+            </div>
+          </li>
+        );
+      })}
       {cart.map((line) => (
-        <li key={line.product.id} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-800">{line.product.name}</p>
-            <p className="tabular-nums text-xs text-slate-500">
+        <li key={line.product.id} className="tpl-lr">
+          <div className="tpl-flex1">
+            <p className="tpl-tp">{line.product.name}</p>
+            <p className="tpl-ts" style={{ margin: 0 }}>
               {priceLabel(line.product) ?? `${PESO.format(line.product.price)} ${TEXT_EACH_SUFFIX}`} ·{" "}
               {PESO.format(lineTotal(line.product, line.quantity, packPricingEnabled))}
             </p>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="tpl-row" style={{ gap: 4 }}>
             <button
               type="button"
               aria-label={`${ARIA_DECREASE_QUANTITY_PREFIX} ${line.product.name}`}
               onClick={() => onIncrement(line.product.id, line.quantity - 1)}
-              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded border border-slate-300 text-base hover:bg-slate-100"
+              className="tpl-opt"
+              style={{ width: 34 }}
             >
               −
             </button>
-            <span className="w-6 text-center text-sm">{line.quantity}</span>
+            <span className="tpl-tp" style={{ width: 20, textAlign: "center" }}>
+              {line.quantity}
+            </span>
             <button
               type="button"
               aria-label={`${ARIA_INCREASE_QUANTITY_PREFIX} ${line.product.name}`}
               onClick={() => onIncrement(line.product.id, line.quantity + 1)}
-              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded border border-slate-300 text-base hover:bg-slate-100"
+              className="tpl-opt"
+              style={{ width: 34 }}
             >
               +
             </button>
@@ -58,26 +98,7 @@ export function CartItemsList({
               type="button"
               aria-label={`${ARIA_REMOVE_PREFIX} ${line.product.name}`}
               onClick={() => onRemove(line.product.id)}
-              className="flex h-11 min-w-11 cursor-pointer items-center justify-center px-2 text-xs text-red-600 hover:underline"
-            >
-              {BUTTON_REMOVE}
-            </button>
-          </div>
-        </li>
-      ))}
-      {serviceLines.map((line) => (
-        <li key={line.id} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-xl bg-[var(--color-brand)]/5 p-2">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-slate-800">{line.label}</p>
-            <p className="text-xs text-slate-500">{LABEL_SERVICE}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="tabular-nums text-sm font-medium text-slate-800">{PESO.format(line.amount + line.fee)}</span>
-            <button
-              type="button"
-              aria-label={`${ARIA_REMOVE_PREFIX} ${line.label}`}
-              onClick={() => onRemoveService(line.id)}
-              className="flex h-11 min-w-11 cursor-pointer items-center justify-center px-2 text-xs text-red-600 hover:underline"
+              style={{ color: "var(--tpl-bad)", fontSize: 12, background: "none", border: "none", cursor: "pointer", padding: "0 6px" }}
             >
               {BUTTON_REMOVE}
             </button>
