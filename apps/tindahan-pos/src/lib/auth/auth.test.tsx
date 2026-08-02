@@ -126,9 +126,9 @@ describe("AuthProvider", () => {
     });
 
     // A deferred profile lookup, so we can observe the state while it's
-    // still in flight — this is the exact window where a consumer (e.g.
-    // HomeRedirect) previously saw `loading: false, user: null` right
-    // after a successful sign-in and bounced back to /login.
+    // still in flight — this is the exact window where a consumer
+    // previously saw `loading: false, user: null` right after a
+    // successful sign-in and bounced back to /login.
     let resolveProfile!: (value: unknown) => void;
     const profilePromise = new Promise((resolve) => {
       resolveProfile = resolve;

@@ -7,7 +7,6 @@ export * from "./navIcons";
 // directly from "@/components/BarcodeScanner" instead.
 export * from "./BottomNav";
 export * from "./CategoryManager";
-export * from "./HomeRedirect";
 export * from "./MobileHeader";
 export * from "./OnboardingRoute";
 export * from "./ProtectedRoute";
