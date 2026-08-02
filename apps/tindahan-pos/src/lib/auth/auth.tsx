@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { togglablePersistenceStorage } from "@/lib/supabaseClient/togglablePersistenceStorage";
 import type { StaffAccount, Store } from "@/lib/types";
@@ -58,6 +58,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Read inside the auth-state-change subscription below without adding
+  // `user` to its effect's dependency array (which would tear down and
+  // resubscribe on every profile load).
+  const userIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    userIdRef.current = user?.id ?? null;
+  }, [user]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -77,10 +85,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user && event === "SIGNED_IN") {
-        // A fresh sign-in fires this before the staff profile (and its
-        // role) has loaded — without this, a consumer reading `loading`
-        // right after login sees `false` + `user: null` simultaneously
-        // and concludes "signed out", bouncing straight back to /login.
+        if (session.user.id === userIdRef.current) {
+          // Supabase's own GoTrueClient fires SIGNED_IN — not just
+          // TOKEN_REFRESHED — every time the tab regains focus after being
+          // backgrounded, as part of its visibilitychange-driven session
+          // recovery (_recoverAndRefresh), even when nothing actually
+          // changed. If we already have this exact user loaded, there's
+          // nothing to re-fetch — re-running the loading cycle here would
+          // swap ProtectedRoute's whole authenticated shell out for its
+          // loading branch and back, unmounting/remounting the app (cart
+          // and all) on every tab switch with no real sign-in involved.
+          return;
+        }
+        // A genuinely fresh sign-in fires this before the staff profile
+        // (and its role) has loaded — without this, a consumer reading
+        // `loading` right after login sees `false` + `user: null`
+        // simultaneously and concludes "signed out", bouncing straight
+        // back to /login.
         if (!cancelled) setLoading(true);
         await loadSessionUser(session.user.id);
         if (!cancelled) setLoading(false);
@@ -89,13 +110,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStore(null);
         setLoading(false);
       }
-      // Any other event with a session (TOKEN_REFRESHED, USER_UPDATED,
-      // INITIAL_SESSION) means the same identity is still signed in —
-      // Supabase fires TOKEN_REFRESHED every time the browser tab
-      // regains focus after being backgrounded, so re-running the
-      // profile/store fetch (and re-showing the full-page loading
-      // spinner) here would make the whole app "reload" every time the
-      // cashier switches tabs and back.
     });
 
     return () => {

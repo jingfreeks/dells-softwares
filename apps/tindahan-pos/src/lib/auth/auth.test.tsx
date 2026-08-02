@@ -205,6 +205,40 @@ describe("AuthProvider", () => {
     expect(staffChain.select.mock.calls.length).toBe(fetchCountAfterInitialLoad);
   });
 
+  it("ignores a SIGNED_IN event for the same user, instead of remounting the app on tab refocus", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" } } },
+    });
+    let capturedCallback: ((event: string, session: unknown) => void) | null = null;
+    mockedSupabase.auth.onAuthStateChange.mockImplementation((cb) => {
+      capturedCallback = cb;
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
+    const staffChain = staffSelectChain({
+      id: "u1",
+      store_id: "s1",
+      name: "Aling Nena",
+      email: "nena@example.com",
+      role: "admin",
+    });
+    mockedSupabase.from.mockReturnValue(staffChain);
+    renderProbe();
+    await waitFor(() => expect(screen.getByTestId("user")).toHaveTextContent("Aling Nena"));
+    const fetchCountAfterInitialLoad = staffChain.select.mock.calls.length;
+
+    // Supabase's own GoTrueClient fires SIGNED_IN (not just TOKEN_REFRESHED)
+    // every time the tab regains focus, as part of its internal
+    // visibilitychange-driven session recovery — even though nothing
+    // changed. Treating every SIGNED_IN as a fresh sign-in previously
+    // caused `loading` to flip true/false on every tab switch, which
+    // unmounts and remounts the whole authenticated app shell.
+    await capturedCallback!("SIGNED_IN", { user: { id: "u1" } });
+
+    expect(screen.getByTestId("loading")).toHaveTextContent("false");
+    expect(screen.getByTestId("user")).toHaveTextContent("Aling Nena");
+    expect(staffChain.select.mock.calls.length).toBe(fetchCountAfterInitialLoad);
+  });
+
   it("logs in successfully", async () => {
     mockedSupabase.auth.getSession.mockResolvedValue({ data: { session: null } });
     mockedSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
