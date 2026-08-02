@@ -13,6 +13,7 @@ export default defineConfig({
     },
   },
   server: {
+    strictPort:true,
     fs: {
       allow: [root],
     },

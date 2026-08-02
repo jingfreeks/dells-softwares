@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth";
 import { lineTotal } from "@/lib/pos";
 import { supabase } from "@/lib/supabaseClient";
@@ -15,72 +8,13 @@ import type {
   Category,
   CreditPayment,
   Customer,
-  PaymentType,
   Product,
   SaleRecord,
   ServiceLine,
   Supplier,
 } from "@/lib/types";
-
-export type { ReceivingLine } from "@/lib/inventory";
-
-export interface ReceivingEntry {
-  id: string;
-  date: string;
-  supplier: string;
-  supplierId: string | null;
-  lines: ReceivingLine[];
-}
-
-export interface CheckoutPayment {
-  type: PaymentType;
-  /** Required when type is "credit" — which customer's utang this sale is charged to. */
-  customerId?: string | null;
-  /** Required when type is "qr" — the GCash/Maya transaction number the cashier read off their phone. */
-  referenceNo?: string;
-}
-
-interface StoreDataContextValue {
-  products: Product[];
-  sales: SaleRecord[];
-  categories: Category[];
-  customers: Customer[];
-  suppliers: Supplier[];
-  loading: boolean;
-  error: string | null;
-  addProduct: (product: Omit<Product, "id" | "category">) => Promise<Product>;
-  updateProduct: (id: string, patch: Partial<Omit<Product, "category">>) => Promise<void>;
-  removeProduct: (id: string) => Promise<void>;
-  restock: (id: string, quantity: number) => Promise<void>;
-  checkout: (
-    cart: CartLine[],
-    services: ServiceLine[],
-    cashierName: string,
-    payment?: CheckoutPayment
-  ) => Promise<SaleRecord>;
-  refresh: () => Promise<void>;
-  addCategory: (name: string) => Promise<Category>;
-  renameCategory: (id: string, name: string) => Promise<void>;
-  removeCategory: (id: string) => Promise<void>;
-  receivingHistory: ReceivingEntry[];
-  receiveStock: (
-    supplier: string,
-    date: string,
-    lines: ReceivingLine[],
-    supplierId?: string | null
-  ) => Promise<void>;
-  addCustomer: (name: string, phone?: string | null, creditLimit?: number | null) => Promise<Customer>;
-  recordCreditPayment: (customerId: string, amount: number, note?: string) => Promise<void>;
-  fetchCreditPayments: (customerId: string) => Promise<CreditPayment[]>;
-  addSupplier: (name: string, phone?: string | null, address?: string | null) => Promise<Supplier>;
-  updateSupplier: (
-    id: string,
-    patch: Partial<{ name: string; phone: string | null; address: string | null }>
-  ) => Promise<void>;
-  findSupplierByScanCode: (scanCode: string) => Promise<Supplier | null>;
-}
-
-const StoreDataContext = createContext<StoreDataContextValue | null>(null);
+import { StoreDataContext, type CheckoutPayment, type ReceivingEntry } from "./storeDataContext";
+import { loadCachedStoreData, saveCachedStoreData } from "./storeDataCache";
 
 function mapProductRow(row: {
   id: string;
@@ -277,9 +211,29 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    setLoading(true);
+
+    // Paint a last-known-good snapshot immediately (e.g. right after the
+    // browser discards a backgrounded tab and reloads it) instead of a
+    // blank spinner, then quietly reconcile with a real fetch below —
+    // this is what actually happened server-side wins once it lands.
+    const cached = loadCachedStoreData(user.id);
+    if (cached) {
+      setProducts(cached.products);
+      setCategories(cached.categories);
+      setCustomers(cached.customers);
+      setSuppliers(cached.suppliers);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     refresh().finally(() => setLoading(false));
   }, [user?.id, refresh]);
+
+  // Keep the cache fresh so the next reload has something recent to show.
+  useEffect(() => {
+    if (!user) return;
+    saveCachedStoreData(user.id, { products, categories, customers, suppliers });
+  }, [user?.id, products, categories, customers, suppliers]);
 
   async function addProduct(product: Omit<Product, "id" | "category">): Promise<Product> {
     if (!user) throw new Error("Not signed in.");
@@ -648,10 +602,4 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       {children}
     </StoreDataContext.Provider>
   );
-}
-
-export function useStoreData() {
-  const ctx = useContext(StoreDataContext);
-  if (!ctx) throw new Error("useStoreData must be used within StoreDataProvider");
-  return ctx;
 }

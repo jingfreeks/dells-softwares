@@ -330,9 +330,6 @@ export const LABEL_CUSTOM_ITEM_PRICE = "Price (₱)";
 export const PLACEHOLDER_CUSTOM_ITEM_NAME = "e.g. Repair fee";
 export const BUTTON_ADD_ITEM = "Add item";
 export const TEXT_LOW_STOCK_LEFT_SUFFIX = "left";
-export const LABEL_AMOUNT_PESO = "Amount (₱)";
-export const LABEL_FEE_PESO = "Fee (₱)";
-export const BUTTON_ADD_TO_CART = "Add to cart";
 export const LABEL_CURRENT_SALE = "Current sale";
 export const EMPTY_STATE_CART = "Cart is empty. Scan or search an item to begin.";
 export const TEXT_EACH_SUFFIX = "each";
@@ -386,6 +383,32 @@ export const TEXT_WALLET_AFTER_SALE_PREFIX = "Wallet after this sale ·";
 export const LABEL_GOODS = "Goods";
 export const LABEL_LOAD = "Load";
 export const LABEL_SERVICE_FEES = "Service fees";
+
+// Cash-in / Cash-out service panels
+export const LABEL_RECIPIENT_NUMBER = "Recipient number";
+export const LABEL_SENT_TO_CUSTOMER = "Sent to customer";
+export const LABEL_CASH_TO_COLLECT = "Cash to collect";
+export const TEXT_DRAWER_AFTER_SALE_PREFIX = "Drawer after this sale ·";
+export const LABEL_RECEIVED_AMOUNT = "Received e-money";
+export const LABEL_CASH_TO_HAND_OVER = "Cash to hand over";
+export const TEXT_DRAWER_WILL_DROP_TO_PREFIX = "Drawer will drop to";
+export const TEXT_BELOW_YOUR_FLOAT_PREFIX = "Below your";
+export const TEXT_FLOAT_SUFFIX = "float.";
+export const TEXT_CANT_MAKE_CHANGE_SUFFIX = "more cash-out(s) this size and you can't make change.";
+
+// Print / photocopy service panel
+export const LABEL_JOB_TYPE = "Job type";
+export const TEXT_PER_PAGE_SUFFIX = "/ page";
+export const TEXT_PER_JOB_SUFFIX = "/ job";
+export const LABEL_PAGES = "Pages";
+export const ARIA_DECREASE_PAGES = "Decrease pages";
+export const ARIA_INCREASE_PAGES = "Increase pages";
+export const LABEL_SINGLE_SIDED = "Single-sided";
+export const LABEL_DOUBLE_SIDED = "Double-sided";
+export const LABEL_PAPER_A4 = "A4";
+export const TEXT_PAGES_SUFFIX = "pages";
+export const LABEL_BULK_DISCOUNT_10_PAGES = "Bulk discount · 10+ pages";
+export const LABEL_TOTAL_POS = "Total";
 
 // Inventory page
 export const TEXT_PRODUCTS_TRACKED_SUFFIX = "products tracked.";

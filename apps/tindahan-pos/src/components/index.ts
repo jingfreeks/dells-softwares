@@ -1,4 +1,5 @@
 export * from "./icons";
+export * from "./navIcons";
 // BarcodeScanner is intentionally excluded — it's dynamically import()'d
 // (see Pos.tsx, Inventory.tsx, Receiving.tsx) to keep html5-qrcode out of
 // the main bundle. Re-exporting it here would make every "@/components"

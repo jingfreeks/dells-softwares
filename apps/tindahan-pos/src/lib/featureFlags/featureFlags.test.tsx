@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { FeatureFlag, FeatureFlagsProvider, useFeatureFlag } from "./featureFlags";
+import { FeatureFlag, FeatureFlagsProvider } from "./featureFlags";
+import { useFeatureFlag } from "./featureFlagsContext";
 import { supabase } from "../supabaseClient";
 
 vi.mock("../supabaseClient", () => ({

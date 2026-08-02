@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useAuth, navItemsForRole, ARIA_MAIN_NAV } from "@/lib";
-import { NAV_ICONS } from "@/components/icons";
+import { NAV_ICONS } from "@/components/navIcons";
 import "@/pages/authTheme.css";
 
 export function BottomNav() {
