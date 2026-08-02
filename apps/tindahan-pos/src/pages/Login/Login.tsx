@@ -61,7 +61,7 @@ export function Login() {
   } = useLoginForm();
   const navigate = useNavigate();
 
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/pos" replace />;
 
   return (
     <div className="tpl-root tpl-shell">
