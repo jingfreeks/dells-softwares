@@ -123,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (!cancelled) {
         setUser(null);
         setStore(null);
+        setLoading(false);
       }
     });
 

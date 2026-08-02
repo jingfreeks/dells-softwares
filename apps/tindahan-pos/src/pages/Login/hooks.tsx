@@ -19,7 +19,9 @@ export function useLoginForm() {
     const result = await login(email, password, keepSignedIn);
     setSubmitting(false);
     if (result.ok) {
-      navigate("/pos");
+      // Not a fixed destination — HomeRedirect decides admin vs. cashier
+      // once the profile (and its role) has loaded.
+      navigate("/");
     } else {
       setError(result.error);
     }
