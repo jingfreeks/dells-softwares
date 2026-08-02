@@ -13,7 +13,7 @@ function renderLogin() {
     <MemoryRouter initialEntries={["/login"]}>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/pos" element={<p>POS page</p>} />
+        <Route path="/" element={<p>Home page</p>} />
         <Route path="/register" element={<p>Register page</p>} />
         <Route path="/forgot-password" element={<p>Forgot password page</p>} />
       </Routes>
@@ -22,13 +22,13 @@ function renderLogin() {
 }
 
 describe("Login", () => {
-  it("redirects to /pos when already signed in", () => {
+  it("redirects to / when already signed in", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue());
     renderLogin();
-    expect(screen.getByText("POS page")).toBeInTheDocument();
+    expect(screen.getByText("Home page")).toBeInTheDocument();
   });
 
-  it("logs in and navigates to /pos on success", async () => {
+  it("logs in and hands off to / (which decides admin vs. cashier) on success", async () => {
     const user = userEvent.setup();
     const login = vi.fn().mockResolvedValue({ ok: true });
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, login }));
@@ -39,7 +39,7 @@ describe("Login", () => {
     await user.click(screen.getByRole("button", { name: "Sign in" }));
 
     expect(login).toHaveBeenCalledWith("nena@example.com", "secret123", true);
-    expect(await screen.findByText("POS page")).toBeInTheDocument();
+    expect(await screen.findByText("Home page")).toBeInTheDocument();
   });
 
   it("passes keepSignedIn as false when the checkbox is unticked", async () => {
