@@ -116,6 +116,43 @@ describe("AuthProvider", () => {
     expect(screen.getByTestId("user")).toHaveTextContent("none");
   });
 
+  it("stays loading while resolving a fresh sign-in's profile, instead of briefly reporting no user", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({ data: { session: null } });
+    let capturedCallback: ((event: string, session: unknown) => void) | null = null;
+    mockedSupabase.auth.onAuthStateChange.mockImplementation((cb) => {
+      capturedCallback = cb;
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
+
+    // A deferred profile lookup, so we can observe the state while it's
+    // still in flight — this is the exact window where a consumer (e.g.
+    // HomeRedirect) previously saw `loading: false, user: null` right
+    // after a successful sign-in and bounced back to /login.
+    let resolveProfile!: (value: unknown) => void;
+    const profilePromise = new Promise((resolve) => {
+      resolveProfile = resolve;
+    });
+    mockedSupabase.from.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({ single: vi.fn().mockReturnValue(profilePromise) }),
+      }),
+    });
+
+    renderProbe();
+    await waitFor(() => expect(screen.getByTestId("loading")).toHaveTextContent("false"));
+
+    capturedCallback!("SIGNED_IN", { user: { id: "u1" } });
+    await waitFor(() => expect(screen.getByTestId("loading")).toHaveTextContent("true"));
+    expect(screen.getByTestId("user")).toHaveTextContent("none");
+
+    resolveProfile({
+      data: { id: "u1", store_id: "s1", name: "Aling Nena", email: "nena@example.com", role: "admin" },
+      error: null,
+    });
+    await waitFor(() => expect(screen.getByTestId("user")).toHaveTextContent("Aling Nena"));
+    expect(screen.getByTestId("loading")).toHaveTextContent("false");
+  });
+
   it("reacts to auth state changes by loading the new profile", async () => {
     mockedSupabase.auth.getSession.mockResolvedValue({ data: { session: null } });
     let capturedCallback: ((event: string, session: unknown) => void) | null = null;
