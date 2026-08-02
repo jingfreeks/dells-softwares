@@ -119,10 +119,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
+        // A fresh sign-in fires this before the staff profile (and its
+        // role) has loaded — without this, a consumer reading `loading`
+        // right after login sees `false` + `user: null` simultaneously
+        // and concludes "signed out", bouncing straight back to /login.
+        if (!cancelled) setLoading(true);
         await loadSessionUser(session.user.id);
+        if (!cancelled) setLoading(false);
       } else if (!cancelled) {
         setUser(null);
         setStore(null);
+        setLoading(false);
       }
     });
 
