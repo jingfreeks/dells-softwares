@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { bestSellers, buildDailyReport, isToday, salesByCategory } from "./reports";
-import type { Product, SaleRecord } from "../types";
+import type { Customer, Product, SaleRecord } from "../types";
+
+function makeCustomer(overrides: Partial<Customer> = {}): Customer {
+  return {
+    id: "c1",
+    name: "Aling Rosa",
+    phone: null,
+    creditLimit: null,
+    balance: 0,
+    ...overrides,
+  };
+}
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
@@ -266,23 +277,31 @@ describe("buildDailyReport (admin PDF/dashboard source of truth)", () => {
       }),
       makeSale({ id: "yesterday", timestamp: "2026-07-26T10:00:00Z", total: 50 }),
     ];
+    const customers = [makeCustomer({ balance: 300 }), makeCustomer({ id: "c2", balance: 200 })];
 
-    const report = buildDailyReport(products, sales, now);
+    const report = buildDailyReport(products, sales, customers, now);
 
     expect(report.todaysSalesTotal).toBe(100);
     expect(report.todaysTransactionCount).toBe(1);
-    expect(report.totalProducts).toBe(2);
+    expect(report.salesChangePercent).toBe(100); // 100 vs 50 yesterday = +100%
+    expect(report.utangOutstanding).toBe(500);
     expect(report.lowStock.map((p) => p.id)).toEqual(["low"]);
     expect(report.bestSellers).toEqual([{ name: "OK item", quantity: 2 }]);
     expect(report.recentSales.map((s) => s.id)).toEqual(["today", "yesterday"]);
     expect(report.generatedAt).toBe(now.toISOString());
   });
 
+  it("has no sales change percent when yesterday had no sales", () => {
+    const sales = [makeSale({ id: "today", timestamp: "2026-07-27T10:00:00Z", total: 100 })];
+    const report = buildDailyReport([], sales, [], now);
+    expect(report.salesChangePercent).toBeNull();
+  });
+
   it("caps recent sales at 10 even when there are more", () => {
     const sales = Array.from({ length: 15 }, (_, i) =>
       makeSale({ id: `s${i}`, timestamp: "2026-07-27T10:00:00Z" })
     );
-    const report = buildDailyReport([], sales, now);
+    const report = buildDailyReport([], sales, [], now);
     expect(report.recentSales).toHaveLength(10);
   });
 });

@@ -5,14 +5,10 @@ export * from "./icons";
 // consumer statically pull it in, undoing the code-split. Import it
 // directly from "@/components/BarcodeScanner" instead.
 export * from "./BottomNav";
-export * from "./CardActionIcons";
 export * from "./CategoryManager";
 export * from "./MobileHeader";
 export * from "./OnboardingRoute";
 export * from "./ProtectedRoute";
 export * from "./ScannerLoadingOverlay";
-export * from "./SectionCardHeader";
 export * from "./Sidebar";
-export * from "./StatCard";
 export * from "./StockBadge";
-export * from "./Topbar";

@@ -239,7 +239,9 @@ export function Register() {
       </div>
 
       <div className="tpl-preview">
-        <span className="tpl-chip tpl-on">{APP_NAME}</span>
+        <span className="tpl-chip tpl-on" style={{ alignSelf: "flex-start", marginBottom: 20 }}>
+          {APP_NAME}
+        </span>
         <p className="tpl-headline">{TEXT_REGISTER_PREVIEW_HEADLINE}</p>
         <p className="tpl-tagline">{TEXT_REGISTER_PREVIEW_TAGLINE}</p>
 

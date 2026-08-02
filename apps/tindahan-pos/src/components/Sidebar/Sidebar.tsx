@@ -1,4 +1,4 @@
-import { Link, NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   useAuth,
   STORE_NAME,
@@ -9,74 +9,55 @@ import {
   LABEL_LOG_OUT,
 } from "@/lib";
 import { NAV_ICONS, LogoutIcon } from "@/components/icons";
+import "@/pages/authTheme.css";
 
 export function Sidebar() {
   const { user, logout } = useAuth();
   const navItems = navItemsForRole(user?.role);
 
   return (
-    <aside className="hidden h-full w-64 shrink-0 flex-col bg-white lg:flex">
-      <div className="flex items-center gap-2.5 px-5 py-6">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand)] text-sm font-bold text-white shadow-[0_6px_16px_-6px_rgba(201,59,46,0.55)]">
+    <aside className="tpl-root tpl-side hidden h-full shrink-0 lg:flex">
+      <div className="tpl-brand">
+        <span className="tpl-mark" style={{ width: 30, height: 30, borderRadius: 9, fontSize: 13 }}>
           {STORE_NAME.charAt(0)}
         </span>
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-slate-900">{STORE_NAME}</p>
-          <p className="text-xs text-slate-400">{APP_NAME}</p>
+          <p className="tpl-bn truncate">{STORE_NAME}</p>
+          <p className="tpl-bs">{APP_NAME}</p>
         </div>
       </div>
-      <nav className="flex flex-1 flex-col gap-1 px-3" aria-label={ARIA_MAIN_NAV}>
-        <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-          {LABEL_MENU}
-        </p>
+      <p className="tpl-seclbl">{LABEL_MENU}</p>
+      <nav className="flex flex-1 flex-col" aria-label={ARIA_MAIN_NAV}>
         {navItems.map((item) => {
           const Icon = NAV_ICONS[item.icon];
           return (
             <NavLink
               key={item.to}
               to={item.to}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-[var(--color-brand)]/10 text-[var(--color-brand)]"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                }`
-              }
+              className={({ isActive }) => `tpl-navi${isActive ? " tpl-on" : ""}`}
             >
-              <Icon className="h-5 w-5 shrink-0" />
+              <Icon />
               {item.label}
             </NavLink>
           );
         })}
       </nav>
-      <div className="m-3 rounded-xl bg-slate-50 p-3">
-        <Link
-          to="/profile"
-          className="flex items-center gap-2 rounded-lg px-1 py-1 hover:bg-white"
-        >
-          {user?.avatarUrl ? (
-            <img src={user.avatarUrl} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />
-          ) : (
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-xs font-bold text-slate-500">
-              {user?.name?.charAt(0).toUpperCase() ?? "?"}
-            </span>
-          )}
-          <p className="min-w-0 flex-1 truncate text-xs font-semibold text-slate-700">{user?.name}</p>
-          {user?.role && (
-            <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
-              {user.role}
-            </span>
-          )}
-        </Link>
-        <button
-          type="button"
-          onClick={logout}
-          className="mt-1.5 flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-1 py-1.5 text-left text-sm font-medium text-slate-500 hover:text-[var(--color-brand)]"
-        >
-          <LogoutIcon className="h-4 w-4 shrink-0" />
-          {LABEL_LOG_OUT}
-        </button>
-      </div>
+      <div className="tpl-grow" />
+      <NavLink to="/profile" className="tpl-ub">
+        {user?.avatarUrl ? (
+          <img src={user.avatarUrl} alt="" className="tpl-av-s" />
+        ) : (
+          <span className="tpl-av-s">{user?.name?.charAt(0).toUpperCase() ?? "?"}</span>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="tpl-tp truncate">{user?.name}</p>
+          {user?.role && <p className="tpl-ts uppercase">{user.role}</p>}
+        </div>
+      </NavLink>
+      <button type="button" onClick={logout} className="tpl-logout-btn">
+        <LogoutIcon />
+        {LABEL_LOG_OUT}
+      </button>
     </aside>
   );
 }

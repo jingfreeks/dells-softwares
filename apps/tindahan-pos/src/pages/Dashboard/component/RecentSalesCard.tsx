@@ -1,12 +1,7 @@
-import type { SaleRecord } from "@/lib";
-import { PESO, LABEL_RECENT_SALES, TABLE_HEADER_DATE_TIME, TABLE_HEADER_CASHIER, TABLE_HEADER_ITEMS, TABLE_HEADER_TOTAL, EMPTY_STATE_NO_SALES } from "@/lib";
-import type { CardSection } from "@/lib/reportPdf";
-import { SectionCardHeader, type CardActions } from "@/components";
+import type { PaymentType, SaleRecord } from "@/lib";
+import { PESO, LABEL_RECENT_SALES, EMPTY_STATE_NO_SALES } from "@/lib";
 
-interface RecentSalesCardProps {
-  recentSales: SaleRecord[];
-  buildCardActions: (section: CardSection) => CardActions;
-}
+const PAYMENT_LABEL: Record<PaymentType, string> = { cash: "Cash", qr: "GCash", credit: "Utang" };
 
 function formatSaleDate(timestamp: string) {
   return new Date(timestamp).toLocaleString("en-PH", {
@@ -17,46 +12,32 @@ function formatSaleDate(timestamp: string) {
   });
 }
 
-export function RecentSalesCard({ recentSales, buildCardActions }: RecentSalesCardProps) {
+function formatItems(sale: SaleRecord): string {
+  return sale.items.map((item) => (item.quantity > 1 ? `${item.name} ×${item.quantity}` : item.name)).join(", ");
+}
+
+export function RecentSalesCard({ recentSales }: { recentSales: SaleRecord[] }) {
   return (
-    <div className="card">
-      <SectionCardHeader
-        title={LABEL_RECENT_SALES}
-        {...buildCardActions({
-          kind: "table",
-          title: LABEL_RECENT_SALES,
-          head: [TABLE_HEADER_DATE_TIME, TABLE_HEADER_CASHIER, TABLE_HEADER_ITEMS, TABLE_HEADER_TOTAL],
-          rows: recentSales.map((sale) => [
-            new Date(sale.timestamp).toLocaleString("en-PH", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            }),
-            sale.cashierName,
-            String(sale.items.length),
-            PESO.format(sale.total),
-          ]),
-          emptyMessage: EMPTY_STATE_NO_SALES,
-        })}
-      />
-      <ul className="divide-y divide-slate-100">
-        {recentSales.map((sale) => (
-          <li key={sale.id} className="flex items-center justify-between px-4 py-3 text-sm">
-            <div>
-              <p className="font-medium text-slate-800">{formatSaleDate(sale.timestamp)}</p>
-              <p className="text-xs text-slate-500">
-                {sale.items.length} item{sale.items.length === 1 ? "" : "s"} · {sale.cashierName}
-              </p>
-            </div>
-            <span className="tabular-nums font-semibold text-slate-900">{PESO.format(sale.total)}</span>
-          </li>
-        ))}
-        {recentSales.length === 0 && (
-          <li className="px-4 py-8 text-center text-sm text-slate-400">{EMPTY_STATE_NO_SALES}</li>
-        )}
-      </ul>
+    <div className="tpl-card">
+      <p className="tpl-h3" style={{ marginBottom: 11 }}>
+        {LABEL_RECENT_SALES}
+      </p>
+      {recentSales.map((sale) => (
+        <div className="tpl-lr" key={sale.id}>
+          <div className="tpl-flex1">
+            <p className="tpl-tp">{formatItems(sale)}</p>
+            <p className="tpl-ts">
+              {formatSaleDate(sale.timestamp)} · {PAYMENT_LABEL[sale.paymentType]}
+            </p>
+          </div>
+          <span className="tpl-tp">{PESO.format(sale.total)}</span>
+        </div>
+      ))}
+      {recentSales.length === 0 && (
+        <p className="tpl-ts" style={{ padding: "16px 0", textAlign: "center" }}>
+          {EMPTY_STATE_NO_SALES}
+        </p>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import { lowStockProducts } from "@/lib/inventory";
-import type { Product, SaleRecord } from "@/lib/types";
+import { lowStockProducts, computeRestockSuggestions, type RestockSuggestion } from "@/lib/inventory";
+import type { Customer, Product, SaleRecord } from "@/lib/types";
 
 export interface CategoryTotal {
   category: string;
@@ -83,10 +83,23 @@ export interface DailyReport {
   generatedAt: string;
   todaysSalesTotal: number;
   todaysTransactionCount: number;
-  totalProducts: number;
+  /** Percent change in today's sales vs. the same time yesterday. Null
+   * when yesterday had no sales at all — a percentage against zero is
+   * undefined, not "infinite growth". */
+  salesChangePercent: number | null;
+  utangOutstanding: number;
   lowStock: Product[];
   bestSellers: BestSeller[];
   recentSales: SaleRecord[];
+  restockSuggestions: RestockSuggestion[];
+  categoryTotals: SalesByCategory;
+}
+
+/** Yesterday's date at the same moment as `now` (local time), for the isToday-style comparison. */
+function yesterday(now: Date): Date {
+  const d = new Date(now);
+  d.setDate(d.getDate() - 1);
+  return d;
 }
 
 /**
@@ -97,16 +110,28 @@ export interface DailyReport {
 export function buildDailyReport(
   products: Product[],
   sales: SaleRecord[],
+  customers: Customer[],
   now: Date = new Date()
 ): DailyReport {
   const todaysSales = sales.filter((s) => isToday(s.timestamp, now));
+  const todaysSalesTotal = todaysSales.reduce((sum, s) => sum + s.total, 0);
+  const yesterdaysSalesTotal = sales
+    .filter((s) => isToday(s.timestamp, yesterday(now)))
+    .reduce((sum, s) => sum + s.total, 0);
+
   return {
     generatedAt: now.toISOString(),
-    todaysSalesTotal: todaysSales.reduce((sum, s) => sum + s.total, 0),
+    todaysSalesTotal,
     todaysTransactionCount: todaysSales.length,
-    totalProducts: products.length,
+    salesChangePercent:
+      yesterdaysSalesTotal > 0
+        ? Math.round(((todaysSalesTotal - yesterdaysSalesTotal) / yesterdaysSalesTotal) * 100)
+        : null,
+    utangOutstanding: customers.reduce((sum, c) => sum + c.balance, 0),
     lowStock: lowStockProducts(products),
     bestSellers: bestSellers(sales),
     recentSales: sales.slice(0, 10),
+    restockSuggestions: computeRestockSuggestions(products, sales, { now }),
+    categoryTotals: salesByCategory(sales, products),
   };
 }
