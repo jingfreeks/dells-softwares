@@ -28,6 +28,7 @@
   --tpl-ok: #4ade80;
   --tpl-okd: #7fcfa0;
   --tpl-warn: #fbbf24;
+  --tpl-warnd: #b08a2e;
   --tpl-bad: #f87171;
   --tpl-gl: rgba(255, 255, 255, 0.05);
   --tpl-gl2: rgba(255, 255, 255, 0.045);
@@ -1143,6 +1144,34 @@
   background: rgba(74, 222, 128, 0.06);
   border: 0.5px solid rgba(74, 222, 128, 0.28);
 }
+.tpl-note.tpl-w {
+  background: rgba(251, 191, 36, 0.07);
+  border: 0.5px solid rgba(251, 191, 36, 0.28);
+}
+.tpl-note i.ti {
+  font-size: 17px;
+  flex: none;
+  margin-top: 1px;
+}
+.tpl-nt {
+  font-size: 13px;
+  font-weight: 500;
+}
+.tpl-ns {
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.tpl-g2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+}
+.tpl-hint {
+  color: var(--tpl-t7);
+  font-size: 11.5px;
+  margin: 7px 0 0;
+}
 
 /* Icon font — mask-based, subset of the design review's icon set
    (only the glyphs this screen actually uses). */
@@ -1162,6 +1191,10 @@
 .ti-brand-google {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M20.5%2010.5H12v3.5h5a5%205%200%201%201-1.5-5.5%22%2F%3E%3C%2Fsvg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M20.5%2010.5H12v3.5h5a5%205%200%201%201-1.5-5.5%22%2F%3E%3C%2Fsvg%3E");
+}
+.ti-alert-triangle {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%204l9%2015H3zM12%2010v4M12%2017v.5%22%2F%3E%3C%2Fsvg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%204l9%2015H3zM12%2010v4M12%2017v.5%22%2F%3E%3C%2Fsvg%3E");
 }
 .ti-alert-circle {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M12%2021a9%209%200%201%200%200-18a9%209%200%200%200%200%2018M12%208v5M12%2016v.5%22%2F%3E%3C%2Fsvg%3E");

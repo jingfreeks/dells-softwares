@@ -45,10 +45,6 @@ export function Pos() {
     serviceLines,
     selectedService,
     setSelectedService,
-    serviceAmount,
-    setServiceAmount,
-    serviceFee,
-    setServiceFee,
     productInputRef,
     total,
     categories,
@@ -66,10 +62,13 @@ export function Pos() {
     handleAddProduct,
     incrementLine,
     removeLine,
-    handleAddService,
     addEloadService,
+    addCashInService,
+    addCashOutService,
+    addPrintService,
     removeServiceLine,
     walletBalance,
+    drawerBalance,
     quickCashAmounts,
     handleCompleteSale,
     handleCancelSale,
@@ -118,13 +117,12 @@ export function Pos() {
           <ServicesPanel
             selectedService={selectedService}
             onSelectService={setSelectedService}
-            serviceAmount={serviceAmount}
-            onServiceAmountChange={setServiceAmount}
-            serviceFee={serviceFee}
-            onServiceFeeChange={setServiceFee}
-            onAddService={handleAddService}
             walletBalance={walletBalance}
             onAddEloadService={addEloadService}
+            drawerBalance={drawerBalance}
+            onAddCashInService={addCashInService}
+            onAddCashOutService={addCashOutService}
+            onAddPrintService={addPrintService}
           />
         )}
       </div>

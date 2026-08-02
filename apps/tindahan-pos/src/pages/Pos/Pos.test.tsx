@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { useAuth, useStoreData, useFeatureFlag, EloadWalletProvider } from "@/lib";
+import { useAuth, useStoreData, useFeatureFlag, EloadWalletProvider, DrawerFloatProvider } from "@/lib";
 import { makeAuthValue, makeCustomer, makeProduct, makeStaffAccount, makeStoreDataValue } from "../../test/testUtils";
 import { Pos } from "./Pos";
 
@@ -32,9 +32,11 @@ function setup(overrides: Partial<ReturnType<typeof makeStoreDataValue>> = {}) {
 function renderPage() {
   return render(
     <EloadWalletProvider>
-      <MemoryRouter>
-        <Pos />
-      </MemoryRouter>
+      <DrawerFloatProvider>
+        <MemoryRouter>
+          <Pos />
+        </MemoryRouter>
+      </DrawerFloatProvider>
     </EloadWalletProvider>
   );
 }
@@ -280,23 +282,62 @@ describe("Pos", () => {
     expect(screen.getByText("Cart is empty. Scan or search an item to begin.")).toBeInTheDocument();
   });
 
-  it("selects a different service type and includes a fee", async () => {
+  it("adds a cash-in service line, and grows the drawer float by the cash collected", async () => {
     const user = userEvent.setup();
     setup();
     renderPage();
 
     await user.click(screen.getByRole("button", { name: "Services" }));
     await user.click(screen.getByRole("button", { name: /Cash-in/ }));
-    const amountInput = screen.getByLabelText("Amount (₱)");
-    await user.clear(amountInput);
-    await user.type(amountInput, "500");
-    const feeInput = screen.getByLabelText("Fee (₱)");
-    await user.clear(feeInput);
-    await user.type(feeInput, "10");
-    await user.click(screen.getByRole("button", { name: "Add to cart" }));
+    await user.type(screen.getByLabelText("Recipient number"), "0917 555 0142");
+    await user.click(screen.getByRole("button", { name: /₱500/ }));
+    await user.type(screen.getByLabelText("Reference / transaction no."), "0093847122");
+    await user.click(screen.getByRole("button", { name: "Add to sale" }));
 
-    expect(screen.getByText(/Cash-in ₱500 \+ ₱10 fee/)).toBeInTheDocument();
-    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱510.00");
+    // ₱500 falls in the ₱500 fee bracket (+₱15), so the customer hands
+    // over ₱515 cash, all of which counts toward the till total.
+    expect(screen.getAllByText(/GCash cash-in/).length).toBeGreaterThan(0);
+    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱515.00");
+  });
+
+  it("adds a cash-out service line worth only the fee, and warns when the drawer would run short", async () => {
+    const user = userEvent.setup();
+    setup();
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Services" }));
+    await user.click(screen.getByRole("button", { name: /Cash-out/ }));
+    await user.click(screen.getByRole("button", { name: /₱1,000/ }));
+
+    // ₱1,000 falls in the ₱1,000 fee bracket (+₱25), so the cashier
+    // hands over ₱975 — dropping the ₱2,000 starting float to ₱1,025,
+    // which is below the float and should trigger the warning.
+    expect(screen.getByText(/Drawer will drop to ₱1,025\.00/)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Reference / transaction no."), "0093847123");
+    await user.click(screen.getByRole("button", { name: "Add to sale" }));
+
+    // Only the ₱25 fee is real sale revenue — the ₱975 handed to the
+    // customer isn't something they're paying the register for.
+    expect(screen.getAllByText(/GCash cash-out/).length).toBeGreaterThan(0);
+    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱25.00");
+  });
+
+  it("adds a print job, applying the bulk discount at 10+ pages", async () => {
+    const user = userEvent.setup();
+    setup();
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Services" }));
+    await user.click(screen.getByRole("button", { name: "Print / Photocopy" }));
+    for (let i = 0; i < 13; i++) {
+      await user.click(screen.getByRole("button", { name: "Increase pages" }));
+    }
+    await user.click(screen.getByRole("button", { name: "Add to sale" }));
+
+    // 14 pages × ₱3.00 = ₱42.00, minus a 10% bulk discount (₱4.00) = ₱38.00.
+    expect(screen.getAllByText(/Print B&W/).length).toBeGreaterThan(0);
+    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱38.00");
   });
 
   it("does not show the products/services tab switcher when pos_services flag is off", () => {
@@ -431,5 +472,22 @@ describe("Pos", () => {
     await user.keyboard("{F3}");
 
     expect(customerSearch).toHaveFocus();
+  });
+
+  it("recovers an in-progress sale after the page reloads mid-checkout", async () => {
+    const user = userEvent.setup();
+    setup();
+    const { unmount } = renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱25.00");
+
+    // Simulates the browser discarding this tab in the background and
+    // reloading it fresh — everything in React state is gone, but the
+    // sessionStorage snapshot the cart effect wrote along the way survives.
+    unmount();
+    renderPage();
+
+    await waitFor(() => expect(screen.getByTestId("cart-total")).toHaveTextContent("₱25.00"));
   });
 });

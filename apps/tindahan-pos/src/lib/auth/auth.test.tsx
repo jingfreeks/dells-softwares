@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { AuthProvider, useAuth } from "./auth";
+import { AuthProvider } from "./auth";
+import { useAuth } from "./authContext";
 import { supabase } from "../supabaseClient";
 
 vi.mock("../supabaseClient", () => ({
@@ -171,6 +172,37 @@ describe("AuthProvider", () => {
 
     await capturedCallback!("SIGNED_OUT", null);
     await waitFor(() => expect(screen.getByTestId("user")).toHaveTextContent("none"));
+  });
+
+  it("ignores a token refresh for the same session, instead of re-showing the loading spinner", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" } } },
+    });
+    let capturedCallback: ((event: string, session: unknown) => void) | null = null;
+    mockedSupabase.auth.onAuthStateChange.mockImplementation((cb) => {
+      capturedCallback = cb;
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
+    const staffChain = staffSelectChain({
+      id: "u1",
+      store_id: "s1",
+      name: "Aling Nena",
+      email: "nena@example.com",
+      role: "admin",
+    });
+    mockedSupabase.from.mockReturnValue(staffChain);
+    renderProbe();
+    await waitFor(() => expect(screen.getByTestId("user")).toHaveTextContent("Aling Nena"));
+    const fetchCountAfterInitialLoad = staffChain.select.mock.calls.length;
+
+    // Supabase fires TOKEN_REFRESHED with the same user every time the
+    // browser tab regains focus after being backgrounded — this must not
+    // re-trigger the loading spinner or an unnecessary profile refetch.
+    await capturedCallback!("TOKEN_REFRESHED", { user: { id: "u1" } });
+
+    expect(screen.getByTestId("loading")).toHaveTextContent("false");
+    expect(screen.getByTestId("user")).toHaveTextContent("Aling Nena");
+    expect(staffChain.select.mock.calls.length).toBe(fetchCountAfterInitialLoad);
   });
 
   it("logs in successfully", async () => {

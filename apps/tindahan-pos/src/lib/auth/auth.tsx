@@ -1,50 +1,8 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { togglablePersistenceStorage } from "@/lib/supabaseClient/togglablePersistenceStorage";
 import type { StaffAccount, Store } from "@/lib/types";
-
-type AuthResult = { ok: true } | { ok: false; error: string };
-type RegisterResult =
-  | { ok: true; needsEmailConfirmation: boolean }
-  | { ok: false; error: string };
-
-interface AuthContextValue {
-  user: StaffAccount | null;
-  /** The signed-in staff member's store — loaded alongside the profile. */
-  store: Store | null;
-  /** True until the initial session check completes — avoids a false
-   * redirect-to-login flash while Supabase restores a persisted session. */
-  loading: boolean;
-  /** keepSignedIn (default true) controls whether the session survives
-   * closing the browser — see togglablePersistenceStorage. */
-  login: (email: string, password: string, keepSignedIn?: boolean) => Promise<AuthResult>;
-  register: (input: {
-    storeName: string;
-    ownerName: string;
-    email: string;
-    password: string;
-    confirmPassword: string;
-  }) => Promise<RegisterResult>;
-  logout: () => Promise<void>;
-  requestPasswordReset: (email: string) => Promise<AuthResult>;
-  updateProfile: (patch: {
-    name?: string;
-    phone?: string | null;
-    address?: string | null;
-    avatarUrl?: string | null;
-  }) => Promise<AuthResult>;
-  updateStore: (patch: {
-    name?: string;
-    address?: string | null;
-    photoUrl?: string | null;
-  }) => Promise<AuthResult>;
-  /** Marks the signed-in admin's onboarding wizard as finished. */
-  completeOnboarding: () => Promise<AuthResult>;
-  /** Permanently deletes the signed-in staff member's own account. */
-  deleteAccount: () => Promise<AuthResult>;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
+import { AuthContext, type AuthResult, type RegisterResult } from "./authContext";
 
 async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
   const { data, error } = await supabase
@@ -117,8 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user && event === "SIGNED_IN") {
         // A fresh sign-in fires this before the staff profile (and its
         // role) has loaded — without this, a consumer reading `loading`
         // right after login sees `false` + `user: null` simultaneously
@@ -126,11 +84,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setLoading(true);
         await loadSessionUser(session.user.id);
         if (!cancelled) setLoading(false);
-      } else if (!cancelled) {
+      } else if (!session?.user && !cancelled) {
         setUser(null);
         setStore(null);
         setLoading(false);
       }
+      // Any other event with a session (TOKEN_REFRESHED, USER_UPDATED,
+      // INITIAL_SESSION) means the same identity is still signed in —
+      // Supabase fires TOKEN_REFRESHED every time the browser tab
+      // regains focus after being backgrounded, so re-running the
+      // profile/store fetch (and re-showing the full-page loading
+      // spinner) here would make the whole app "reload" every time the
+      // cashier switches tabs and back.
     });
 
     return () => {
@@ -292,10 +257,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
 }

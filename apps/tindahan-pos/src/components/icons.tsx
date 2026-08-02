@@ -207,10 +207,3 @@ export function TrashIcon({ className }: IconProps) {
   );
 }
 
-export const NAV_ICONS = {
-  pos: PosIcon,
-  inventory: InventoryIcon,
-  admin: AdminIcon,
-  staff: StaffIcon,
-  customers: CustomersIcon,
-};
