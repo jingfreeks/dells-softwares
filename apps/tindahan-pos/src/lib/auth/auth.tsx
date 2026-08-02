@@ -58,13 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Read inside the auth-state-change subscription below without adding
-  // `user` to its effect's dependency array (which would tear down and
-  // resubscribe on every profile load).
+  // Tracks the currently-loaded user id for the auth-state-change
+  // subscription below, updated synchronously alongside `setUser` (not via
+  // a separate `useEffect`, whose scheduling isn't guaranteed to have
+  // flushed before the next Supabase event arrives).
   const userIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    userIdRef.current = user?.id ?? null;
-  }, [user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async function loadSessionUser(userId: string) {
       const profile = await loadStaffProfile(userId);
       if (cancelled) return;
+      userIdRef.current = profile?.id ?? null;
       setUser(profile);
       setStore(profile ? await loadStore(profile.storeId) : null);
     }
@@ -106,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await loadSessionUser(session.user.id);
         if (!cancelled) setLoading(false);
       } else if (!session?.user && !cancelled) {
+        userIdRef.current = null;
         setUser(null);
         setStore(null);
         setLoading(false);
