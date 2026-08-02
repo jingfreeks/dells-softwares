@@ -87,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (!session?.user && !cancelled) {
         setUser(null);
         setStore(null);
+        setLoading(false);
       }
       // Any other event with a session (TOKEN_REFRESHED, USER_UPDATED,
       // INITIAL_SESSION) means the same identity is still signed in —
