@@ -336,9 +336,8 @@ export const TEXT_EACH_SUFFIX = "each";
 export const ARIA_DECREASE_QUANTITY_PREFIX = "Decrease quantity of";
 export const ARIA_INCREASE_QUANTITY_PREFIX = "Increase quantity of";
 export const ARIA_REMOVE_PREFIX = "Remove";
-export const LABEL_SERVICE = "Service";
 export const LABEL_PAYMENT_CASH = "Cash";
-export const LABEL_PAYMENT_QR = "QR";
+export const LABEL_PAYMENT_QR = "GCash";
 export const LABEL_PAYMENT_UTANG = "Utang";
 export const LABEL_AMOUNT_TENDERED = "Amount tendered";
 export const LABEL_CHANGE = "Change";
@@ -366,6 +365,24 @@ export const SERVICE_LABEL_ELOAD = "E-Load";
 export const SERVICE_LABEL_CASHIN = "Cash-in";
 export const SERVICE_LABEL_CASHOUT = "Cash-out";
 export const SERVICE_LABEL_PRINT = "Print / Photocopy";
+
+// E-load service panel
+export const LABEL_NETWORK = "Network";
+export const LABEL_MOBILE_NUMBER = "Mobile number";
+export const PLACEHOLDER_MOBILE_NUMBER = "09XX XXX XXXX";
+export const HINT_INVALID_MOBILE_NUMBER = "Enter a valid 11-digit mobile number.";
+export const LABEL_AMOUNT = "Amount";
+export const LABEL_OTHER = "Other";
+export const LABEL_LOAD_AMOUNT = "Load amount";
+export const TEXT_FEE_AUTO_SUFFIX = "auto";
+export const LABEL_SERVICE_FEE = "Service fee";
+export const LABEL_CUSTOMER_PAYS = "Customer pays";
+export const BUTTON_ADD_TO_SALE = "Add to sale";
+export const LABEL_ELOAD_WALLET = "E-load wallet";
+export const TEXT_WALLET_AFTER_SALE_PREFIX = "Wallet after this sale ·";
+export const LABEL_GOODS = "Goods";
+export const LABEL_LOAD = "Load";
+export const LABEL_SERVICE_FEES = "Service fees";
 
 // Inventory page
 export const TEXT_PRODUCTS_TRACKED_SUFFIX = "products tracked.";

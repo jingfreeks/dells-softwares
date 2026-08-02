@@ -1,18 +1,21 @@
 import { NavLink } from "react-router-dom";
 import {
   useAuth,
+  useEloadWallet,
   STORE_NAME,
   navItemsForRole,
   APP_NAME,
   ARIA_MAIN_NAV,
   LABEL_MENU,
   LABEL_LOG_OUT,
+  LABEL_ELOAD_WALLET,
 } from "@/lib";
 import { NAV_ICONS, LogoutIcon } from "@/components/icons";
 import "@/pages/authTheme.css";
 
 export function Sidebar() {
   const { user, logout } = useAuth();
+  const { balance: walletBalance, setBalance: setWalletBalance } = useEloadWallet();
   const navItems = navItemsForRole(user?.role);
 
   return (
@@ -43,6 +46,33 @@ export function Sidebar() {
         })}
       </nav>
       <div className="tpl-grow" />
+      <div
+        style={{
+          background: "rgba(76,141,255,.10)",
+          border: "0.5px solid rgba(76,141,255,.24)",
+          borderRadius: 10,
+          padding: 10,
+          marginBottom: 12,
+        }}
+      >
+        <p style={{ color: "var(--tpl-a4)", fontSize: 11.5, margin: 0 }}>{LABEL_ELOAD_WALLET}</p>
+        <input
+          aria-label={LABEL_ELOAD_WALLET}
+          type="number"
+          value={walletBalance}
+          onChange={(e) => setWalletBalance(Number(e.target.value) || 0)}
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--tpl-t2)",
+            fontSize: 15,
+            fontWeight: 500,
+            width: "100%",
+            padding: 0,
+            marginTop: 2,
+          }}
+        />
+      </div>
       <NavLink to="/profile" className="tpl-ub">
         {user?.avatarUrl ? (
           <img src={user.avatarUrl} alt="" className="tpl-av-s" />

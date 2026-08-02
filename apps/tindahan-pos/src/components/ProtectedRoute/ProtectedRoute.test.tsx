@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { useAuth } from "@/lib";
+import { useAuth, EloadWalletProvider } from "@/lib";
 import { makeAuthValue, makeStaffAccount } from "../../test/testUtils";
 import { ProtectedRoute } from "./ProtectedRoute";
 
@@ -9,20 +9,22 @@ vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 
 function renderProtected() {
   return render(
-    <MemoryRouter initialEntries={["/pos"]}>
-      <Routes>
-        <Route path="/login" element={<p>Login page</p>} />
-        <Route path="/onboarding" element={<p>Onboarding page</p>} />
-        <Route
-          path="/pos"
-          element={
-            <ProtectedRoute>
-              <p>Protected content</p>
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </MemoryRouter>
+    <EloadWalletProvider>
+      <MemoryRouter initialEntries={["/pos"]}>
+        <Routes>
+          <Route path="/login" element={<p>Login page</p>} />
+          <Route path="/onboarding" element={<p>Onboarding page</p>} />
+          <Route
+            path="/pos"
+            element={
+              <ProtectedRoute>
+                <p>Protected content</p>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </MemoryRouter>
+    </EloadWalletProvider>
   );
 }
 

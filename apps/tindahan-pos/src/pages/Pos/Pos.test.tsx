@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { useAuth, useStoreData, useFeatureFlag } from "@/lib";
+import { useAuth, useStoreData, useFeatureFlag, EloadWalletProvider } from "@/lib";
 import { makeAuthValue, makeCustomer, makeProduct, makeStaffAccount, makeStoreDataValue } from "../../test/testUtils";
 import { Pos } from "./Pos";
 
@@ -31,9 +31,11 @@ function setup(overrides: Partial<ReturnType<typeof makeStoreDataValue>> = {}) {
 
 function renderPage() {
   return render(
-    <MemoryRouter>
-      <Pos />
-    </MemoryRouter>
+    <EloadWalletProvider>
+      <MemoryRouter>
+        <Pos />
+      </MemoryRouter>
+    </EloadWalletProvider>
   );
 }
 
@@ -243,21 +245,21 @@ describe("Pos", () => {
     expect(screen.getByRole("button", { name: "Complete sale" })).toBeDisabled();
   });
 
-  it("adds and removes a service line", async () => {
+  it("adds and removes an e-load service line", async () => {
     const user = userEvent.setup();
     setup();
     renderPage();
 
     await user.click(screen.getByRole("button", { name: "Services" }));
-    const amountInput = screen.getByLabelText("Amount (₱)");
-    await user.clear(amountInput);
-    await user.type(amountInput, "100");
-    await user.click(screen.getByRole("button", { name: "Add to cart" }));
+    await user.type(screen.getByLabelText("Mobile number"), "0917 555 0142");
+    await user.click(screen.getByRole("button", { name: /₱100/ }));
+    await user.click(screen.getByRole("button", { name: "Add to sale" }));
 
-    expect(screen.getAllByText(/E-Load/).length).toBeGreaterThan(0);
-    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱100.00");
+    // ₱100 falls in the ₱100 fee bracket (+₱5), so the sale totals ₱105.
+    expect(screen.getAllByText(/Globe load/).length).toBeGreaterThan(0);
+    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱105.00");
 
-    await user.click(screen.getByRole("button", { name: /Remove E-Load/ }));
+    await user.click(screen.getByRole("button", { name: /Remove Globe load/ }));
     expect(screen.getByText("Cart is empty. Scan or search an item to begin.")).toBeInTheDocument();
   });
 
@@ -311,7 +313,7 @@ describe("Pos", () => {
     renderPage();
 
     await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
-    await user.click(screen.getByRole("button", { name: "QR" }));
+    await user.click(screen.getByRole("button", { name: "GCash" }));
 
     expect(screen.getByRole("button", { name: "Complete sale" })).toBeDisabled();
 
@@ -334,11 +336,11 @@ describe("Pos", () => {
     renderPage();
 
     await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
-    await user.click(screen.getByRole("button", { name: "QR" }));
+    await user.click(screen.getByRole("button", { name: "GCash" }));
     await user.type(screen.getByLabelText("Reference / transaction no."), "12345");
 
     await user.click(screen.getByRole("button", { name: "Cash" }));
-    await user.click(screen.getByRole("button", { name: "QR" }));
+    await user.click(screen.getByRole("button", { name: "GCash" }));
 
     expect(screen.getByLabelText("Reference / transaction no.")).toHaveValue("");
   });
@@ -354,7 +356,7 @@ describe("Pos", () => {
     await user.type(screen.getByLabelText("Charge to customer"), "Jose");
     await user.click(screen.getByText("Mang Jose"));
 
-    await user.click(screen.getByRole("button", { name: "QR" }));
+    await user.click(screen.getByRole("button", { name: "GCash" }));
     await user.click(screen.getByRole("button", { name: "Utang" }));
 
     expect(screen.getByLabelText("Charge to customer")).toBeInTheDocument();
@@ -381,7 +383,7 @@ describe("Pos", () => {
     renderPage();
 
     await user.click(screen.getByRole("button", { name: "Services" }));
-    expect(screen.getByRole("button", { name: "Add to cart" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add to sale" })).toBeInTheDocument();
 
     await user.keyboard("{F2}");
     expect(screen.getByLabelText("Scan barcode")).toHaveFocus();

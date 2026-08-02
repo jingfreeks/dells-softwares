@@ -3,6 +3,7 @@ import { PAGE_HEADING_POS, TEXT_POS_DESCRIPTION } from "@/lib";
 import { ScannerLoadingOverlay } from "@/components";
 import { PosTabs, ProductBrowsePanel, ServicesPanel, CartPanel } from "./component";
 import { usePosPage } from "./hooks";
+import "../authTheme.css";
 
 const BarcodeScanner = lazy(() =>
   import("@/components/BarcodeScanner").then((m) => ({ default: m.BarcodeScanner }))
@@ -63,7 +64,10 @@ export function Pos() {
     incrementLine,
     removeLine,
     handleAddService,
+    addEloadService,
     removeServiceLine,
+    walletBalance,
+    quickCashAmounts,
     handleCompleteSale,
     handleCancelSale,
     effectiveTab,
@@ -74,11 +78,13 @@ export function Pos() {
   } = usePosPage();
 
   return (
-    <div className="grid grid-cols-1 gap-6 p-6 lg:h-full lg:grid-cols-[1fr_360px]">
+    <div className="tpl-root grid grid-cols-1 gap-6 p-6 lg:h-full lg:grid-cols-[1fr_360px]">
       <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">{PAGE_HEADING_POS}</h1>
-          <p className="text-sm text-slate-500">{TEXT_POS_DESCRIPTION}</p>
+          <h1 className="tpl-h1">{PAGE_HEADING_POS}</h1>
+          <p className="tpl-sub" style={{ marginBottom: 0 }}>
+            {TEXT_POS_DESCRIPTION}
+          </p>
         </div>
 
         <PosTabs visible={posServicesEnabled} activeTab={activeTab} onTabChange={setActiveTab} />
@@ -115,6 +121,8 @@ export function Pos() {
             serviceFee={serviceFee}
             onServiceFeeChange={setServiceFee}
             onAddService={handleAddService}
+            walletBalance={walletBalance}
+            onAddEloadService={addEloadService}
           />
         )}
       </div>
@@ -132,6 +140,7 @@ export function Pos() {
         onSelectPaymentType={selectPaymentType}
         tendered={tendered}
         onTenderedChange={setTendered}
+        quickCashAmounts={quickCashAmounts}
         change={change}
         referenceNo={referenceNo}
         onReferenceNoChange={setReferenceNo}

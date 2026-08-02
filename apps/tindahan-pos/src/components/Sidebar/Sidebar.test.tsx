@@ -2,22 +2,28 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { useAuth } from "@/lib";
+import { useAuth, EloadWalletProvider } from "@/lib";
 import { makeAuthValue, makeStaffAccount } from "../../test/testUtils";
 import { Sidebar } from "./Sidebar";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
+
+function renderSidebar() {
+  return render(
+    <EloadWalletProvider>
+      <MemoryRouter>
+        <Sidebar />
+      </MemoryRouter>
+    </EloadWalletProvider>
+  );
+}
 
 describe("Sidebar", () => {
   it("shows the signed-in user's name and role", () => {
     vi.mocked(useAuth).mockReturnValue(
       makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena", role: "admin" }) })
     );
-    render(
-      <MemoryRouter>
-        <Sidebar />
-      </MemoryRouter>
-    );
+    renderSidebar();
     expect(screen.getByText("Aling Nena")).toBeInTheDocument();
     expect(screen.getByText("admin")).toBeInTheDocument();
   });
@@ -26,22 +32,14 @@ describe("Sidebar", () => {
     const user = userEvent.setup();
     const logout = vi.fn();
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ logout }));
-    render(
-      <MemoryRouter>
-        <Sidebar />
-      </MemoryRouter>
-    );
+    renderSidebar();
     await user.click(screen.getByRole("button", { name: "Log out" }));
     expect(logout).toHaveBeenCalledTimes(1);
   });
 
   it("filters nav items for a cashier role", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ role: "cashier" }) }));
-    render(
-      <MemoryRouter>
-        <Sidebar />
-      </MemoryRouter>
-    );
+    renderSidebar();
     expect(screen.queryByText("Admin")).not.toBeInTheDocument();
   });
 });

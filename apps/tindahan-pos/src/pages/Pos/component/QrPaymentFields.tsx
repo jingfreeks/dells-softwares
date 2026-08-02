@@ -8,23 +8,24 @@ interface QrPaymentFieldsProps {
 
 export function QrPaymentFields({ total, referenceNo, onReferenceNoChange }: QrPaymentFieldsProps) {
   return (
-    <div className="mt-3">
-      <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600">
-        {TEXT_QR_INSTRUCTIONS_PREFIX} <span className="font-semibold text-slate-800">{PESO.format(total)}</span>
+    <div style={{ marginTop: 14 }}>
+      <p className="tpl-status-note" style={{ margin: "0 0 11px" }}>
+        {TEXT_QR_INSTRUCTIONS_PREFIX} <span style={{ color: "var(--tpl-t2)", fontWeight: 500 }}>{PESO.format(total)}</span>
         {TEXT_QR_INSTRUCTIONS_SUFFIX}
       </p>
-      <label htmlFor="qrReference" className="mt-3 block text-xs font-medium text-slate-700">
+      <label htmlFor="qrReference" className="tpl-lbl">
         {LABEL_REFERENCE_TRANSACTION_NO}
       </label>
-      <input
-        id="qrReference"
-        type="text"
-        placeholder={PLACEHOLDER_REFERENCE_NO}
-        autoFocus
-        value={referenceNo}
-        onChange={(e) => onReferenceNoChange(e.target.value)}
-        className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-      />
+      <div className="tpl-fld">
+        <input
+          id="qrReference"
+          type="text"
+          placeholder={PLACEHOLDER_REFERENCE_NO}
+          autoFocus
+          value={referenceNo}
+          onChange={(e) => onReferenceNoChange(e.target.value)}
+        />
+      </div>
     </div>
   );
 }
