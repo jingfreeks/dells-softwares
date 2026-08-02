@@ -23,7 +23,6 @@ import {
   computeChange,
   findProductByBarcode,
   removeFromCart,
-  searchProductsByName,
   setQuantity,
   suggestedCashAmounts,
 } from "@/lib/pos";
@@ -35,7 +34,6 @@ export const SERVICE_TYPES = [
   { key: "print", label: SERVICE_LABEL_PRINT, badge: "P", badgeClass: "bg-sky-100 text-sky-700" },
 ] as const;
 
-export type BrowseMode = "scan" | "search" | "quick";
 export type PosTab = "products" | "services";
 
 export function usePosPage() {
@@ -45,9 +43,8 @@ export function usePosPage() {
   const packPricingEnabled = useFeatureFlag("pack_pricing");
   const posServicesEnabled = useFeatureFlag("pos_services");
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [barcodeInput, setBarcodeInput] = useState("");
-  const [barcodeError, setBarcodeError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [productQuery, setProductQuery] = useState("");
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [tendered, setTendered] = useState("0");
   const [paymentType, setPaymentType] = useState<PaymentType>("cash");
   const [referenceNo, setReferenceNo] = useState("");
@@ -60,8 +57,10 @@ export function usePosPage() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [activeTab, setActiveTab] = useState<PosTab>("products");
-  const [browseMode, setBrowseMode] = useState<BrowseMode>("scan");
   const [activeCategory, setActiveCategory] = useState<string>("All");
+  const [customItemOpen, setCustomItemOpen] = useState(false);
+  const [customItemName, setCustomItemName] = useState("");
+  const [customItemPrice, setCustomItemPrice] = useState("");
   const [serviceLines, setServiceLines] = useState<ServiceLine[]>([]);
   const [selectedService, setSelectedService] = useState<(typeof SERVICE_TYPES)[number]["key"]>(
     SERVICE_TYPES[0].key
@@ -69,15 +68,13 @@ export function usePosPage() {
   const [serviceAmount, setServiceAmount] = useState("0");
   const [serviceFee, setServiceFee] = useState("0");
 
-  const barcodeInputRef = useRef<HTMLInputElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const productInputRef = useRef<HTMLInputElement>(null);
 
-  // Laptop/desktop shortcuts to jump straight into a browse mode without
-  // reaching for the mouse — F2 for barcode scan, F3 for name search.
-  // Skipped while the barcode-scanner camera overlay is open (it has its
-  // own close control) and never fires while the user is already typing
-  // in some other field, so it can't clobber in-progress input elsewhere
-  // on the page.
+  // Laptop/desktop shortcut to jump straight into the scan/search field
+  // without reaching for the mouse. Skipped while the barcode-scanner
+  // camera overlay is open (it has its own close control) and never fires
+  // while the user is already typing in some other field, so it can't
+  // clobber in-progress input elsewhere on the page.
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key !== "F2" && e.key !== "F3") return;
@@ -86,18 +83,12 @@ export function usePosPage() {
         active instanceof HTMLInputElement ||
         active instanceof HTMLTextAreaElement ||
         active instanceof HTMLSelectElement;
-      if (isTyping && active !== barcodeInputRef.current && active !== searchInputRef.current) return;
+      if (isTyping && active !== productInputRef.current) return;
       if (showScanner) return;
 
       e.preventDefault();
       if (posServicesEnabled) setActiveTab("products");
-      if (e.key === "F2") {
-        setBrowseMode("scan");
-        requestAnimationFrame(() => barcodeInputRef.current?.focus());
-      } else {
-        setBrowseMode("search");
-        requestAnimationFrame(() => searchInputRef.current?.focus());
-      }
+      productInputRef.current?.focus();
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -107,19 +98,18 @@ export function usePosPage() {
     () => cartTotal(cart, packPricingEnabled) + serviceLines.reduce((sum, l) => sum + l.amount + l.fee, 0),
     [cart, serviceLines, packPricingEnabled]
   );
-  const searchResults = useMemo(
-    () => searchProductsByName(products, searchQuery).slice(0, 6),
-    [products, searchQuery]
-  );
-  const quickItems = useMemo(() => products.filter((p) => p.barcode === null), [products]);
-  const categories = useMemo(
-    () => Array.from(new Set(quickItems.map((p) => p.category))).sort(),
-    [quickItems]
-  );
-  const visibleQuickItems = useMemo(
-    () => (activeCategory === "All" ? quickItems : quickItems.filter((p) => p.category === activeCategory)),
-    [quickItems, activeCategory]
-  );
+  const categories = useMemo(() => Array.from(new Set(products.map((p) => p.category))).sort(), [products]);
+  const visibleProducts = useMemo(() => {
+    const byCategory = activeCategory === "All" ? products : products.filter((p) => p.category === activeCategory);
+    const q = productQuery.trim().toLowerCase();
+    if (!q) return byCategory;
+    return byCategory.filter((p) => p.name.toLowerCase().includes(q) || (p.barcode ?? "").includes(q));
+  }, [products, activeCategory, productQuery]);
+  const cartQuantityByProductId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const line of cart) map.set(line.product.id, line.quantity);
+    return map;
+  }, [cart]);
 
   function priceLabel(product: Product) {
     return packPricingEnabled ? packPriceLabel(product) : null;
@@ -169,19 +159,40 @@ export function usePosPage() {
   function addByBarcode(barcode: string) {
     const product = findProductByBarcode(products, barcode);
     if (!product) {
-      setBarcodeError(`${ERROR_PRODUCT_NOT_FOUND_BARCODE_PREFIX} "${barcode}".`);
+      setSearchError(`${ERROR_PRODUCT_NOT_FOUND_BARCODE_PREFIX} "${barcode}".`);
       return;
     }
-    setBarcodeError(null);
+    setSearchError(null);
     setCart((prev) => addToCart(prev, product));
   }
 
-  function handleScan(e: FormEvent) {
+  // The field doubles as a barcode scanner and a name search. On Enter: an
+  // exact barcode match wins first (mirrors a physical scanner firing
+  // Enter after its keystrokes); otherwise, if the current filter narrowed
+  // the grid to exactly one product, add that one. A digits-only query
+  // that matches nothing is treated as a failed barcode scan and surfaces
+  // an error — anything else is just an in-progress name search, so it
+  // stays silent rather than flashing a false "not found".
+  function handleProductQuerySubmit(e: FormEvent) {
     e.preventDefault();
-    const barcode = barcodeInput.trim();
-    if (!barcode) return;
-    addByBarcode(barcode);
-    setBarcodeInput("");
+    const query = productQuery.trim();
+    if (!query) return;
+    const byBarcode = findProductByBarcode(products, query);
+    if (byBarcode) {
+      setSearchError(null);
+      setCart((prev) => addToCart(prev, byBarcode));
+      setProductQuery("");
+      return;
+    }
+    if (visibleProducts.length === 1) {
+      setSearchError(null);
+      setCart((prev) => addToCart(prev, visibleProducts[0]));
+      setProductQuery("");
+      return;
+    }
+    if (/^\d+$/.test(query)) {
+      setSearchError(`${ERROR_PRODUCT_NOT_FOUND_BARCODE_PREFIX} "${query}".`);
+    }
   }
 
   function handleCameraDetected(barcode: string) {
@@ -193,7 +204,29 @@ export function usePosPage() {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
     setCart((prev) => addToCart(prev, product));
-    setSearchQuery("");
+  }
+
+  function openCustomItem() {
+    setCustomItemOpen(true);
+  }
+
+  function cancelCustomItem() {
+    setCustomItemOpen(false);
+    setCustomItemName("");
+    setCustomItemPrice("");
+  }
+
+  // A custom item has no product record to decrement stock for, so it
+  // rides in as a service line (fee 0) rather than a cart line — the
+  // checkout RPC already accepts arbitrary label/amount pairs there
+  // without needing a real product id.
+  function submitCustomItem(e: FormEvent) {
+    e.preventDefault();
+    const name = customItemName.trim();
+    const price = Number(customItemPrice);
+    if (!name || !price || price <= 0) return;
+    setServiceLines((prev) => [...prev, { id: `custom-${Date.now()}`, label: name, amount: price, fee: 0 }]);
+    cancelCustomItem();
   }
 
   function incrementLine(productId: string, quantity: number) {
@@ -279,23 +312,15 @@ export function usePosPage() {
 
   const effectiveTab: PosTab = posServicesEnabled ? activeTab : "products";
 
-  function focusBarcodeInput() {
-    setBrowseMode("scan");
-    requestAnimationFrame(() => barcodeInputRef.current?.focus());
-  }
-
-  function focusSearchInput() {
-    setBrowseMode("search");
-    requestAnimationFrame(() => searchInputRef.current?.focus());
+  function focusProductInput() {
+    productInputRef.current?.focus();
   }
 
   return {
     cart,
-    barcodeInput,
-    setBarcodeInput,
-    barcodeError,
-    searchQuery,
-    setSearchQuery,
+    productQuery,
+    setProductQuery,
+    searchError,
     tendered,
     setTendered,
     paymentType,
@@ -313,10 +338,16 @@ export function usePosPage() {
     setShowScanner,
     activeTab,
     setActiveTab,
-    browseMode,
-    setBrowseMode,
     activeCategory,
     setActiveCategory,
+    customItemOpen,
+    openCustomItem,
+    cancelCustomItem,
+    customItemName,
+    setCustomItemName,
+    customItemPrice,
+    setCustomItemPrice,
+    submitCustomItem,
     serviceLines,
     selectedService,
     setSelectedService,
@@ -324,12 +355,11 @@ export function usePosPage() {
     setServiceAmount,
     serviceFee,
     setServiceFee,
-    barcodeInputRef,
-    searchInputRef,
+    productInputRef,
     total,
-    searchResults,
     categories,
-    visibleQuickItems,
+    visibleProducts,
+    cartQuantityByProductId,
     priceLabel,
     change,
     selectedCustomer,
@@ -337,7 +367,7 @@ export function usePosPage() {
     selectCustomer,
     clearCustomer,
     handleQuickAddCustomer,
-    handleScan,
+    handleProductQuerySubmit,
     handleCameraDetected,
     handleAddProduct,
     incrementLine,
@@ -350,8 +380,7 @@ export function usePosPage() {
     handleCompleteSale,
     handleCancelSale,
     effectiveTab,
-    focusBarcodeInput,
-    focusSearchInput,
+    focusProductInput,
     packPricingEnabled,
     posServicesEnabled,
   };
