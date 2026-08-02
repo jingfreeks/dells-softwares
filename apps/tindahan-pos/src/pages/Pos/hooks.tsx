@@ -3,6 +3,7 @@ import {
   useAuth,
   useStoreData,
   useEloadWallet,
+  useDrawerFloat,
   packPriceLabel,
   useFeatureFlag,
   ERROR_PRODUCT_NOT_FOUND_BARCODE_PREFIX,
@@ -20,9 +21,12 @@ import {
 import {
   addToCart,
   cartTotal,
+  clearPendingSale,
   computeChange,
   findProductByBarcode,
+  loadPendingSale,
   removeFromCart,
+  savePendingSale,
   setQuantity,
   suggestedCashAmounts,
 } from "@/lib/pos";
@@ -38,8 +42,9 @@ export type PosTab = "products" | "services";
 
 export function usePosPage() {
   const { user } = useAuth();
-  const { products, customers, checkout, addCustomer } = useStoreData();
+  const { products, customers, checkout, addCustomer, loading: storeDataLoading } = useStoreData();
   const { balance: walletBalance, deduct: deductWallet } = useEloadWallet();
+  const { balance: drawerBalance, add: addToDrawer, deduct: deductFromDrawer } = useDrawerFloat();
   const packPricingEnabled = useFeatureFlag("pack_pricing");
   const posServicesEnabled = useFeatureFlag("pos_services");
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -65,8 +70,6 @@ export function usePosPage() {
   const [selectedService, setSelectedService] = useState<(typeof SERVICE_TYPES)[number]["key"]>(
     SERVICE_TYPES[0].key
   );
-  const [serviceAmount, setServiceAmount] = useState("0");
-  const [serviceFee, setServiceFee] = useState("0");
 
   const productInputRef = useRef<HTMLInputElement>(null);
 
@@ -93,6 +96,51 @@ export function usePosPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [posServicesEnabled, showScanner]);
+
+  const restoredPendingSaleRef = useRef(false);
+
+  // Recovers an in-progress sale after the page reloads mid-checkout — most
+  // commonly the browser discarding this tab in the background and
+  // reloading it fresh once the cashier switches back, which would
+  // otherwise silently wipe the cart. Waits for store data to finish
+  // loading so product ids in the saved snapshot can actually be resolved
+  // (product isn't in `products` yet during the initial fetch); if that
+  // never resolves — a store with no products — it can't restore anyway,
+  // so nothing is lost by trying only once.
+  useEffect(() => {
+    if (restoredPendingSaleRef.current || !user || storeDataLoading) return;
+    restoredPendingSaleRef.current = true;
+    const snapshot = loadPendingSale(user.id);
+    if (!snapshot) return;
+
+    const restoredCart = snapshot.cartLines
+      .map((line) => {
+        const product = products.find((p) => p.id === line.productId);
+        return product ? { product, quantity: line.quantity } : null;
+      })
+      .filter((line): line is CartLine => line !== null);
+    if (restoredCart.length > 0) setCart(restoredCart);
+    if (snapshot.serviceLines.length > 0) setServiceLines(snapshot.serviceLines);
+    if (snapshot.selectedCustomerId && customers.some((c) => c.id === snapshot.selectedCustomerId)) {
+      setSelectedCustomerId(snapshot.selectedCustomerId);
+    }
+  }, [user, storeDataLoading, products, customers]);
+
+  // Keep the snapshot current as the sale changes, and drop it once
+  // there's nothing left to recover (a completed or cancelled sale
+  // already clears cart/serviceLines/selectedCustomerId, which lands here).
+  useEffect(() => {
+    if (!restoredPendingSaleRef.current || !user) return;
+    if (cart.length === 0 && serviceLines.length === 0 && !selectedCustomerId) {
+      clearPendingSale(user.id);
+      return;
+    }
+    savePendingSale(user.id, {
+      cartLines: cart.map((line) => ({ productId: line.product.id, quantity: line.quantity })),
+      serviceLines,
+      selectedCustomerId,
+    });
+  }, [cart, serviceLines, selectedCustomerId, user]);
 
   const total = useMemo(
     () => cartTotal(cart, packPricingEnabled) + serviceLines.reduce((sum, l) => sum + l.amount + l.fee, 0),
@@ -237,17 +285,6 @@ export function usePosPage() {
     setCart((prev) => removeFromCart(prev, productId));
   }
 
-  function handleAddService() {
-    const amount = Number(serviceAmount);
-    if (!amount || amount <= 0) return;
-    const fee = Number(serviceFee) || 0;
-    const service = SERVICE_TYPES.find((s) => s.key === selectedService)!;
-    const label = fee > 0 ? `${service.label} ₱${amount} + ₱${fee} fee` : `${service.label} ₱${amount}`;
-    setServiceLines((prev) => [...prev, { id: `svc-${Date.now()}`, label, amount, fee }]);
-    setServiceAmount("0");
-    setServiceFee("0");
-  }
-
   function removeServiceLine(id: string) {
     setServiceLines((prev) => prev.filter((l) => l.id !== id));
   }
@@ -260,6 +297,27 @@ export function usePosPage() {
   function addEloadService(label: string, amount: number, fee: number) {
     setServiceLines((prev) => [...prev, { id: `svc-${Date.now()}`, label, amount, fee }]);
     deductWallet(amount);
+  }
+
+  // Same rationale as the e-load wallet above: the drawer's cash moves
+  // the moment the cashier hands over or collects it for the service,
+  // not at final checkout, and isn't reversed if the line is later
+  // removed.
+  function addCashInService(label: string, amount: number, fee: number) {
+    setServiceLines((prev) => [...prev, { id: `svc-${Date.now()}`, label, amount, fee }]);
+    addToDrawer(amount + fee);
+  }
+
+  // A cash-out customer pays nothing to the till — only the fee is real
+  // sale revenue, so that's what the line is worth for reporting. The
+  // actual cash handed over comes out of the drawer separately.
+  function addCashOutService(label: string, feeRevenue: number, cashHandedOver: number) {
+    setServiceLines((prev) => [...prev, { id: `svc-${Date.now()}`, label, amount: feeRevenue, fee: 0 }]);
+    deductFromDrawer(cashHandedOver);
+  }
+
+  function addPrintService(label: string, amount: number, fee: number) {
+    setServiceLines((prev) => [...prev, { id: `svc-${Date.now()}`, label, amount, fee }]);
   }
 
   function selectPaymentType(type: PaymentType) {
@@ -351,10 +409,6 @@ export function usePosPage() {
     serviceLines,
     selectedService,
     setSelectedService,
-    serviceAmount,
-    setServiceAmount,
-    serviceFee,
-    setServiceFee,
     productInputRef,
     total,
     categories,
@@ -372,10 +426,13 @@ export function usePosPage() {
     handleAddProduct,
     incrementLine,
     removeLine,
-    handleAddService,
     addEloadService,
+    addCashInService,
+    addCashOutService,
+    addPrintService,
     removeServiceLine,
     walletBalance,
+    drawerBalance,
     quickCashAmounts,
     handleCompleteSale,
     handleCancelSale,

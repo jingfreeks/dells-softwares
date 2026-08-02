@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { EloadWalletContext } from "./eloadWalletContext";
 
 /**
  * The e-load float, tracked in memory only for this session — not
@@ -8,14 +9,6 @@ import { createContext, useContext, useState, type ReactNode } from "react";
  * (with a proper opening-float count, per the design review's B.3/B.4
  * shift-open flow) is built.
  */
-interface EloadWalletContextValue {
-  balance: number;
-  setBalance: (balance: number) => void;
-  deduct: (amount: number) => void;
-}
-
-const EloadWalletContext = createContext<EloadWalletContextValue | null>(null);
-
 const DEFAULT_BALANCE = 1000;
 
 export function EloadWalletProvider({ children }: { children: ReactNode }) {
@@ -28,10 +21,4 @@ export function EloadWalletProvider({ children }: { children: ReactNode }) {
   return (
     <EloadWalletContext.Provider value={{ balance, setBalance, deduct }}>{children}</EloadWalletContext.Provider>
   );
-}
-
-export function useEloadWallet() {
-  const ctx = useContext(EloadWalletContext);
-  if (!ctx) throw new Error("useEloadWallet must be used within EloadWalletProvider");
-  return ctx;
 }

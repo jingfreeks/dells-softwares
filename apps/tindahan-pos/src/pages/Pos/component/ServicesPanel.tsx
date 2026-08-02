@@ -1,29 +1,29 @@
-import { selectOnFocus, LABEL_AMOUNT_PESO, LABEL_FEE_PESO, BUTTON_ADD_TO_CART } from "@/lib";
 import { SERVICE_TYPES } from "../hooks";
 import { EloadServicePanel } from "./EloadServicePanel";
+import { CashInServicePanel } from "./CashInServicePanel";
+import { CashOutServicePanel } from "./CashOutServicePanel";
+import { PrintServicePanel } from "./PrintServicePanel";
 
 interface ServicesPanelProps {
   selectedService: (typeof SERVICE_TYPES)[number]["key"];
   onSelectService: (key: (typeof SERVICE_TYPES)[number]["key"]) => void;
-  serviceAmount: string;
-  onServiceAmountChange: (value: string) => void;
-  serviceFee: string;
-  onServiceFeeChange: (value: string) => void;
-  onAddService: () => void;
   walletBalance: number;
   onAddEloadService: (label: string, amount: number, fee: number) => void;
+  drawerBalance: number;
+  onAddCashInService: (label: string, amount: number, fee: number) => void;
+  onAddCashOutService: (label: string, feeRevenue: number, cashHandedOver: number) => void;
+  onAddPrintService: (label: string, amount: number, fee: number) => void;
 }
 
 export function ServicesPanel({
   selectedService,
   onSelectService,
-  serviceAmount,
-  onServiceAmountChange,
-  serviceFee,
-  onServiceFeeChange,
-  onAddService,
   walletBalance,
   onAddEloadService,
+  drawerBalance,
+  onAddCashInService,
+  onAddCashOutService,
+  onAddPrintService,
 }: ServicesPanelProps) {
   return (
     <div className="flex flex-col gap-3">
@@ -41,56 +41,14 @@ export function ServicesPanel({
         ))}
       </div>
 
-      {selectedService === "eload" ? (
-        <EloadServicePanel walletBalance={walletBalance} onAdd={onAddEloadService} />
-      ) : (
-        <div className="tpl-card">
-          <p className="tpl-h3" style={{ marginBottom: 14 }}>
-            {SERVICE_TYPES.find((s) => s.key === selectedService)?.label}
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="svcAmount" className="tpl-lbl">
-                {LABEL_AMOUNT_PESO}
-              </label>
-              <div className="tpl-fld">
-                <input
-                  id="svcAmount"
-                  type="number"
-                  min="0"
-                  value={serviceAmount}
-                  onFocus={selectOnFocus}
-                  onChange={(e) => onServiceAmountChange(e.target.value)}
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="svcFee" className="tpl-lbl">
-                {LABEL_FEE_PESO}
-              </label>
-              <div className="tpl-fld">
-                <input
-                  id="svcFee"
-                  type="number"
-                  min="0"
-                  value={serviceFee}
-                  onFocus={selectOnFocus}
-                  onChange={(e) => onServiceFeeChange(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onAddService}
-            disabled={!serviceAmount || Number(serviceAmount) <= 0}
-            className="tpl-btnp"
-            style={{ marginTop: 14, width: "auto", height: 38, padding: "0 16px", fontSize: 13 }}
-          >
-            {BUTTON_ADD_TO_CART}
-          </button>
-        </div>
+      {selectedService === "eload" && <EloadServicePanel walletBalance={walletBalance} onAdd={onAddEloadService} />}
+      {selectedService === "cashin" && (
+        <CashInServicePanel drawerBalance={drawerBalance} onAdd={onAddCashInService} />
       )}
+      {selectedService === "cashout" && (
+        <CashOutServicePanel drawerBalance={drawerBalance} onAdd={onAddCashOutService} />
+      )}
+      {selectedService === "print" && <PrintServicePanel onAdd={onAddPrintService} />}
     </div>
   );
 }

@@ -2,7 +2,8 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { useAuth } from "../auth";
 import { supabase } from "../supabaseClient";
-import { StoreDataProvider, useStoreData } from "./storeData";
+import { StoreDataProvider } from "./storeData";
+import { useStoreData } from "./storeDataContext";
 import { makeAuthValue, makeStaffAccount } from "../../test/testUtils";
 
 vi.mock("../auth", () => ({ useAuth: vi.fn() }));
@@ -134,6 +135,57 @@ describe("StoreDataProvider", () => {
     expect(screen.getByTestId("products")).toHaveTextContent("Sardines");
     expect(screen.getByTestId("customers")).toHaveTextContent("Mang Jose:50");
     expect(screen.getByTestId("suppliers")).toHaveTextContent("Mega Distribution");
+  });
+
+  it("paints a cached snapshot immediately on the next mount, then reconciles with a fresh fetch", async () => {
+    tableResults.products.list = {
+      data: [
+        {
+          id: "p1",
+          barcode: null,
+          name: "Cached Item",
+          price: 5,
+          stock: 1,
+          low_stock_threshold: 1,
+          category_id: "c1",
+          pack_quantity: null,
+          pack_price: null,
+          categories: { name: "Snacks" },
+        },
+      ],
+      error: null,
+    };
+    const { unmount } = renderProvider(<Probe />);
+    await waitFor(() => expect(screen.getByTestId("loading")).toHaveTextContent("false"));
+    expect(screen.getByTestId("products")).toHaveTextContent("Cached Item");
+    unmount();
+
+    // A different result for the "real" fetch on the next mount, so the
+    // cached value and the freshly-fetched value are distinguishable.
+    tableResults.products.list = {
+      data: [
+        {
+          id: "p2",
+          barcode: null,
+          name: "Fresh Item",
+          price: 9,
+          stock: 2,
+          low_stock_threshold: 1,
+          category_id: "c1",
+          pack_quantity: null,
+          pack_price: null,
+          categories: { name: "Snacks" },
+        },
+      ],
+      error: null,
+    };
+
+    renderProvider(<Probe />);
+    // No spinner wait needed — the cached snapshot paints synchronously on mount.
+    expect(screen.getByTestId("loading")).toHaveTextContent("false");
+    expect(screen.getByTestId("products")).toHaveTextContent("Cached Item");
+
+    await waitFor(() => expect(screen.getByTestId("products")).toHaveTextContent("Fresh Item"));
   });
 
   it("handles a product row with a category array shape", async () => {

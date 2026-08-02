@@ -10,7 +10,8 @@ import {
   LABEL_LOG_OUT,
   LABEL_ELOAD_WALLET,
 } from "@/lib";
-import { NAV_ICONS, LogoutIcon } from "@/components/icons";
+import { LogoutIcon } from "@/components/icons";
+import { NAV_ICONS } from "@/components/navIcons";
 import "@/pages/authTheme.css";
 
 export function Sidebar() {

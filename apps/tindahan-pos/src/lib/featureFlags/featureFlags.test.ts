@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveFlag } from "./featureFlags";
+import { resolveFlag } from "./featureFlagsContext";
 
 describe("resolveFlag (kill switch, fail-open)", () => {
   it("returns true for a key with no row, so undeclared features stay on", () => {
