@@ -39,14 +39,15 @@ function renderPage() {
   );
 }
 
+const QUERY_FIELD_LABEL = "Scan barcode or search products";
+
 describe("Pos", () => {
   it("adds a product to the cart by scanning a barcode", async () => {
     const user = userEvent.setup();
     setup();
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
-    expect(screen.getByText("Sardines")).toBeInTheDocument();
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     expect(screen.getByTestId("cart-total")).toHaveTextContent("₱25.00");
   });
 
@@ -55,7 +56,7 @@ describe("Pos", () => {
     setup();
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "999{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "999{Enter}");
     expect(await screen.findByRole("alert")).toHaveTextContent('Product not found for barcode "999".');
   });
 
@@ -67,28 +68,44 @@ describe("Pos", () => {
     await user.click(screen.getByRole("button", { name: "Scan with camera" }));
     await user.click(await screen.findByText("Fake scan"));
 
-    expect(screen.getByText("Sardines")).toBeInTheDocument();
+    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱25.00");
   });
 
-  it("searches products by name and adds one", async () => {
+  it("searches products by name and adds one by tapping its tile", async () => {
     const user = userEvent.setup();
     setup();
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: /Search by name/ }));
-    await user.type(screen.getByLabelText("Search by name"), "sardines");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "sardines");
     await user.click(screen.getByRole("button", { name: /Sardines/ }));
 
     expect(screen.getByTestId("cart-total")).toHaveTextContent("₱25.00");
   });
 
-  it("shows quick items with no barcode, filterable by category", async () => {
+  it("shows all products as tiles, filterable by category", async () => {
     const user = userEvent.setup();
     setup();
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: "No-barcode quick items" }));
     expect(screen.getByRole("button", { name: /Rice \(tingi\)/ })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Staples" }));
+    expect(screen.queryByRole("button", { name: /Sardines/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Rice \(tingi\)/ })).toBeInTheDocument();
+  });
+
+  it("adds a custom item as a service line", async () => {
+    const user = userEvent.setup();
+    setup();
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Custom item" }));
+    await user.type(screen.getByLabelText("Item name"), "Repair fee");
+    await user.type(screen.getByLabelText("Price (₱)"), "35");
+    await user.click(screen.getByRole("button", { name: "Add item" }));
+
+    expect(screen.getByText("Repair fee")).toBeInTheDocument();
+    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱35.00");
   });
 
   it("increases and decreases cart quantity, and removes a line", async () => {
@@ -96,7 +113,7 @@ describe("Pos", () => {
     setup();
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     await user.click(screen.getByRole("button", { name: "Increase quantity of Sardines" }));
     expect(screen.getByTestId("cart-total")).toHaveTextContent("₱50.00");
 
@@ -113,7 +130,7 @@ describe("Pos", () => {
     setup({ checkout });
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     const tendered = screen.getByLabelText("Amount tendered");
     await user.clear(tendered);
     await user.type(tendered, "50");
@@ -135,7 +152,7 @@ describe("Pos", () => {
     setup({ checkout });
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     const tendered = screen.getByLabelText("Amount tendered");
     await user.clear(tendered);
     await user.type(tendered, "50");
@@ -149,7 +166,7 @@ describe("Pos", () => {
     setup();
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     await user.click(screen.getByRole("button", { name: "Cancel sale" }));
     expect(screen.getByText("Cart is empty. Scan or search an item to begin.")).toBeInTheDocument();
   });
@@ -161,7 +178,7 @@ describe("Pos", () => {
     setup({ customers, checkout });
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     await user.click(screen.getByRole("button", { name: "Utang" }));
     await user.type(screen.getByLabelText("Charge to customer"), "Jose");
     await user.click(screen.getByText("Mang Jose"));
@@ -183,7 +200,7 @@ describe("Pos", () => {
     setup({ customers });
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     await user.click(screen.getByRole("button", { name: "Utang" }));
     await user.type(screen.getByLabelText("Charge to customer"), "Jose");
     await user.click(screen.getByText("Mang Jose"));
@@ -197,7 +214,7 @@ describe("Pos", () => {
     setup({ customers: [], addCustomer });
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     await user.click(screen.getByRole("button", { name: "Utang" }));
     await user.type(screen.getByLabelText("Charge to customer"), "Bimbo");
     await user.click(screen.getByRole("button", { name: '+ Add "Bimbo" as a new customer' }));
@@ -211,7 +228,7 @@ describe("Pos", () => {
     setup({ customers: [], addCustomer });
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     await user.click(screen.getByRole("button", { name: "Utang" }));
     await user.type(screen.getByLabelText("Charge to customer"), "Bimbo");
     await user.click(screen.getByRole("button", { name: '+ Add "Bimbo" as a new customer' }));
@@ -225,7 +242,7 @@ describe("Pos", () => {
     setup({ customers });
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     await user.click(screen.getByRole("button", { name: "Utang" }));
     await user.type(screen.getByLabelText("Charge to customer"), "Jose");
     await user.click(screen.getByText("Mang Jose"));
@@ -239,7 +256,7 @@ describe("Pos", () => {
     setup({ customers: [] });
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     await user.click(screen.getByRole("button", { name: "Utang" }));
 
     expect(screen.getByRole("button", { name: "Complete sale" })).toBeDisabled();
@@ -301,8 +318,7 @@ describe("Pos", () => {
     );
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: /Search by name/ }));
-    await user.type(screen.getByLabelText("Search by name"), "egg");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "egg");
     expect(screen.getByText(/for/)).toBeInTheDocument();
   });
 
@@ -312,7 +328,7 @@ describe("Pos", () => {
     setup({ checkout });
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     await user.click(screen.getByRole("button", { name: "GCash" }));
 
     expect(screen.getByRole("button", { name: "Complete sale" })).toBeDisabled();
@@ -335,7 +351,7 @@ describe("Pos", () => {
     setup();
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     await user.click(screen.getByRole("button", { name: "GCash" }));
     await user.type(screen.getByLabelText("Reference / transaction no."), "12345");
 
@@ -351,7 +367,7 @@ describe("Pos", () => {
     setup({ customers });
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     await user.click(screen.getByRole("button", { name: "Utang" }));
     await user.type(screen.getByLabelText("Charge to customer"), "Jose");
     await user.click(screen.getByText("Mang Jose"));
@@ -362,19 +378,18 @@ describe("Pos", () => {
     expect(screen.getByLabelText("Charge to customer")).toBeInTheDocument();
   });
 
-  it("jumps to the barcode field on F2 and the search field on F3", async () => {
+  it("jumps to the product field on F2/F3", async () => {
     const user = userEvent.setup();
     setup();
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: /Search by name/ }));
-    expect(screen.getByLabelText("Search by name")).toBeInTheDocument();
-
+    screen.getByLabelText(QUERY_FIELD_LABEL).blur();
     await user.keyboard("{F2}");
-    expect(screen.getByLabelText("Scan barcode")).toHaveFocus();
+    expect(screen.getByLabelText(QUERY_FIELD_LABEL)).toHaveFocus();
 
+    screen.getByLabelText(QUERY_FIELD_LABEL).blur();
     await user.keyboard("{F3}");
-    expect(screen.getByLabelText("Search by name")).toHaveFocus();
+    expect(screen.getByLabelText(QUERY_FIELD_LABEL)).toHaveFocus();
   });
 
   it("switches back to the Products tab on F2/F3 while on Services", async () => {
@@ -386,7 +401,7 @@ describe("Pos", () => {
     expect(screen.getByRole("button", { name: "Add to sale" })).toBeInTheDocument();
 
     await user.keyboard("{F2}");
-    expect(screen.getByLabelText("Scan barcode")).toHaveFocus();
+    expect(screen.getByLabelText(QUERY_FIELD_LABEL)).toHaveFocus();
   });
 
   it("ignores F2/F3 while the camera scanner overlay is open", async () => {
@@ -394,11 +409,13 @@ describe("Pos", () => {
     setup();
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: "Scan with camera" }));
+    const scanButton = screen.getByRole("button", { name: "Scan with camera" });
+    await user.click(scanButton);
     expect(await screen.findByText("Fake scan")).toBeInTheDocument();
 
+    screen.getByLabelText(QUERY_FIELD_LABEL).blur();
     await user.keyboard("{F3}");
-    expect(screen.queryByLabelText("Search by name")).not.toBeInTheDocument();
+    expect(screen.getByLabelText(QUERY_FIELD_LABEL)).not.toHaveFocus();
   });
 
   it("ignores F2/F3 while typing in an unrelated field", async () => {
@@ -407,13 +424,12 @@ describe("Pos", () => {
     setup({ customers });
     renderPage();
 
-    await user.type(screen.getByLabelText("Scan barcode"), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
     await user.click(screen.getByRole("button", { name: "Utang" }));
     const customerSearch = screen.getByLabelText("Charge to customer");
     await user.click(customerSearch);
     await user.keyboard("{F3}");
 
     expect(customerSearch).toHaveFocus();
-    expect(screen.queryByLabelText("Search by name")).not.toBeInTheDocument();
   });
 });

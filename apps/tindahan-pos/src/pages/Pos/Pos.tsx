@@ -12,11 +12,9 @@ const BarcodeScanner = lazy(() =>
 export function Pos() {
   const {
     cart,
-    barcodeInput,
-    setBarcodeInput,
-    barcodeError,
-    searchQuery,
-    setSearchQuery,
+    productQuery,
+    setProductQuery,
+    searchError,
     tendered,
     setTendered,
     paymentType,
@@ -34,10 +32,16 @@ export function Pos() {
     setShowScanner,
     activeTab,
     setActiveTab,
-    browseMode,
-    setBrowseMode,
     activeCategory,
     setActiveCategory,
+    customItemOpen,
+    openCustomItem,
+    cancelCustomItem,
+    customItemName,
+    setCustomItemName,
+    customItemPrice,
+    setCustomItemPrice,
+    submitCustomItem,
     serviceLines,
     selectedService,
     setSelectedService,
@@ -45,12 +49,11 @@ export function Pos() {
     setServiceAmount,
     serviceFee,
     setServiceFee,
-    barcodeInputRef,
-    searchInputRef,
+    productInputRef,
     total,
-    searchResults,
     categories,
-    visibleQuickItems,
+    visibleProducts,
+    cartQuantityByProductId,
     priceLabel,
     change,
     selectedCustomer,
@@ -58,7 +61,7 @@ export function Pos() {
     selectCustomer,
     clearCustomer,
     handleQuickAddCustomer,
-    handleScan,
+    handleProductQuerySubmit,
     handleCameraDetected,
     handleAddProduct,
     incrementLine,
@@ -71,8 +74,6 @@ export function Pos() {
     handleCompleteSale,
     handleCancelSale,
     effectiveTab,
-    focusBarcodeInput,
-    focusSearchInput,
     packPricingEnabled,
     posServicesEnabled,
   } = usePosPage();
@@ -91,26 +92,27 @@ export function Pos() {
 
         {effectiveTab === "products" ? (
           <ProductBrowsePanel
-            browseMode={browseMode}
-            onScanMode={focusBarcodeInput}
-            onSearchMode={focusSearchInput}
-            onQuickMode={() => setBrowseMode("quick")}
-            barcodeInputRef={barcodeInputRef}
-            barcodeInput={barcodeInput}
-            onBarcodeInputChange={setBarcodeInput}
-            barcodeError={barcodeError}
-            onScanSubmit={handleScan}
+            productInputRef={productInputRef}
+            productQuery={productQuery}
+            onProductQueryChange={setProductQuery}
+            onProductQuerySubmit={handleProductQuerySubmit}
+            searchError={searchError}
             onOpenScanner={() => setShowScanner(true)}
-            searchInputRef={searchInputRef}
-            searchQuery={searchQuery}
-            onSearchQueryChange={setSearchQuery}
-            searchResults={searchResults}
             categories={categories}
             activeCategory={activeCategory}
             onCategoryChange={setActiveCategory}
-            visibleQuickItems={visibleQuickItems}
+            visibleProducts={visibleProducts}
+            cartQuantityByProductId={cartQuantityByProductId}
             priceLabel={priceLabel}
             onAddProduct={handleAddProduct}
+            customItemOpen={customItemOpen}
+            onOpenCustomItem={openCustomItem}
+            onCancelCustomItem={cancelCustomItem}
+            customItemName={customItemName}
+            onCustomItemNameChange={setCustomItemName}
+            customItemPrice={customItemPrice}
+            onCustomItemPriceChange={setCustomItemPrice}
+            onSubmitCustomItem={submitCustomItem}
           />
         ) : (
           <ServicesPanel
