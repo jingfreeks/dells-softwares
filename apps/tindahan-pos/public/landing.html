@@ -15,7 +15,7 @@
   --deep:#070B14; --mid:#0A1122; --hi:#101F3F; --panel:#0D1526;
   --a1:#3B82F6; --a2:#2563EB; --a3:#4C8DFF; --a4:#8AB6FF; --a5:#6FA6FF;
   --t1:#F2F5FA; --t2:#E8ECF5; --t3:#DCE3EF; --t4:#B6C1D4; --t5:#94A2B8;
-  --t6:#7C8AA5; --t7:#66738A; --t8:#4A5567;
+  --t6:#7C8AA5; --t7:#7480A0; --t8:#828FA8;
   --ok:#4ADE80; --okd:#7FCFA0; --warn:#FBBF24; --bad:#F87171;
   --gl:rgba(255,255,255,.05); --gl2:rgba(255,255,255,.035);
   --bd:rgba(255,255,255,.10); --bd2:rgba(255,255,255,.07);
@@ -33,6 +33,10 @@ a{color:inherit;text-decoration:none}
 img,svg{display:block;max-width:100%}
 .wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,
+textarea:focus-visible,summary:focus-visible{
+  outline:2px solid var(--a3);outline-offset:2px;border-radius:6px;
+}
 
 /* ---------- shared bits ---------- */
 .eyebrow{
@@ -73,8 +77,14 @@ nav{display:flex;align-items:center;gap:20px;height:66px}
 .navlinks{display:flex;gap:26px;margin-left:auto;font-size:15px;color:var(--t5)}
 .navlinks a:hover{color:var(--t2)}
 .navcta{display:flex;gap:10px;align-items:center}
-.navcta .btn{height:40px;padding:0 18px;font-size:14.5px;border-radius:9px}
-.burger{display:none;margin-left:auto;background:none;border:0;color:var(--t3);font-size:24px;cursor:pointer;padding:6px}
+.navcta .btn{height:44px;padding:0 18px;font-size:14.5px;border-radius:9px}
+.burger{display:none;margin-left:auto;background:none;border:0;color:var(--t3);font-size:22px;cursor:pointer;
+  width:44px;height:44px;align-items:center;justify-content:center;border-radius:9px}
+.burger:hover{background:rgba(255,255,255,.06)}
+.mobilemenu{display:none;flex-direction:column;gap:2px;padding:8px 0 18px;border-top:.5px solid var(--bd2)}
+.mobilemenu.open{display:flex}
+.mobilemenu a{padding:13px 6px;font-size:15.5px;color:var(--t4);border-radius:9px}
+.mobilemenu a:hover{color:var(--t2);background:rgba(255,255,255,.05)}
 
 /* ---------- hero ---------- */
 .hero{position:relative;padding:clamp(52px,8vw,96px) 0 0;overflow:hidden}
@@ -202,6 +212,7 @@ form{background:var(--panel);border:.5px solid rgba(255,255,255,.12);border-radi
   box-shadow:0 30px 70px rgba(0,0,0,.5)}
 .field{margin-bottom:15px}
 label{display:block;font-size:13.5px;color:var(--t4);margin-bottom:7px}
+.fielderr{color:var(--bad);font-size:12.5px;margin-top:6px}
 input,select,textarea{
   width:100%;background:var(--gl);border:.5px solid rgba(255,255,255,.12);border-radius:10px;
   height:46px;padding:0 14px;color:var(--t2);font-size:15px;font-family:inherit;outline:none;
@@ -244,7 +255,7 @@ footer{border-top:.5px solid var(--bd2);padding:44px 0 30px;background:rgba(255,
   .probgrid,.feat,.pricegrid{grid-template-columns:1fr}
   .fgrid{grid-template-columns:1fr 1fr}
   .navlinks{display:none}
-  .burger{display:block}
+  .burger{display:flex}
   .navcta .btn-s{display:none}
 }
 @media (max-width:560px){
@@ -274,8 +285,15 @@ footer{border-top:.5px solid var(--bd2);padding:44px 0 30px;background:rgba(255,
     <a class="btn btn-s" href="/login">Sign in</a>
     <a class="btn btn-p" href="#demo">Book a demo</a>
    </div>
-   <button class="burger" aria-label="Open menu">&#9776;</button>
+   <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="mobilemenu">&#9776;</button>
   </nav>
+  <div class="mobilemenu" id="mobilemenu" hidden>
+   <a href="#features">Features</a>
+   <a href="#how">How it works</a>
+   <a href="#pricing">Pricing</a>
+   <a href="#faq">FAQ</a>
+   <a href="/login">Sign in</a>
+  </div>
  </div>
 </header>
 
@@ -586,12 +604,15 @@ footer{border-top:.5px solid var(--bd2);padding:44px 0 30px;background:rgba(255,
    <form id="demoform" novalidate>
     <div id="formfields">
      <div class="two">
-      <div class="field"><label for="name">Your name</label><input id="name" name="name" placeholder="Juan Dela Cruz" required></div>
-      <div class="field"><label for="shop">Business name</label><input id="shop" name="shop" placeholder="Dell's Store" required></div>
+      <div class="field"><label for="name">Your name</label><input id="name" name="name" placeholder="Juan Dela Cruz" autocomplete="name" aria-describedby="name-err" required>
+       <p class="fielderr" id="name-err" role="alert" hidden></p></div>
+      <div class="field"><label for="shop">Business name</label><input id="shop" name="shop" placeholder="Dell's Store" autocomplete="organization" aria-describedby="shop-err" required>
+       <p class="fielderr" id="shop-err" role="alert" hidden></p></div>
      </div>
      <div class="two">
-      <div class="field"><label for="mobile">Mobile number</label><input id="mobile" name="mobile" type="tel" inputmode="tel" placeholder="0917 555 0142" required></div>
-      <div class="field"><label for="email">Email <span style="color:var(--t7)">&middot; optional</span></label><input id="email" name="email" type="email" placeholder="you@business.ph"></div>
+      <div class="field"><label for="mobile">Mobile number</label><input id="mobile" name="mobile" type="tel" inputmode="tel" placeholder="0917 555 0142" autocomplete="tel" aria-describedby="mobile-err" required>
+       <p class="fielderr" id="mobile-err" role="alert" hidden></p></div>
+      <div class="field"><label for="email">Email <span style="color:var(--t7)">&middot; optional</span></label><input id="email" name="email" type="email" placeholder="you@business.ph" autocomplete="email"></div>
      </div>
      <div class="two">
       <div class="field"><label for="type">Type of business</label>
@@ -604,8 +625,9 @@ footer{border-top:.5px solid var(--bd2);padding:44px 0 30px;background:rgba(255,
      </div>
      <div class="field"><label for="msg">Anything we should know? <span style="color:var(--t7)">&middot; optional</span></label>
       <textarea id="msg" name="msg" placeholder="We offer utang to about 20 suki and sell load. Currently everything is in a notebook."></textarea></div>
-     <label class="consent"><input type="checkbox" id="consent" required>
+     <label class="consent"><input type="checkbox" id="consent" aria-describedby="consent-err" required>
       <span>I agree to Tindahan POS contacting me about this enquiry, and to the <a href="#" style="color:var(--a5)">Privacy Notice</a>.</span></label>
+     <p class="fielderr" id="consent-err" role="alert" hidden style="margin-top:-10px"></p>
      <button type="submit" class="btn btn-p" style="width:100%">Request a demo</button>
      <p class="formnote">We reply within one working day. No cost, no obligation.</p>
     </div>
