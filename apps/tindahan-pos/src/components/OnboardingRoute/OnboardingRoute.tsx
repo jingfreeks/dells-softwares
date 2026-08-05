@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/lib";
+import { PageLoadingOverlay } from "@/components/PageLoadingOverlay";
 
 /**
  * Guards /onboarding specifically — deliberately doesn't reuse
@@ -24,15 +25,7 @@ export function OnboardingRoute({ children }: { children: ReactNode }) {
   }
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[var(--color-canvas)]">
-        <div
-          role="status"
-          aria-label="Loading"
-          className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-[var(--color-brand)]"
-        />
-      </div>
-    );
+    return <PageLoadingOverlay />;
   }
 
   if (!user) {

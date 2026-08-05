@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth";
 import { lineTotal } from "@/lib/pos";
 import { supabase } from "@/lib/supabaseClient";
@@ -15,72 +8,13 @@ import type {
   Category,
   CreditPayment,
   Customer,
-  PaymentType,
   Product,
   SaleRecord,
   ServiceLine,
   Supplier,
 } from "@/lib/types";
-
-export type { ReceivingLine } from "@/lib/inventory";
-
-export interface ReceivingEntry {
-  id: string;
-  date: string;
-  supplier: string;
-  supplierId: string | null;
-  lines: ReceivingLine[];
-}
-
-export interface CheckoutPayment {
-  type: PaymentType;
-  /** Required when type is "credit" — which customer's utang this sale is charged to. */
-  customerId?: string | null;
-  /** Required when type is "qr" — the GCash/Maya transaction number the cashier read off their phone. */
-  referenceNo?: string;
-}
-
-interface StoreDataContextValue {
-  products: Product[];
-  sales: SaleRecord[];
-  categories: Category[];
-  customers: Customer[];
-  suppliers: Supplier[];
-  loading: boolean;
-  error: string | null;
-  addProduct: (product: Omit<Product, "id" | "category">) => Promise<Product>;
-  updateProduct: (id: string, patch: Partial<Omit<Product, "category">>) => Promise<void>;
-  removeProduct: (id: string) => Promise<void>;
-  restock: (id: string, quantity: number) => Promise<void>;
-  checkout: (
-    cart: CartLine[],
-    services: ServiceLine[],
-    cashierName: string,
-    payment?: CheckoutPayment
-  ) => Promise<SaleRecord>;
-  refresh: () => Promise<void>;
-  addCategory: (name: string) => Promise<Category>;
-  renameCategory: (id: string, name: string) => Promise<void>;
-  removeCategory: (id: string) => Promise<void>;
-  receivingHistory: ReceivingEntry[];
-  receiveStock: (
-    supplier: string,
-    date: string,
-    lines: ReceivingLine[],
-    supplierId?: string | null
-  ) => Promise<void>;
-  addCustomer: (name: string, phone?: string | null, creditLimit?: number | null) => Promise<Customer>;
-  recordCreditPayment: (customerId: string, amount: number, note?: string) => Promise<void>;
-  fetchCreditPayments: (customerId: string) => Promise<CreditPayment[]>;
-  addSupplier: (name: string, phone?: string | null, address?: string | null) => Promise<Supplier>;
-  updateSupplier: (
-    id: string,
-    patch: Partial<{ name: string; phone: string | null; address: string | null }>
-  ) => Promise<void>;
-  findSupplierByScanCode: (scanCode: string) => Promise<Supplier | null>;
-}
-
-const StoreDataContext = createContext<StoreDataContextValue | null>(null);
+import { StoreDataContext, type CheckoutPayment, type ReceivingEntry } from "./storeDataContext";
+import { loadCachedStoreData, saveCachedStoreData } from "./storeDataCache";
 
 function mapProductRow(row: {
   id: string;
@@ -277,24 +211,33 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    setLoading(true);
+
+    // Paint a last-known-good snapshot immediately (e.g. right after the
+    // browser discards a backgrounded tab and reloads it) instead of a
+    // blank spinner, then quietly reconcile with a real fetch below —
+    // this is what actually happened server-side wins once it lands.
+    const cached = loadCachedStoreData(user.id);
+    if (cached) {
+      setProducts(cached.products);
+      setCategories(cached.categories);
+      setCustomers(cached.customers);
+      setSuppliers(cached.suppliers);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     refresh().finally(() => setLoading(false));
   }, [user?.id, refresh]);
 
-  async function currentStoreId(): Promise<string> {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new Error("Not signed in.");
-    const { data, error: err } = await supabase
-      .from("staff")
-      .select("store_id")
-      .eq("id", userData.user.id)
-      .single();
-    if (err || !data) throw new Error("Could not resolve your store.");
-    return data.store_id;
-  }
+  // Keep the cache fresh so the next reload has something recent to show.
+  useEffect(() => {
+    if (!user) return;
+    saveCachedStoreData(user.id, { products, categories, customers, suppliers });
+  }, [user?.id, products, categories, customers, suppliers]);
 
   async function addProduct(product: Omit<Product, "id" | "category">): Promise<Product> {
-    const storeId = await currentStoreId();
+    if (!user) throw new Error("Not signed in.");
+    const storeId = user.storeId;
     const { data, error: err } = await supabase
       .from("products")
       .insert({
@@ -377,16 +320,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     const result = data?.[0];
     if (!result) throw new Error("Checkout did not return a result.");
 
-    // A credit sale changes a customer's balance server-side, alongside
-    // products/sales — refresh all three so the UI never shows a stale
-    // balance right after checkout.
-    await Promise.all([
-      fetchProducts(),
-      fetchSales(),
-      ...(payment.type === "credit" ? [fetchCustomers()] : []),
-    ]);
-
-    return {
+    const saleRecord: SaleRecord = {
       id: result.sale_id,
       timestamp: new Date().toISOString(),
       items: [
@@ -415,10 +349,33 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       customerId: payment.type === "credit" ? (payment.customerId ?? null) : null,
       referenceNo: payment.type === "qr" ? (payment.referenceNo?.trim() ?? null) : null,
     };
+
+    // The RPC above already decremented stock, recorded the sale, and (for
+    // credit) bumped the customer's balance server-side — mirror those same
+    // changes into local state instead of re-fetching the entire products
+    // table and sales history on every checkout. That refetch pattern was
+    // the single biggest cost under concurrent load: every cashier's sale
+    // re-pulled the whole store's product catalog.
+    setProducts((prev) =>
+      prev.map((p) => {
+        const line = cart.find((l) => l.product.id === p.id);
+        return line ? { ...p, stock: p.stock - line.quantity } : p;
+      })
+    );
+    setSales((prev) => [saleRecord, ...prev].slice(0, 100));
+    if (payment.type === "credit" && payment.customerId) {
+      const customerId = payment.customerId;
+      setCustomers((prev) =>
+        prev.map((c) => (c.id === customerId ? { ...c, balance: c.balance + result.total } : c))
+      );
+    }
+
+    return saleRecord;
   }
 
   async function addCategory(name: string): Promise<Category> {
-    const storeId = await currentStoreId();
+    if (!user) throw new Error("Not signed in.");
+    const storeId = user.storeId;
     const { data, error: err } = await supabase
       .from("categories")
       .insert({ store_id: storeId, name: name.trim() })
@@ -464,9 +421,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     lines: ReceivingLine[],
     supplierId: string | null = null
   ) {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) throw new Error("Not signed in.");
-    const storeId = await currentStoreId();
+    if (!user) throw new Error("Not signed in.");
+    const storeId = user.storeId;
 
     for (const line of lines) {
       await restock(line.productId, line.quantity);
@@ -479,7 +435,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         supplier: supplier.trim() || "Unspecified supplier",
         supplier_id: supplierId,
         received_on: date,
-        created_by: userData.user.id,
+        created_by: user.id,
       })
       .select("id")
       .single();
@@ -504,7 +460,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     phone: string | null = null,
     creditLimit: number | null = null
   ): Promise<Customer> {
-    const storeId = await currentStoreId();
+    if (!user) throw new Error("Not signed in.");
+    const storeId = user.storeId;
     const { data, error: err } = await supabase
       .from("customers")
       .insert({ store_id: storeId, name: name.trim(), phone, credit_limit: creditLimit })
@@ -557,7 +514,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     phone: string | null = null,
     address: string | null = null
   ): Promise<Supplier> {
-    const storeId = await currentStoreId();
+    if (!user) throw new Error("Not signed in.");
+    const storeId = user.storeId;
     const { data, error: err } = await supabase
       .from("suppliers")
       .insert({ store_id: storeId, name: name.trim(), phone, address })
@@ -644,10 +602,4 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       {children}
     </StoreDataContext.Provider>
   );
-}
-
-export function useStoreData() {
-  const ctx = useContext(StoreDataContext);
-  if (!ctx) throw new Error("useStoreData must be used within StoreDataProvider");
-  return ctx;
 }

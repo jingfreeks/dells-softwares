@@ -14,6 +14,12 @@
       "port": 5173
     },
     {
+      "name": "tindahan-pos-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "tindahan-pos", "run", "preview", "--", "--port", "4173"],
+      "port": 4173
+    },
+    {
       "name": "tindahan-pos-mobile-web",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "web", "--prefix", "tindahan-pos-mobile"],
