@@ -1,24 +1,17 @@
 import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth, ARIA_LOADING } from "@/lib";
+import { useAuth } from "@/lib";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileHeader } from "@/components/MobileHeader";
 import { BottomNav } from "@/components/BottomNav";
+import { PageLoadingOverlay } from "@/components/PageLoadingOverlay";
 import "@/pages/authTheme.css";
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="tpl-root tpl-shell-bg flex h-screen items-center justify-center">
-        <div
-          role="status"
-          aria-label={ARIA_LOADING}
-          className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#3B82F6]"
-        />
-      </div>
-    );
+    return <PageLoadingOverlay variant="dark" />;
   }
 
   if (!user) {

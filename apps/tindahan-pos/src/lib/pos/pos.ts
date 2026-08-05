@@ -52,6 +52,36 @@ export function cartItemCount(cart: CartLine[]): number {
   return cart.reduce((sum, line) => sum + line.quantity, 0);
 }
 
+export interface InsufficientStockLine {
+  productId: string;
+  productName: string;
+  availableQuantity: number;
+}
+
+/**
+ * Identifies cart lines that cannot be fulfilled from the catalogue snapshot.
+ * This is deliberately pure: the checkout RPC remains the authoritative,
+ * locked validation for a cart that has gone stale or is being checked out
+ * concurrently.
+ */
+export function findInsufficientStock(cart: CartLine[]): InsufficientStockLine[] {
+  return cart.flatMap(({ product, quantity }) => {
+    const availableQuantity = Math.max(0, product.stock);
+    return quantity > availableQuantity
+      ? [{ productId: product.id, productName: product.name, availableQuantity }]
+      : [];
+  });
+}
+
+export function formatInsufficientStockMessage(lines: InsufficientStockLine[]): string {
+  return lines
+    .map(
+      ({ productName, availableQuantity }) =>
+        `${productName}: Insufficient stock. Only ${availableQuantity} item(s) available.`
+    )
+    .join(" ");
+}
+
 /**
  * Change due for a cash payment. Returns null if the amount tendered is
  * insufficient to cover the total (story A5).

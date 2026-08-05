@@ -24,6 +24,8 @@ import {
   clearPendingSale,
   computeChange,
   findProductByBarcode,
+  findInsufficientStock,
+  formatInsufficientStockMessage,
   loadPendingSale,
   removeFromCart,
   savePendingSale,
@@ -336,6 +338,11 @@ export function usePosPage() {
     if (cart.length === 0 && serviceLines.length === 0) return;
     if (paymentType === "credit" && !selectedCustomerId) return;
     if (paymentType === "qr" && !referenceNo.trim()) return;
+    const insufficientLines = findInsufficientStock(cart);
+    if (insufficientLines.length > 0) {
+      setCheckoutError(formatInsufficientStockMessage(insufficientLines));
+      return;
+    }
     setCheckingOut(true);
     setCheckoutError(null);
     try {

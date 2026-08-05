@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
-import { useAuth, ARIA_LOADING } from "@/lib";
+import { useAuth } from "@/lib";
+import { PageLoadingOverlay } from "@/components/PageLoadingOverlay";
 
 /**
  * Where a bare "/" (or an unmatched path) actually lands, once we know
@@ -13,15 +14,7 @@ export function HomeRedirect() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[var(--color-canvas)]">
-        <div
-          role="status"
-          aria-label={ARIA_LOADING}
-          className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-[var(--color-brand)]"
-        />
-      </div>
-    );
+    return <PageLoadingOverlay />;
   }
 
   if (!user) return <Navigate to="/login" replace />;

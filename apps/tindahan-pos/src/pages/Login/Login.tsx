@@ -1,6 +1,5 @@
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import {
-  STORE_NAME,
   APP_NAME,
   SEG_SIGN_IN,
   SEG_CREATE_ACCOUNT,
@@ -23,17 +22,26 @@ import {
   TEXT_LOGIN_PREVIEW_BULLET_1,
   TEXT_LOGIN_PREVIEW_BULLET_2,
   TEXT_LOGIN_PREVIEW_BULLET_3,
-  TEXT_LOGIN_PREVIEW_DASHBOARD_LABEL,
-  TEXT_LOGIN_PREVIEW_LIVE,
   TEXT_LOGIN_PREVIEW_RECENT_SALES,
 } from "@/lib";
 import { useLoginForm } from "./hooks";
+import { Titleheader, SalesItem,Salesheader } from "./component";
 import "../authTheme.css";
 
-const PREVIEW_BULLETS = [TEXT_LOGIN_PREVIEW_BULLET_1, TEXT_LOGIN_PREVIEW_BULLET_2, TEXT_LOGIN_PREVIEW_BULLET_3];
+const PREVIEW_BULLETS = [
+  TEXT_LOGIN_PREVIEW_BULLET_1,
+  TEXT_LOGIN_PREVIEW_BULLET_2,
+  TEXT_LOGIN_PREVIEW_BULLET_3,
+];
 
 const RECENT_SALES = [
-  { icon: "ti-cash", tone: "", title: "Lucky Me Pancit Canton ×3", meta: "2 min ago · Cash", amount: "₱54.00" },
+  {
+    icon: "ti-cash",
+    tone: "",
+    title: "Lucky Me Pancit Canton ×3",
+    meta: "2 min ago · Cash",
+    amount: "₱54.00",
+  },
   {
     icon: "ti-device-mobile",
     tone: "",
@@ -41,7 +49,13 @@ const RECENT_SALES = [
     meta: "14 min ago · GCash",
     amount: "₱78.50",
   },
-  { icon: "ti-notebook", tone: "tpl-w", title: "Bear Brand 320g", meta: "48 min ago · Utang", amount: "₱132.00" },
+  {
+    icon: "ti-notebook",
+    tone: "tpl-w",
+    title: "Bear Brand 320g",
+    meta: "48 min ago · Utang",
+    amount: "₱132.00",
+  },
 ];
 
 export function Login() {
@@ -67,19 +81,23 @@ export function Login() {
     <div className="tpl-root tpl-shell">
       <div className="tpl-form-pane">
         <div className="tpl-form-inner">
-          <div className="tpl-brand">
-            <span className="tpl-mark">{APP_NAME.charAt(0)}</span>
-            <div>
-              <p className="tpl-bn">{STORE_NAME}</p>
-              <p className="tpl-bs">{APP_NAME}</p>
-            </div>
-          </div>
+          <Titleheader />
 
           <div className="tpl-seg" role="tablist">
-            <button type="button" role="tab" aria-selected="true" className="tpl-on">
+            <button
+              type="button"
+              role="tab"
+              aria-selected="true"
+              className="tpl-on"
+            >
               {SEG_SIGN_IN}
             </button>
-            <button type="button" role="tab" aria-selected="false" onClick={() => navigate("/register")}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected="false"
+              onClick={() => navigate("/register")}
+            >
               {SEG_CREATE_ACCOUNT}
             </button>
           </div>
@@ -87,7 +105,12 @@ export function Login() {
           <p className="tpl-h2">{PAGE_HEADING_WELCOME_BACK}</p>
           <p className="tpl-sub">{TEXT_LOGIN_SUBHEAD}</p>
 
-          <button type="button" className="tpl-btn" disabled title="Google sign-in isn't set up yet">
+          <button
+            type="button"
+            className="tpl-btn"
+            disabled
+            title="Google sign-in isn't set up yet"
+          >
             <i className="ti ti-brand-google" aria-hidden />
             {BUTTON_CONTINUE_WITH_GOOGLE}
           </button>
@@ -114,14 +137,22 @@ export function Login() {
             </div>
 
             <div className="tpl-sp" style={{ marginTop: 14 }}>
-              <label htmlFor="password" className="tpl-lbl" style={{ margin: 0 }}>
+              <label
+                htmlFor="password"
+                className="tpl-lbl"
+                style={{ margin: 0 }}
+              >
                 {LABEL_PASSWORD}
               </label>
               <Link to="/forgot-password" className="tpl-lnk">
                 {LINK_FORGOT_PASSWORD}
               </Link>
             </div>
-            <div className={`tpl-fld${error ? " tpl-err" : ""}`} style={{ marginTop: 7 }}>
+
+            <div
+              className={`tpl-fld${error ? " tpl-err" : ""}`}
+              style={{ marginTop: 7 }}
+            >
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
@@ -133,10 +164,15 @@ export function Login() {
               <button
                 type="button"
                 onClick={toggleShowPassword}
-                aria-label={showPassword ? ARIA_HIDE_PASSWORD : ARIA_SHOW_PASSWORD}
+                aria-label={
+                  showPassword ? ARIA_HIDE_PASSWORD : ARIA_SHOW_PASSWORD
+                }
                 className="tpl-eye-btn"
               >
-                <i className={`ti ${showPassword ? "ti-eye-off" : "ti-eye"}`} aria-hidden />
+                <i
+                  className={`ti ${showPassword ? "ti-eye-off" : "ti-eye"}`}
+                  aria-hidden
+                />
               </button>
             </div>
 
@@ -162,7 +198,12 @@ export function Login() {
               <span className="tpl-check-label">{LABEL_KEEP_SIGNED_IN}</span>
             </button>
 
-            <button type="submit" disabled={submitting} className="tpl-btnp" style={{ marginTop: 18 }}>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="tpl-btnp"
+              style={{ marginTop: 18 }}
+            >
               {submitting && <span aria-hidden className="tpl-spinner" />}
               {submitting ? BUTTON_SIGNING_IN : SEG_SIGN_IN}
             </button>
@@ -172,7 +213,11 @@ export function Login() {
 
           <p className="tpl-foot">
             {TEXT_NEW_TO_APP_PROMPT}{" "}
-            <Link to="/register" className="tpl-lnk" style={{ fontWeight: 500 }}>
+            <Link
+              to="/register"
+              className="tpl-lnk"
+              style={{ fontWeight: 500 }}
+            >
               {LINK_CREATE_AN_ACCOUNT}
             </Link>
           </p>
@@ -181,7 +226,10 @@ export function Login() {
       </div>
 
       <div className="tpl-preview">
-        <span className="tpl-chip tpl-on" style={{ alignSelf: "flex-start", marginBottom: 20 }}>
+        <span
+          className="tpl-chip tpl-on"
+          style={{ alignSelf: "flex-start", marginBottom: 20 }}
+        >
           {APP_NAME}
           <span className="tpl-dotg" />
         </span>
@@ -196,11 +244,9 @@ export function Login() {
           ))}
         </div>
 
-        <div className="tpl-dash-card">
-          <div className="tpl-sp" style={{ marginBottom: 14 }}>
-            <p className="tpl-h3">{TEXT_LOGIN_PREVIEW_DASHBOARD_LABEL}</p>
-            <span className="tpl-chip tpl-g">{TEXT_LOGIN_PREVIEW_LIVE}</span>
-          </div>
+        <div className="tpl-dash-card"> 
+          <Salesheader />
+
           <div className="tpl-g3">
             <div className="tpl-metric">
               <p className="tpl-mlbl">TODAY&apos;S SALES</p>
@@ -220,21 +266,13 @@ export function Login() {
               <p className="tpl-mfoot tpl-warnd">Restock</p>
             </div>
           </div>
+
           <div className="tpl-card">
             <p className="tpl-h3" style={{ marginBottom: 11 }}>
               {TEXT_LOGIN_PREVIEW_RECENT_SALES}
             </p>
             {RECENT_SALES.map((sale) => (
-              <div className="tpl-lr" key={sale.title}>
-                <span className={`tpl-ic ${sale.tone}`}>
-                  <i className={`ti ${sale.icon}`} aria-hidden />
-                </span>
-                <div className="tpl-flex1">
-                  <p className="tpl-tp">{sale.title}</p>
-                  <p className="tpl-ts">{sale.meta}</p>
-                </div>
-                <span className="tpl-tp">{sale.amount}</span>
-              </div>
+              <SalesItem sale={sale} />
             ))}
           </div>
         </div>
