@@ -21,31 +21,59 @@ const OTHER_CATEGORY = "Other";
  * deleted (categoryByProductId has no entry) falls back to "Other"
  * rather than vanishing from the total.
  */
-export function salesByCategory(sales: SaleRecord[], products: Product[]): SalesByCategory {
-  const categoryByProductId = new Map(products.map((p) => [p.id, p.category]));
+// export function salesByCategory(sales: SaleRecord[], products: Product[]): SalesByCategory {
+//   const categoryByProductId = new Map(products.map((p) => [p.id, p.category]));
+//   const totals = new Map<string, number>();
+
+//   for (const sale of sales) {
+//     for (const item of sale.items) {
+//       const category =
+//         item.itemType === "service"
+//           ? SERVICES_CATEGORY
+//           : (categoryByProductId.get(item.productId) ?? OTHER_CATEGORY);
+//       // Falls back to the pre-line_total formula if a row somehow arrives
+//       // without it (e.g. a client build running ahead of migration 0005),
+//       // so a schema/deploy-order mismatch degrades to a slightly-imprecise
+//       // total instead of NaN-ing the whole category.
+//       const amount = item.lineTotal ?? item.quantity * item.price + item.fee;
+//       totals.set(category, (totals.get(category) ?? 0) + amount);
+//     }
+//   }
+
+//   const rows = Array.from(totals.entries())
+//     .map(([category, total]) => ({ category, total }))
+//     .sort((a, b) => b.total - a.total);
+//   const grandTotal = rows.reduce((sum, r) => sum + r.total, 0);
+
+//   return { rows, grandTotal };
+// }
+
+export function salesByCategory(
+  sales: SaleRecord[],
+  products: Product[]
+): SalesByCategory {
+  const categoryByProductId = new Map(
+    products.map(({ id, category }) => [id, category])
+  );
+
   const totals = new Map<string, number>();
 
-  for (const sale of sales) {
-    for (const item of sale.items) {
+  for (const item of sales.flatMap(({ items }) => items)) {
       const category =
         item.itemType === "service"
           ? SERVICES_CATEGORY
-          : (categoryByProductId.get(item.productId) ?? OTHER_CATEGORY);
-      // Falls back to the pre-line_total formula if a row somehow arrives
-      // without it (e.g. a client build running ahead of migration 0005),
-      // so a schema/deploy-order mismatch degrades to a slightly-imprecise
-      // total instead of NaN-ing the whole category.
-      const amount = item.lineTotal ?? item.quantity * item.price + item.fee;
+          : categoryByProductId.get(item.productId) ?? OTHER_CATEGORY;
+
+      const amount =
+        item.lineTotal ?? item.quantity * item.price + item.fee;
+
       totals.set(category, (totals.get(category) ?? 0) + amount);
-    }
   }
 
-  const rows = Array.from(totals.entries())
-    .map(([category, total]) => ({ category, total }))
-    .sort((a, b) => b.total - a.total);
-  const grandTotal = rows.reduce((sum, r) => sum + r.total, 0);
-
-  return { rows, grandTotal };
+  const rows = Array.from(totals, ([category, total]) => ({ category, total })).sort(
+    (a, b) => b.total - a.total
+  );
+  return { rows, grandTotal: rows.reduce((sum, row) => sum + row.total, 0) };
 }
 
 /** True if the given ISO timestamp falls on the same calendar day as `now` (local time). */
@@ -64,20 +92,47 @@ export interface BestSeller {
 }
 
 /** Top-selling products by units sold across the given sales, highest first. */
-export function bestSellers(sales: SaleRecord[], limit = 5): BestSeller[] {
-  const counts = new Map<string, BestSeller>();
-  for (const sale of sales) {
-    for (const item of sale.items) {
-      if (item.itemType !== "product") continue;
-      const entry = counts.get(item.productId) ?? { name: item.name, quantity: 0 };
-      entry.quantity += item.quantity;
-      counts.set(item.productId, entry);
-    }
-  }
-  return Array.from(counts.values())
+
+export function bestSellers(
+  sales: SaleRecord[],
+  limit = 5
+): BestSeller[] {
+  const counts = sales
+    .flatMap(({ items }) => items)
+    .filter((item) => item.itemType === "product")
+    .reduce((map, item) => {
+      const current = map.get(item.productId);
+
+      if (current) {
+        current.quantity += item.quantity;
+      } else {
+        map.set(item.productId, {
+          name: item.name,
+          quantity: item.quantity,
+        });
+      }
+
+      return map;
+    }, new Map<string, BestSeller>());
+
+  return [...counts.values()]
     .sort((a, b) => b.quantity - a.quantity)
     .slice(0, limit);
 }
+// export function bestSellers(sales: SaleRecord[], limit = 5): BestSeller[] {
+//   const counts = new Map<string, BestSeller>();
+//   for (const sale of sales) {
+//     for (const item of sale.items) {
+//       if (item.itemType !== "product") continue;
+//       const entry = counts.get(item.productId) ?? { name: item.name, quantity: 0 };
+//       entry.quantity += item.quantity;
+//       counts.set(item.productId, entry);
+//     }
+//   }
+//   return Array.from(counts.values())
+//     .sort((a, b) => b.quantity - a.quantity)
+//     .slice(0, limit);
+// }
 
 export interface DailyReport {
   generatedAt: string;

@@ -25,7 +25,9 @@ const NAV_ITEMS_ALL = [
   },
 ];
 
-export function navItemsForRole(role: Role | undefined) {
+export type NavItem = (typeof NAV_ITEMS_ALL)[number];
+
+export function navItemsForRole(role: Role | undefined): NavItem[] {
   if (!role) return [];
   return NAV_ITEMS_ALL.filter((item) => item.roles.includes(role));
 }
