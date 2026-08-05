@@ -1,5 +1,5 @@
-import { NAV_LABEL_CUSTOMERS, TEXT_CUSTOMERS_DESCRIPTION, TEXT_SELECT_CUSTOMER_PROMPT } from "@/lib";
-import { SummaryCards, CustomerListCard, AddCustomerForm, CustomerBalanceCard, PaymentHistoryCard } from "./component";
+import { TEXT_SELECT_CUSTOMER_PROMPT } from "@/lib";
+import { CustomersHeader, SummaryCards, CustomerListCard, AddCustomerForm, CustomerBalanceCard, PaymentHistoryCard } from "./component";
 import { useCustomersPage } from "./hooks";
 
 export function Customers() {
@@ -29,17 +29,19 @@ export function Customers() {
   } = useCustomersPage();
 
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold tracking-tight text-slate-900">{NAV_LABEL_CUSTOMERS}</h1>
-      <p className="text-sm text-slate-500">{TEXT_CUSTOMERS_DESCRIPTION}</p>
+    <div className="tpl-root p-6">
+      <CustomersHeader onAddCustomer={openAddForm} />
 
-      <SummaryCards totalOutstanding={totalOutstanding} customerCount={customers.length} />
+      <SummaryCards
+        totalOutstanding={totalOutstanding}
+        customerCount={customers.length}
+        customersWithBalance={customers.filter((customer) => customer.balance > 0).length}
+      />
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
         <CustomerListCard
           query={query}
           onQueryChange={setQuery}
-          onAdd={openAddForm}
           filtered={filtered}
           selectedId={selectedId}
           onSelect={selectCustomer}

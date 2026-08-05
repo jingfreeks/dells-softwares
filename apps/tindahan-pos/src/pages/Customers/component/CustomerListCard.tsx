@@ -1,7 +1,6 @@
 import type { Customer } from "@/lib";
 import {
   PLACEHOLDER_SEARCH_CUSTOMERS,
-  BUTTON_ADD_CUSTOMER,
   TEXT_NO_CUSTOMERS_MATCH_PREFIX,
   EMPTY_STATE_NO_CUSTOMERS,
 } from "@/lib";
@@ -9,7 +8,6 @@ import { Customerlistitem } from "./customerlistitem";
 interface CustomerListCardProps {
   query: string;
   onQueryChange: (value: string) => void;
-  onAdd: () => void;
   filtered: Customer[];
   selectedId: string | null;
   onSelect: (customer: Customer) => void;
@@ -18,33 +16,29 @@ interface CustomerListCardProps {
 export function CustomerListCard({
   query,
   onQueryChange,
-  onAdd,
   filtered,
   selectedId,
   onSelect,
 }: CustomerListCardProps) {
   return (
-    <div className="card">
-      <div className="flex items-center justify-between gap-2 border-b border-slate-200 p-4">
-        <input
+    <div className="tpl-card" style={{ padding: 0 }}>
+      <div className="tpl-sp" style={{ padding: 14, borderBottom: "1px solid var(--tpl-b)" }}>
+        <label className="tpl-fld" style={{ flex: 1 }}>
+          <i className="ti ti-search" aria-hidden style={{ marginRight: 9, color: "var(--tpl-t6)" }} />
+          <input
           type="text"
+          aria-label={PLACEHOLDER_SEARCH_CUSTOMERS}
           placeholder={PLACEHOLDER_SEARCH_CUSTOMERS}
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-        />
-        <button
-          type="button"
-          onClick={onAdd}
-          className="shrink-0 cursor-pointer rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
-        >
-          {BUTTON_ADD_CUSTOMER}
-        </button>
+          />
+        </label>
       </div>
 
       <ul className="divide-y divide-slate-100">
         {filtered.map((customer) => (
           <Customerlistitem
+            key={customer.id}
             customer={customer}
             onSelect={onSelect}
             selectedId={selectedId}
