@@ -3,6 +3,7 @@ export * from "./InventoryAlerts";
 export * from "./InventoryFilters";
 export * from "./InventoryTable";
 export * from "./InventoryPagination";
+export * from "./InventorySummary";
 export * from "./ProductPhotoField";
 export * from "./ProductPricingFields";
 export * from "./ProductFormModal";

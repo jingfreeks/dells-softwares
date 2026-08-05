@@ -6,6 +6,7 @@ import {
   InventoryFilters,
   InventoryTable,
   InventoryPagination,
+  InventorySummary,
   ProductFormModal,
 } from "./component";
 import { useInventoryPage } from "./hooks";
@@ -67,7 +68,7 @@ export function Inventory() {
   } = useInventoryPage();
 
   return (
-    <div className="p-6">
+    <div className="tpl-root p-6">
       <InventoryHeader
         productCount={products.length}
         onOpenCategoryManager={() => setShowCategoryManager(true)}
@@ -75,6 +76,8 @@ export function Inventory() {
       />
 
       <InventoryAlerts error={error} actionError={actionError} loading={loading} lowStock={lowStock} />
+
+      {!loading && <InventorySummary products={products} lowStockCount={lowStock.length} />}
 
       <InventoryFilters
         query={query}
