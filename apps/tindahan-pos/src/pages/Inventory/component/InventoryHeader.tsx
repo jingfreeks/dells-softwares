@@ -10,17 +10,18 @@ interface InventoryHeaderProps {
 
 export function InventoryHeader({ productCount, onOpenCategoryManager, onAddProduct }: InventoryHeaderProps) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="tpl-hd">
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-slate-900">{NAV_LABEL_INVENTORY}</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="tpl-h1">{NAV_LABEL_INVENTORY}</h1>
+        <p className="tpl-sub">
           {productCount} {TEXT_PRODUCTS_TRACKED_SUFFIX}
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
         <Link
           to="/inventory/receiving"
-          className="flex items-center gap-1.5 rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className="tpl-btn"
+          style={{ width: "auto", height: 36, padding: "0 12px", fontSize: 13, marginBottom: 0 }}
         >
           <TruckIcon className="h-4 w-4" />
           {PAGE_HEADING_RECEIVING}
@@ -31,14 +32,16 @@ export function InventoryHeader({ productCount, onOpenCategoryManager, onAddProd
         <button
           type="button"
           onClick={onOpenCategoryManager}
-          className="cursor-pointer rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className="tpl-btn"
+          style={{ width: "auto", height: 36, padding: "0 12px", fontSize: 13, marginBottom: 0 }}
         >
           {BUTTON_CATEGORIES}
         </button>
         <button
           type="button"
           onClick={onAddProduct}
-          className="cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)]"
+          className="tpl-btnp"
+          style={{ width: "auto", height: 36, padding: "0 14px", fontSize: 13, marginBottom: 0 }}
         >
           {BUTTON_ADD_PRODUCT}
         </button>

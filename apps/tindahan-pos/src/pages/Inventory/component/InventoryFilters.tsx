@@ -11,18 +11,23 @@ interface InventoryFiltersProps {
 
 export function InventoryFilters({ query, onQueryChange, categoryFilter, onCategoryFilterChange, categories }: InventoryFiltersProps) {
   return (
-    <div className="mt-4 flex flex-wrap gap-2">
-      <input
-        type="text"
-        placeholder={PLACEHOLDER_SEARCH_INVENTORY}
-        value={query}
-        onChange={(e) => onQueryChange(e.target.value)}
-        className="w-full max-w-sm rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-      />
+    <div className="flex flex-wrap gap-2" style={{ marginBottom: 14 }}>
+      <label className="tpl-fld" style={{ flex: "1 1 280px", maxWidth: 440 }}>
+        <i className="ti ti-search" aria-hidden style={{ marginRight: 9, color: "var(--tpl-t6)" }} />
+        <input
+          type="text"
+          aria-label={PLACEHOLDER_SEARCH_INVENTORY}
+          placeholder={PLACEHOLDER_SEARCH_INVENTORY}
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+        />
+      </label>
       <select
         value={categoryFilter}
         onChange={(e) => onCategoryFilterChange(e.target.value)}
-        className="rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+        aria-label={LABEL_ALL_CATEGORIES}
+        className="tpl-btn"
+        style={{ width: "auto", height: 44, padding: "0 12px", marginBottom: 0 }}
       >
         <option value="All">{LABEL_ALL_CATEGORIES}</option>
         {categories.map((c) => (
