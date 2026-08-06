@@ -1,0 +1,1 @@
+export {default as Salesperitem} from "./saleitem";
