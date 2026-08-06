@@ -21,7 +21,8 @@ import {
   ERROR_COULD_NOT_REMOVE_PRODUCT,
   type Product,
 } from "@/lib";
-import { buildBarcodeIndex, findDuplicateBarcodeFast, lowStockProducts, packUnitPrice } from "@/lib/inventory";
+import { buildBarcodeIndex, findDuplicateBarcodeFast, lowStockProducts, packUnitPrice, stockStatus } from "@/lib/inventory";
+import { averageMarginPercent, computeDailySalesRates, lastStockInLabel, stockValueAtCost } from "./lib";
 
 const PRODUCT_IMAGE_MAX_DIMENSION = 800;
 export const PAGE_SIZE = 20;
@@ -44,7 +45,9 @@ export function useInventoryPage() {
   const { user } = useAuth();
   const {
     products,
+    sales,
     categories,
+    receivingHistory,
     loading,
     error,
     addProduct,
@@ -59,6 +62,8 @@ export function useInventoryPage() {
     () => (location.state as { initialQuery?: string } | null)?.initialQuery ?? ""
   );
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
+  const [needsAttentionOnly, setNeedsAttentionOnly] = useState(false);
+  const [sortByRunsOutSoonest, setSortByRunsOutSoonest] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -99,9 +104,15 @@ export function useInventoryPage() {
   }, [location.key]);
 
   const lowStock = useMemo(() => lowStockProducts(products), [products]);
+
+  const dailySalesRateById = useMemo(() => computeDailySalesRates(products, sales), [products, sales]);
+  const avgMarginPercent = useMemo(() => averageMarginPercent(products, receivingHistory), [products, receivingHistory]);
+  const stockValue = useMemo(() => stockValueAtCost(products, receivingHistory), [products, receivingHistory]);
+  const lastStockIn = useMemo(() => lastStockInLabel(receivingHistory), [receivingHistory]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return products.filter((p) => {
+    let rows = products.filter((p) => {
       const matchesCategory = categoryFilter === "All" || p.category === categoryFilter;
       const matchesQuery =
         !q ||
@@ -110,7 +121,18 @@ export function useInventoryPage() {
         (p.barcode ?? "").includes(q);
       return matchesCategory && matchesQuery;
     });
-  }, [products, query, categoryFilter]);
+    if (needsAttentionOnly) {
+      rows = rows.filter((p) => stockStatus(p) !== "in-stock");
+    }
+    if (sortByRunsOutSoonest) {
+      rows = [...rows].sort((a, b) => {
+        const aDays = dailySalesRateById.get(a.id) ? a.stock / dailySalesRateById.get(a.id)! : Infinity;
+        const bDays = dailySalesRateById.get(b.id) ? b.stock / dailySalesRateById.get(b.id)! : Infinity;
+        return aDays - bDays;
+      });
+    }
+    return rows;
+  }, [products, query, categoryFilter, needsAttentionOnly, sortByRunsOutSoonest, dailySalesRateById]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -329,6 +351,7 @@ export function useInventoryPage() {
   return {
     products,
     categories,
+    receivingHistory,
     loading,
     error,
     actionError,
@@ -363,6 +386,14 @@ export function useInventoryPage() {
     currentPage,
     pageProducts,
     packPreview,
+    needsAttentionOnly,
+    setNeedsAttentionOnly,
+    sortByRunsOutSoonest,
+    setSortByRunsOutSoonest,
+    dailySalesRateById,
+    avgMarginPercent,
+    stockValue,
+    lastStockIn,
     handleQueryChange,
     handleCategoryFilterChange,
     checkDuplicateBarcode,
