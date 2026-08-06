@@ -4,13 +4,13 @@ import {
   useStoreData,
   supabase,
   ERROR_NAME_EMAIL_REQUIRED,
-  ERROR_PASSWORD_MIN_LENGTH,
   ERROR_COULD_NOT_CREATE_CASHIER,
   ERROR_COULD_NOT_REMOVE_STAFF,
   ERROR_COULD_NOT_UPDATE_STAFF,
   ERROR_COULD_NOT_SEND_RESET,
   type Role,
 } from "@/lib";
+import { generatePassword, generatePin, type StaffRoleSelection, type SignInMethod, type ShiftSelection } from "./lib";
 
 export interface StaffRow {
   id: string;
@@ -19,7 +19,27 @@ export interface StaffRow {
   role: Role;
 }
 
-const emptyForm = { name: "", email: "", password: "" };
+export interface StaffFormValues {
+  name: string;
+  email: string;
+  roleSelection: StaffRoleSelection;
+  signInMethod: SignInMethod;
+  pin: string;
+  shift: ShiftSelection;
+  drawerCounting: boolean;
+}
+
+function makeEmptyForm(): StaffFormValues {
+  return {
+    name: "",
+    email: "",
+    roleSelection: "cashier",
+    signInMethod: "pin",
+    pin: generatePin(),
+    shift: "morning",
+    drawerCounting: true,
+  };
+}
 
 export function useStaffPage() {
   const { user, requestPasswordReset } = useAuth();
@@ -27,7 +47,7 @@ export function useStaffPage() {
   const [staff, setStaff] = useState<StaffRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState<StaffFormValues>(makeEmptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -53,18 +73,10 @@ export function useStaffPage() {
     fetchStaff().finally(() => setLoading(false));
   }, [fetchStaff]);
 
-  function updateFormField(field: keyof typeof emptyForm, value: string) {
-    setForm((f) => ({ ...f, [field]: value }));
-  }
-
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim()) {
       setFormError(ERROR_NAME_EMAIL_REQUIRED);
-      return;
-    }
-    if (form.password.length < 8) {
-      setFormError(ERROR_PASSWORD_MIN_LENGTH);
       return;
     }
 
@@ -77,14 +89,18 @@ export function useStaffPage() {
         body: {
           name: form.name.trim(),
           email: form.email.trim().toLowerCase(),
-          password: form.password,
+          // The new Add Staff design shows a PIN instead of asking the admin
+          // to type a password — but the backend still creates an email +
+          // password auth account (no PIN-login system exists), so a
+          // password is generated here and never surfaced anywhere.
+          password: generatePassword(),
         },
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      setForm(emptyForm);
+      setForm(makeEmptyForm());
       setShowAddForm(false);
       await fetchStaff();
     } catch (err) {
@@ -95,7 +111,7 @@ export function useStaffPage() {
   }
 
   function openAddForm() {
-    setForm(emptyForm);
+    setForm(makeEmptyForm());
     setFormError(null);
     setShowAddForm(true);
   }
@@ -144,6 +160,7 @@ export function useStaffPage() {
     loading,
     loadError,
     form,
+    setForm,
     formError,
     submitting,
     removingId,
@@ -152,7 +169,6 @@ export function useStaffPage() {
     setShowShiftHistory,
     openAddForm,
     closeAddForm,
-    updateFormField,
     handleSubmit,
     handleRemove,
     handleEditName,

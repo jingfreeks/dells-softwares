@@ -19,6 +19,7 @@ export function Staff() {
     loading,
     loadError,
     form,
+    setForm,
     formError,
     submitting,
     removingId,
@@ -27,7 +28,6 @@ export function Staff() {
     setShowShiftHistory,
     openAddForm,
     closeAddForm,
-    updateFormField,
     handleSubmit,
     handleRemove,
     handleEditName,
@@ -96,7 +96,7 @@ export function Staff() {
           form={form}
           formError={formError}
           submitting={submitting}
-          onFieldChange={updateFormField}
+          onFormChange={setForm}
           onCancel={closeAddForm}
           onSubmit={handleSubmit}
         />
