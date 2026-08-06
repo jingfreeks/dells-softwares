@@ -1,5 +1,5 @@
-import { lowStockProducts, computeRestockSuggestions, type RestockSuggestion } from "@/lib/inventory";
-import type { Customer, Product, SaleRecord } from "@/lib/types";
+import { lowStockProducts } from "@/lib/inventory";
+import type { Product, SaleRecord } from "@/lib/types";
 
 export interface CategoryTotal {
   category: string;
@@ -21,59 +21,31 @@ const OTHER_CATEGORY = "Other";
  * deleted (categoryByProductId has no entry) falls back to "Other"
  * rather than vanishing from the total.
  */
-// export function salesByCategory(sales: SaleRecord[], products: Product[]): SalesByCategory {
-//   const categoryByProductId = new Map(products.map((p) => [p.id, p.category]));
-//   const totals = new Map<string, number>();
-
-//   for (const sale of sales) {
-//     for (const item of sale.items) {
-//       const category =
-//         item.itemType === "service"
-//           ? SERVICES_CATEGORY
-//           : (categoryByProductId.get(item.productId) ?? OTHER_CATEGORY);
-//       // Falls back to the pre-line_total formula if a row somehow arrives
-//       // without it (e.g. a client build running ahead of migration 0005),
-//       // so a schema/deploy-order mismatch degrades to a slightly-imprecise
-//       // total instead of NaN-ing the whole category.
-//       const amount = item.lineTotal ?? item.quantity * item.price + item.fee;
-//       totals.set(category, (totals.get(category) ?? 0) + amount);
-//     }
-//   }
-
-//   const rows = Array.from(totals.entries())
-//     .map(([category, total]) => ({ category, total }))
-//     .sort((a, b) => b.total - a.total);
-//   const grandTotal = rows.reduce((sum, r) => sum + r.total, 0);
-
-//   return { rows, grandTotal };
-// }
-
-export function salesByCategory(
-  sales: SaleRecord[],
-  products: Product[]
-): SalesByCategory {
-  const categoryByProductId = new Map(
-    products.map(({ id, category }) => [id, category])
-  );
-
+export function salesByCategory(sales: SaleRecord[], products: Product[]): SalesByCategory {
+  const categoryByProductId = new Map(products.map((p) => [p.id, p.category]));
   const totals = new Map<string, number>();
 
-  for (const item of sales.flatMap(({ items }) => items)) {
+  for (const sale of sales) {
+    for (const item of sale.items) {
       const category =
         item.itemType === "service"
           ? SERVICES_CATEGORY
-          : categoryByProductId.get(item.productId) ?? OTHER_CATEGORY;
-
-      const amount =
-        item.lineTotal ?? item.quantity * item.price + item.fee;
-
+          : (categoryByProductId.get(item.productId) ?? OTHER_CATEGORY);
+      // Falls back to the pre-line_total formula if a row somehow arrives
+      // without it (e.g. a client build running ahead of migration 0005),
+      // so a schema/deploy-order mismatch degrades to a slightly-imprecise
+      // total instead of NaN-ing the whole category.
+      const amount = item.lineTotal ?? item.quantity * item.price + item.fee;
       totals.set(category, (totals.get(category) ?? 0) + amount);
+    }
   }
 
-  const rows = Array.from(totals, ([category, total]) => ({ category, total })).sort(
-    (a, b) => b.total - a.total
-  );
-  return { rows, grandTotal: rows.reduce((sum, row) => sum + row.total, 0) };
+  const rows = Array.from(totals.entries())
+    .map(([category, total]) => ({ category, total }))
+    .sort((a, b) => b.total - a.total);
+  const grandTotal = rows.reduce((sum, r) => sum + r.total, 0);
+
+  return { rows, grandTotal };
 }
 
 /** True if the given ISO timestamp falls on the same calendar day as `now` (local time). */
@@ -92,69 +64,29 @@ export interface BestSeller {
 }
 
 /** Top-selling products by units sold across the given sales, highest first. */
-
-export function bestSellers(
-  sales: SaleRecord[],
-  limit = 5
-): BestSeller[] {
-  const counts = sales
-    .flatMap(({ items }) => items)
-    .filter((item) => item.itemType === "product")
-    .reduce((map, item) => {
-      const current = map.get(item.productId);
-
-      if (current) {
-        current.quantity += item.quantity;
-      } else {
-        map.set(item.productId, {
-          name: item.name,
-          quantity: item.quantity,
-        });
-      }
-
-      return map;
-    }, new Map<string, BestSeller>());
-
-  return [...counts.values()]
+export function bestSellers(sales: SaleRecord[], limit = 5): BestSeller[] {
+  const counts = new Map<string, BestSeller>();
+  for (const sale of sales) {
+    for (const item of sale.items) {
+      if (item.itemType !== "product") continue;
+      const entry = counts.get(item.productId) ?? { name: item.name, quantity: 0 };
+      entry.quantity += item.quantity;
+      counts.set(item.productId, entry);
+    }
+  }
+  return Array.from(counts.values())
     .sort((a, b) => b.quantity - a.quantity)
     .slice(0, limit);
 }
-// export function bestSellers(sales: SaleRecord[], limit = 5): BestSeller[] {
-//   const counts = new Map<string, BestSeller>();
-//   for (const sale of sales) {
-//     for (const item of sale.items) {
-//       if (item.itemType !== "product") continue;
-//       const entry = counts.get(item.productId) ?? { name: item.name, quantity: 0 };
-//       entry.quantity += item.quantity;
-//       counts.set(item.productId, entry);
-//     }
-//   }
-//   return Array.from(counts.values())
-//     .sort((a, b) => b.quantity - a.quantity)
-//     .slice(0, limit);
-// }
 
 export interface DailyReport {
   generatedAt: string;
   todaysSalesTotal: number;
   todaysTransactionCount: number;
-  /** Percent change in today's sales vs. the same time yesterday. Null
-   * when yesterday had no sales at all — a percentage against zero is
-   * undefined, not "infinite growth". */
-  salesChangePercent: number | null;
-  utangOutstanding: number;
+  totalProducts: number;
   lowStock: Product[];
   bestSellers: BestSeller[];
   recentSales: SaleRecord[];
-  restockSuggestions: RestockSuggestion[];
-  categoryTotals: SalesByCategory;
-}
-
-/** Yesterday's date at the same moment as `now` (local time), for the isToday-style comparison. */
-function yesterday(now: Date): Date {
-  const d = new Date(now);
-  d.setDate(d.getDate() - 1);
-  return d;
 }
 
 /**
@@ -165,28 +97,16 @@ function yesterday(now: Date): Date {
 export function buildDailyReport(
   products: Product[],
   sales: SaleRecord[],
-  customers: Customer[],
   now: Date = new Date()
 ): DailyReport {
   const todaysSales = sales.filter((s) => isToday(s.timestamp, now));
-  const todaysSalesTotal = todaysSales.reduce((sum, s) => sum + s.total, 0);
-  const yesterdaysSalesTotal = sales
-    .filter((s) => isToday(s.timestamp, yesterday(now)))
-    .reduce((sum, s) => sum + s.total, 0);
-
   return {
     generatedAt: now.toISOString(),
-    todaysSalesTotal,
+    todaysSalesTotal: todaysSales.reduce((sum, s) => sum + s.total, 0),
     todaysTransactionCount: todaysSales.length,
-    salesChangePercent:
-      yesterdaysSalesTotal > 0
-        ? Math.round(((todaysSalesTotal - yesterdaysSalesTotal) / yesterdaysSalesTotal) * 100)
-        : null,
-    utangOutstanding: customers.reduce((sum, c) => sum + c.balance, 0),
+    totalProducts: products.length,
     lowStock: lowStockProducts(products),
     bestSellers: bestSellers(sales),
     recentSales: sales.slice(0, 10),
-    restockSuggestions: computeRestockSuggestions(products, sales, { now }),
-    categoryTotals: salesByCategory(sales, products),
   };
 }

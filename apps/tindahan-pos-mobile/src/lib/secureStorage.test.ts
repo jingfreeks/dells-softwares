@@ -22,19 +22,4 @@ describe("largeSecureStore", () => {
     await largeSecureStore.removeItem("to-remove");
     expect(await largeSecureStore.getItem("to-remove")).toBeNull();
   });
-
-  it("setItem is a no-op while persistence is disabled", async () => {
-    largeSecureStore.setPersistenceEnabled(false);
-    await largeSecureStore.setItem("session-not-kept", "token");
-    expect(await largeSecureStore.getItem("session-not-kept")).toBeNull();
-    largeSecureStore.setPersistenceEnabled(true);
-  });
-
-  it("clears an existing value if persistence is disabled after it was set", async () => {
-    await largeSecureStore.setItem("session-then-disabled", "token");
-    largeSecureStore.setPersistenceEnabled(false);
-    await largeSecureStore.setItem("session-then-disabled", "token-2");
-    expect(await largeSecureStore.getItem("session-then-disabled")).toBeNull();
-    largeSecureStore.setPersistenceEnabled(true);
-  });
 });

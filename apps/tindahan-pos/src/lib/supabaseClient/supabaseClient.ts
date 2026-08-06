@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
-import { togglablePersistenceStorage } from "./togglablePersistenceStorage";
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -13,6 +12,4 @@ if (!url || !anonKey) {
 
 // Safe to expose client-side: the anon key only grants what Row Level
 // Security policies in the database allow for the signed-in user.
-export const supabase = createClient<Database>(url, anonKey, {
-  auth: { storage: togglablePersistenceStorage },
-});
+export const supabase = createClient<Database>(url, anonKey);

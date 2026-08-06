@@ -1,8 +1,47 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { togglablePersistenceStorage } from "@/lib/supabaseClient/togglablePersistenceStorage";
 import type { StaffAccount, Store } from "@/lib/types";
-import { AuthContext, type AuthResult, type RegisterResult } from "./authContext";
+
+type AuthResult = { ok: true } | { ok: false; error: string };
+type RegisterResult =
+  | { ok: true; needsEmailConfirmation: boolean }
+  | { ok: false; error: string };
+
+interface AuthContextValue {
+  user: StaffAccount | null;
+  /** The signed-in staff member's store — loaded alongside the profile. */
+  store: Store | null;
+  /** True until the initial session check completes — avoids a false
+   * redirect-to-login flash while Supabase restores a persisted session. */
+  loading: boolean;
+  login: (email: string, password: string) => Promise<AuthResult>;
+  register: (input: {
+    storeName: string;
+    ownerName: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+  }) => Promise<RegisterResult>;
+  logout: () => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<AuthResult>;
+  updateProfile: (patch: {
+    name?: string;
+    phone?: string | null;
+    address?: string | null;
+    avatarUrl?: string | null;
+  }) => Promise<AuthResult>;
+  updateStore: (patch: {
+    name?: string;
+    address?: string | null;
+    photoUrl?: string | null;
+  }) => Promise<AuthResult>;
+  /** Marks the signed-in admin's onboarding wizard as finished. */
+  completeOnboarding: () => Promise<AuthResult>;
+  /** Permanently deletes the signed-in staff member's own account. */
+  deleteAccount: () => Promise<AuthResult>;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
   const { data, error } = await supabase
@@ -58,19 +97,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Tracks the currently-loaded user id for the auth-state-change
-  // subscription below, updated synchronously alongside `setUser` (not via
-  // a separate `useEffect`, whose scheduling isn't guaranteed to have
-  // flushed before the next Supabase event arrives).
-  const userIdRef = useRef<string | null>(null);
-
   useEffect(() => {
     let cancelled = false;
 
     async function loadSessionUser(userId: string) {
       const profile = await loadStaffProfile(userId);
       if (cancelled) return;
-      userIdRef.current = profile?.id ?? null;
       setUser(profile);
       setStore(profile ? await loadStore(profile.storeId) : null);
     }
@@ -82,33 +114,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user && event === "SIGNED_IN") {
-        if (session.user.id === userIdRef.current) {
-          // Supabase's own GoTrueClient fires SIGNED_IN — not just
-          // TOKEN_REFRESHED — every time the tab regains focus after being
-          // backgrounded, as part of its visibilitychange-driven session
-          // recovery (_recoverAndRefresh), even when nothing actually
-          // changed. If we already have this exact user loaded, there's
-          // nothing to re-fetch — re-running the loading cycle here would
-          // swap ProtectedRoute's whole authenticated shell out for its
-          // loading branch and back, unmounting/remounting the app (cart
-          // and all) on every tab switch with no real sign-in involved.
-          return;
-        }
-        // A genuinely fresh sign-in fires this before the staff profile
-        // (and its role) has loaded — without this, a consumer reading
-        // `loading` right after login sees `false` + `user: null`
-        // simultaneously and concludes "signed out", bouncing straight
-        // back to /login.
-        if (!cancelled) setLoading(true);
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
         await loadSessionUser(session.user.id);
-        if (!cancelled) setLoading(false);
-      } else if (!session?.user && !cancelled) {
-        userIdRef.current = null;
+      } else if (!cancelled) {
         setUser(null);
         setStore(null);
-        setLoading(false);
       }
     });
 
@@ -118,8 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  async function login(email: string, password: string, keepSignedIn = true): Promise<AuthResult> {
-    togglablePersistenceStorage.setPersistenceEnabled(keepSignedIn);
+  async function login(email: string, password: string): Promise<AuthResult> {
     const { error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
@@ -164,7 +174,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     await supabase.auth.signOut();
-    togglablePersistenceStorage.setPersistenceEnabled(true);
     setUser(null);
     setStore(null);
   }
@@ -271,4 +280,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
 }

@@ -1,6 +1,12 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { FeatureFlagsContext, resolveFlag, useFeatureFlag } from "./featureFlagsContext";
 
 /**
  * Feature flags — a kill switch for shipped features. Flip a row's
@@ -19,6 +25,22 @@ import { FeatureFlagsContext, resolveFlag, useFeatureFlag } from "./featureFlags
  * — you only need to add a row when you actually want to turn something
  * off, not pre-register every feature ahead of time.
  */
+
+interface FeatureFlagsContextValue {
+  isEnabled: (key: string) => boolean;
+  loading: boolean;
+}
+
+const FeatureFlagsContext = createContext<FeatureFlagsContextValue | null>(null);
+
+/**
+ * Fail-open: a key with no entry is treated as enabled. You only ever
+ * need to add a row (or an entry here) to turn something OFF.
+ */
+export function resolveFlag(flags: Map<string, boolean>, key: string): boolean {
+  return flags.get(key) ?? true;
+}
+
 export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
   const [flags, setFlags] = useState<Map<string, boolean>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -77,6 +99,17 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
       {children}
     </FeatureFlagsContext.Provider>
   );
+}
+
+function useFeatureFlagsContext() {
+  const ctx = useContext(FeatureFlagsContext);
+  if (!ctx) throw new Error("useFeatureFlag must be used within FeatureFlagsProvider");
+  return ctx;
+}
+
+/** Returns whether the given feature flag is enabled (fail-open if unset). */
+export function useFeatureFlag(key: string): boolean {
+  return useFeatureFlagsContext().isEnabled(key);
 }
 
 /** Renders its children only while the given feature flag is enabled. */
