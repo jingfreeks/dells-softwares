@@ -22,20 +22,21 @@ function renderRegister() {
 
 async function fillForm(
   user: ReturnType<typeof userEvent.setup>,
-  overrides: Partial<{ storeName: string; ownerName: string; email: string; password: string }> = {}
+  overrides: Partial<{ storeName: string; ownerName: string; email: string; password: string; confirmPassword: string }> = {}
 ) {
   const values = {
     storeName: "Dell's Store",
     ownerName: "Aling Nena",
     email: "nena@example.com",
     password: "secret123",
+    confirmPassword: "secret123",
     ...overrides,
   };
   await user.type(screen.getByLabelText("Store name"), values.storeName);
   await user.type(screen.getByLabelText("Your name"), values.ownerName);
   await user.type(screen.getByLabelText("Email address"), values.email);
   await user.type(screen.getByLabelText("Password"), values.password);
-  await user.click(screen.getByRole("checkbox", { name: /Terms of Service/ }));
+  await user.type(screen.getByLabelText("Confirm password"), values.confirmPassword);
 }
 
 describe("Register", () => {
@@ -64,21 +65,6 @@ describe("Register", () => {
     expect(await screen.findByText("POS page")).toBeInTheDocument();
   });
 
-  it("does not submit until the terms checkbox is agreed to", async () => {
-    const user = userEvent.setup();
-    const register = vi.fn().mockResolvedValue({ ok: true, needsEmailConfirmation: false });
-    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, register }));
-    renderRegister();
-
-    await user.type(screen.getByLabelText("Store name"), "Dell's Store");
-    await user.type(screen.getByLabelText("Your name"), "Aling Nena");
-    await user.type(screen.getByLabelText("Email address"), "nena@example.com");
-    await user.type(screen.getByLabelText("Password"), "secret123");
-    await user.click(screen.getByRole("button", { name: "Create account" }));
-
-    expect(register).not.toHaveBeenCalled();
-  });
-
   it("shows the awaiting-confirmation screen when email confirmation is required", async () => {
     const user = userEvent.setup();
     const register = vi.fn().mockResolvedValue({ ok: true, needsEmailConfirmation: true });
@@ -105,33 +91,25 @@ describe("Register", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("already exists");
   });
 
-  it("toggles password visibility", async () => {
+  it("toggles password visibility independently for password and confirm password", async () => {
     const user = userEvent.setup();
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null }));
     renderRegister();
 
     const passwordInput = screen.getByLabelText("Password") as HTMLInputElement;
+    const confirmInput = screen.getByLabelText("Confirm password") as HTMLInputElement;
     expect(passwordInput.type).toBe("password");
+    expect(confirmInput.type).toBe("password");
+
     await user.click(screen.getByRole("button", { name: "Show password" }));
     expect(passwordInput.type).toBe("text");
+    expect(confirmInput.type).toBe("password");
+
+    await user.click(screen.getByRole("button", { name: "Show confirm password" }));
+    expect(confirmInput.type).toBe("text");
+
     await user.click(screen.getByRole("button", { name: "Hide password" }));
     expect(passwordInput.type).toBe("password");
-  });
-
-  it("shows a live password strength meter", async () => {
-    const user = userEvent.setup();
-    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null }));
-    renderRegister();
-
-    await user.type(screen.getByLabelText("Password"), "Secret123");
-    expect(await screen.findByText("Strong")).toBeInTheDocument();
-  });
-
-  it("navigates to login from the segmented tab and the footer link", async () => {
-    const user = userEvent.setup();
-    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null }));
-    renderRegister();
-    await user.click(screen.getByRole("tab", { name: "Sign in" }));
-    expect(screen.getByText("Login page")).toBeInTheDocument();
+    expect(confirmInput.type).toBe("text");
   });
 });

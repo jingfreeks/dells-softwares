@@ -14,14 +14,6 @@ import { Buffer } from "buffer";
  * plain form. This mirrors Supabase's own documented pattern for Expo.
  */
 class LargeSecureStore {
-  /** When false, setItem is a no-op (session lives only in memory for
-   * this run) — backs the "keep me signed in on this device" toggle. */
-  private persistenceEnabled = true;
-
-  setPersistenceEnabled(enabled: boolean): void {
-    this.persistenceEnabled = enabled;
-  }
-
   private async getOrCreateKey(keyName: string): Promise<Uint8Array> {
     const existing = await SecureStore.getItemAsync(keyName);
     if (existing) return Uint8Array.from(Buffer.from(existing, "base64"));
@@ -48,11 +40,6 @@ class LargeSecureStore {
   }
 
   async setItem(key: string, value: string): Promise<void> {
-    if (!this.persistenceEnabled) {
-      await this.removeItem(key);
-      return;
-    }
-
     const keyName = `${key}-secure-key`;
     const encryptionKey = await this.getOrCreateKey(keyName);
     const iv = Crypto.getRandomBytes(16);

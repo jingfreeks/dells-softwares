@@ -1,1 +1,0 @@
-export { BestSellersCard } from "./BestSellersCard";

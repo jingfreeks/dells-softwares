@@ -1,1 +1,0 @@
-export {RecentSalesCard} from "./RecentSalesCard";

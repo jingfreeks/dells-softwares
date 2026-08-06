@@ -1,9 +1,4 @@
-import {
-  type StockStatus,
-  LABEL_STATUS_IN_STOCK,
-  LABEL_STATUS_LOW_STOCK,
-  LABEL_STATUS_OUT_OF_STOCK,
-} from "@/lib";
+import { type StockStatus } from "@/lib";
 
 const DOT_STYLES: Record<StockStatus, string> = {
   "in-stock": "bg-emerald-500",
@@ -18,9 +13,9 @@ const TEXT_STYLES: Record<StockStatus, string> = {
 };
 
 const LABELS: Record<StockStatus, string> = {
-  "in-stock": LABEL_STATUS_IN_STOCK,
-  low: LABEL_STATUS_LOW_STOCK,
-  out: LABEL_STATUS_OUT_OF_STOCK,
+  "in-stock": "In stock",
+  low: "Low stock",
+  out: "Out of stock",
 };
 
 export function StockBadge({ status }: { status: StockStatus }) {

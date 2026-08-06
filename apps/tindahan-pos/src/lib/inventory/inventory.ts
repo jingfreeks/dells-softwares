@@ -1,5 +1,5 @@
 import { PESO, roundMoney } from "@/lib/money";
-import type { Product, SaleRecord } from "@/lib/types";
+import type { Product } from "@/lib/types";
 
 export type StockStatus = "out" | "low" | "in-stock";
 
@@ -86,86 +86,6 @@ export function findDuplicateBarcode(
   const trimmed = barcode.trim();
   if (!trimmed) return null;
   return products.find((p) => p.barcode === trimmed && p.id !== excludeId) ?? null;
-}
-
-const RESTOCK_LOOKBACK_DAYS = 30;
-const RESTOCK_LEAD_TIME_DAYS = 3;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-export interface RestockSuggestion {
-  productId: string;
-  productName: string;
-  currentStock: number;
-  avgDailySales: number;
-  daysOfStockLeft: number;
-  suggestedQuantity: number;
-}
-
-/**
- * Reorder point = how fast a product actually sells × how long a restock
- * takes to arrive, plus the product's own low-stock threshold as a safety
- * buffer. A product below that point gets a suggested quantity to bring it
- * back up to the point. Deliberately a plain formula, not a model — the
- * formula itself is the explanation a store owner sees.
- *
- * Only sales within `lookbackDays` count, and the average is taken over
- * however many days those sales actually span (not the full lookback
- * window) — a store with only a week of history shouldn't have its recent
- * sales diluted across 30 days it doesn't have data for yet.
- */
-export function computeRestockSuggestions(
-  products: Product[],
-  sales: SaleRecord[],
-  options: { lookbackDays?: number; leadTimeDays?: number; now?: Date } = {}
-): RestockSuggestion[] {
-  const lookbackDays = options.lookbackDays ?? RESTOCK_LOOKBACK_DAYS;
-  const leadTimeDays = options.leadTimeDays ?? RESTOCK_LEAD_TIME_DAYS;
-  const now = options.now ?? new Date();
-  const windowStart = now.getTime() - lookbackDays * MS_PER_DAY;
-
-  const soldQuantityByProduct = new Map<string, number>();
-  let earliestSaleInWindow: number | null = null;
-
-  for (const sale of sales) {
-    const saleTime = new Date(sale.timestamp).getTime();
-    if (saleTime < windowStart) continue;
-    if (earliestSaleInWindow === null || saleTime < earliestSaleInWindow) {
-      earliestSaleInWindow = saleTime;
-    }
-    for (const item of sale.items) {
-      if (item.itemType !== "product" || !item.productId) continue;
-      soldQuantityByProduct.set(
-        item.productId,
-        (soldQuantityByProduct.get(item.productId) ?? 0) + item.quantity
-      );
-    }
-  }
-
-  const spanDays =
-    earliestSaleInWindow === null
-      ? lookbackDays
-      : Math.max(1, (now.getTime() - earliestSaleInWindow) / MS_PER_DAY);
-
-  const suggestions: RestockSuggestion[] = [];
-  for (const product of products) {
-    const soldQuantity = soldQuantityByProduct.get(product.id) ?? 0;
-    if (soldQuantity <= 0) continue;
-
-    const avgDailySales = soldQuantity / spanDays;
-    const reorderPoint = avgDailySales * leadTimeDays + product.lowStockThreshold;
-    if (product.stock >= reorderPoint) continue;
-
-    suggestions.push({
-      productId: product.id,
-      productName: product.name,
-      currentStock: product.stock,
-      avgDailySales: Math.round(avgDailySales * 100) / 100,
-      daysOfStockLeft: Math.round((product.stock / avgDailySales) * 10) / 10,
-      suggestedQuantity: Math.ceil(reorderPoint - product.stock),
-    });
-  }
-
-  return suggestions.sort((a, b) => a.daysOfStockLeft - b.daysOfStockLeft);
 }
 
 /** O(1) lookup index for findDuplicateBarcodeFast, memoize this per products list. */

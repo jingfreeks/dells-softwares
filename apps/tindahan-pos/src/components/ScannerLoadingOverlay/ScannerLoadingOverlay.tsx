@@ -1,5 +1,3 @@
-import { TEXT_LOADING_CAMERA } from "@/lib";
-
 export function ScannerLoadingOverlay() {
   return (
     <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/60 p-4">
@@ -8,7 +6,7 @@ export function ScannerLoadingOverlay() {
           aria-hidden
           className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-[var(--color-brand)]"
         />
-        <span className="text-sm font-medium text-slate-700">{TEXT_LOADING_CAMERA}</span>
+        <span className="text-sm font-medium text-slate-700">Loading camera…</span>
       </div>
     </div>
   );
