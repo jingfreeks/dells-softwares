@@ -128,12 +128,10 @@ export const BUTTON_CANCEL = "Cancel";
 export const BUTTON_REMOVE = "Remove";
 
 // Staff page
-export const TEXT_STAFF_DESCRIPTION = "Manage who can log in to this store.";
-export const LABEL_ROSTER = "Roster";
+export const TEXT_STAFF_DESCRIPTION = "Who can log in, and what they did";
 export const LABEL_YOU_SUFFIX = "(you)";
 export const BUTTON_REMOVING = "Removing…";
 export const EMPTY_STATE_NO_STAFF = "No staff yet.";
-export const LABEL_ADD_CASHIER = "Add a cashier";
 export const TEXT_ADD_CASHIER_DESCRIPTION =
   "Creates a login for this store only — they'll be able to use POS but not view sales reports or manage inventory.";
 export const LABEL_TEMPORARY_PASSWORD = "Temporary password";
@@ -143,6 +141,52 @@ export const ERROR_NAME_EMAIL_REQUIRED = "Name and email are required.";
 export const ERROR_PASSWORD_MIN_LENGTH = "Password must be at least 8 characters.";
 export const ERROR_COULD_NOT_CREATE_CASHIER = "Could not create cashier account.";
 export const ERROR_COULD_NOT_REMOVE_STAFF = "Could not remove staff member.";
+
+// Staff page — redesign: header, metrics, table, permissions, activity, shift history
+export const BUTTON_SHIFT_HISTORY = "Shift history";
+export const BUTTON_ADD_STAFF = "Add staff";
+export const LABEL_ON_SHIFT_NOW = "ON SHIFT NOW";
+export const LABEL_STAFF_ACCOUNTS = "STAFF ACCOUNTS";
+export const LABEL_DRAWER_VARIANCE = "DRAWER VARIANCE";
+export const LABEL_VOIDS_THIS_WEEK = "VOIDS THIS WEEK";
+export const TEXT_THIS_WEEK_SUFFIX = "this week";
+export const COLUMN_PERSON = "PERSON";
+export const COLUMN_ROLE = "ROLE";
+export const COLUMN_SALES_TODAY = "SALES TODAY";
+export const COLUMN_STATUS = "STATUS";
+export const LABEL_EMAIL_LOGIN = "Email login";
+export const TEXT_LAST_ACTIVE_PREFIX = "Last active";
+export const TEXT_NO_RECENT_ACTIVITY = "No recent activity";
+export const LABEL_ROLE_ADMIN = "Admin";
+export const LABEL_ROLE_CASHIER = "Cashier";
+export const ARIA_STAFF_ACTIONS = "More actions";
+export const BUTTON_EDIT_NAME = "Edit name";
+export const BUTTON_RESET_PASSWORD = "Reset password";
+export const BUTTON_DEACTIVATE_SOON = "Deactivate (coming soon)";
+export const HEADING_CASHIER_PERMISSIONS = "What a cashier can do";
+export const LINK_EDIT_ROLE = "Edit role";
+export const LABEL_PERMISSION_RING_UP_SALES = "Ring up sales";
+export const LABEL_PERMISSION_SELL_ON_UTANG = "Sell on utang";
+export const LABEL_PERMISSION_ELOAD_CASHIN = "E-load and cash-in";
+export const LABEL_PERMISSION_CASH_OUT = "Cash-out over ₱1,000";
+export const LABEL_PERMISSION_VOID_SALE = "Void a completed sale";
+export const LABEL_PERMISSION_CHANGE_PRICES = "Change prices";
+export const LABEL_PERMISSION_VIEW_REPORTS = "See sales reports";
+export const TEXT_NEEDS_PIN = "Needs PIN (planned)";
+export const HEADING_ACTIVITY_LOG = "Worth a look";
+export const LINK_FULL_LOG = "Full log";
+export const HEADING_SHIFT_HISTORY = "Shift history";
+export const COLUMN_SHIFT_DATE = "Date";
+export const COLUMN_CASHIER = "Cashier";
+export const COLUMN_OPENING_CASH = "Opening";
+export const COLUMN_CLOSING_CASH = "Closing";
+export const COLUMN_VARIANCE = "Variance";
+export const COLUMN_SALES = "Sales";
+export const COLUMN_TRANSACTIONS = "Transactions";
+export const TEXT_EDIT_STAFF_NAME_PROMPT = "Full name";
+export const TEXT_RESET_PASSWORD_SENT_PREFIX = "Password reset email sent to";
+export const ERROR_COULD_NOT_UPDATE_STAFF = "Could not update staff member.";
+export const ERROR_COULD_NOT_SEND_RESET = "Could not send password reset email.";
 
 // Shared across Customers/Onboarding/Profile/Suppliers "add/edit name" forms.
 export const ERROR_NAME_REQUIRED = "Name is required.";
