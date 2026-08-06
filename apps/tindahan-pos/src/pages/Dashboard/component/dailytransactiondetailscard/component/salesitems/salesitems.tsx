@@ -1,7 +1,12 @@
-import { PESO } from "@/lib";
+import { PESO, type SaleRecord } from "@/lib";
 import { PAYMENT_LABEL } from "../../lib";
 
-const Salesperitemsscreen = (props) => {
+interface SalesperitemsscreenProps {
+  sale: SaleRecord;
+  customerNameById: Map<string, string>;
+}
+
+const Salesperitemsscreen = (props: SalesperitemsscreenProps) => {
   const { sale, customerNameById } = props;
   return (
     <>

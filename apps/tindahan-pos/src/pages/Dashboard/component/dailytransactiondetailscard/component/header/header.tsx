@@ -1,4 +1,4 @@
-import { PESO, type Customer, type PaymentType, type SaleRecord } from "@/lib";
+import type { SaleRecord } from "@/lib";
 
 const Headerscreen=(props:{ sales: SaleRecord[] })=>{
     const { sales } = props;

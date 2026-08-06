@@ -1,4 +1,4 @@
-import { PESO, type PaymentType } from "@/lib";
+import { type PaymentType } from "@/lib";
 
 export const PAYMENT_LABEL: Record<PaymentType, string> = {
   cash: "Cash",
