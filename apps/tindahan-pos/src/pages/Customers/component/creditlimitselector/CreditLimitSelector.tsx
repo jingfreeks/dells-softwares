@@ -29,18 +29,18 @@ export function CreditLimitSelector({ value, onChange }: CreditLimitSelectorProp
             type="button"
             onClick={() => onChange(String(preset))}
             className={`tpl-tile${String(preset) === value.trim() ? " tpl-on" : ""}`}
-            style={{ height: 34, padding: 0, fontSize: 12.5, justifyContent: "center", alignItems: "center", width: "100%" }}
+            style={{ height: 34, padding: 0, justifyContent: "center", alignItems: "center", width: "100%" }}
           >
-            ₱{preset.toLocaleString()}
+            <p className="tpl-tn">₱{preset.toLocaleString()}</p>
           </button>
         ))}
         <button
           type="button"
           onClick={() => inputRef.current?.focus()}
           className={`tpl-tile tpl-dash${value.trim() !== "" && !isPreset ? " tpl-on" : ""}`}
-          style={{ height: 34, padding: 0, fontSize: 12.5 }}
+          style={{ height: 34, padding: 0 }}
         >
-          {BUTTON_CREDIT_LIMIT_OTHER}
+          <p className="tpl-tn">{BUTTON_CREDIT_LIMIT_OTHER}</p>
         </button>
       </div>
 
