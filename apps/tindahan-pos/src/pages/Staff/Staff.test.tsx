@@ -1,12 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { useAuth, supabase } from "@/lib";
-import { makeAuthValue, makeStaffAccount } from "../../test/testUtils";
+import { useAuth, useStoreData, supabase } from "@/lib";
+import { makeAuthValue, makeStaffAccount, makeStoreDataValue } from "../../test/testUtils";
 import { Staff } from "./Staff";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
+vi.mock("@/lib/storeData", () => ({ useStoreData: vi.fn() }));
 
 vi.mock("@/lib/supabaseClient", () => {
   const order2 = vi.fn();
@@ -57,8 +58,21 @@ function renderStaff() {
 describe("Staff", () => {
   beforeEach(() => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ role: "admin" }) }));
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue());
     mockedSupabase.__mocks.order2.mockResolvedValue({ data: staffRows, error: null });
   });
+
+  /** Opens the Add Staff modal. */
+  async function openAddStaffModal(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole("button", { name: "Add staff" }));
+  }
+
+  /** Opens a staff row's "More actions" menu and returns the scope to query its items in. */
+  async function openRowMenu(user: ReturnType<typeof userEvent.setup>, rowName: string | RegExp) {
+    const row = within(screen.getByRole("row", { name: rowName }));
+    await user.click(row.getByRole("button", { name: "More actions" }));
+    return row;
+  }
 
   it("redirects a cashier away from the staff page", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ role: "cashier" }) }));
@@ -89,6 +103,7 @@ describe("Staff", () => {
     const user = userEvent.setup();
     renderStaff();
     await screen.findByText("Aling Nena");
+    await openAddStaffModal(user);
 
     await user.click(screen.getByRole("button", { name: "Create cashier account" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Name and email are required.");
@@ -98,6 +113,7 @@ describe("Staff", () => {
     const user = userEvent.setup();
     renderStaff();
     await screen.findByText("Aling Nena");
+    await openAddStaffModal(user);
 
     await user.type(screen.getByLabelText("Name"), "Joy");
     await user.type(screen.getByLabelText("Email address"), "joy2@example.com");
@@ -115,6 +131,7 @@ describe("Staff", () => {
     vi.mocked(mockedSupabase.functions.invoke).mockResolvedValue({ data: {}, error: null } as never);
     renderStaff();
     await screen.findByText("Aling Nena");
+    await openAddStaffModal(user);
 
     await user.type(screen.getByLabelText("Name"), "Joy");
     await user.type(screen.getByLabelText("Email address"), "joy2@example.com");
@@ -135,6 +152,7 @@ describe("Staff", () => {
     } as never);
     renderStaff();
     await screen.findByText("Aling Nena");
+    await openAddStaffModal(user);
 
     await user.type(screen.getByLabelText("Name"), "Joy");
     await user.type(screen.getByLabelText("Email address"), "joy2@example.com");
@@ -150,7 +168,8 @@ describe("Staff", () => {
     renderStaff();
     await screen.findByText("Cashier Joy");
 
-    await user.click(screen.getByRole("button", { name: "Remove" }));
+    const row = await openRowMenu(user, "Cashier Joy");
+    await user.click(row.getByRole("menuitem", { name: "Remove" }));
     await waitFor(() => expect(mockedSupabase.__mocks.deleteEqFn).toHaveBeenCalledWith("id", "staff-2"));
   });
 
@@ -160,7 +179,8 @@ describe("Staff", () => {
     renderStaff();
     await screen.findByText("Cashier Joy");
 
-    await user.click(screen.getByRole("button", { name: "Remove" }));
+    const row = await openRowMenu(user, "Cashier Joy");
+    await user.click(row.getByRole("menuitem", { name: "Remove" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not remove");
   });
 });
