@@ -1,0 +1,1 @@
+export {default as Dashboarddetails} from "./dashboarddetails";

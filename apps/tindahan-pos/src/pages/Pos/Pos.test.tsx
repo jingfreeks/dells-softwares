@@ -335,9 +335,9 @@ describe("Pos", () => {
     }
     await user.click(screen.getByRole("button", { name: "Add to sale" }));
 
-    // 14 pages × ₱3.00 = ₱42.00, minus a 10% bulk discount (₱4.00) = ₱38.00.
+    // 14 pages × ₱5.00 = ₱70.00, minus a 10% bulk discount (₱7.00) = ₱63.00.
     expect(screen.getAllByText(/Print B&W/).length).toBeGreaterThan(0);
-    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱38.00");
+    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱63.00");
   });
 
   it("does not show the products/services tab switcher when pos_services flag is off", () => {
