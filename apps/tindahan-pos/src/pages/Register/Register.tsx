@@ -1,10 +1,9 @@
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import {
   APP_NAME,
   SEG_SIGN_IN,
   SEG_CREATE_ACCOUNT,
   PAGE_HEADING_REGISTER,
-  TEXT_TAGLINE_FREE_FIRST_STORE,
   TEXT_REGISTER_SUBHEAD,
   BUTTON_SIGNUP_WITH_GOOGLE,
   TEXT_OR,
@@ -42,7 +41,7 @@ import {
   TEXT_REGISTER_CHECKLIST_4,
   TEXT_REGISTER_CHECKLIST_PROGRESS,
 } from "@/lib";
-import { ConfirmationSentScreen } from "./component";
+import { ConfirmationSentScreen,Header,Buttonsigninscreen,Googlebtnsignup } from "./component";
 import { useRegisterForm } from "./hooks";
 import "../authTheme.css";
 
@@ -69,7 +68,6 @@ export function Register() {
     awaitingConfirmation,
     handleSubmit,
   } = useRegisterForm();
-  const navigate = useNavigate();
 
   if (user) return <Navigate to="/pos" replace />;
   if (awaitingConfirmation) return <ConfirmationSentScreen email={email} />;
@@ -81,36 +79,10 @@ export function Register() {
     <div className="tpl-root tpl-shell">
       <div className="tpl-form-pane">
         <div className="tpl-form-inner">
-          <div className="tpl-brand">
-            <span className="tpl-mark">{APP_NAME.charAt(0)}</span>
-            <div>
-              <p className="tpl-bn">{APP_NAME}</p>
-              <p className="tpl-bs">{TEXT_TAGLINE_FREE_FIRST_STORE}</p>
-            </div>
-          </div>
+          <Header />
 
-          <div className="tpl-seg" role="tablist">
-            <button type="button" role="tab" aria-selected="false" onClick={() => navigate("/login")}>
-              {SEG_SIGN_IN}
-            </button>
-            <button type="button" role="tab" aria-selected="true" className="tpl-on">
-              {SEG_CREATE_ACCOUNT}
-            </button>
-          </div>
-
-          <p className="tpl-h2">{PAGE_HEADING_REGISTER}</p>
-          <p className="tpl-sub">{TEXT_REGISTER_SUBHEAD}</p>
-
-          <button type="button" className="tpl-btn" disabled title="Google sign-up isn't set up yet">
-            <i className="ti ti-brand-google" aria-hidden />
-            {BUTTON_SIGNUP_WITH_GOOGLE}
-          </button>
-
-          <div className="tpl-or-row">
-            <span className="line" />
-            <span className="word">{TEXT_OR}</span>
-            <span className="line" />
-          </div>
+          <Buttonsigninscreen />
+          <Googlebtnsignup />
 
           <form onSubmit={handleSubmit} noValidate>
             <label htmlFor="storeName" className="tpl-lbl">

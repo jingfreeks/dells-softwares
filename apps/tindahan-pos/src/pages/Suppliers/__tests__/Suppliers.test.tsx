@@ -3,8 +3,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useAuth, useStoreData } from "@/lib";
-import { makeAuthValue, makeStaffAccount, makeStoreDataValue, makeSupplier } from "../../test/testUtils";
-import { Suppliers } from "./Suppliers";
+import { makeAuthValue, makeStaffAccount, makeStoreDataValue, makeSupplier } from "../../../test/testUtils";
+import { Suppliers } from "../Suppliers";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/lib/storeData", () => ({ useStoreData: vi.fn() }));

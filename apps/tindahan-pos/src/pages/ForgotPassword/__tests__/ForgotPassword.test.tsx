@@ -3,8 +3,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useAuth } from "@/lib";
-import { makeAuthValue } from "../../test/testUtils";
-import { ForgotPassword } from "./ForgotPassword";
+import { makeAuthValue } from "../../../test/testUtils";
+import { ForgotPassword } from "../ForgotPassword";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 
