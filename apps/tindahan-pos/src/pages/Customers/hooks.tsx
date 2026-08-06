@@ -5,14 +5,25 @@ import {
   ERROR_NAME_REQUIRED,
   ERROR_CREDIT_LIMIT_INVALID,
   ERROR_COULD_NOT_ADD_CUSTOMER,
+  ERROR_OPENING_BALANCE_INVALID,
   ERROR_PAYMENT_AMOUNT_INVALID,
   ERROR_COULD_NOT_RECORD_PAYMENT,
   type Customer,
   type CreditPayment,
 } from "@/lib";
-import { buildDebtAgingSummary, computeOldestDebtDays, isOverdueDebt } from "./lib";
+import { buildDebtAgingSummary, computeOldestDebtDays, findDuplicateCustomer, isOverdueDebt } from "./lib";
 
-const emptyForm = { name: "", phone: "", creditLimit: "" };
+export type PaymentSchedule = "biweekly" | "weekly" | "none";
+
+const emptyForm = {
+  name: "",
+  nickname: "",
+  phone: "",
+  creditLimit: "",
+  blockCreditPastLimit: false,
+  paymentSchedule: "biweekly" as PaymentSchedule,
+  openingBalance: "",
+};
 const emptyPaymentForm = { amount: "0", note: "" };
 
 export function useCustomersPage() {
@@ -43,6 +54,11 @@ export function useCustomersPage() {
   const [paymentForm, setPaymentForm] = useState(emptyPaymentForm);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [recordingPayment, setRecordingPayment] = useState(false);
+
+  const duplicateCustomer = useMemo(
+    () => (showAddForm ? findDuplicateCustomer(customers, form.name) : null),
+    [showAddForm, customers, form.name]
+  );
 
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [hasUtangOnly, setHasUtangOnly] = useState(false);
@@ -121,6 +137,11 @@ export function useCustomersPage() {
     setFormError(null);
   }
 
+  function closeAddForm() {
+    setShowAddForm(false);
+    setFormError(null);
+  }
+
   function selectCustomer(customer: Customer) {
     setShowAddForm(false);
     setSelectedId(customer.id);
@@ -139,10 +160,21 @@ export function useCustomersPage() {
       setFormError(ERROR_CREDIT_LIMIT_INVALID);
       return;
     }
+    const openingBalance = form.openingBalance.trim() === "" ? 0 : Number(form.openingBalance);
+    if (Number.isNaN(openingBalance) || openingBalance < 0) {
+      setFormError(ERROR_OPENING_BALANCE_INVALID);
+      return;
+    }
 
     setSubmitting(true);
     setFormError(null);
     try {
+      // TODO: nickname, blockCreditPastLimit, paymentSchedule, and
+      // openingBalance have no backend column/RPC yet (customers only
+      // has name/phone/credit_limit/balance, and balance is a running
+      // total with no "set initial value" path) — validated here and
+      // held in form state, but not persisted until the backend adds
+      // support.
       const customer = await addCustomer(form.name, form.phone.trim() || null, creditLimit);
       setShowAddForm(false);
       selectCustomer(customer);
@@ -195,7 +227,9 @@ export function useCustomersPage() {
     filtered,
     totalOutstanding,
     selected,
+    duplicateCustomer,
     openAddForm,
+    closeAddForm,
     selectCustomer,
     handleAddSubmit,
     handlePaymentSubmit,

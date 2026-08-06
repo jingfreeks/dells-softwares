@@ -4,7 +4,7 @@ import {
   SummaryCards,
   CustomerFilters,
   CustomerTable,
-  AddCustomerForm,
+  AddCustomerModal,
   CustomerBalanceCard,
   PaymentHistoryCard,
   DebtAgeCard,
@@ -31,7 +31,9 @@ export function Customers() {
     filtered,
     totalOutstanding,
     selected,
+    duplicateCustomer,
     openAddForm,
+    closeAddForm,
     selectCustomer,
     handleAddSubmit,
     handlePaymentSubmit,
@@ -78,9 +80,7 @@ export function Customers() {
           onSelect={selectCustomer}
         />
 
-        {showAddForm ? (
-          <AddCustomerForm form={form} onFormChange={setForm} formError={formError} submitting={submitting} onSubmit={handleAddSubmit} />
-        ) : selected ? (
+        {selected ? (
           <div className="tpl-dash-col">
             <CustomerBalanceCard
               customer={selected}
@@ -106,6 +106,19 @@ export function Customers() {
         <DebtAgeCard aging={debtAging} />
         <RecentPaymentsCard />
       </div>
+
+      {showAddForm && (
+        <AddCustomerModal
+          form={form}
+          onFormChange={setForm}
+          formError={formError}
+          submitting={submitting}
+          duplicateCustomer={duplicateCustomer}
+          onOpenDuplicate={selectCustomer}
+          onCancel={closeAddForm}
+          onSubmit={handleAddSubmit}
+        />
+      )}
     </div>
   );
 }
