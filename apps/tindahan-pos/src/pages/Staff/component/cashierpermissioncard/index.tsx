@@ -1,0 +1,1 @@
+export { CashierPermissionCard } from "./CashierPermissionCard";

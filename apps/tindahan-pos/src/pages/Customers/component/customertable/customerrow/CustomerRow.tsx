@@ -1,0 +1,63 @@
+import type { KeyboardEvent } from "react";
+import type { Customer } from "@/lib";
+import { PESO, TEXT_OLDEST_DEBT_PREFIX, TEXT_DAYS_SUFFIX, TEXT_PAID_IN_FULL } from "@/lib";
+import { CreditProgress } from "../../creditprogress";
+import { CustomerActions } from "../../customeractions";
+import { creditUsageVariant, customerInitials, isOverdueDebt } from "../../../lib";
+
+export const CUSTOMER_ROW_COLUMNS = "minmax(0,2fr) 96px minmax(0,1.4fr) 86px";
+
+interface CustomerRowProps {
+  customer: Customer;
+  oldestDebtDays: number | null;
+  selectedId: string | null;
+  onSelect: (customer: Customer) => void;
+}
+
+export function CustomerRow({ customer, oldestDebtDays, selectedId, onSelect }: CustomerRowProps) {
+  const overdue = isOverdueDebt(oldestDebtDays);
+  const variant = creditUsageVariant(customer, oldestDebtDays);
+  const avatarVariant = customer.balance <= 0 ? "tpl-g" : overdue ? "tpl-r" : "tpl-b";
+
+  function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onSelect(customer);
+    }
+  }
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelect(customer)}
+      onKeyDown={handleKeyDown}
+      className={`tpl-trow${selectedId === customer.id ? " tpl-on" : variant === "danger" ? " tpl-r" : ""}`}
+      style={{ gridTemplateColumns: CUSTOMER_ROW_COLUMNS }}
+    >
+      <div className="tpl-row">
+        <span className={`tpl-av ${avatarVariant}`} style={{ width: 30, height: 30, fontSize: 12 }}>
+          {customerInitials(customer.name)}
+        </span>
+        <div className="tpl-flex1">
+          <p className="tpl-tp">{customer.name}</p>
+          <p className={`tpl-ts${overdue ? " tpl-bad" : customer.balance <= 0 ? " tpl-ok" : ""}`}>
+            {customer.balance > 0
+              ? `${TEXT_OLDEST_DEBT_PREFIX} ${oldestDebtDays ?? 0} ${TEXT_DAYS_SUFFIX}`
+              : TEXT_PAID_IN_FULL}
+          </p>
+        </div>
+      </div>
+
+      <div className="tpl-right">
+        <p className="tpl-tp" style={{ fontWeight: 500, color: overdue ? "var(--tpl-bad)" : undefined }}>
+          {PESO.format(customer.balance)}
+        </p>
+      </div>
+
+      <CreditProgress used={customer.balance} limit={customer.creditLimit} variant={variant} />
+
+      <CustomerActions hasBalance={customer.balance > 0} onClick={() => onSelect(customer)} />
+    </div>
+  );
+}

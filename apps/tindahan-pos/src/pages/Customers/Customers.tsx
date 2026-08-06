@@ -1,5 +1,15 @@
 import { TEXT_SELECT_CUSTOMER_PROMPT } from "@/lib";
-import { CustomersHeader, SummaryCards, CustomerListCard, AddCustomerForm, CustomerBalanceCard, PaymentHistoryCard } from "./component";
+import {
+  CustomersHeader,
+  SummaryCards,
+  CustomerFilters,
+  CustomerTable,
+  AddCustomerModal,
+  CustomerBalanceCard,
+  PaymentHistoryCard,
+  DebtAgeCard,
+  RecentPaymentsCard,
+} from "./component";
 import { useCustomersPage } from "./hooks";
 
 export function Customers() {
@@ -21,11 +31,22 @@ export function Customers() {
     filtered,
     totalOutstanding,
     selected,
+    duplicateCustomer,
     openAddForm,
+    closeAddForm,
     selectCustomer,
     handleAddSubmit,
     handlePaymentSubmit,
     customers,
+    overdueOnly,
+    setOverdueOnly,
+    hasUtangOnly,
+    setHasUtangOnly,
+    sortByOldestDebt,
+    setSortByOldestDebt,
+    overdueCount,
+    oldestDebtDaysById,
+    debtAging,
   } = useCustomersPage();
 
   return (
@@ -38,19 +59,29 @@ export function Customers() {
         customersWithBalance={customers.filter((customer) => customer.balance > 0).length}
       />
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
-        <CustomerListCard
+      <CustomerFilters
+        query={query}
+        onQueryChange={setQuery}
+        overdueOnly={overdueOnly}
+        onToggleOverdueOnly={() => setOverdueOnly((v) => !v)}
+        overdueCount={overdueCount}
+        hasUtangOnly={hasUtangOnly}
+        onToggleHasUtangOnly={() => setHasUtangOnly((v) => !v)}
+        sortByOldestDebt={sortByOldestDebt}
+        onToggleSortByOldestDebt={() => setSortByOldestDebt((v) => !v)}
+      />
+
+      <div className="tpl-dash-grid">
+        <CustomerTable
           query={query}
-          onQueryChange={setQuery}
-          filtered={filtered}
+          customers={filtered}
+          oldestDebtDaysById={oldestDebtDaysById}
           selectedId={selectedId}
           onSelect={selectCustomer}
         />
 
-        {showAddForm ? (
-          <AddCustomerForm form={form} onFormChange={setForm} formError={formError} submitting={submitting} onSubmit={handleAddSubmit} />
-        ) : selected ? (
-          <div className="flex flex-col gap-4">
+        {selected ? (
+          <div className="tpl-dash-col">
             <CustomerBalanceCard
               customer={selected}
               paymentForm={paymentForm}
@@ -62,11 +93,32 @@ export function Customers() {
             <PaymentHistoryCard payments={payments} loading={paymentsLoading} />
           </div>
         ) : (
-          <div className="flex items-center justify-center rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
-            {TEXT_SELECT_CUSTOMER_PROMPT}
+          <div
+            className="tpl-card"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}
+          >
+            <p className="tpl-ts">{TEXT_SELECT_CUSTOMER_PROMPT}</p>
           </div>
         )}
       </div>
+
+      <div className="tpl-g2" style={{ marginTop: 14 }}>
+        <DebtAgeCard aging={debtAging} />
+        <RecentPaymentsCard />
+      </div>
+
+      {showAddForm && (
+        <AddCustomerModal
+          form={form}
+          onFormChange={setForm}
+          formError={formError}
+          submitting={submitting}
+          duplicateCustomer={duplicateCustomer}
+          onOpenDuplicate={selectCustomer}
+          onCancel={closeAddForm}
+          onSubmit={handleAddSubmit}
+        />
+      )}
     </div>
   );
 }

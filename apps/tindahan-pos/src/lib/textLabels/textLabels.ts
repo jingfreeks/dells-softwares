@@ -128,12 +128,10 @@ export const BUTTON_CANCEL = "Cancel";
 export const BUTTON_REMOVE = "Remove";
 
 // Staff page
-export const TEXT_STAFF_DESCRIPTION = "Manage who can log in to this store.";
-export const LABEL_ROSTER = "Roster";
+export const TEXT_STAFF_DESCRIPTION = "Who can log in, and what they did";
 export const LABEL_YOU_SUFFIX = "(you)";
 export const BUTTON_REMOVING = "Removing…";
 export const EMPTY_STATE_NO_STAFF = "No staff yet.";
-export const LABEL_ADD_CASHIER = "Add a cashier";
 export const TEXT_ADD_CASHIER_DESCRIPTION =
   "Creates a login for this store only — they'll be able to use POS but not view sales reports or manage inventory.";
 export const LABEL_TEMPORARY_PASSWORD = "Temporary password";
@@ -143,6 +141,52 @@ export const ERROR_NAME_EMAIL_REQUIRED = "Name and email are required.";
 export const ERROR_PASSWORD_MIN_LENGTH = "Password must be at least 8 characters.";
 export const ERROR_COULD_NOT_CREATE_CASHIER = "Could not create cashier account.";
 export const ERROR_COULD_NOT_REMOVE_STAFF = "Could not remove staff member.";
+
+// Staff page — redesign: header, metrics, table, permissions, activity, shift history
+export const BUTTON_SHIFT_HISTORY = "Shift history";
+export const BUTTON_ADD_STAFF = "Add staff";
+export const LABEL_ON_SHIFT_NOW = "ON SHIFT NOW";
+export const LABEL_STAFF_ACCOUNTS = "STAFF ACCOUNTS";
+export const LABEL_DRAWER_VARIANCE = "DRAWER VARIANCE";
+export const LABEL_VOIDS_THIS_WEEK = "VOIDS THIS WEEK";
+export const TEXT_THIS_WEEK_SUFFIX = "this week";
+export const COLUMN_PERSON = "PERSON";
+export const COLUMN_ROLE = "ROLE";
+export const COLUMN_SALES_TODAY = "SALES TODAY";
+export const COLUMN_STATUS = "STATUS";
+export const LABEL_EMAIL_LOGIN = "Email login";
+export const TEXT_LAST_ACTIVE_PREFIX = "Last active";
+export const TEXT_NO_RECENT_ACTIVITY = "No recent activity";
+export const LABEL_ROLE_ADMIN = "Admin";
+export const LABEL_ROLE_CASHIER = "Cashier";
+export const ARIA_STAFF_ACTIONS = "More actions";
+export const BUTTON_EDIT_NAME = "Edit name";
+export const BUTTON_RESET_PASSWORD = "Reset password";
+export const BUTTON_DEACTIVATE_SOON = "Deactivate (coming soon)";
+export const HEADING_CASHIER_PERMISSIONS = "What a cashier can do";
+export const LINK_EDIT_ROLE = "Edit role";
+export const LABEL_PERMISSION_RING_UP_SALES = "Ring up sales";
+export const LABEL_PERMISSION_SELL_ON_UTANG = "Sell on utang";
+export const LABEL_PERMISSION_ELOAD_CASHIN = "E-load and cash-in";
+export const LABEL_PERMISSION_CASH_OUT = "Cash-out over ₱1,000";
+export const LABEL_PERMISSION_VOID_SALE = "Void a completed sale";
+export const LABEL_PERMISSION_CHANGE_PRICES = "Change prices";
+export const LABEL_PERMISSION_VIEW_REPORTS = "See sales reports";
+export const TEXT_NEEDS_PIN = "Needs PIN (planned)";
+export const HEADING_ACTIVITY_LOG = "Worth a look";
+export const LINK_FULL_LOG = "Full log";
+export const HEADING_SHIFT_HISTORY = "Shift history";
+export const COLUMN_SHIFT_DATE = "Date";
+export const COLUMN_CASHIER = "Cashier";
+export const COLUMN_OPENING_CASH = "Opening";
+export const COLUMN_CLOSING_CASH = "Closing";
+export const COLUMN_VARIANCE = "Variance";
+export const COLUMN_SALES = "Sales";
+export const COLUMN_TRANSACTIONS = "Transactions";
+export const TEXT_EDIT_STAFF_NAME_PROMPT = "Full name";
+export const TEXT_RESET_PASSWORD_SENT_PREFIX = "Password reset email sent to";
+export const ERROR_COULD_NOT_UPDATE_STAFF = "Could not update staff member.";
+export const ERROR_COULD_NOT_SEND_RESET = "Could not send password reset email.";
 
 // Shared across Customers/Onboarding/Profile/Suppliers "add/edit name" forms.
 export const ERROR_NAME_REQUIRED = "Name is required.";
@@ -214,6 +258,55 @@ export const ERROR_CREDIT_LIMIT_INVALID = "Credit limit must be a valid number."
 export const ERROR_COULD_NOT_ADD_CUSTOMER = "Could not add customer.";
 export const ERROR_PAYMENT_AMOUNT_INVALID = "Enter a payment amount greater than zero.";
 export const ERROR_COULD_NOT_RECORD_PAYMENT = "Could not record payment.";
+
+// Customers page — filters, table, debt aging, recent payments
+export const COLUMN_CUSTOMER = "CUSTOMER";
+export const COLUMN_BALANCE = "BALANCE";
+export const COLUMN_CREDIT_USED = "CREDIT USED";
+export const BUTTON_COLLECT = "Collect";
+export const BUTTON_VIEW = "View";
+export const FILTER_OVERDUE_PREFIX = "Overdue";
+export const FILTER_HAS_UTANG = "Has utang";
+export const BUTTON_SORT_OLDEST_DEBT = "Oldest debt";
+export const TEXT_OLDEST_DEBT_PREFIX = "oldest";
+export const TEXT_DAYS_SUFFIX = "days";
+export const TEXT_PAID_IN_FULL = "paid in full";
+export const TEXT_OF_INFIX = "of";
+export const TEXT_OVER_LIMIT_SUFFIX = "over";
+export const LABEL_NO_CREDIT_LIMIT_SET = "No limit set";
+export const HEADING_DEBT_AGING = "How old the utang is";
+export const LABEL_AGING_0_14 = "0–14 days";
+export const LABEL_AGING_15_30 = "15–30 days";
+export const LABEL_AGING_OVER_30 = "Over 30 days";
+export const TEXT_AGING_SUMMARY_SUFFIX =
+  "of your utang is older than a month. That is working capital sitting on the shelf.";
+export const HEADING_RECENT_PAYMENTS = "Recent payments";
+export const LINK_VIEW_ALL = "View all";
+export const EMPTY_STATE_NO_RECENT_PAYMENTS = "No recent payments.";
+
+// Customers page — Add customer modal
+export const LABEL_ADD_CUSTOMER_SUBTITLE = "For utang tracking and reminders";
+export const ARIA_CLOSE_MODAL = "Close";
+export const LABEL_NICKNAME = "What you call them";
+export const TEXT_NICKNAME_SUFFIX = "shown at checkout";
+export const HINT_MOBILE_NUMBER_REQUIRED = "Without this you can't send a payment reminder. Skip only if they have no phone.";
+export const LABEL_CREDIT_LIMIT = "Credit limit";
+export const HINT_CREDIT_LIMIT_AVERAGE = "New customers average ₱500. You can raise it once they pay on time.";
+export const BUTTON_CREDIT_LIMIT_OTHER = "Other";
+export const LABEL_BLOCK_CREDIT_TITLE = "Block utang past the limit";
+export const LABEL_BLOCK_CREDIT_SUBTITLE = "Cashier needs your PIN to override";
+export const LABEL_PAYMENT_SCHEDULE = "Usually pays";
+export const SCHEDULE_BIWEEKLY = "Every 15th & 30th";
+export const SCHEDULE_WEEKLY = "Weekly";
+export const SCHEDULE_NONE = "No pattern";
+export const LABEL_OPENING_BALANCE = "Opening balance";
+export const TEXT_OPTIONAL_SUFFIX = "optional";
+export const HINT_OPENING_BALANCE = "Moving from a notebook? Enter what they already owe.";
+export const ERROR_OPENING_BALANCE_INVALID = "Opening balance must be zero or greater.";
+export const TEXT_DUPLICATE_CUSTOMER_PREFIX = "You already have a customer named";
+export const TEXT_DUPLICATE_CUSTOMER_SUFFIX = "outstanding.";
+export const TEXT_DUPLICATE_CUSTOMER_WARNING = "Adding a second record splits their balance in two.";
+export const LINK_OPEN = "Open";
 
 // Dashboard page
 export const TEXT_DASHBOARD_DESCRIPTION = "Today's snapshot for the store.";
@@ -458,6 +551,29 @@ export const ERROR_COULD_NOT_SAVE_PRODUCT = "Could not save product.";
 export const ERROR_COULD_NOT_RESTOCK_PRODUCT = "Could not restock product.";
 export const ERROR_COULD_NOT_REMOVE_PRODUCT = "Could not remove product.";
 
+// Inventory page — redesign: metrics, filters, table
+export const LABEL_STOCK_VALUE = "STOCK VALUE";
+export const TEXT_AT_COST_SUFFIX = "at cost";
+export const LABEL_AVG_MARGIN = "AVG MARGIN";
+export const TEXT_ACROSS_ITEMS_SUFFIX = "items";
+export const TEXT_LAST_STOCK_IN_PREFIX = "last stock-in";
+export const TEXT_TODAY_LOWER = "today";
+export const TEXT_YESTERDAY_LOWER = "yesterday";
+export const TEXT_DAYS_AGO_SUFFIX = "days ago";
+export const FILTER_NEEDS_ATTENTION_PREFIX = "Needs attention";
+export const BUTTON_SORT_RUNS_OUT_SOONEST = "Runs out soonest";
+export const LABEL_STATUS_OK_SHORT = "OK";
+export const LABEL_STATUS_LOW_SHORT = "Low";
+export const LABEL_STATUS_OUT_SHORT = "Out";
+export const TEXT_LEFT_SUFFIX = "left";
+export const TEXT_SELLS_PREFIX = "sells ~";
+export const TEXT_PER_DAY_SUFFIX = "/day";
+export const TEXT_OUT_IN_PREFIX = "out in ~";
+export const TEXT_HRS_SUFFIX = "hrs";
+export const TEXT_DAY_SINGULAR = "day";
+export const LABEL_NO_BARCODE = "no barcode";
+export const ARIA_PRODUCT_ACTIONS = "More actions";
+
 // Shared chrome components (Sidebar, BottomNav, MobileHeader, ProtectedRoute, OnboardingRoute)
 export const ARIA_MAIN_NAV = "Main";
 export const ARIA_LOADING = "Loading";
@@ -476,7 +592,7 @@ export const EMPTY_STATE_NO_CATEGORIES = "No categories yet.";
 // ScannerLoadingOverlay
 export const TEXT_LOADING_CAMERA = "Loading camera…";
 
-// StockBadge
+// Stock status labels (full words, used as StatusChip's accessible name)
 export const LABEL_STATUS_IN_STOCK = "In stock";
 
 // BarcodeScanner

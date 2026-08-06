@@ -1,0 +1,32 @@
+import {
+  PAGE_HEADING_REGISTER,
+  TEXT_REGISTER_SUBHEAD,
+  BUTTON_SIGNUP_WITH_GOOGLE,
+  TEXT_OR,
+} from "@/lib";
+
+const Googlebtnsignup = () => {
+  return (
+    <>
+      <p className="tpl-h2">{PAGE_HEADING_REGISTER}</p>
+      <p className="tpl-sub">{TEXT_REGISTER_SUBHEAD}</p>
+
+      <button
+        type="button"
+        className="tpl-btn"
+        disabled
+        title="Google sign-up isn't set up yet"
+      >
+        <i className="ti ti-brand-google" aria-hidden />
+        {BUTTON_SIGNUP_WITH_GOOGLE}
+      </button>
+
+      <div className="tpl-or-row">
+        <span className="line" />
+        <span className="word">{TEXT_OR}</span>
+        <span className="line" />
+      </div>
+    </>
+  );
+};
+export default Googlebtnsignup;

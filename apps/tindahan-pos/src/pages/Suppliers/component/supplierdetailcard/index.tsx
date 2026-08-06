@@ -1,0 +1,1 @@
+export {SupplierDetailCard} from './SupplierDetailCard'

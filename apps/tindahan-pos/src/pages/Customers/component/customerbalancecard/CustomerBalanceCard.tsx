@@ -34,46 +34,45 @@ export function CustomerBalanceCard({
   onSubmit,
 }: CustomerBalanceCardProps) {
   return (
-    <div className="card p-4">
+    <div className="tpl-card">
       <Headerscreen customer={customer} />
       {customer.creditLimit !== null && (
-        <p className="mt-1.5 text-xs text-slate-500">
+        <p className="tpl-ts" style={{ marginTop: 6 }}>
           {LABEL_CREDIT_LIMIT_PREFIX} {PESO.format(customer.creditLimit)}
         </p>
       )}
 
-      <form className="mt-4 flex flex-col gap-2" onSubmit={onSubmit} noValidate>
-        <label htmlFor="paymentAmount" className="text-xs font-medium text-slate-700">
+      <form style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }} onSubmit={onSubmit} noValidate>
+        <label htmlFor="paymentAmount" className="tpl-lbl" style={{ marginBottom: 0 }}>
           {LABEL_RECORD_A_PAYMENT}
         </label>
-        <div className="flex gap-2">
-          <input
-            id="paymentAmount"
-            type="number"
-            min="0"
-            value={paymentForm.amount}
-            onFocus={selectOnFocus}
-            onChange={(e) => onPaymentFormChange({ ...paymentForm, amount: e.target.value })}
-            className="w-28 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-          />
-          <input
-            type="text"
-            placeholder={PLACEHOLDER_NOTE_OPTIONAL}
-            value={paymentForm.note}
-            onChange={(e) => onPaymentFormChange({ ...paymentForm, note: e.target.value })}
-            className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-          />
+        <div style={{ display: "flex", gap: 8 }}>
+          <div className="tpl-fld" style={{ width: 112 }}>
+            <input
+              id="paymentAmount"
+              type="number"
+              min="0"
+              value={paymentForm.amount}
+              onFocus={selectOnFocus}
+              onChange={(e) => onPaymentFormChange({ ...paymentForm, amount: e.target.value })}
+            />
+          </div>
+          <label className="tpl-fld" style={{ flex: 1 }}>
+            <input
+              type="text"
+              placeholder={PLACEHOLDER_NOTE_OPTIONAL}
+              value={paymentForm.note}
+              onChange={(e) => onPaymentFormChange({ ...paymentForm, note: e.target.value })}
+            />
+          </label>
         </div>
         {paymentError && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="tpl-emsg">
+            <i className="ti ti-alert-circle" aria-hidden />
             {paymentError}
           </p>
         )}
-        <button
-          type="submit"
-          disabled={recordingPayment}
-          className="mt-1 flex h-10 cursor-pointer items-center justify-center rounded-xl bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        <button type="submit" disabled={recordingPayment} className="tpl-btnp" style={{ marginBottom: 0 }}>
           {recordingPayment ? BUTTON_RECORDING : BUTTON_RECORD_PAYMENT}
         </button>
       </form>

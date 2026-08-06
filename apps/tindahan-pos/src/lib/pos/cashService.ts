@@ -39,7 +39,7 @@ export function cashOutFee(amount: number): number {
 }
 
 export const PRINT_JOB_TYPES = [
-  { key: "bw", label: "Print B&W", pricePerUnit: 3, unit: "page" },
+  { key: "bw", label: "Print B&W", pricePerUnit: 5, unit: "page" },
   { key: "color", label: "Print colour", pricePerUnit: 12, unit: "page" },
   { key: "photocopy", label: "Photocopy", pricePerUnit: 2, unit: "page" },
   { key: "scan", label: "Scan to email", pricePerUnit: 10, unit: "job" },

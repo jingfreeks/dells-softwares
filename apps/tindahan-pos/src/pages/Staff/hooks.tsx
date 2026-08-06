@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import {
   useAuth,
+  useStoreData,
   supabase,
   ERROR_NAME_EMAIL_REQUIRED,
   ERROR_PASSWORD_MIN_LENGTH,
   ERROR_COULD_NOT_CREATE_CASHIER,
   ERROR_COULD_NOT_REMOVE_STAFF,
+  ERROR_COULD_NOT_UPDATE_STAFF,
+  ERROR_COULD_NOT_SEND_RESET,
   type Role,
 } from "@/lib";
 
@@ -19,7 +22,8 @@ export interface StaffRow {
 const emptyForm = { name: "", email: "", password: "" };
 
 export function useStaffPage() {
-  const { user } = useAuth();
+  const { user, requestPasswordReset } = useAuth();
+  const { sales } = useStoreData();
   const [staff, setStaff] = useState<StaffRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -27,6 +31,8 @@ export function useStaffPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showShiftHistory, setShowShiftHistory] = useState(false);
 
   const fetchStaff = useCallback(async () => {
     setLoadError(null);
@@ -79,12 +85,24 @@ export function useStaffPage() {
       if (data?.error) throw new Error(data.error);
 
       setForm(emptyForm);
+      setShowAddForm(false);
       await fetchStaff();
     } catch (err) {
       setFormError(err instanceof Error ? err.message : ERROR_COULD_NOT_CREATE_CASHIER);
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function openAddForm() {
+    setForm(emptyForm);
+    setFormError(null);
+    setShowAddForm(true);
+  }
+
+  function closeAddForm() {
+    setShowAddForm(false);
+    setFormError(null);
   }
 
   async function handleRemove(id: string) {
@@ -101,8 +119,27 @@ export function useStaffPage() {
     }
   }
 
+  async function handleEditName(id: string, name: string) {
+    setLoadError(null);
+    try {
+      const { error } = await supabase.from("staff").update({ name: name.trim() }).eq("id", id);
+      if (error) throw error;
+      await fetchStaff();
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : ERROR_COULD_NOT_UPDATE_STAFF);
+    }
+  }
+
+  async function handleResetPassword(email: string) {
+    setLoadError(null);
+    const result = await requestPasswordReset(email);
+    if (!result.ok) setLoadError(result.error || ERROR_COULD_NOT_SEND_RESET);
+    return result.ok;
+  }
+
   return {
     user,
+    sales,
     staff,
     loading,
     loadError,
@@ -110,8 +147,15 @@ export function useStaffPage() {
     formError,
     submitting,
     removingId,
+    showAddForm,
+    showShiftHistory,
+    setShowShiftHistory,
+    openAddForm,
+    closeAddForm,
     updateFormField,
     handleSubmit,
     handleRemove,
+    handleEditName,
+    handleResetPassword,
   };
 }

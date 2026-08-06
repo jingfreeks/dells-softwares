@@ -6,4 +6,5 @@ export * from "./NeedsRestockingCard";
 export * from "./bestsellerscard";
 export * from "./SalesByCategoryCard";
 export * from "./dailyreport";
-export * from "./DailyTransactionDetailsCard";
+export * from "./dailytransactiondetailscard";
+export * from "./dashboarddetails";

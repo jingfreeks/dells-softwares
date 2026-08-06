@@ -9,15 +9,24 @@ const Headerscreen = (props: { customer: Customer }) => {
     const { customer } = props;
   return (
     <>
-      <h2 className="text-sm font-semibold text-slate-900">{customer.name}</h2>
-      <p className="text-xs text-slate-500">
+      <p className="tpl-h3">{customer.name}</p>
+      <p className="tpl-ts" style={{ marginTop: 2 }}>
         {customer.phone ?? EMPTY_STATE_NO_PHONE}
       </p>
-      <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
-        <span className="text-xs font-medium text-slate-500">
+      <div
+        className="tpl-sp"
+        style={{
+          marginTop: 12,
+          background: "var(--tpl-gl)",
+          border: "0.5px solid var(--tpl-bd)",
+          borderRadius: 10,
+          padding: "10px 12px",
+        }}
+      >
+        <span className="tpl-ts" style={{ fontWeight: 500 }}>
           {LABEL_CURRENT_BALANCE}
         </span>
-        <span className="tabular-nums text-xl font-bold tracking-tight text-slate-900">
+        <span className="tabular-nums" style={{ fontSize: 20, fontWeight: 700, color: "var(--tpl-t1)" }}>
           {PESO.format(customer.balance)}
         </span>
       </div>

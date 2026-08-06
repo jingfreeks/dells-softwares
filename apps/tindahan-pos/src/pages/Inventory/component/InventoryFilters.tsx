@@ -1,5 +1,10 @@
 import type { Category } from "@/lib";
-import { PLACEHOLDER_SEARCH_INVENTORY, LABEL_ALL_CATEGORIES } from "@/lib";
+import {
+  PLACEHOLDER_SEARCH_INVENTORY,
+  LABEL_ALL_CATEGORIES,
+  FILTER_NEEDS_ATTENTION_PREFIX,
+  BUTTON_SORT_RUNS_OUT_SOONEST,
+} from "@/lib";
 
 interface InventoryFiltersProps {
   query: string;
@@ -7,9 +12,25 @@ interface InventoryFiltersProps {
   categoryFilter: string;
   onCategoryFilterChange: (value: string) => void;
   categories: Category[];
+  needsAttentionOnly: boolean;
+  onToggleNeedsAttentionOnly: () => void;
+  needsAttentionCount: number;
+  sortByRunsOutSoonest: boolean;
+  onToggleSortByRunsOutSoonest: () => void;
 }
 
-export function InventoryFilters({ query, onQueryChange, categoryFilter, onCategoryFilterChange, categories }: InventoryFiltersProps) {
+export function InventoryFilters({
+  query,
+  onQueryChange,
+  categoryFilter,
+  onCategoryFilterChange,
+  categories,
+  needsAttentionOnly,
+  onToggleNeedsAttentionOnly,
+  needsAttentionCount,
+  sortByRunsOutSoonest,
+  onToggleSortByRunsOutSoonest,
+}: InventoryFiltersProps) {
   return (
     <div className="flex flex-wrap gap-2" style={{ marginBottom: 14 }}>
       <label className="tpl-fld" style={{ flex: "1 1 280px", maxWidth: 440 }}>
@@ -36,6 +57,27 @@ export function InventoryFilters({ query, onQueryChange, categoryFilter, onCateg
           </option>
         ))}
       </select>
+
+      <button
+        type="button"
+        aria-pressed={needsAttentionOnly}
+        onClick={onToggleNeedsAttentionOnly}
+        className={`tpl-chip${needsAttentionOnly ? " tpl-w" : ""}`}
+        style={{ cursor: "pointer", height: 44, padding: "0 14px" }}
+      >
+        {FILTER_NEEDS_ATTENTION_PREFIX} · {needsAttentionCount}
+      </button>
+
+      <button
+        type="button"
+        aria-pressed={sortByRunsOutSoonest}
+        onClick={onToggleSortByRunsOutSoonest}
+        className={`tpl-chip${sortByRunsOutSoonest ? " tpl-on" : ""}`}
+        style={{ cursor: "pointer", height: 44, padding: "0 14px" }}
+      >
+        <i className="ti ti-arrows-sort" aria-hidden />
+        {BUTTON_SORT_RUNS_OUT_SOONEST}
+      </button>
     </div>
   );
 }

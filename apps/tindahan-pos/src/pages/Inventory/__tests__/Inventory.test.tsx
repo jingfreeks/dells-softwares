@@ -49,6 +49,13 @@ function renderPage() {
   );
 }
 
+/** Opens a product row's "More actions" menu and returns the scope to query its items in. */
+async function openRowMenu(user: ReturnType<typeof userEvent.setup>, rowName: string | RegExp) {
+  const row = within(screen.getByRole("row", { name: rowName }));
+  await user.click(row.getByRole("button", { name: "More actions" }));
+  return row;
+}
+
 describe("Inventory", () => {
   beforeEach(() => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue());
@@ -124,7 +131,8 @@ describe("Inventory", () => {
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, categories, restock }));
     renderPage();
 
-    await user.click(screen.getAllByRole("button", { name: "+10 stock" })[0]);
+    const row = await openRowMenu(user, "Sardines");
+    await user.click(row.getByRole("menuitem", { name: "+10 stock" }));
     expect(restock).toHaveBeenCalledWith("p1", 10);
   });
 
@@ -135,7 +143,8 @@ describe("Inventory", () => {
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, categories, restock }));
     renderPage();
 
-    await user.click(screen.getAllByRole("button", { name: "+10 stock" })[0]);
+    const row = await openRowMenu(user, "Sardines");
+    await user.click(row.getByRole("menuitem", { name: "+10 stock" }));
     expect(await screen.findByText("Could not restock")).toBeInTheDocument();
   });
 
@@ -146,7 +155,8 @@ describe("Inventory", () => {
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, categories, removeProduct }));
     renderPage();
 
-    await user.click(screen.getAllByRole("button", { name: "Delete" })[0]);
+    const row = await openRowMenu(user, "Sardines");
+    await user.click(row.getByRole("menuitem", { name: "Delete" }));
     expect(removeProduct).toHaveBeenCalledWith("p1");
   });
 
@@ -157,7 +167,8 @@ describe("Inventory", () => {
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, categories, removeProduct }));
     renderPage();
 
-    await user.click(screen.getAllByRole("button", { name: "Delete" })[0]);
+    const row = await openRowMenu(user, "Sardines");
+    await user.click(row.getByRole("menuitem", { name: "Delete" }));
     expect(await screen.findByText("Could not remove")).toBeInTheDocument();
   });
 
@@ -214,7 +225,8 @@ describe("Inventory", () => {
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, categories, updateProduct }));
     renderPage();
 
-    await user.click(screen.getAllByRole("button", { name: "Edit" })[0]);
+    const row = await openRowMenu(user, "Sardines");
+    await user.click(row.getByRole("menuitem", { name: "Edit" }));
     expect(screen.getByText("Edit product")).toBeInTheDocument();
     const submit = screen.getAllByRole("button", { name: "Save changes" });
     await user.click(submit[submit.length - 1]);
@@ -392,7 +404,7 @@ describe("Inventory", () => {
       })
     );
     renderPage();
-    const row = screen.getByText("Egg").closest("tr")!;
+    const row = screen.getByRole("row", { name: "Egg" });
     expect(within(row).getByText(/for/)).toBeInTheDocument();
   });
 
@@ -567,7 +579,8 @@ describe("Inventory", () => {
       );
       renderPage();
 
-      await user.click(screen.getAllByRole("button", { name: "Edit" })[0]);
+      const row = await openRowMenu(user, "Sardines");
+      await user.click(row.getByRole("menuitem", { name: "Edit" }));
       await user.click(screen.getByRole("button", { name: "Remove photo" }));
       const submit = screen.getAllByRole("button", { name: "Save changes" });
       await user.click(submit[submit.length - 1]);

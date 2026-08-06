@@ -52,6 +52,15 @@ export function Inventory() {
     totalPages,
     pageProducts,
     packPreview,
+    needsAttentionOnly,
+    setNeedsAttentionOnly,
+    sortByRunsOutSoonest,
+    setSortByRunsOutSoonest,
+    dailySalesRateById,
+    avgMarginPercent,
+    stockValue,
+    lastStockIn,
+    receivingHistory,
     handleQueryChange,
     handleCategoryFilterChange,
     checkDuplicateBarcode,
@@ -71,13 +80,21 @@ export function Inventory() {
     <div className="tpl-root p-6">
       <InventoryHeader
         productCount={products.length}
+        lastStockIn={lastStockIn}
         onOpenCategoryManager={() => setShowCategoryManager(true)}
         onAddProduct={openAddForm}
       />
 
       <InventoryAlerts error={error} actionError={actionError} loading={loading} lowStock={lowStock} />
 
-      {!loading && <InventorySummary products={products} lowStockCount={lowStock.length} />}
+      {!loading && (
+        <InventorySummary
+          products={products}
+          lowStockCount={lowStock.length}
+          avgMarginPercent={avgMarginPercent}
+          stockValue={stockValue}
+        />
+      )}
 
       <InventoryFilters
         query={query}
@@ -85,6 +102,11 @@ export function Inventory() {
         categoryFilter={categoryFilter}
         onCategoryFilterChange={handleCategoryFilterChange}
         categories={categories}
+        needsAttentionOnly={needsAttentionOnly}
+        onToggleNeedsAttentionOnly={() => setNeedsAttentionOnly((v) => !v)}
+        needsAttentionCount={lowStock.length}
+        sortByRunsOutSoonest={sortByRunsOutSoonest}
+        onToggleSortByRunsOutSoonest={() => setSortByRunsOutSoonest((v) => !v)}
       />
 
       <InventoryTable
@@ -93,6 +115,8 @@ export function Inventory() {
         filteredCount={filtered.length}
         query={query}
         packPricingEnabled={packPricingEnabled}
+        receivingHistory={receivingHistory}
+        dailySalesRateById={dailySalesRateById}
         onRestock={handleRestock}
         onEdit={openEditForm}
         onRemove={handleRemove}
