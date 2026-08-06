@@ -1,0 +1,1 @@
+export {RecentSalesCard} from "./RecentSalesCard";
