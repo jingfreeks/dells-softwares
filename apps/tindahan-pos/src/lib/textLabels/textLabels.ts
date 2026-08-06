@@ -132,15 +132,51 @@ export const TEXT_STAFF_DESCRIPTION = "Who can log in, and what they did";
 export const LABEL_YOU_SUFFIX = "(you)";
 export const BUTTON_REMOVING = "Removing…";
 export const EMPTY_STATE_NO_STAFF = "No staff yet.";
-export const TEXT_ADD_CASHIER_DESCRIPTION =
-  "Creates a login for this store only — they'll be able to use POS but not view sales reports or manage inventory.";
-export const LABEL_TEMPORARY_PASSWORD = "Temporary password";
+export const TEXT_ADD_CASHIER_DESCRIPTION = "Gives access to this store only";
 export const BUTTON_CREATING = "Creating…";
-export const BUTTON_CREATE_CASHIER_ACCOUNT = "Create cashier account";
+export const BUTTON_CREATE_CASHIER_ACCOUNT = "Create account";
 export const ERROR_NAME_EMAIL_REQUIRED = "Name and email are required.";
 export const ERROR_PASSWORD_MIN_LENGTH = "Password must be at least 8 characters.";
 export const ERROR_COULD_NOT_CREATE_CASHIER = "Could not create cashier account.";
 export const ERROR_COULD_NOT_REMOVE_STAFF = "Could not remove staff member.";
+
+// Staff page — Add staff modal v2: role, permissions, sign-in method, PIN, shift, drawer
+export const LABEL_ROLE_CASHIER_TITLE = "Cashier";
+export const TEXT_ROLE_CASHIER_DESC = "Sells only";
+export const LABEL_ROLE_SUPERVISOR_TITLE = "Supervisor";
+export const TEXT_ROLE_SUPERVISOR_DESC = "+ stock, voids";
+export const LABEL_ROLE_OWNER_TITLE = "Owner";
+export const TEXT_ROLE_OWNER_DESC = "Everything";
+export const TEXT_A_ROLE_CAN_SUFFIX = "CAN";
+export const LABEL_PERMISSION_RING_UP = "Ring up sales";
+export const LABEL_PERMISSION_UTANG_WITHIN_LIMIT = "Utang within limit";
+export const LABEL_PERMISSION_UTANG_UNCAPPED = "Utang, uncapped";
+export const LABEL_PERMISSION_ELOAD_CASHIN_SHORT = "E-load, cash-in";
+export const LABEL_PERMISSION_ADJUST_STOCK = "Adjust stock";
+export const LABEL_PERMISSION_VOID_YOUR_PIN = "Voids · your PIN";
+export const LABEL_PERMISSION_VOID_SALES = "Void sales";
+export const LABEL_PERMISSION_NO_REPORTS = "No reports";
+export const LABEL_PERMISSION_NO_PRICE_EDITS = "No price edits";
+export const LABEL_PERMISSION_PRICE_EDITS_OWNER_PIN = "Price edits · owner PIN";
+export const LABEL_PERMISSION_PRICE_EDITS = "Price edits";
+export const LABEL_PERMISSION_VIEW_REPORTS_FULL = "View reports";
+export const LABEL_SIGN_IN_METHOD = "How she signs in";
+export const LABEL_SIGN_IN_PIN_TABLET = "PIN on this tablet";
+export const TEXT_SIGN_IN_PIN_TABLET_DESC = "Fastest at the counter";
+export const LABEL_SIGN_IN_PIN_EMAIL = "PIN + email";
+export const TEXT_SIGN_IN_PIN_EMAIL_DESC = "Can also use own phone";
+export const LABEL_HER_PIN = "HER PIN";
+export const LINK_GENERATE_ANOTHER = "Generate another";
+export const ARIA_COPY_PIN = "Copy PIN";
+export const TEXT_PIN_COPIED = "Copied!";
+export const HINT_PIN_SHOWN_ONCE = "Shown once. They change it on first sign-in.";
+export const LABEL_USUAL_SHIFT = "Usual shift";
+export const TEXT_OPTIONAL_LOWER = "optional";
+export const LABEL_SHIFT_MORNING = "Morning · 7 AM–2 PM";
+export const LABEL_SHIFT_AFTERNOON = "Afternoon";
+export const LABEL_SHIFT_NONE = "No fixed";
+export const LABEL_DRAWER_COUNTING_TITLE = "Count the drawer at shift start and end";
+export const TEXT_DRAWER_COUNTING_DESC = "This is what catches a short till";
 
 // Staff page — redesign: header, metrics, table, permissions, activity, shift history
 export const BUTTON_SHIFT_HISTORY = "Shift history";

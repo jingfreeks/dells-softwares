@@ -10,6 +10,18 @@ import {
   LABEL_PERMISSION_VOID_SALE,
   LABEL_PERMISSION_CHANGE_PRICES,
   LABEL_PERMISSION_VIEW_REPORTS,
+  LABEL_PERMISSION_RING_UP,
+  LABEL_PERMISSION_UTANG_WITHIN_LIMIT,
+  LABEL_PERMISSION_UTANG_UNCAPPED,
+  LABEL_PERMISSION_ELOAD_CASHIN_SHORT,
+  LABEL_PERMISSION_ADJUST_STOCK,
+  LABEL_PERMISSION_VOID_YOUR_PIN,
+  LABEL_PERMISSION_VOID_SALES,
+  LABEL_PERMISSION_NO_REPORTS,
+  LABEL_PERMISSION_NO_PRICE_EDITS,
+  LABEL_PERMISSION_PRICE_EDITS_OWNER_PIN,
+  LABEL_PERMISSION_PRICE_EDITS,
+  LABEL_PERMISSION_VIEW_REPORTS_FULL,
 } from "@/lib";
 import type { StaffRow } from "./hooks";
 
@@ -100,5 +112,72 @@ export function cashierPermissions(): CashierPermission[] {
     { label: LABEL_PERMISSION_VOID_SALE, state: "needs-pin" },
     { label: LABEL_PERMISSION_CHANGE_PRICES, state: cashierRoutes.has("/inventory") ? "allowed" : "blocked" },
     { label: LABEL_PERMISSION_VIEW_REPORTS, state: canViewReports ? "allowed" : "blocked" },
+  ];
+}
+
+export type StaffRoleSelection = "cashier" | "supervisor" | "owner";
+export type SignInMethod = "pin" | "pin-email";
+export type ShiftSelection = "morning" | "afternoon" | "none";
+
+/** A random 4-digit PIN, shown once to the admin when adding staff. */
+export function generatePin(): string {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
+/**
+ * A password for the real create-cashier call — the new design replaces
+ * the temporary-password field with a PIN shown to the admin, but the
+ * backend account still needs an actual password (no PIN-login system
+ * exists), so this is generated silently and never shown or typed.
+ */
+export function generatePassword(): string {
+  const bytes = new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 24);
+}
+
+export interface RolePermissionChip {
+  label: string;
+  state: PermissionState;
+}
+
+/**
+ * Illustrative permission preview for the Add Staff modal's role picker.
+ * Only "cashier" reflects real, enforced access (see cashierPermissions
+ * above) — supervisor/owner roles don't exist in the schema yet (staff.role
+ * is only "admin" | "cashier"), so selecting them here doesn't change what
+ * account actually gets created. TODO: once those roles exist, replace this
+ * with real per-role permission data instead of an illustrative preview.
+ */
+export function rolePermissionChips(role: StaffRoleSelection): RolePermissionChip[] {
+  if (role === "owner") {
+    return [
+      { label: LABEL_PERMISSION_RING_UP, state: "allowed" },
+      { label: LABEL_PERMISSION_UTANG_UNCAPPED, state: "allowed" },
+      { label: LABEL_PERMISSION_ELOAD_CASHIN_SHORT, state: "allowed" },
+      { label: LABEL_PERMISSION_ADJUST_STOCK, state: "allowed" },
+      { label: LABEL_PERMISSION_VOID_SALES, state: "allowed" },
+      { label: LABEL_PERMISSION_VIEW_REPORTS_FULL, state: "allowed" },
+      { label: LABEL_PERMISSION_PRICE_EDITS, state: "allowed" },
+    ];
+  }
+  if (role === "supervisor") {
+    return [
+      { label: LABEL_PERMISSION_RING_UP, state: "allowed" },
+      { label: LABEL_PERMISSION_UTANG_WITHIN_LIMIT, state: "allowed" },
+      { label: LABEL_PERMISSION_ELOAD_CASHIN_SHORT, state: "allowed" },
+      { label: LABEL_PERMISSION_ADJUST_STOCK, state: "allowed" },
+      { label: LABEL_PERMISSION_VOID_SALES, state: "allowed" },
+      { label: LABEL_PERMISSION_NO_REPORTS, state: "blocked" },
+      { label: LABEL_PERMISSION_PRICE_EDITS_OWNER_PIN, state: "needs-pin" },
+    ];
+  }
+  return [
+    { label: LABEL_PERMISSION_RING_UP, state: "allowed" },
+    { label: LABEL_PERMISSION_UTANG_WITHIN_LIMIT, state: "allowed" },
+    { label: LABEL_PERMISSION_ELOAD_CASHIN_SHORT, state: "allowed" },
+    { label: LABEL_PERMISSION_VOID_YOUR_PIN, state: "needs-pin" },
+    { label: LABEL_PERMISSION_NO_REPORTS, state: "blocked" },
+    { label: LABEL_PERMISSION_NO_PRICE_EDITS, state: "blocked" },
   ];
 }
