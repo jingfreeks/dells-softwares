@@ -215,6 +215,31 @@ export const ERROR_COULD_NOT_ADD_CUSTOMER = "Could not add customer.";
 export const ERROR_PAYMENT_AMOUNT_INVALID = "Enter a payment amount greater than zero.";
 export const ERROR_COULD_NOT_RECORD_PAYMENT = "Could not record payment.";
 
+// Customers page — filters, table, debt aging, recent payments
+export const COLUMN_CUSTOMER = "CUSTOMER";
+export const COLUMN_BALANCE = "BALANCE";
+export const COLUMN_CREDIT_USED = "CREDIT USED";
+export const BUTTON_COLLECT = "Collect";
+export const BUTTON_VIEW = "View";
+export const FILTER_OVERDUE_PREFIX = "Overdue";
+export const FILTER_HAS_UTANG = "Has utang";
+export const BUTTON_SORT_OLDEST_DEBT = "Oldest debt";
+export const TEXT_OLDEST_DEBT_PREFIX = "oldest";
+export const TEXT_DAYS_SUFFIX = "days";
+export const TEXT_PAID_IN_FULL = "paid in full";
+export const TEXT_OF_INFIX = "of";
+export const TEXT_OVER_LIMIT_SUFFIX = "over";
+export const LABEL_NO_CREDIT_LIMIT_SET = "No limit set";
+export const HEADING_DEBT_AGING = "How old the utang is";
+export const LABEL_AGING_0_14 = "0–14 days";
+export const LABEL_AGING_15_30 = "15–30 days";
+export const LABEL_AGING_OVER_30 = "Over 30 days";
+export const TEXT_AGING_SUMMARY_SUFFIX =
+  "of your utang is older than a month. That is working capital sitting on the shelf.";
+export const HEADING_RECENT_PAYMENTS = "Recent payments";
+export const LINK_VIEW_ALL = "View all";
+export const EMPTY_STATE_NO_RECENT_PAYMENTS = "No recent payments.";
+
 // Dashboard page
 export const TEXT_DASHBOARD_DESCRIPTION = "Today's snapshot for the store.";
 export const TEXT_SHARE_NOT_SUPPORTED =

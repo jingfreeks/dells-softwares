@@ -1,29 +1,32 @@
+import type { CreditPayment } from "@/lib";
 import {
   PESO,
   TEXT_RECORDED_BY_PREFIX,
 } from "@/lib";
 
-const Paymentlistitem = (props:{ payment: any }) => {
+const Paymentlistitem = (props: { payment: CreditPayment }) => {
     const { payment } = props;
   return (
-    <li key={payment.id} className="px-4 py-3 text-sm">
-      <div className="flex items-center justify-between">
-        <span className="tabular-nums font-medium text-slate-900">
-          {PESO.format(payment.amount)}
-        </span>
-        <span className="text-xs text-slate-500">
-          {new Date(payment.timestamp).toLocaleDateString("en-PH", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </span>
+    <div className="tpl-lr">
+      <div className="tpl-flex1">
+        <div className="tpl-sp">
+          <span className="tabular-nums tpl-tp" style={{ fontWeight: 500 }}>
+            {PESO.format(payment.amount)}
+          </span>
+          <span className="tpl-ts">
+            {new Date(payment.timestamp).toLocaleDateString("en-PH", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </span>
+        </div>
+        <p className="tpl-ts">
+          {payment.note ? `${payment.note} · ` : ""}
+          {TEXT_RECORDED_BY_PREFIX} {payment.createdByName}
+        </p>
       </div>
-      <p className="text-xs text-slate-500">
-        {payment.note ? `${payment.note} · ` : ""}
-        {TEXT_RECORDED_BY_PREFIX} {payment.createdByName}
-      </p>
-    </li>
+    </div>
   );
 };
 export default Paymentlistitem;

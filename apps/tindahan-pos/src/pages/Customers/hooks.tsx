@@ -10,12 +10,13 @@ import {
   type Customer,
   type CreditPayment,
 } from "@/lib";
+import { buildDebtAgingSummary, computeOldestDebtDays, isOverdueDebt } from "./lib";
 
 const emptyForm = { name: "", phone: "", creditLimit: "" };
 const emptyPaymentForm = { amount: "0", note: "" };
 
 export function useCustomersPage() {
-  const { customers, addCustomer, recordCreditPayment, fetchCreditPayments } = useStoreData();
+  const { customers, sales, addCustomer, recordCreditPayment, fetchCreditPayments } = useStoreData();
   const location = useLocation();
   const [query, setQuery] = useState(
     () => (location.state as { initialQuery?: string } | null)?.initialQuery ?? ""
@@ -43,14 +44,49 @@ export function useCustomersPage() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [recordingPayment, setRecordingPayment] = useState(false);
 
+  const [overdueOnly, setOverdueOnly] = useState(false);
+  const [hasUtangOnly, setHasUtangOnly] = useState(false);
+  const [sortByOldestDebt, setSortByOldestDebt] = useState(false);
+
+  const oldestDebtDaysById = useMemo(() => {
+    const map = new Map<string, number | null>();
+    for (const customer of customers) {
+      map.set(customer.id, computeOldestDebtDays(sales, customer));
+    }
+    return map;
+  }, [customers, sales]);
+
+  const overdueCount = useMemo(
+    () => customers.filter((c) => isOverdueDebt(oldestDebtDaysById.get(c.id) ?? null)).length,
+    [customers, oldestDebtDaysById]
+  );
+
+  const debtAging = useMemo(
+    () => buildDebtAgingSummary(customers, oldestDebtDaysById),
+    [customers, oldestDebtDaysById]
+  );
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const sorted = [...customers].sort((a, b) => b.balance - a.balance);
-    if (!q) return sorted;
-    return sorted.filter(
-      (c) => c.name.toLowerCase().includes(q) || (c.phone ?? "").toLowerCase().includes(q)
-    );
-  }, [customers, query]);
+    let rows = [...customers];
+    if (q) {
+      rows = rows.filter(
+        (c) => c.name.toLowerCase().includes(q) || (c.phone ?? "").toLowerCase().includes(q)
+      );
+    }
+    if (overdueOnly) {
+      rows = rows.filter((c) => isOverdueDebt(oldestDebtDaysById.get(c.id) ?? null));
+    }
+    if (hasUtangOnly) {
+      rows = rows.filter((c) => c.balance > 0);
+    }
+    if (sortByOldestDebt) {
+      rows.sort((a, b) => (oldestDebtDaysById.get(b.id) ?? -1) - (oldestDebtDaysById.get(a.id) ?? -1));
+    } else {
+      rows.sort((a, b) => b.balance - a.balance);
+    }
+    return rows;
+  }, [customers, query, overdueOnly, hasUtangOnly, sortByOldestDebt, oldestDebtDaysById]);
 
   const totalOutstanding = useMemo(
     () => customers.reduce((sum, c) => sum + c.balance, 0),
@@ -163,5 +199,14 @@ export function useCustomersPage() {
     selectCustomer,
     handleAddSubmit,
     handlePaymentSubmit,
+    overdueOnly,
+    setOverdueOnly,
+    hasUtangOnly,
+    setHasUtangOnly,
+    sortByOldestDebt,
+    setSortByOldestDebt,
+    overdueCount,
+    oldestDebtDaysById,
+    debtAging,
   };
 }
