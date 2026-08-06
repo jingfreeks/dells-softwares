@@ -1,20 +1,22 @@
 import { Link } from "react-router-dom";
-import { NAV_LABEL_INVENTORY, PAGE_HEADING_RECEIVING, TEXT_PRODUCTS_TRACKED_SUFFIX, LABEL_VERSION_1_1, BUTTON_CATEGORIES, BUTTON_ADD_PRODUCT } from "@/lib";
+import { NAV_LABEL_INVENTORY, TEXT_PRODUCTS_TRACKED_SUFFIX, PAGE_HEADING_RECEIVING, LABEL_VERSION_1_1, TEXT_LAST_STOCK_IN_PREFIX, BUTTON_CATEGORIES, BUTTON_ADD_PRODUCT } from "@/lib";
 import { TruckIcon } from "@/components";
 
 interface InventoryHeaderProps {
   productCount: number;
+  lastStockIn: string | null;
   onOpenCategoryManager: () => void;
   onAddProduct: () => void;
 }
 
-export function InventoryHeader({ productCount, onOpenCategoryManager, onAddProduct }: InventoryHeaderProps) {
+export function InventoryHeader({ productCount, lastStockIn, onOpenCategoryManager, onAddProduct }: InventoryHeaderProps) {
   return (
     <div className="tpl-hd">
       <div>
         <h1 className="tpl-h1">{NAV_LABEL_INVENTORY}</h1>
         <p className="tpl-sub">
           {productCount} {TEXT_PRODUCTS_TRACKED_SUFFIX}
+          {lastStockIn && ` · ${TEXT_LAST_STOCK_IN_PREFIX} ${lastStockIn}`}
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -25,9 +27,7 @@ export function InventoryHeader({ productCount, onOpenCategoryManager, onAddProd
         >
           <TruckIcon className="h-4 w-4" />
           {PAGE_HEADING_RECEIVING}
-          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
-            {LABEL_VERSION_1_1}
-          </span>
+          <span className="tpl-chip" style={{ fontSize: 10, padding: "1px 6px" }}>{LABEL_VERSION_1_1}</span>
         </Link>
         <button
           type="button"

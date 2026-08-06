@@ -12,15 +12,18 @@ export function InventoryAlerts({ error, actionError, loading, lowStock }: Inven
   return (
     <>
       {(error || actionError) && (
-        <div role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div role="alert" className="tpl-alert" style={{ marginTop: 14 }}>
           {error ?? actionError}
         </div>
       )}
 
       {!loading && lowStock.length > 0 && (
-        <div role="alert" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {lowStock.length} product{lowStock.length === 1 ? "" : "s"} {TEXT_LOW_STOCK_ALERT_SUFFIX}{" "}
-          {lowStock.map((p) => p.name).join(", ")}.
+        <div role="alert" className="tpl-note tpl-w" style={{ marginTop: 14 }}>
+          <i className="ti ti-alert-triangle" aria-hidden style={{ color: "var(--tpl-warn)" }} />
+          <p className="tpl-ns" style={{ color: "var(--tpl-t3)" }}>
+            {lowStock.length} product{lowStock.length === 1 ? "" : "s"} {TEXT_LOW_STOCK_ALERT_SUFFIX}{" "}
+            {lowStock.map((p) => p.name).join(", ")}.
+          </p>
         </div>
       )}
     </>

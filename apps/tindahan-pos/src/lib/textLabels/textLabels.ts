@@ -507,6 +507,29 @@ export const ERROR_COULD_NOT_SAVE_PRODUCT = "Could not save product.";
 export const ERROR_COULD_NOT_RESTOCK_PRODUCT = "Could not restock product.";
 export const ERROR_COULD_NOT_REMOVE_PRODUCT = "Could not remove product.";
 
+// Inventory page — redesign: metrics, filters, table
+export const LABEL_STOCK_VALUE = "STOCK VALUE";
+export const TEXT_AT_COST_SUFFIX = "at cost";
+export const LABEL_AVG_MARGIN = "AVG MARGIN";
+export const TEXT_ACROSS_ITEMS_SUFFIX = "items";
+export const TEXT_LAST_STOCK_IN_PREFIX = "last stock-in";
+export const TEXT_TODAY_LOWER = "today";
+export const TEXT_YESTERDAY_LOWER = "yesterday";
+export const TEXT_DAYS_AGO_SUFFIX = "days ago";
+export const FILTER_NEEDS_ATTENTION_PREFIX = "Needs attention";
+export const BUTTON_SORT_RUNS_OUT_SOONEST = "Runs out soonest";
+export const LABEL_STATUS_OK_SHORT = "OK";
+export const LABEL_STATUS_LOW_SHORT = "Low";
+export const LABEL_STATUS_OUT_SHORT = "Out";
+export const TEXT_LEFT_SUFFIX = "left";
+export const TEXT_SELLS_PREFIX = "sells ~";
+export const TEXT_PER_DAY_SUFFIX = "/day";
+export const TEXT_OUT_IN_PREFIX = "out in ~";
+export const TEXT_HRS_SUFFIX = "hrs";
+export const TEXT_DAY_SINGULAR = "day";
+export const LABEL_NO_BARCODE = "no barcode";
+export const ARIA_PRODUCT_ACTIONS = "More actions";
+
 // Shared chrome components (Sidebar, BottomNav, MobileHeader, ProtectedRoute, OnboardingRoute)
 export const ARIA_MAIN_NAV = "Main";
 export const ARIA_LOADING = "Loading";
@@ -525,7 +548,7 @@ export const EMPTY_STATE_NO_CATEGORIES = "No categories yet.";
 // ScannerLoadingOverlay
 export const TEXT_LOADING_CAMERA = "Loading camera…";
 
-// StockBadge
+// Stock status labels (full words, used as StatusChip's accessible name)
 export const LABEL_STATUS_IN_STOCK = "In stock";
 
 // BarcodeScanner

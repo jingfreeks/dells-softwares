@@ -14,4 +14,3 @@ export * from "./PageLoadingOverlay";
 export * from "./ProtectedRoute";
 export * from "./ScannerLoadingOverlay";
 export * from "./Sidebar";
-export * from "./StockBadge";

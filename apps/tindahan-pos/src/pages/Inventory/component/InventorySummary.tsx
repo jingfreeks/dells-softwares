@@ -1,26 +1,29 @@
-import { PESO, type Product } from "@/lib";
+import { PESO, LABEL_STOCK_VALUE, TEXT_AT_COST_SUFFIX, LABEL_AVG_MARGIN, TEXT_ACROSS_ITEMS_SUFFIX, type Product } from "@/lib";
 
 interface InventorySummaryProps {
   products: Product[];
   lowStockCount: number;
+  avgMarginPercent: number;
+  stockValue: number;
 }
 
 /** At-a-glance stock health, using the product data the POS currently stores. */
-export function InventorySummary({ products, lowStockCount }: InventorySummaryProps) {
-  const stockValue = products.reduce((sum, product) => sum + product.price * product.stock, 0);
+export function InventorySummary({ products, lowStockCount, avgMarginPercent, stockValue }: InventorySummaryProps) {
   const outOfStockCount = products.filter((product) => product.stock <= 0).length;
 
   return (
     <div className="tpl-g4" style={{ marginTop: 18, marginBottom: 14 }}>
       <div className="tpl-metric">
-        <p className="tpl-mlbl">STOCK VALUE</p>
+        <p className="tpl-mlbl">{LABEL_STOCK_VALUE}</p>
         <p className="tpl-mval">{PESO.format(stockValue)}</p>
-        <p className="tpl-mfoot">at retail price</p>
+        <p className="tpl-mfoot">{TEXT_AT_COST_SUFFIX}</p>
       </div>
       <div className="tpl-metric">
-        <p className="tpl-mlbl">PRODUCTS</p>
-        <p className="tpl-mval">{products.length}</p>
-        <p className="tpl-mfoot">tracked items</p>
+        <p className="tpl-mlbl">{LABEL_AVG_MARGIN}</p>
+        <p className="tpl-mval">{avgMarginPercent}%</p>
+        <p className="tpl-mfoot">
+          across {products.length} {TEXT_ACROSS_ITEMS_SUFFIX}
+        </p>
       </div>
       <div className="tpl-metric tpl-w">
         <p className="tpl-mlbl" style={{ color: "var(--tpl-warn)" }}>LOW STOCK</p>
