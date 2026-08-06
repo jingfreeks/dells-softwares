@@ -26,62 +26,62 @@ interface AddCustomerFormProps {
 
 export function AddCustomerForm({ form, onFormChange, formError, submitting, onSubmit }: AddCustomerFormProps) {
   return (
-    <div className="card p-4">
-      <h2 className="text-sm font-semibold text-slate-900">{BUTTON_ADD_CUSTOMER}</h2>
-      <form className="mt-4 flex flex-col gap-3" onSubmit={onSubmit} noValidate>
+    <div className="tpl-card">
+      <p className="tpl-h3" style={{ marginBottom: 14 }}>{BUTTON_ADD_CUSTOMER}</p>
+      <form style={{ display: "flex", flexDirection: "column", gap: 12 }} onSubmit={onSubmit} noValidate>
         <div>
-          <label htmlFor="custName" className="text-xs font-medium text-slate-700">
+          <label htmlFor="custName" className="tpl-lbl">
             {LABEL_NAME}
           </label>
-          <input
-            id="custName"
-            type="text"
-            autoFocus
-            value={form.name}
-            onChange={(e) => onFormChange({ ...form, name: e.target.value })}
-            className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-          />
+          <div className="tpl-fld">
+            <input
+              id="custName"
+              type="text"
+              autoFocus
+              value={form.name}
+              onChange={(e) => onFormChange({ ...form, name: e.target.value })}
+            />
+          </div>
         </div>
         <div>
-          <label htmlFor="custPhone" className="text-xs font-medium text-slate-700">
+          <label htmlFor="custPhone" className="tpl-lbl">
             {LABEL_PHONE_OPTIONAL}
           </label>
-          <input
-            id="custPhone"
-            type="tel"
-            value={form.phone}
-            onChange={(e) => onFormChange({ ...form, phone: e.target.value })}
-            className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-          />
+          <div className="tpl-fld">
+            <input
+              id="custPhone"
+              type="tel"
+              value={form.phone}
+              onChange={(e) => onFormChange({ ...form, phone: e.target.value })}
+            />
+          </div>
         </div>
         <div>
-          <label htmlFor="custLimit" className="text-xs font-medium text-slate-700">
+          <label htmlFor="custLimit" className="tpl-lbl">
             {LABEL_CREDIT_LIMIT_OPTIONAL}
           </label>
-          <input
-            id="custLimit"
-            type="number"
-            min="0"
-            placeholder={PLACEHOLDER_NO_LIMIT}
-            value={form.creditLimit}
-            onFocus={selectOnFocus}
-            onChange={(e) => onFormChange({ ...form, creditLimit: e.target.value })}
-            className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-          />
-          <p className="mt-1 text-xs text-slate-500">{HINT_CREDIT_LIMIT}</p>
+          <div className="tpl-fld">
+            <input
+              id="custLimit"
+              type="number"
+              min="0"
+              placeholder={PLACEHOLDER_NO_LIMIT}
+              value={form.creditLimit}
+              onFocus={selectOnFocus}
+              onChange={(e) => onFormChange({ ...form, creditLimit: e.target.value })}
+            />
+          </div>
+          <p className="tpl-hint">{HINT_CREDIT_LIMIT}</p>
         </div>
 
         {formError && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="tpl-emsg">
+            <i className="ti ti-alert-circle" aria-hidden />
             {formError}
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="mt-1 flex h-10 cursor-pointer items-center justify-center rounded-xl bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        <button type="submit" disabled={submitting} className="tpl-btnp" style={{ marginBottom: 0 }}>
           {submitting ? BUTTON_ADDING : BUTTON_ADD_CUSTOMER}
         </button>
       </form>

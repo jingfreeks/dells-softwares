@@ -9,20 +9,14 @@ interface PaymentHistoryCardProps {
 
 export function PaymentHistoryCard({ payments, loading }: PaymentHistoryCardProps) {
   return (
-    <div className="card">
-      <div className="border-b border-slate-200 p-4">
-        <h2 className="text-sm font-semibold text-slate-900">{LABEL_PAYMENT_HISTORY}</h2>
-      </div>
-      <ul className="divide-y divide-slate-100">
-        {loading && <li className="px-4 py-8 text-center text-sm text-slate-400">{LABEL_LOADING}</li>}
-        {!loading &&
-          payments.map((payment) => (
-            <Paymentlistitem payment={payment} />
-          ))}
-        {!loading && payments.length === 0 && (
-          <li className="px-4 py-8 text-center text-sm text-slate-400">{EMPTY_STATE_NO_PAYMENTS}</li>
-        )}
-      </ul>
+    <div className="tpl-card">
+      <p className="tpl-h3" style={{ marginBottom: 8 }}>{LABEL_PAYMENT_HISTORY}</p>
+      {loading && <p className="tpl-ts" style={{ padding: "16px 0", textAlign: "center" }}>{LABEL_LOADING}</p>}
+      {!loading &&
+        payments.map((payment) => <Paymentlistitem key={payment.id} payment={payment} />)}
+      {!loading && payments.length === 0 && (
+        <p className="tpl-ts" style={{ padding: "16px 0", textAlign: "center" }}>{EMPTY_STATE_NO_PAYMENTS}</p>
+      )}
     </div>
   );
 }
