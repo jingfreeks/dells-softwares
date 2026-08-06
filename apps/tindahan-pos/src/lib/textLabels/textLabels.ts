@@ -240,6 +240,30 @@ export const HEADING_RECENT_PAYMENTS = "Recent payments";
 export const LINK_VIEW_ALL = "View all";
 export const EMPTY_STATE_NO_RECENT_PAYMENTS = "No recent payments.";
 
+// Customers page — Add customer modal
+export const LABEL_ADD_CUSTOMER_SUBTITLE = "For utang tracking and reminders";
+export const ARIA_CLOSE_MODAL = "Close";
+export const LABEL_NICKNAME = "What you call them";
+export const TEXT_NICKNAME_SUFFIX = "shown at checkout";
+export const HINT_MOBILE_NUMBER_REQUIRED = "Without this you can't send a payment reminder. Skip only if they have no phone.";
+export const LABEL_CREDIT_LIMIT = "Credit limit";
+export const HINT_CREDIT_LIMIT_AVERAGE = "New customers average ₱500. You can raise it once they pay on time.";
+export const BUTTON_CREDIT_LIMIT_OTHER = "Other";
+export const LABEL_BLOCK_CREDIT_TITLE = "Block utang past the limit";
+export const LABEL_BLOCK_CREDIT_SUBTITLE = "Cashier needs your PIN to override";
+export const LABEL_PAYMENT_SCHEDULE = "Usually pays";
+export const SCHEDULE_BIWEEKLY = "Every 15th & 30th";
+export const SCHEDULE_WEEKLY = "Weekly";
+export const SCHEDULE_NONE = "No pattern";
+export const LABEL_OPENING_BALANCE = "Opening balance";
+export const TEXT_OPTIONAL_SUFFIX = "optional";
+export const HINT_OPENING_BALANCE = "Moving from a notebook? Enter what they already owe.";
+export const ERROR_OPENING_BALANCE_INVALID = "Opening balance must be zero or greater.";
+export const TEXT_DUPLICATE_CUSTOMER_PREFIX = "You already have a customer named";
+export const TEXT_DUPLICATE_CUSTOMER_SUFFIX = "outstanding.";
+export const TEXT_DUPLICATE_CUSTOMER_WARNING = "Adding a second record splits their balance in two.";
+export const LINK_OPEN = "Open";
+
 // Dashboard page
 export const TEXT_DASHBOARD_DESCRIPTION = "Today's snapshot for the store.";
 export const TEXT_SHARE_NOT_SUPPORTED =

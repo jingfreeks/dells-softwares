@@ -1,6 +1,6 @@
 export * from "./SummaryCards";
 export * from "./CustomersHeader";
-export * from "./AddCustomerForm";
+export * from "./addcustomermodal";
 export * from "./customerbalancecard";
 export * from "./PaymentHistoryCard";
 export * from "./customerfilters";
