@@ -15,3 +15,6 @@ export * from "./whattoincludecard";
 export * from "./footermessagecard";
 export * from "./receiptnumberingcard";
 export * from "./receiptpreviewpanel";
+export * from "./feebracketcard";
+export * from "./printphotocopycard";
+export * from "./cashandcreditlimitscard";

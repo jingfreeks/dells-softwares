@@ -3,21 +3,30 @@
 // Once the project is live, prefer regenerating this from the real schema:
 //   npx supabase gen types typescript --project-id <ref> > src/lib/database.types.ts
 
-import type { PaymentType } from "./types";
+import type { PaymentType, StoreFeeConfig } from "./types";
 
 export type StaffRole = "admin" | "cashier";
 export type SaleItemType = "product" | "service";
+export type StoreFeeConfigRow = StoreFeeConfig;
 
 export interface Database {
   public: {
     Tables: {
       stores: {
-        Row: { id: string; name: string; address: string | null; photo_url: string | null; created_at: string };
+        Row: {
+          id: string;
+          name: string;
+          address: string | null;
+          photo_url: string | null;
+          fee_config: StoreFeeConfigRow | null;
+          created_at: string;
+        };
         Insert: {
           id?: string;
           name: string;
           address?: string | null;
           photo_url?: string | null;
+          fee_config?: StoreFeeConfigRow | null;
           created_at?: string;
         };
         Update: {
@@ -25,6 +34,7 @@ export interface Database {
           name?: string;
           address?: string | null;
           photo_url?: string | null;
+          fee_config?: StoreFeeConfigRow | null;
           created_at?: string;
         };
         Relationships: [];

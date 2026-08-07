@@ -15,11 +15,11 @@ import {
   ProfileSettings,
   StoreDetails,
   ReceiptsSettings,
+  FeesLimits,
   ComingSoonSettingsPage,
   Onboarding,
 } from "@/pages";
 import {
-  NAV_LABEL_FEES_AND_LIMITS,
   NAV_LABEL_ALERTS,
   NAV_LABEL_BACKUP,
 } from "@/lib";
@@ -120,10 +120,7 @@ function App() {
                     path="/settings/fees"
                     element={
                       <ProtectedRoute>
-                        <ComingSoonSettingsPage
-                          heading={NAV_LABEL_FEES_AND_LIMITS}
-                          subheading="What you charge, and what staff can do without you"
-                        />
+                        <FeesLimits />
                       </ProtectedRoute>
                     }
                   />

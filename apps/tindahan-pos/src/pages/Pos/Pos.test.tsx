@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { useAuth, useStoreData, useFeatureFlag, EloadWalletProvider, DrawerFloatProvider } from "@/lib";
-import { makeAuthValue, makeCustomer, makeProduct, makeStaffAccount, makeStoreDataValue } from "../../test/testUtils";
+import { makeAuthValue, makeCustomer, makeProduct, makeStaffAccount, makeStore, makeStoreDataValue } from "../../test/testUtils";
 import { Pos } from "./Pos";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
@@ -298,6 +298,30 @@ describe("Pos", () => {
     // over ₱515 cash, all of which counts toward the till total.
     expect(screen.getAllByText(/GCash cash-in/).length).toBeGreaterThan(0);
     expect(screen.getByTestId("cart-total")).toHaveTextContent("₱515.00");
+  });
+
+  it("uses the store's custom cash-in fee brackets from Settings > Fees and limits, when set", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        user: makeStaffAccount({ name: "Aling Nena" }),
+        store: makeStore({ feeConfig: { cashIn: [{ max: 1000, fee: 1 }] } }),
+      })
+    );
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Services" }));
+    await user.click(screen.getByRole("button", { name: /Cash-in/ }));
+    await user.type(screen.getByLabelText("Recipient number"), "0917 555 0142");
+    await user.click(screen.getByRole("button", { name: /₱500/ }));
+    await user.type(screen.getByLabelText("Reference / transaction no."), "0093847122");
+    await user.click(screen.getByRole("button", { name: "Add to sale" }));
+
+    // The store's custom bracket charges only ₱1 for ₱500, instead of
+    // the app's default ₱15 — total should be ₱501, not ₱515.
+    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱501.00");
   });
 
   it("adds a cash-out service line worth only the fee, and warns when the drawer would run short", async () => {

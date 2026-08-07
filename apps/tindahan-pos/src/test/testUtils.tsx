@@ -34,6 +34,7 @@ export function makeStore(overrides: Partial<Store> = {}): Store {
     name: "Dell's Sari-Sari Store",
     address: null,
     photoUrl: null,
+    feeConfig: null,
     ...overrides,
   };
 }

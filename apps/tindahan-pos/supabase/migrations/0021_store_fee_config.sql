@@ -1,0 +1,23 @@
+-- Per-store overrides for e-load and cash-in/cash-out service fee
+-- brackets, so an owner can edit their real rates from Settings →
+-- Fees and limits instead of the app's placeholder defaults.
+--
+-- This is purely additive (one new nullable column, no policy changes —
+-- the existing "admin can update own store" / "staff can view own
+-- store" policies from 0001_init.sql already cover it) and trivially
+-- revertible:
+--
+--   alter table stores drop column fee_config;
+--
+-- Shape (all optional; a null or missing bracket list means "use the
+-- app's built-in default brackets"):
+--   {
+--     "eload":   [{ "max": number, "fee": number }, ...],
+--     "cashIn":  [{ "max": number, "fee": number }, ...],
+--     "cashOut": [{ "max": number, "fee": number }, ...]
+--   }
+-- Each list must be sorted ascending by "max"; the last bracket's fee
+-- applies to any amount above its "max" (mirrors the client's existing
+-- feeFromBrackets() cascade in src/lib/pos/cashService.ts).
+
+alter table stores add column fee_config jsonb;
