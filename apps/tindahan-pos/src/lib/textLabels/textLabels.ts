@@ -442,6 +442,53 @@ export const ERROR_STORE_NAME_REQUIRED = "Store name is required.";
 export const ERROR_COULD_NOT_SAVE_YOUR_PROFILE = "Could not save your profile.";
 export const ERROR_COULD_NOT_SAVE_YOUR_STORE = "Could not save your store.";
 
+// Onboarding — wizard shell sidebar
+export const TEXT_SETTING_UP = "Setting up";
+export const LABEL_STEP_STORE_PROFILE = "Store profile";
+export const TEXT_STEP_STORE_PROFILE_DESC = "Name, hours, currency";
+export const LABEL_STEP_ADD_PRODUCTS = "Add products";
+export const TEXT_STEP_ADD_PRODUCTS_DESC = "Type or import";
+export const LABEL_STEP_STOCK_ALERTS = "Set stock alerts";
+export const TEXT_STEP_STOCK_ALERTS_DESC = "When to reorder";
+export const LABEL_STEP_OPEN_REGISTER = "Open the register";
+export const TEXT_STEP_OPEN_REGISTER_DESC = "Count your float";
+export const TEXT_MINUTES_LEFT_SUFFIX = "minutes left";
+export const TEXT_ABOUT_PREFIX = "About";
+
+// Onboarding — Add Products step
+export const LABEL_WHAT_DO_YOU_SELL = "What do you sell?";
+export const TEXT_PRODUCTS_STEP_DESCRIPTION = "Pick the fastest way in. You can add the rest later.";
+export const LABEL_STARTER_CATALOG_HEADING = "Start from a sari-sari starter list";
+export const LABEL_FASTEST_BADGE = "Fastest";
+export const TEXT_STARTER_CATALOG_DESCRIPTION =
+  "Common items with typical prices already filled in. Untick what you don't carry.";
+export const BUTTON_ADD_N_ITEMS_PREFIX = "Add";
+export const TEXT_ITEMS_SUFFIX = "items";
+export const TEXT_YOU_SET_OWN_PRICES_NEXT = "You'll set your own prices next.";
+export const LABEL_SCAN_SHELF_TITLE = "Scan what's on the shelf";
+export const TEXT_SCAN_SHELF_DESC = "Point the camera at the barcode, then fill in the name and price";
+export const LABEL_IMPORT_SPREADSHEET_TITLE = "Import a spreadsheet";
+export const TEXT_IMPORT_SPREADSHEET_DESC = "CSV for now · Excel coming soon";
+export const LABEL_TYPE_THEM_IN_TITLE = "Type them in";
+export const TEXT_TYPE_THEM_IN_DESC = "Fine for 20 items or fewer";
+export const LABEL_ADDED_SO_FAR = "Added so far";
+export const TEXT_PRODUCTS_SUFFIX = "products";
+export const TEXT_MORE_SUFFIX_PREFIX = "+";
+export const TEXT_MORE_SUFFIX = "more";
+export const BUTTON_CONTINUE = "Continue";
+export const BUTTON_SKIP_FOR_NOW = "Skip for now";
+export const TEXT_SAVED_AUTOMATICALLY = "Saved automatically";
+export const ERROR_CSV_EMPTY = "That file doesn't have any product rows.";
+export const ERROR_CSV_MISSING_COLUMNS = "The file needs at least a name and a price column.";
+export const ERROR_EXCEL_NOT_SUPPORTED_YET =
+  "Excel import isn't available yet — save the file as CSV and try again.";
+export const ERROR_COULD_NOT_IMPORT_FILE = "Could not read that file.";
+export const LABEL_QUICK_ADD_PRODUCT = "Add a product";
+export const BUTTON_DONE = "Done";
+export const ERROR_INVALID_PRICE = "Enter a valid price.";
+export const ERROR_COULD_NOT_ADD_PRODUCT = "Could not add that product.";
+export const ERROR_COULD_NOT_IMPORT_STARTER_CATALOG = "Could not import the starter catalog.";
+
 // POS page
 export const TEXT_POS_DESCRIPTION = "Scan a barcode, search by name, or tap a product.";
 export const LABEL_PRODUCTS_TAB = "Products";
