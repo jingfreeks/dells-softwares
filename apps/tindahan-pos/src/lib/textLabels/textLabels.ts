@@ -777,3 +777,50 @@ export const ERROR_CAMERA_IN_USE =
   "The camera is already in use by another app or tab. Close it and try again, or use manual entry below.";
 export const ERROR_CAMERA_GENERIC =
   "Could not access the camera. Check that you've allowed camera access for this site, or use manual entry below.";
+
+// Settings — shared sidebar
+export const LABEL_SETTINGS_HEADING = "Settings";
+export const NAV_LABEL_YOUR_PROFILE = "Your profile";
+export const NAV_LABEL_STORE_DETAILS = "Store details";
+export const NAV_LABEL_RECEIPTS = "Receipts";
+export const NAV_LABEL_FEES_AND_LIMITS = "Fees and limits";
+export const NAV_LABEL_ALERTS = "Alerts";
+export const NAV_LABEL_BACKUP = "Backup";
+export const TEXT_COMING_SOON = "Coming soon";
+export const TEXT_COMING_SOON_DESCRIPTION = "This settings page hasn't been built yet — check back soon.";
+
+// Settings — Your Profile
+export const PAGE_HEADING_YOUR_PROFILE = "Your profile";
+export const TEXT_YOUR_PROFILE_DESCRIPTION = "How you appear and how you sign in";
+export const LABEL_UNSAVED_CHANGES_CHIP = "Unsaved changes";
+export const LABEL_FULL_NAME = "Full name";
+export const LABEL_DISPLAY_NAME = "Display name";
+export const TEXT_AVATAR_HINT = "Square image, at least 200×200. Shown on receipts.";
+export const LABEL_MOBILE = "Mobile";
+export const LABEL_SIGNING_IN = "Signing in";
+export const LABEL_YOUR_OVERRIDE_PIN = "Your override PIN";
+export const TEXT_OVERRIDE_PIN_DESC = "Approves voids, big cash-outs, utang over limit";
+export const LABEL_TWO_STEP_SIGN_IN = "Two-step sign-in";
+export const TEXT_TWO_STEP_SIGN_IN_DESC = "Code by SMS when signing in on a new device";
+export const LABEL_ON_BADGE = "On";
+export const LABEL_OFF_BADGE = "Off";
+export const LABEL_TELL_ME_ABOUT = "Tell me about";
+export const TEXT_NOTIFY_LOW_STOCK = "Low stock, once each morning";
+export const TEXT_NOTIFY_DRAWER_VARIANCE = "Drawer variance at shift close";
+export const TEXT_NOTIFY_UTANG_AGING = "Utang older than 30 days";
+export const TEXT_NOTIFY_EVERY_SALE = "Every completed sale";
+export const LABEL_SIGN_OUT_EVERYWHERE = "Sign out everywhere";
+export const TEXT_SIGN_OUT_EVERYWHERE_DESC = "Ends every other signed-in session for your account";
+export const BUTTON_SIGN_OUT_ALL = "Sign out all";
+export const BUTTON_DISCARD = "Discard";
+export const LABEL_CHANGE_PASSWORD_HEADING = "Change your password";
+export const LABEL_NEW_PASSWORD = "New password";
+export const LABEL_CONFIRM_NEW_PASSWORD = "Confirm new password";
+export const BUTTON_UPDATE_PASSWORD = "Update password";
+export const BUTTON_UPDATING = "Updating…";
+export const ERROR_PASSWORD_TOO_SHORT = "Password must be at least 8 characters.";
+export const ERROR_PASSWORDS_DO_NOT_MATCH = "Passwords don't match.";
+export const TEXT_PASSWORD_UPDATED = "Password updated.";
+export const ERROR_COULD_NOT_UPDATE_PASSWORD = "Could not update password.";
+export const ERROR_COULD_NOT_SIGN_OUT_EVERYWHERE = "Could not sign out other sessions.";
+export const TEXT_SIGNED_OUT_EVERYWHERE = "Signed out of all other sessions.";

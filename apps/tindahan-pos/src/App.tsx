@@ -12,9 +12,17 @@ import {
   Receiving,
   Customers,
   Suppliers,
-  Profile,
+  ProfileSettings,
+  ComingSoonSettingsPage,
   Onboarding,
 } from "@/pages";
+import {
+  NAV_LABEL_STORE_DETAILS,
+  NAV_LABEL_RECEIPTS,
+  NAV_LABEL_FEES_AND_LIMITS,
+  NAV_LABEL_ALERTS,
+  NAV_LABEL_BACKUP,
+} from "@/lib";
 
 function App() {
   return (
@@ -85,13 +93,58 @@ function App() {
                     }
                   />
                   <Route
-                    path="/profile"
+                    path="/settings/profile"
                     element={
                       <ProtectedRoute>
-                        <Profile />
+                        <ProfileSettings />
                       </ProtectedRoute>
                     }
                   />
+                  <Route
+                    path="/settings/store"
+                    element={
+                      <ProtectedRoute>
+                        <ComingSoonSettingsPage heading={NAV_LABEL_STORE_DETAILS} subheading="Appears on receipts and reports" />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings/receipts"
+                    element={
+                      <ProtectedRoute>
+                        <ComingSoonSettingsPage heading={NAV_LABEL_RECEIPTS} subheading="What the customer gets after a sale" />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings/fees"
+                    element={
+                      <ProtectedRoute>
+                        <ComingSoonSettingsPage
+                          heading={NAV_LABEL_FEES_AND_LIMITS}
+                          subheading="What you charge, and what staff can do without you"
+                        />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings/alerts"
+                    element={
+                      <ProtectedRoute>
+                        <ComingSoonSettingsPage heading={NAV_LABEL_ALERTS} subheading="What reaches you, when, and how" />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings/backup"
+                    element={
+                      <ProtectedRoute>
+                        <ComingSoonSettingsPage heading={NAV_LABEL_BACKUP} subheading="Your sales history is the store's memory" />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
+                  <Route path="/profile" element={<Navigate to="/settings/profile" replace />} />
                   <Route
                     path="/onboarding"
                     element={
