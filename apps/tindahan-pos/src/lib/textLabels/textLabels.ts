@@ -489,6 +489,29 @@ export const ERROR_INVALID_PRICE = "Enter a valid price.";
 export const ERROR_COULD_NOT_ADD_PRODUCT = "Could not add that product.";
 export const ERROR_COULD_NOT_IMPORT_STARTER_CATALOG = "Could not import the starter catalog.";
 
+// Onboarding — Stock Alerts step
+export const LABEL_WHEN_SHOULD_WE_WARN_YOU = "When should we warn you?";
+export const TEXT_STOCK_ALERTS_STEP_DESCRIPTION = "One rule now, fine-tune per product later.";
+export const LABEL_BY_DAYS_OF_COVER = "By days of cover";
+export const LABEL_BETTER_BADGE = "Better";
+export const TEXT_BY_DAYS_OF_COVER_DESC =
+  "Warn when stock will run out within a set number of days, based on how fast it actually sells.";
+export const LABEL_BY_FIXED_QUANTITY = "By fixed quantity";
+export const TEXT_BY_FIXED_QUANTITY_DESC = "Warn at a set number of pieces, the same for everything.";
+export const LABEL_WARN_ME_WHEN_LESS_THAN = "Warn me when less than";
+export const TEXT_OF_STOCK_LEFT_SUFFIX = "of stock left";
+export const TEXT_ONE_DAY_RISKY = "1 day · risky";
+export const TEXT_SEVEN_DAYS_LOTS_OF_CAPITAL = "7 days · lots of capital tied up";
+export const TEXT_TODAY_YOU_WOULD_BE_WARNED_ABOUT_PREFIX = "With that rule, today you'd be warned about";
+export const TEXT_SLIDE_LEFT_HINT = "Sounds about right? Slide left if that feels like too many.";
+export const TEXT_OUT_NOW = "out now";
+export const TEXT_DAY_SUFFIX = "day";
+export const LABEL_FAST_MOVERS_TITLE = "Fast movers get a longer warning";
+export const TEXT_FAST_MOVERS_DESC = "Anything selling 10+ a day warns at 5 days instead";
+export const LABEL_DAILY_SUMMARY_TITLE = "Send the list every morning at 7 AM";
+export const TEXT_DAILY_SUMMARY_DESC = "One message before you open, not all day";
+export const BUTTON_USE_THE_DEFAULT = "Use the default";
+
 // POS page
 export const TEXT_POS_DESCRIPTION = "Scan a barcode, search by name, or tap a product.";
 export const LABEL_PRODUCTS_TAB = "Products";

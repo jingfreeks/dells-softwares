@@ -13,7 +13,14 @@ import {
   TEXT_MINUTES_LEFT_SUFFIX,
 } from "@/lib";
 import type { OnboardingStep } from "../../hooks";
-import { onboardingMinutesLeft, onboardingProgressPercent, storeProfileStatus, addProductsStatus, type SidebarStepStatus } from "../../lib";
+import {
+  onboardingMinutesLeft,
+  onboardingProgressPercent,
+  storeProfileStatus,
+  addProductsStatus,
+  stockAlertsStatus,
+  type SidebarStepStatus,
+} from "../../lib";
 
 interface SidebarItem {
   label: string;
@@ -47,7 +54,7 @@ export function OnboardingSidebar({ step }: OnboardingSidebarProps) {
   const items: SidebarItem[] = [
     { label: LABEL_STEP_STORE_PROFILE, desc: TEXT_STEP_STORE_PROFILE_DESC, status: storeProfileStatus(step) },
     { label: LABEL_STEP_ADD_PRODUCTS, desc: TEXT_STEP_ADD_PRODUCTS_DESC, status: addProductsStatus(step) },
-    { label: LABEL_STEP_STOCK_ALERTS, desc: TEXT_STEP_STOCK_ALERTS_DESC, status: "upcoming" },
+    { label: LABEL_STEP_STOCK_ALERTS, desc: TEXT_STEP_STOCK_ALERTS_DESC, status: stockAlertsStatus(step) },
     { label: LABEL_STEP_OPEN_REGISTER, desc: TEXT_STEP_OPEN_REGISTER_DESC, status: "upcoming" },
   ];
   const percent = onboardingProgressPercent(step);

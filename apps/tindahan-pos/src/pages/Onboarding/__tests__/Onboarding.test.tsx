@@ -1,9 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useAuth, useStoreData, validateAndOptimizeImage, uploadImage } from "@/lib";
-import { makeAuthValue, makeStaffAccount, makeStore, makeStoreDataValue } from "../../../test/testUtils";
+import {
+  makeAuthValue,
+  makeStaffAccount,
+  makeStore,
+  makeStoreDataValue,
+  makeProduct,
+  makeSaleRecord,
+} from "../../../test/testUtils";
 import { Onboarding } from "../Onboarding";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
@@ -34,15 +41,21 @@ async function goToStoreStep(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: "Next: Your store" }));
 }
 
-async function goToCongratsStep(user: ReturnType<typeof userEvent.setup>) {
+async function goToStockAlertsStep(user: ReturnType<typeof userEvent.setup>) {
   await goToStoreStep(user);
   await user.click(screen.getByRole("button", { name: "Finish setup" }));
   await user.click(await screen.findByRole("button", { name: "Skip for now" }));
 }
 
+async function goToCongratsStep(user: ReturnType<typeof userEvent.setup>) {
+  await goToStockAlertsStep(user);
+  await user.click(await screen.findByRole("button", { name: "Use the default" }));
+}
+
 describe("Onboarding", () => {
   beforeEach(() => {
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue());
+    window.localStorage.clear();
   });
 
   it("shows the welcome step first", () => {
@@ -213,6 +226,9 @@ describe("Onboarding", () => {
     expect(await screen.findByText("What do you sell?")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Skip for now" }));
+    expect(await screen.findByText("When should we warn you?")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Use the default" }));
     expect(await screen.findByText(/Congratulations, Aling Nena!/)).toBeInTheDocument();
     expect(screen.getByText(/Dell's Store is all set up/)).toBeInTheDocument();
     // Marking onboardedAt here would make OnboardingRoute redirect away
@@ -303,12 +319,98 @@ describe("Onboarding", () => {
     expect(addProduct).toHaveBeenCalled();
   });
 
-  it("skips the products step and reaches congrats", async () => {
+  it("skips through products and stock alerts to reach congrats", async () => {
     const user = userEvent.setup();
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
     renderPage();
     await goToCongratsStep(user);
 
     expect(await screen.findByText(/Congratulations, Aling Nena!/)).toBeInTheDocument();
+  });
+
+  describe("stock alerts step", () => {
+    it("selects a strategy and toggles smart settings", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-1" }) }));
+      renderPage();
+      await goToStockAlertsStep(user);
+
+      const daysOfCover = screen.getByRole("radio", { name: "By days of cover" });
+      const fixedQuantity = screen.getByRole("radio", { name: "By fixed quantity" });
+      expect(daysOfCover).toHaveAttribute("aria-checked", "true");
+      expect(fixedQuantity).toHaveAttribute("aria-checked", "false");
+
+      await user.click(fixedQuantity);
+      expect(fixedQuantity).toHaveAttribute("aria-checked", "true");
+      expect(daysOfCover).toHaveAttribute("aria-checked", "false");
+
+      const fastMovers = screen.getByRole("switch", { name: "Fast movers get a longer warning" });
+      expect(fastMovers).toHaveAttribute("aria-checked", "true");
+      await user.click(fastMovers);
+      expect(fastMovers).toHaveAttribute("aria-checked", "false");
+
+      const dailySummary = screen.getByRole("switch", { name: "Send the list every morning at 7 AM" });
+      expect(dailySummary).toHaveAttribute("aria-checked", "true");
+      await user.click(dailySummary);
+      expect(dailySummary).toHaveAttribute("aria-checked", "false");
+    });
+
+    it("updates the threshold slider and live preview", async () => {
+      const user = userEvent.setup();
+      const now = new Date().toISOString();
+      const products = [
+        makeProduct({ id: "prod-1", name: "Sardines", stock: 6 }),
+        makeProduct({ id: "prod-2", name: "Skyflakes", stock: 20 }),
+      ];
+      const sales = [
+        makeSaleRecord({
+          id: "sale-1",
+          timestamp: now,
+          items: [{ productId: "prod-1", name: "Sardines", quantity: 2, price: 25, itemType: "product", fee: 0, lineTotal: 50 }],
+        }),
+      ];
+      vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, sales }));
+      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-1" }) }));
+      renderPage();
+      await goToStockAlertsStep(user);
+
+      // Sardines: stock 6, sells 2/day -> 3 days of cover, within the default 3-day threshold.
+      const previewCard = screen
+        .getByText("With that rule, today you'd be warned about")
+        .closest(".tpl-card") as HTMLElement;
+      expect(within(previewCard).getByText("1 items")).toBeInTheDocument();
+      expect(within(previewCard).getByText(/Sardines/)).toBeInTheDocument();
+
+      const slider = screen.getByRole("slider", { name: "Warn me when less than" }) as HTMLInputElement;
+      fireEvent.change(slider, { target: { value: "1" } });
+
+      expect(slider).toHaveValue("1");
+      expect(within(previewCard).getByText("0 items")).toBeInTheDocument();
+    });
+
+    it("persists settings to localStorage and reloads them", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-42" }) }));
+      renderPage();
+      await goToStockAlertsStep(user);
+
+      await user.click(screen.getByRole("radio", { name: "By fixed quantity" }));
+      await user.click(screen.getByRole("switch", { name: "Fast movers get a longer warning" }));
+
+      const raw = window.localStorage.getItem("tindahan-pos:stock-alert-settings:store-42");
+      expect(raw).not.toBeNull();
+      const saved = JSON.parse(raw as string);
+      expect(saved).toMatchObject({ strategy: "fixedQuantity", fastMoverBoost: false });
+    });
+
+    it("continues to the congrats step", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
+      renderPage();
+      await goToStockAlertsStep(user);
+
+      await user.click(screen.getByRole("button", { name: "Continue" }));
+      expect(await screen.findByText(/Congratulations, Aling Nena!/)).toBeInTheDocument();
+    });
   });
 });
