@@ -411,36 +411,12 @@ export const TEXT_SAVED_RECEIVING_PREFIX = "Saved —";
 export const ERROR_COULD_NOT_SAVE_RECEIVING_ENTRY = "Could not save receiving entry.";
 
 // Onboarding page
-export const LABEL_STEP_YOUR_PROFILE = "Your profile";
-export const LABEL_STEP_YOUR_STORE = "Your store";
-export const TEXT_WELCOME_HEADING_PREFIX = "Welcome to";
-export const TEXT_WELCOME_DESCRIPTION =
-  "Let's get your account set up. It only takes a minute — we'll grab a few details about you and your store, then you're ready to start selling.";
-export const BUTTON_LETS_GET_STARTED = "Let's get started";
-export const LABEL_TELL_US_ABOUT_YOU = "Tell us about you";
-export const TEXT_PROFILE_STEP_DESCRIPTION = "This shows up on your account and receipts.";
 export const LABEL_YOUR_ADDRESS_OPTIONAL = "Your address (optional)";
 export const PLACEHOLDER_ADDRESS = "House no., street, barangay, city";
-export const BUTTON_NEXT_YOUR_STORE = "Next: Your store";
-export const LABEL_TELL_US_ABOUT_YOUR_STORE = "Tell us about your store";
-export const TEXT_STORE_STEP_DESCRIPTION =
-  "This appears on the dashboard and any future customer-facing pages.";
-export const LABEL_STORE_PHOTO = "Store photo";
 export const LABEL_STORE_ADDRESS = "Store address";
-export const LABEL_SAME_AS_MY_ADDRESS = "Same as my address";
-export const BUTTON_BACK = "Back";
-export const BUTTON_FINISH_SETUP = "Finish setup";
-export const TEXT_CONGRATULATIONS_PREFIX = "Congratulations,";
 export const TEXT_FALLBACK_THERE = "there";
-export const TEXT_FALLBACK_YOUR_STORE = "Your store";
-export const TEXT_STORE_READY_SUFFIX = "is all set up and ready to go.";
-export const LABEL_PROFILE_SAVED = "Profile saved";
-export const LABEL_STORE_DETAILS_SAVED = "Store details saved";
-export const BUTTON_FINISHING = "Finishing…";
-export const BUTTON_GO_TO_DASHBOARD = "Go to dashboard";
 export const ERROR_STORE_NAME_REQUIRED = "Store name is required.";
 export const ERROR_COULD_NOT_SAVE_YOUR_PROFILE = "Could not save your profile.";
-export const ERROR_COULD_NOT_SAVE_YOUR_STORE = "Could not save your store.";
 
 // Onboarding — wizard shell sidebar
 export const TEXT_SETTING_UP = "Setting up";
@@ -535,6 +511,72 @@ export const TEXT_SALES_RECORDED_UNDER_THIS_PERSON = "Sales get recorded under t
 export const TEXT_YOU_SUFFIX = "(you)";
 export const BUTTON_OPEN_THE_REGISTER = "Open the register";
 export const BUTTON_SKIP_THE_COUNT = "Skip the count";
+
+// Onboarding — Welcome hero (redesign)
+export const TEXT_WELCOME_HEADLINE = "Let's get your shop ready to sell.";
+export const TEXT_WELCOME_SUBTITLE =
+  "Four short steps. Everything saves as you go, so you can stop after any of them and pick it up later from the dashboard.";
+export const BUTTON_START_SETUP = "Start setup";
+export const BUTTON_SKIP_TO_REGISTER = "Skip — take me to the register";
+export const TEXT_WELCOME_FOOTNOTE = "About 8 minutes end to end. No card, nothing to install.";
+export const LABEL_WHAT_WELL_DO = "What we'll do";
+export const LABEL_STEPS_COUNT_CHIP = "4 steps";
+export const TEXT_WELCOME_STEP_PROFILE_DESC = "Your name and shop details";
+export const TEXT_WELCOME_STEP_PRODUCTS_DESC = "Start from a ready-made list";
+export const TEXT_WELCOME_STEP_STOCK_ALERTS_DESC = "We suggest a sensible default";
+export const TEXT_WELCOME_STEP_OPEN_REGISTER_DESC = "Count your starting cash";
+export const TEXT_ABOUT_LOWERCASE_PREFIX = "about";
+export const TEXT_MIN_SUFFIX = "min";
+export const TEXT_YOU_CAN_LEAVE_ANY_STEP_TITLE = "You can leave any step for later";
+export const TEXT_YOU_CAN_LEAVE_ANY_STEP_DESC =
+  "The only one that really matters today is opening the register — you can sell with a handful of products and add the rest as you go.";
+
+// Onboarding — merged Profile + Store step (redesign)
+export const LABEL_TELL_US_ABOUT_YOU_AND_SHOP = "Tell us about you and your shop";
+export const TEXT_PROFILE_MERGED_DESCRIPTION =
+  "This appears on your receipts and on the dashboard. You can change any of it later in Settings.";
+export const LABEL_ADD_YOUR_PHOTO = "Add your photo";
+export const TEXT_PHOTO_OPTIONAL_SHOWN_TO_STAFF = "Optional · shown to your staff";
+export const TEXT_MOBILE_NUMBER_HINT = "Used to reach you about your account and to reset your PIN.";
+export const LABEL_ADD_STORE_LOGO = "Add store logo";
+export const TEXT_STORE_LOGO_OPTIONAL_PRINTED_ON_RECEIPTS = "Optional · printed on receipts";
+export const LABEL_SAME_AS_MY_OWN_ADDRESS = "Same as my own address";
+export const LABEL_WHEN_ARE_YOU_USUALLY_OPEN = "When are you usually open?";
+export const TEXT_OPENING_HOURS_HINT = "Used to work out how fast things sell, so stock alerts are accurate";
+export const LABEL_TO_SEPARATOR = "to";
+export const LABEL_OPENING_TIME = "Opening time";
+export const LABEL_CLOSING_TIME = "Closing time";
+
+// Onboarding — Setup Complete hero (redesign)
+export const LABEL_SETUP_COMPLETE_CHIP = "Setup complete";
+export const TEXT_REGISTER_IS_OPEN_PREFIX = "The register is open,";
+export const TEXT_PRODUCTS_LOADED_SUFFIX = "products loaded";
+export const TEXT_ALERTS_SET_AT_PREFIX = "alerts set at";
+export const TEXT_DAYS_OF_COVER = "days of cover";
+export const TEXT_AND_SEPARATOR = "and";
+export const TEXT_COUNTED_INTO_DRAWER_SUFFIX = "counted into the drawer.";
+export const BUTTON_START_SELLING = "Start selling";
+export const BUTTON_SEE_THE_DASHBOARD = "See the dashboard";
+export const TEXT_FIRST_SALE_FOOTNOTE =
+  "Your first sale is what turns the dashboard on — until then it has nothing to show.";
+export const LABEL_WHATS_SET_UP = "What's set up";
+export const TEXT_OPEN_HOURS_PREFIX = "open";
+export const TEXT_READY_TO_SELL = "Ready to sell";
+export const LABEL_STOCK_ALERTS_ITEM = "Stock alerts";
+export const TEXT_WARN_AT_PREFIX = "Warn at";
+export const TEXT_DAILY_AT_7AM_SUFFIX = "7 AM daily";
+export const LABEL_REGISTER_OPEN_ITEM = "Register open";
+export const TEXT_FLOAT_PREFIX = "Float";
+export const TEXT_COUNTED_BY_YOU_SUFFIX = "counted by you";
+export const LABEL_WORTH_DOING_THIS_WEEK = "Worth doing this week";
+export const LABEL_OPTIONAL_BADGE = "optional";
+export const LABEL_ADD_YOUR_STAFF = "Add your staff";
+export const TEXT_ADD_STAFF_DESC = "So sales are recorded per person";
+export const LABEL_ENTER_EXISTING_UTANG = "Enter existing utang";
+export const TEXT_ENTER_UTANG_DESC = "Move balances over from your notebook";
+export const LABEL_CHECK_YOUR_SERVICE_FEES = "Check your service fees";
+export const TEXT_SERVICE_FEES_DESC = "E-load and cash-in rates are on defaults";
+export const BUTTON_REVIEW_CHIP = "Review";
 
 // POS page
 export const TEXT_POS_DESCRIPTION = "Scan a barcode, search by name, or tap a product.";

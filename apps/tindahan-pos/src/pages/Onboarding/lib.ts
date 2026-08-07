@@ -2,15 +2,7 @@ import type { Product, SaleRecord } from "@/lib/types";
 import { computeDailySalesRates } from "@/pages/Inventory/lib";
 import type { OnboardingStep } from "./hooks";
 
-const STEP_ORDER: OnboardingStep[] = [
-  "welcome",
-  "profile",
-  "store",
-  "products",
-  "stockAlerts",
-  "openRegister",
-  "congrats",
-];
+const STEP_ORDER: OnboardingStep[] = ["welcome", "profile", "products", "stockAlerts", "openRegister", "congrats"];
 const TOTAL_ESTIMATED_MINUTES = 8;
 
 export function onboardingProgressPercent(step: OnboardingStep): number {
@@ -25,9 +17,8 @@ export function onboardingMinutesLeft(step: OnboardingStep): number {
 
 export type SidebarStepStatus = "done" | "current" | "upcoming";
 
-/** "Store profile" covers today's separate profile + store steps. */
 export function storeProfileStatus(step: OnboardingStep): SidebarStepStatus {
-  if (step === "products" || step === "stockAlerts" || step === "congrats") return "done";
+  if (step === "products" || step === "stockAlerts" || step === "openRegister" || step === "congrats") return "done";
   return "current";
 }
 
@@ -259,4 +250,14 @@ export function computeAverageSaleValue(sales: SaleRecord[]): number {
   if (sales.length === 0) return 0;
   const total = sales.reduce((sum, sale) => sum + sale.total, 0);
   return total / sales.length;
+}
+
+/** "06:00" -> "6:00 AM", "21:00" -> "9:00 PM". */
+export function formatTime12Hour(time24: string): string {
+  const [hoursStr, minutesStr] = time24.split(":");
+  const hours = Number(hoursStr);
+  const minutes = Number(minutesStr);
+  const period = hours >= 12 ? "PM" : "AM";
+  const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+  return `${hour12}:${minutes.toString().padStart(2, "0")} ${period}`;
 }
