@@ -656,6 +656,10 @@
   background: rgba(251, 191, 36, 0.07);
   border-color: rgba(251, 191, 36, 0.28);
 }
+.tpl-metric.tpl-b {
+  background: rgba(76, 141, 255, 0.1);
+  border-color: rgba(76, 141, 255, 0.3);
+}
 .tpl-mlbl {
   color: var(--tpl-t7);
   font-size: 11px;

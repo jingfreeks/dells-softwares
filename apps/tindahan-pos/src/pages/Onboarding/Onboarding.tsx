@@ -5,6 +5,7 @@ import {
   StoreStep,
   ProductsStep,
   StockAlertsStep,
+  OpenRegisterStep,
   CongratsStep,
   OnboardingShell,
 } from "./component";
@@ -15,6 +16,7 @@ export function Onboarding() {
     step,
     goToProfileStep,
     goToStockAlertsStep,
+    goToOpenRegisterStep,
     goToCongratsStep,
 
     name,
@@ -53,13 +55,16 @@ export function Onboarding() {
   return (
     <OnboardingShell step={step}>
       <div className="flex min-h-full flex-1 items-center justify-center px-4 py-10">
-        {step === "products" || step === "stockAlerts" ? (
+        {step === "products" || step === "stockAlerts" || step === "openRegister" ? (
           <div className="w-full max-w-2xl">
             {step === "products" && (
               <ProductsStep onContinue={goToStockAlertsStep} onSkip={goToStockAlertsStep} />
             )}
             {step === "stockAlerts" && (
-              <StockAlertsStep onContinue={goToCongratsStep} onUseDefault={goToCongratsStep} />
+              <StockAlertsStep onContinue={goToOpenRegisterStep} onUseDefault={goToOpenRegisterStep} />
+            )}
+            {step === "openRegister" && (
+              <OpenRegisterStep onOpenRegister={goToCongratsStep} onSkipCount={goToCongratsStep} />
             )}
           </div>
         ) : (
