@@ -847,3 +847,32 @@ export const TEXT_BIR_HINT =
   "Printed on receipts. Check the current BIR requirements for your registration type — this app doesn't verify them.";
 export const ERROR_COULD_NOT_SAVE_STORE_DETAILS = "Could not save store details.";
 export const TEXT_STORE_DETAILS_UPDATED = "Store details updated.";
+
+// Settings — Receipts
+export const PAGE_HEADING_RECEIPTS = "Receipts";
+export const TEXT_RECEIPTS_DESCRIPTION = "What the customer gets after a sale";
+export const LABEL_HOW_TO_SEND_IT = "How to send it";
+export const LABEL_PRINT_ON_THERMAL_PRINTER = "Print on the thermal printer";
+export const LABEL_OFFER_SMS_RECEIPT = "Offer SMS receipt";
+export const LABEL_PRINT_AUTOMATICALLY_EVERY_SALE = "Print automatically every sale";
+export const TEXT_RECEIPT_SEND_HINT = "Most sari-sari customers don't want paper. Ask, don't assume.";
+export const LABEL_WHAT_TO_INCLUDE = "What to include";
+export const LABEL_INCLUDE_LOGO = "Logo";
+export const LABEL_INCLUDE_TIN_AND_PERMIT = "TIN and permit";
+export const LABEL_INCLUDE_CASHIER_NAME = "Cashier name";
+export const LABEL_INCLUDE_UTANG_BALANCE = "Utang balance";
+export const LABEL_INCLUDE_QR_TO_PAY = "QR to pay";
+export const LABEL_FOOTER_MESSAGE = "Footer message";
+export const TEXT_CHARACTERS_LEFT = "characters left";
+export const LABEL_RECEIPT_NUMBERING = "Receipt numbering";
+export const TEXT_NEXT_RECEIPT_NUMBER_PREFIX = "Next:";
+export const LABEL_PREVIEW = "Preview";
+export const BUTTON_TEST_PRINT = "Test print";
+export const BUTTON_58MM = "58mm";
+export const ERROR_COULD_NOT_SAVE_RECEIPT_SETTINGS = "Could not save receipt settings.";
+export const TEXT_RECEIPT_SETTINGS_UPDATED = "Receipt settings updated.";
+export const TEXT_PREVIEW_STORE_ADDRESS_FALLBACK = "Store address not set yet";
+export const TEXT_PREVIEW_CASHIER_LABEL = "Cashier:";
+export const TEXT_PREVIEW_TOTAL = "TOTAL";
+export const TEXT_PREVIEW_CASH = "Cash";
+export const TEXT_PREVIEW_CHANGE = "Change";
