@@ -15,7 +15,14 @@ import {
 const AVATAR_MAX_DIMENSION = 512;
 const STORE_PHOTO_MAX_DIMENSION = 1024;
 
-export type OnboardingStep = "welcome" | "profile" | "store" | "products" | "stockAlerts" | "congrats";
+export type OnboardingStep =
+  | "welcome"
+  | "profile"
+  | "store"
+  | "products"
+  | "stockAlerts"
+  | "openRegister"
+  | "congrats";
 
 export function useOnboardingWizard() {
   const { user, store, updateProfile, updateStore, completeOnboarding } = useAuth();
@@ -174,6 +181,10 @@ export function useOnboardingWizard() {
     setStep("stockAlerts");
   }
 
+  function goToOpenRegisterStep() {
+    setStep("openRegister");
+  }
+
   function goToCongratsStep() {
     // Deliberately not marking onboarding complete yet — that flips
     // user.onboardedAt, and OnboardingRoute would immediately redirect
@@ -206,6 +217,7 @@ export function useOnboardingWizard() {
     step,
     goToProfileStep,
     goToStockAlertsStep,
+    goToOpenRegisterStep,
     goToCongratsStep,
 
     name,

@@ -11,6 +11,7 @@ import {
   TEXT_STEP_OPEN_REGISTER_DESC,
   TEXT_ABOUT_PREFIX,
   TEXT_MINUTES_LEFT_SUFFIX,
+  TEXT_ALMOST_DONE,
 } from "@/lib";
 import type { OnboardingStep } from "../../hooks";
 import {
@@ -19,6 +20,7 @@ import {
   storeProfileStatus,
   addProductsStatus,
   stockAlertsStatus,
+  openRegisterStatus,
   type SidebarStepStatus,
 } from "../../lib";
 
@@ -55,7 +57,7 @@ export function OnboardingSidebar({ step }: OnboardingSidebarProps) {
     { label: LABEL_STEP_STORE_PROFILE, desc: TEXT_STEP_STORE_PROFILE_DESC, status: storeProfileStatus(step) },
     { label: LABEL_STEP_ADD_PRODUCTS, desc: TEXT_STEP_ADD_PRODUCTS_DESC, status: addProductsStatus(step) },
     { label: LABEL_STEP_STOCK_ALERTS, desc: TEXT_STEP_STOCK_ALERTS_DESC, status: stockAlertsStatus(step) },
-    { label: LABEL_STEP_OPEN_REGISTER, desc: TEXT_STEP_OPEN_REGISTER_DESC, status: "upcoming" },
+    { label: LABEL_STEP_OPEN_REGISTER, desc: TEXT_STEP_OPEN_REGISTER_DESC, status: openRegisterStatus(step) },
   ];
   const percent = onboardingProgressPercent(step);
   const minutesLeft = onboardingMinutesLeft(step);
@@ -107,7 +109,13 @@ export function OnboardingSidebar({ step }: OnboardingSidebarProps) {
         <i style={{ width: `${percent}%` }} />
       </div>
       <p className="tpl-ts">
-        {TEXT_ABOUT_PREFIX} {minutesLeft} {TEXT_MINUTES_LEFT_SUFFIX}
+        {step === "openRegister" ? (
+          TEXT_ALMOST_DONE
+        ) : (
+          <>
+            {TEXT_ABOUT_PREFIX} {minutesLeft} {TEXT_MINUTES_LEFT_SUFFIX}
+          </>
+        )}
       </p>
     </aside>
   );

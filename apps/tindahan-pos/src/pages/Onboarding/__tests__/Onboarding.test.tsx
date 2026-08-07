@@ -2,7 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { useAuth, useStoreData, validateAndOptimizeImage, uploadImage } from "@/lib";
+import {
+  useAuth,
+  useStoreData,
+  validateAndOptimizeImage,
+  uploadImage,
+  DrawerFloatProvider,
+  useDrawerFloat,
+  PESO,
+} from "@/lib";
 import {
   makeAuthValue,
   makeStaffAccount,
@@ -25,14 +33,22 @@ function makeImageFile(name = "photo.jpg") {
   return new File([new Uint8Array([1, 2, 3])], name, { type: "image/jpeg" });
 }
 
+function DrawerBalanceProbe() {
+  const { balance } = useDrawerFloat();
+  return <p data-testid="drawer-balance">{balance}</p>;
+}
+
 function renderPage() {
   return render(
-    <MemoryRouter initialEntries={["/onboarding"]}>
-      <Routes>
-        <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/admin" element={<p>Dashboard page</p>} />
-      </Routes>
-    </MemoryRouter>
+    <DrawerFloatProvider>
+      <DrawerBalanceProbe />
+      <MemoryRouter initialEntries={["/onboarding"]}>
+        <Routes>
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/admin" element={<p>Dashboard page</p>} />
+        </Routes>
+      </MemoryRouter>
+    </DrawerFloatProvider>
   );
 }
 
@@ -47,9 +63,14 @@ async function goToStockAlertsStep(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole("button", { name: "Skip for now" }));
 }
 
-async function goToCongratsStep(user: ReturnType<typeof userEvent.setup>) {
+async function goToOpenRegisterStep(user: ReturnType<typeof userEvent.setup>) {
   await goToStockAlertsStep(user);
   await user.click(await screen.findByRole("button", { name: "Use the default" }));
+}
+
+async function goToCongratsStep(user: ReturnType<typeof userEvent.setup>) {
+  await goToOpenRegisterStep(user);
+  await user.click(await screen.findByRole("button", { name: "Skip the count" }));
 }
 
 describe("Onboarding", () => {
@@ -229,6 +250,9 @@ describe("Onboarding", () => {
     expect(await screen.findByText("When should we warn you?")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Use the default" }));
+    expect(await screen.findByText("Count your starting cash")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Skip the count" }));
     expect(await screen.findByText(/Congratulations, Aling Nena!/)).toBeInTheDocument();
     expect(screen.getByText(/Dell's Store is all set up/)).toBeInTheDocument();
     // Marking onboardedAt here would make OnboardingRoute redirect away
@@ -319,7 +343,7 @@ describe("Onboarding", () => {
     expect(addProduct).toHaveBeenCalled();
   });
 
-  it("skips through products and stock alerts to reach congrats", async () => {
+  it("skips through products, stock alerts, and register count to reach congrats", async () => {
     const user = userEvent.setup();
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
     renderPage();
@@ -403,14 +427,96 @@ describe("Onboarding", () => {
       expect(saved).toMatchObject({ strategy: "fixedQuantity", fastMoverBoost: false });
     });
 
-    it("continues to the congrats step", async () => {
+    it("continues to the open register step", async () => {
       const user = userEvent.setup();
       vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
       renderPage();
       await goToStockAlertsStep(user);
 
       await user.click(screen.getByRole("button", { name: "Continue" }));
+      expect(await screen.findByText("Count your starting cash")).toBeInTheDocument();
+    });
+  });
+
+  describe("open register step", () => {
+    it("computes denomination subtotals and the starting float in real time", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-1" }) }));
+      renderPage();
+      await goToOpenRegisterStep(user);
+
+      await user.type(screen.getByRole("spinbutton", { name: "₱1,000" }), "1");
+      await user.type(screen.getByRole("spinbutton", { name: "₱100" }), "4");
+
+      expect(screen.getByText(PESO.format(1400))).toBeInTheDocument(); // starting float
+      expect(screen.getByText(PESO.format(1000))).toBeInTheDocument(); // ₱1,000 row subtotal
+      expect(screen.getByText(PESO.format(400))).toBeInTheDocument(); // ₱100 row subtotal
+    });
+
+    it("shows a low-cash-health warning when the count is mostly big bills", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-1" }) }));
+      renderPage();
+      await goToOpenRegisterStep(user);
+
+      await user.type(screen.getByRole("spinbutton", { name: "₱1,000" }), "2");
+      expect(await screen.findByText("Mostly big bills")).toBeInTheDocument();
+
+      await user.clear(screen.getByRole("spinbutton", { name: "₱1,000" }));
+      await user.type(screen.getByRole("spinbutton", { name: "₱1,000" }), "1");
+      await user.type(screen.getByRole("spinbutton", { name: "₱100" }), "4");
+      await user.type(screen.getByRole("spinbutton", { name: "Coins" }), "600");
+      expect(await screen.findByText("Plenty of small notes and coins")).toBeInTheDocument();
+    });
+
+    it("shows the signed-in admin as who's on the register", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
+      renderPage();
+      await goToOpenRegisterStep(user);
+
+      expect(screen.getByText(/Aling Nena/)).toBeInTheDocument();
+      expect(screen.getByText(/\(you\)/)).toBeInTheDocument();
+    });
+
+    it("persists the denomination count to localStorage", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-42" }) }));
+      renderPage();
+      await goToOpenRegisterStep(user);
+
+      await user.type(screen.getByRole("spinbutton", { name: "₱500" }), "3");
+
+      const raw = window.localStorage.getItem("tindahan-pos:open-register-settings:store-42");
+      expect(raw).not.toBeNull();
+      const saved = JSON.parse(raw as string);
+      expect(saved.denominationCounts).toMatchObject({ d500: 3 });
+    });
+
+    it("opening the register sets the real drawer balance and reaches congrats", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
+      renderPage();
+      await goToOpenRegisterStep(user);
+
+      await user.type(screen.getByRole("spinbutton", { name: "₱1,000" }), "3");
+      await user.click(screen.getByRole("button", { name: "Open the register" }));
+
       expect(await screen.findByText(/Congratulations, Aling Nena!/)).toBeInTheDocument();
+      expect(screen.getByTestId("drawer-balance")).toHaveTextContent("3000");
+    });
+
+    it("skipping the count leaves the drawer balance untouched and reaches congrats", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
+      renderPage();
+      await goToOpenRegisterStep(user);
+
+      const balanceBefore = screen.getByTestId("drawer-balance").textContent;
+      await user.click(screen.getByRole("button", { name: "Skip the count" }));
+
+      expect(await screen.findByText(/Congratulations, Aling Nena!/)).toBeInTheDocument();
+      expect(screen.getByTestId("drawer-balance")).toHaveTextContent(balanceBefore as string);
     });
   });
 });

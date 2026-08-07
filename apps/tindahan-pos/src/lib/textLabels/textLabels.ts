@@ -454,6 +454,7 @@ export const LABEL_STEP_OPEN_REGISTER = "Open the register";
 export const TEXT_STEP_OPEN_REGISTER_DESC = "Count your float";
 export const TEXT_MINUTES_LEFT_SUFFIX = "minutes left";
 export const TEXT_ABOUT_PREFIX = "About";
+export const TEXT_ALMOST_DONE = "Almost done";
 
 // Onboarding — Add Products step
 export const LABEL_WHAT_DO_YOU_SELL = "What do you sell?";
@@ -511,6 +512,29 @@ export const TEXT_FAST_MOVERS_DESC = "Anything selling 10+ a day warns at 5 days
 export const LABEL_DAILY_SUMMARY_TITLE = "Send the list every morning at 7 AM";
 export const TEXT_DAILY_SUMMARY_DESC = "One message before you open, not all day";
 export const BUTTON_USE_THE_DEFAULT = "Use the default";
+
+// Onboarding — Open Register step
+export const LABEL_COUNT_YOUR_STARTING_CASH = "Count your starting cash";
+export const TEXT_OPEN_REGISTER_STEP_DESCRIPTION =
+  "Do this every morning. It's the only way to know if the drawer is short later.";
+export const LABEL_HOW_MANY_OF_EACH = "HOW MANY OF EACH";
+export const LABEL_COINS = "Coins";
+export const LABEL_STARTING_FLOAT = "STARTING FLOAT";
+export const LABEL_KEEP_AS_MINIMUM = "KEEP AS MINIMUM";
+export const TEXT_BLOCKS_CASH_OUTS_BELOW = "Blocks cash-outs below this";
+export const LABEL_CASH_HEALTH_GOOD_TITLE = "Plenty of small notes and coins";
+export const TEXT_CASH_HEALTH_GOOD_WITH_AVERAGE_PREFIX = "Your average sale is around";
+export const TEXT_CASH_HEALTH_GOOD_WITH_AVERAGE_SUFFIX = "so this covers change comfortably.";
+export const TEXT_CASH_HEALTH_GOOD_NO_SALES = "You've got a good mix of small bills and coins for giving change.";
+export const LABEL_CASH_HEALTH_LOW_TITLE = "Mostly big bills";
+export const TEXT_CASH_HEALTH_LOW_WITH_AVERAGE_PREFIX = "Your average sale is around";
+export const TEXT_CASH_HEALTH_LOW_WITH_AVERAGE_SUFFIX = "so you might run out of change quickly.";
+export const TEXT_CASH_HEALTH_LOW_NO_SALES = "Keep some small bills and coins handy so you can give change.";
+export const LABEL_WHOS_ON_THE_REGISTER = "Who's on the register?";
+export const TEXT_SALES_RECORDED_UNDER_THIS_PERSON = "Sales get recorded under this person";
+export const TEXT_YOU_SUFFIX = "(you)";
+export const BUTTON_OPEN_THE_REGISTER = "Open the register";
+export const BUTTON_SKIP_THE_COUNT = "Skip the count";
 
 // POS page
 export const TEXT_POS_DESCRIPTION = "Scan a barcode, search by name, or tap a product.";
