@@ -4,6 +4,7 @@ import {
   ProfileStep,
   StoreStep,
   ProductsStep,
+  StockAlertsStep,
   CongratsStep,
   OnboardingShell,
 } from "./component";
@@ -13,6 +14,7 @@ export function Onboarding() {
   const {
     step,
     goToProfileStep,
+    goToStockAlertsStep,
     goToCongratsStep,
 
     name,
@@ -51,9 +53,14 @@ export function Onboarding() {
   return (
     <OnboardingShell step={step}>
       <div className="flex min-h-full flex-1 items-center justify-center px-4 py-10">
-        {step === "products" ? (
+        {step === "products" || step === "stockAlerts" ? (
           <div className="w-full max-w-2xl">
-            <ProductsStep onContinue={goToCongratsStep} onSkip={goToCongratsStep} />
+            {step === "products" && (
+              <ProductsStep onContinue={goToStockAlertsStep} onSkip={goToStockAlertsStep} />
+            )}
+            {step === "stockAlerts" && (
+              <StockAlertsStep onContinue={goToCongratsStep} onUseDefault={goToCongratsStep} />
+            )}
           </div>
         ) : (
           <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
