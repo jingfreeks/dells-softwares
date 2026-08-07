@@ -15,7 +15,7 @@ import {
 const AVATAR_MAX_DIMENSION = 512;
 const STORE_PHOTO_MAX_DIMENSION = 1024;
 
-export type OnboardingStep = "welcome" | "profile" | "store" | "congrats";
+export type OnboardingStep = "welcome" | "profile" | "store" | "products" | "congrats";
 
 export function useOnboardingWizard() {
   const { user, store, updateProfile, updateStore, completeOnboarding } = useAuth();
@@ -162,16 +162,20 @@ export function useOnboardingWizard() {
         setStoreError(storeResult.error);
         return;
       }
-      // Deliberately not marking onboarding complete yet — that flips
-      // user.onboardedAt, and OnboardingRoute would immediately redirect
-      // away before the congrats step ever renders. It's marked complete
-      // when they leave via "Go to dashboard" instead.
-      setStep("congrats");
+      setStep("products");
     } catch (err) {
       setStoreError(err instanceof Error ? err.message : ERROR_COULD_NOT_SAVE_YOUR_STORE);
     } finally {
       setSavingStore(false);
     }
+  }
+
+  function goToCongratsStep() {
+    // Deliberately not marking onboarding complete yet — that flips
+    // user.onboardedAt, and OnboardingRoute would immediately redirect
+    // away before the congrats step ever renders. It's marked complete
+    // when they leave via "Go to dashboard" instead.
+    setStep("congrats");
   }
 
   async function handleGoToDashboard() {
@@ -197,6 +201,7 @@ export function useOnboardingWizard() {
   return {
     step,
     goToProfileStep,
+    goToCongratsStep,
 
     name,
     setName,
