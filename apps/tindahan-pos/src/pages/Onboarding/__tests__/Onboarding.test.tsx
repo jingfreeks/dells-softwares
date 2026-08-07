@@ -46,20 +46,24 @@ function renderPage() {
         <Routes>
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/admin" element={<p>Dashboard page</p>} />
+          <Route path="/pos" element={<p>POS page</p>} />
         </Routes>
       </MemoryRouter>
     </DrawerFloatProvider>
   );
 }
 
-async function goToStoreStep(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: "Let's get started" }));
-  await user.click(screen.getByRole("button", { name: "Next: Your store" }));
+async function goToProfileStep(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: "Start setup" }));
+}
+
+async function goToProductsStep(user: ReturnType<typeof userEvent.setup>) {
+  await goToProfileStep(user);
+  await user.click(screen.getByRole("button", { name: "Continue" }));
 }
 
 async function goToStockAlertsStep(user: ReturnType<typeof userEvent.setup>) {
-  await goToStoreStep(user);
-  await user.click(screen.getByRole("button", { name: "Finish setup" }));
+  await goToProductsStep(user);
   await user.click(await screen.findByRole("button", { name: "Skip for now" }));
 }
 
@@ -82,83 +86,134 @@ describe("Onboarding", () => {
   it("shows the welcome step first", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue());
     renderPage();
-    expect(screen.getByText("Welcome to Tindahan POS!")).toBeInTheDocument();
+    expect(screen.getByText("Let's get your shop ready to sell.")).toBeInTheDocument();
   });
 
-  it("moves to the profile step, prefilled from the signed-in user", async () => {
-    const user = userEvent.setup();
-    vi.mocked(useAuth).mockReturnValue(
-      makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena", phone: "0917", address: "1 Rizal St" }) })
-    );
-    renderPage();
-
-    await user.click(screen.getByRole("button", { name: "Let's get started" }));
-    expect(screen.getByLabelText("Your name")).toHaveValue("Aling Nena");
-    expect(screen.getByLabelText("Phone (optional)")).toHaveValue("0917");
-    expect(screen.getByLabelText("Your address (optional)")).toHaveValue("1 Rizal St");
-  });
-
-  it("validates that a name is required on the profile step", async () => {
+  it("skips straight to the open register step from welcome", async () => {
     const user = userEvent.setup();
     vi.mocked(useAuth).mockReturnValue(makeAuthValue());
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: "Let's get started" }));
+    await user.click(screen.getByRole("button", { name: "Skip — take me to the register" }));
+    expect(await screen.findByText("Count your starting cash")).toBeInTheDocument();
+  });
+
+  it("moves to the profile step, prefilled from the signed-in user and store", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        user: makeStaffAccount({ name: "Aling Nena", phone: "0917" }),
+        store: makeStore({ name: "Dell's Store", address: "2 Bonifacio Ave" }),
+      })
+    );
+    renderPage();
+
+    await goToProfileStep(user);
+    expect(screen.getByLabelText("Your name")).toHaveValue("Aling Nena");
+    expect(screen.getByLabelText("Mobile number")).toHaveValue("0917");
+    expect(screen.getByLabelText("Store name")).toHaveValue("Dell's Store");
+    expect(screen.getByLabelText("Store address")).toHaveValue("2 Bonifacio Ave");
+  });
+
+  it("validates that a name is required on the profile step", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ store: makeStore({ name: "Dell's Store" }) }));
+    renderPage();
+
+    await goToProfileStep(user);
     await user.clear(screen.getByLabelText("Your name"));
-    await user.click(screen.getByRole("button", { name: "Next: Your store" }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Name is required.");
   });
 
-  it("saves the profile step and advances to the store step", async () => {
+  it("validates that a store name is required on the profile step", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }), store: makeStore({ name: "" }) })
+    );
+    renderPage();
+
+    await goToProfileStep(user);
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Store name is required.");
+  });
+
+  it("saves both profile and store details in one Continue and advances to products", async () => {
     const user = userEvent.setup();
     const updateProfile = vi.fn().mockResolvedValue({ ok: true });
-    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "" }), updateProfile }));
+    const updateStore = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        user: makeStaffAccount({ name: "Aling Nena", phone: "0917", address: null }),
+        store: makeStore({ name: "Dell's Store", address: "2 Bonifacio Ave" }),
+        updateProfile,
+        updateStore,
+      })
+    );
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: "Let's get started" }));
-    await user.type(screen.getByLabelText("Your name"), "Aling Nena");
-    await user.type(screen.getByLabelText("Phone (optional)"), "0917");
-    await user.type(screen.getByLabelText("Your address (optional)"), "1 Rizal St");
-    await user.click(screen.getByRole("button", { name: "Next: Your store" }));
+    await goToProfileStep(user);
+    await user.click(screen.getByRole("button", { name: "Continue" }));
 
-    expect(updateProfile).toHaveBeenCalledWith({
-      name: "Aling Nena",
-      phone: "0917",
-      address: "1 Rizal St",
-    });
-    expect(await screen.findByText("Tell us about your store")).toBeInTheDocument();
+    expect(updateProfile).toHaveBeenCalledWith({ name: "Aling Nena", phone: "0917", address: null });
+    expect(updateStore).toHaveBeenCalledWith({ name: "Dell's Store", address: "2 Bonifacio Ave" });
+    expect(await screen.findByText("What do you sell?")).toBeInTheDocument();
   });
 
-  it("shows an error when saving the profile step fails", async () => {
+  it("shows an error when saving the profile fails, without saving the store", async () => {
     const user = userEvent.setup();
     const updateProfile = vi.fn().mockResolvedValue({ ok: false, error: "Something broke." });
-    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ updateProfile }));
+    const updateStore = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ store: makeStore({ name: "Dell's Store" }), updateProfile, updateStore })
+    );
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: "Let's get started" }));
-    await user.click(screen.getByRole("button", { name: "Next: Your store" }));
+    await goToProfileStep(user);
+    await user.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Something broke.");
+    expect(updateStore).not.toHaveBeenCalled();
   });
 
-  it("optimizes, uploads, and includes the avatar when advancing from the profile step", async () => {
+  it("shows an error when saving the store fails", async () => {
+    const user = userEvent.setup();
+    const updateProfile = vi.fn().mockResolvedValue({ ok: true });
+    const updateStore = vi.fn().mockResolvedValue({ ok: false, error: "Store save failed." });
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ store: makeStore({ name: "Dell's Store" }), updateProfile, updateStore })
+    );
+    renderPage();
+
+    await goToProfileStep(user);
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Store save failed.");
+  });
+
+  it("optimizes, uploads, and includes the avatar when continuing from the profile step", async () => {
     const user = userEvent.setup();
     const updateProfile = vi.fn().mockResolvedValue({ ok: true });
     vi.mocked(useAuth).mockReturnValue(
-      makeAuthValue({ user: makeStaffAccount({ id: "staff-1", storeId: "store-1" }), updateProfile })
+      makeAuthValue({
+        user: makeStaffAccount({ id: "staff-1", storeId: "store-1" }),
+        store: makeStore({ name: "Dell's Store" }),
+        updateProfile,
+      })
     );
     const blob = new Blob(["x"], { type: "image/webp" });
     vi.mocked(validateAndOptimizeImage).mockResolvedValue(blob);
     vi.mocked(uploadImage).mockResolvedValue("https://cdn.test/store-1/staff-1/avatar.webp");
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: "Let's get started" }));
+    await goToProfileStep(user);
     const fileInput = document.getElementById("onboardAvatarInput") as HTMLInputElement;
     await user.upload(fileInput, makeImageFile());
     await screen.findByAltText("");
 
-    await user.click(screen.getByRole("button", { name: "Next: Your store" }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(validateAndOptimizeImage).toHaveBeenCalledWith(expect.any(File), { maxDimension: 512 });
     expect(uploadImage).toHaveBeenCalledWith(expect.anything(), "avatars", "store-1/staff-1/avatar.webp", blob);
@@ -173,92 +228,11 @@ describe("Onboarding", () => {
     vi.mocked(validateAndOptimizeImage).mockRejectedValue(new Error("That file doesn't look like a valid image."));
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: "Let's get started" }));
+    await goToProfileStep(user);
     const fileInput = document.getElementById("onboardAvatarInput") as HTMLInputElement;
     await user.upload(fileInput, makeImageFile());
 
     expect(await screen.findByRole("alert")).toHaveTextContent("That file doesn't look like a valid image.");
-  });
-
-  it("prefills the store step from the store and can navigate back to the profile step", async () => {
-    const user = userEvent.setup();
-    vi.mocked(useAuth).mockReturnValue(
-      makeAuthValue({ store: makeStore({ name: "Dell's Store", address: "2 Bonifacio Ave" }) })
-    );
-    renderPage();
-    await goToStoreStep(user);
-
-    expect(screen.getByLabelText("Store name")).toHaveValue("Dell's Store");
-    expect(screen.getByLabelText("Store address")).toHaveValue("2 Bonifacio Ave");
-
-    await user.click(screen.getByRole("button", { name: "Back" }));
-    expect(screen.getByText("Tell us about you")).toBeInTheDocument();
-  });
-
-  it("validates that a store name is required", async () => {
-    const user = userEvent.setup();
-    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ store: makeStore({ name: "" }) }));
-    renderPage();
-    await goToStoreStep(user);
-
-    await user.clear(screen.getByLabelText("Store name"));
-    await user.click(screen.getByRole("button", { name: "Finish setup" }));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent("Store name is required.");
-  });
-
-  it("copies the profile address into the store address when 'Same as my address' is checked", async () => {
-    const user = userEvent.setup();
-    vi.mocked(useAuth).mockReturnValue(
-      makeAuthValue({
-        user: makeStaffAccount({ address: "1 Rizal St" }),
-        store: makeStore({ address: "Old store address" }),
-      })
-    );
-    renderPage();
-    await user.click(screen.getByRole("button", { name: "Let's get started" }));
-    await user.click(screen.getByRole("button", { name: "Next: Your store" }));
-
-    const storeAddressInput = screen.getByLabelText("Store address") as HTMLInputElement;
-    expect(storeAddressInput).toHaveValue("Old store address");
-
-    await user.click(screen.getByRole("checkbox", { name: "Same as my address" }));
-    expect(storeAddressInput).toHaveValue("1 Rizal St");
-    expect(storeAddressInput).toBeDisabled();
-  });
-
-  it("saves the store step and shows the congrats step, without marking onboarding complete yet", async () => {
-    const user = userEvent.setup();
-    const updateStore = vi.fn().mockResolvedValue({ ok: true });
-    const completeOnboarding = vi.fn().mockResolvedValue({ ok: true });
-    vi.mocked(useAuth).mockReturnValue(
-      makeAuthValue({
-        user: makeStaffAccount({ name: "Aling Nena" }),
-        store: makeStore({ name: "Dell's Store", address: "2 Bonifacio Ave" }),
-        updateStore,
-        completeOnboarding,
-      })
-    );
-    renderPage();
-    await goToStoreStep(user);
-    await user.click(screen.getByRole("button", { name: "Finish setup" }));
-
-    expect(updateStore).toHaveBeenCalledWith({ name: "Dell's Store", address: "2 Bonifacio Ave" });
-    expect(await screen.findByText("What do you sell?")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Skip for now" }));
-    expect(await screen.findByText("When should we warn you?")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Use the default" }));
-    expect(await screen.findByText("Count your starting cash")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Skip the count" }));
-    expect(await screen.findByText(/Congratulations, Aling Nena!/)).toBeInTheDocument();
-    expect(screen.getByText(/Dell's Store is all set up/)).toBeInTheDocument();
-    // Marking onboardedAt here would make OnboardingRoute redirect away
-    // before the user ever sees this screen — it's deferred to "Go to
-    // dashboard" instead.
-    expect(completeOnboarding).not.toHaveBeenCalled();
   });
 
   it("uploads a store photo and passes its URL through to updateStore", async () => {
@@ -267,7 +241,7 @@ describe("Onboarding", () => {
     vi.mocked(useAuth).mockReturnValue(
       makeAuthValue({
         user: makeStaffAccount({ storeId: "store-1" }),
-        store: makeStore({ id: "store-1" }),
+        store: makeStore({ id: "store-1", name: "Dell's Store" }),
         updateStore,
       })
     );
@@ -275,56 +249,66 @@ describe("Onboarding", () => {
     vi.mocked(validateAndOptimizeImage).mockResolvedValue(blob);
     vi.mocked(uploadImage).mockResolvedValue("https://cdn.test/store-1/store-photo.webp");
     renderPage();
-    await goToStoreStep(user);
 
+    await goToProfileStep(user);
     const fileInput = document.getElementById("onboardStorePhotoInput") as HTMLInputElement;
     await user.upload(fileInput, makeImageFile("store.jpg"));
     await screen.findByAltText("");
-    await user.click(screen.getByRole("button", { name: "Finish setup" }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
 
-    expect(uploadImage).toHaveBeenCalledWith(
-      expect.anything(),
-      "store-photos",
-      "store-1/store-photo.webp",
-      blob
-    );
+    expect(uploadImage).toHaveBeenCalledWith(expect.anything(), "store-photos", "store-1/store-photo.webp", blob);
     expect(updateStore).toHaveBeenCalledWith(
       expect.objectContaining({ photoUrl: "https://cdn.test/store-1/store-photo.webp" })
     );
   });
 
-  it("shows an error when saving the store step fails", async () => {
+  it("copies the profile address into the store address when 'Same as my own address' is checked", async () => {
     const user = userEvent.setup();
-    const updateStore = vi.fn().mockResolvedValue({ ok: false, error: "Store save failed." });
-    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ updateStore }));
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        user: makeStaffAccount({ address: "1 Rizal St" }),
+        store: makeStore({ name: "Dell's Store", address: "Old store address" }),
+      })
+    );
     renderPage();
-    await goToStoreStep(user);
-    await user.click(screen.getByRole("button", { name: "Finish setup" }));
+    await goToProfileStep(user);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Store save failed.");
+    const storeAddressInput = screen.getByLabelText("Store address") as HTMLInputElement;
+    expect(storeAddressInput).toHaveValue("Old store address");
+
+    await user.click(screen.getByRole("checkbox", { name: "Same as my own address" }));
+    expect(storeAddressInput).toHaveValue("1 Rizal St");
+    expect(storeAddressInput).toBeDisabled();
   });
 
-  it("shows an error on the congrats step when completing onboarding fails", async () => {
+  it("skips the profile step without saving", async () => {
     const user = userEvent.setup();
-    const completeOnboarding = vi.fn().mockResolvedValue({ ok: false, error: "Could not finish onboarding." });
-    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ completeOnboarding }));
+    const updateProfile = vi.fn().mockResolvedValue({ ok: true });
+    const updateStore = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ updateProfile, updateStore }));
     renderPage();
-    await goToCongratsStep(user);
-    await user.click(await screen.findByRole("button", { name: "Go to dashboard" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Could not finish onboarding.");
+    await goToProfileStep(user);
+    await user.click(screen.getByRole("button", { name: "Skip for now" }));
+
+    expect(await screen.findByText("What do you sell?")).toBeInTheDocument();
+    expect(updateProfile).not.toHaveBeenCalled();
+    expect(updateStore).not.toHaveBeenCalled();
   });
 
-  it("navigates to the dashboard from the congrats step", async () => {
+  it("resumes at the saved step after a reload instead of restarting at welcome", async () => {
     const user = userEvent.setup();
-    const completeOnboarding = vi.fn().mockResolvedValue({ ok: true });
-    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ completeOnboarding }));
-    renderPage();
-    await goToCongratsStep(user);
-    await user.click(await screen.findByRole("button", { name: "Go to dashboard" }));
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }), store: makeStore({ name: "Dell's Store" }) })
+    );
+    const { unmount } = renderPage();
+    await goToProductsStep(user);
+    expect(await screen.findByText("What do you sell?")).toBeInTheDocument();
 
-    expect(completeOnboarding).toHaveBeenCalled();
-    expect(screen.getByText("Dashboard page")).toBeInTheDocument();
+    unmount();
+    renderPage();
+
+    expect(await screen.findByText("What do you sell?")).toBeInTheDocument();
   });
 
   it("shows the added-so-far count and imports the starter catalog on the products step", async () => {
@@ -332,9 +316,9 @@ describe("Onboarding", () => {
     const addProduct = vi.fn().mockResolvedValue({});
     const addCategory = vi.fn().mockResolvedValue({ id: "cat-1", name: "Noodles" });
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ addProduct, addCategory }));
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ store: makeStore({ name: "Dell's Store" }) }));
     renderPage();
-    await goToStoreStep(user);
-    await user.click(screen.getByRole("button", { name: "Finish setup" }));
+    await goToProductsStep(user);
 
     expect(await screen.findByText("What do you sell?")).toBeInTheDocument();
     expect(screen.getByText("0 products")).toBeInTheDocument();
@@ -345,17 +329,88 @@ describe("Onboarding", () => {
 
   it("skips through products, stock alerts, and register count to reach congrats", async () => {
     const user = userEvent.setup();
-    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }), store: makeStore({ name: "Dell's Store" }) })
+    );
     renderPage();
     await goToCongratsStep(user);
 
-    expect(await screen.findByText(/Congratulations, Aling Nena!/)).toBeInTheDocument();
+    expect(await screen.findByText("The register is open, Aling Nena.")).toBeInTheDocument();
+  });
+
+  describe("congrats step", () => {
+    it("summarizes real setup data and completes onboarding via Start selling", async () => {
+      const user = userEvent.setup();
+      const completeOnboarding = vi.fn().mockResolvedValue({ ok: true });
+      const products = [makeProduct({ id: "p1" }), makeProduct({ id: "p2" })];
+      vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({
+          user: makeStaffAccount({ name: "Aling Nena" }),
+          store: makeStore({ name: "Dell's Store" }),
+          completeOnboarding,
+        })
+      );
+      renderPage();
+      await goToOpenRegisterStep(user);
+      await user.type(screen.getByRole("spinbutton", { name: "₱1,000" }), "2");
+      await user.click(screen.getByRole("button", { name: "Open the register" }));
+
+      expect(await screen.findByText(/2 products loaded/)).toBeInTheDocument();
+      expect(screen.getByText(/₱2,000.00 counted into the drawer/)).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Start selling" }));
+      expect(completeOnboarding).toHaveBeenCalled();
+      expect(await screen.findByText("POS page")).toBeInTheDocument();
+    });
+
+    it("shows an error when completing onboarding fails", async () => {
+      const user = userEvent.setup();
+      const completeOnboarding = vi.fn().mockResolvedValue({ ok: false, error: "Could not finish onboarding." });
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ store: makeStore({ name: "Dell's Store" }), completeOnboarding })
+      );
+      renderPage();
+      await goToCongratsStep(user);
+      await user.click(await screen.findByRole("button", { name: "See the dashboard" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("Could not finish onboarding.");
+    });
+
+    it("navigates to the dashboard via See the dashboard", async () => {
+      const user = userEvent.setup();
+      const completeOnboarding = vi.fn().mockResolvedValue({ ok: true });
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ store: makeStore({ name: "Dell's Store" }), completeOnboarding })
+      );
+      renderPage();
+      await goToCongratsStep(user);
+      await user.click(await screen.findByRole("button", { name: "See the dashboard" }));
+
+      expect(completeOnboarding).toHaveBeenCalled();
+      expect(screen.getByText("Dashboard page")).toBeInTheDocument();
+    });
+
+    it("links the suggested next actions to their real pages", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }), store: makeStore({ name: "Dell's Store" }) })
+      );
+      renderPage();
+      await goToCongratsStep(user);
+
+      const addLinks = screen.getAllByRole("link", { name: "Add" });
+      expect(addLinks.map((link) => link.getAttribute("href"))).toEqual(["/staff", "/customers"]);
+      expect(screen.getByRole("link", { name: "Review" })).toHaveAttribute("href", "/pos");
+    });
   });
 
   describe("stock alerts step", () => {
     it("selects a strategy and toggles smart settings", async () => {
       const user = userEvent.setup();
-      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-1" }) }));
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ storeId: "store-1" }), store: makeStore({ name: "Dell's Store" }) })
+      );
       renderPage();
       await goToStockAlertsStep(user);
 
@@ -394,7 +449,9 @@ describe("Onboarding", () => {
         }),
       ];
       vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, sales }));
-      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-1" }) }));
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ storeId: "store-1" }), store: makeStore({ name: "Dell's Store" }) })
+      );
       renderPage();
       await goToStockAlertsStep(user);
 
@@ -414,7 +471,9 @@ describe("Onboarding", () => {
 
     it("persists settings to localStorage and reloads them", async () => {
       const user = userEvent.setup();
-      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-42" }) }));
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ storeId: "store-42" }), store: makeStore({ name: "Dell's Store" }) })
+      );
       renderPage();
       await goToStockAlertsStep(user);
 
@@ -429,7 +488,9 @@ describe("Onboarding", () => {
 
     it("continues to the open register step", async () => {
       const user = userEvent.setup();
-      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }), store: makeStore({ name: "Dell's Store" }) })
+      );
       renderPage();
       await goToStockAlertsStep(user);
 
@@ -441,7 +502,9 @@ describe("Onboarding", () => {
   describe("open register step", () => {
     it("computes denomination subtotals and the starting float in real time", async () => {
       const user = userEvent.setup();
-      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-1" }) }));
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ storeId: "store-1" }), store: makeStore({ name: "Dell's Store" }) })
+      );
       renderPage();
       await goToOpenRegisterStep(user);
 
@@ -455,7 +518,9 @@ describe("Onboarding", () => {
 
     it("shows a low-cash-health warning when the count is mostly big bills", async () => {
       const user = userEvent.setup();
-      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-1" }) }));
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ storeId: "store-1" }), store: makeStore({ name: "Dell's Store" }) })
+      );
       renderPage();
       await goToOpenRegisterStep(user);
 
@@ -471,7 +536,9 @@ describe("Onboarding", () => {
 
     it("shows the signed-in admin as who's on the register", async () => {
       const user = userEvent.setup();
-      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }), store: makeStore({ name: "Dell's Store" }) })
+      );
       renderPage();
       await goToOpenRegisterStep(user);
 
@@ -481,7 +548,9 @@ describe("Onboarding", () => {
 
     it("persists the denomination count to localStorage", async () => {
       const user = userEvent.setup();
-      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-42" }) }));
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ storeId: "store-42" }), store: makeStore({ name: "Dell's Store" }) })
+      );
       renderPage();
       await goToOpenRegisterStep(user);
 
@@ -495,27 +564,31 @@ describe("Onboarding", () => {
 
     it("opening the register sets the real drawer balance and reaches congrats", async () => {
       const user = userEvent.setup();
-      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }), store: makeStore({ name: "Dell's Store" }) })
+      );
       renderPage();
       await goToOpenRegisterStep(user);
 
       await user.type(screen.getByRole("spinbutton", { name: "₱1,000" }), "3");
       await user.click(screen.getByRole("button", { name: "Open the register" }));
 
-      expect(await screen.findByText(/Congratulations, Aling Nena!/)).toBeInTheDocument();
+      expect(await screen.findByText("The register is open, Aling Nena.")).toBeInTheDocument();
       expect(screen.getByTestId("drawer-balance")).toHaveTextContent("3000");
     });
 
     it("skipping the count leaves the drawer balance untouched and reaches congrats", async () => {
       const user = userEvent.setup();
-      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }), store: makeStore({ name: "Dell's Store" }) })
+      );
       renderPage();
       await goToOpenRegisterStep(user);
 
       const balanceBefore = screen.getByTestId("drawer-balance").textContent;
       await user.click(screen.getByRole("button", { name: "Skip the count" }));
 
-      expect(await screen.findByText(/Congratulations, Aling Nena!/)).toBeInTheDocument();
+      expect(await screen.findByText("The register is open, Aling Nena.")).toBeInTheDocument();
       expect(screen.getByTestId("drawer-balance")).toHaveTextContent(balanceBefore as string);
     });
   });

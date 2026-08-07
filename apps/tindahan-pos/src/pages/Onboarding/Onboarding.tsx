@@ -1,8 +1,6 @@
 import {
-  StepDots,
   WelcomeStep,
   ProfileStep,
-  StoreStep,
   ProductsStep,
   StockAlertsStep,
   OpenRegisterStep,
@@ -23,104 +21,92 @@ export function Onboarding() {
     setName,
     phone,
     setPhone,
-    address,
-    setAddress,
     displayedAvatar,
     avatarError,
     processingAvatar,
     onAvatarSelect,
-    profileError,
-    savingProfile,
-    onProfileNext,
 
     storeName,
     setStoreName,
-    setStoreAddress,
     displayedStoreAddress,
+    setStoreAddress,
     sameAsProfile,
     setSameAsProfile,
     displayedStorePhoto,
     storePhotoError,
     processingStorePhoto,
     onStorePhotoSelect,
-    storeError,
-    savingStore,
-    onStoreFinish,
+
+    openTime,
+    setOpenTime,
+    closeTime,
+    setCloseTime,
+
+    profileError,
+    savingProfile,
+    onProfileContinue,
+    onProfileSkip,
 
     finishing,
     finishError,
-    onGoToDashboard,
+    onFinish,
   } = useOnboardingWizard();
+
+  if (step === "welcome") {
+    return <WelcomeStep onStartSetup={goToProfileStep} onSkipToRegister={goToOpenRegisterStep} />;
+  }
+
+  if (step === "congrats") {
+    return <CongratsStep finishError={finishError} finishing={finishing} onFinish={onFinish} />;
+  }
 
   return (
     <OnboardingShell step={step}>
       <div className="flex min-h-full flex-1 items-center justify-center px-4 py-10">
-        {step === "products" || step === "stockAlerts" || step === "openRegister" ? (
-          <div className="w-full max-w-2xl">
-            {step === "products" && (
-              <ProductsStep onContinue={goToStockAlertsStep} onSkip={goToStockAlertsStep} />
-            )}
-            {step === "stockAlerts" && (
-              <StockAlertsStep onContinue={goToOpenRegisterStep} onUseDefault={goToOpenRegisterStep} />
-            )}
-            {step === "openRegister" && (
-              <OpenRegisterStep onOpenRegister={goToCongratsStep} onSkipCount={goToCongratsStep} />
-            )}
-          </div>
-        ) : (
-          <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-            <StepDots current={step} />
+        <div className="w-full max-w-2xl">
+          {step === "profile" && (
+            <ProfileStep
+              displayedAvatar={displayedAvatar}
+              avatarError={avatarError}
+              processingAvatar={processingAvatar}
+              onAvatarSelect={onAvatarSelect}
+              name={name}
+              onNameChange={setName}
+              phone={phone}
+              onPhoneChange={setPhone}
+              displayedStorePhoto={displayedStorePhoto}
+              storePhotoError={storePhotoError}
+              processingStorePhoto={processingStorePhoto}
+              onStorePhotoSelect={onStorePhotoSelect}
+              storeName={storeName}
+              onStoreNameChange={setStoreName}
+              displayedStoreAddress={displayedStoreAddress}
+              onStoreAddressChange={setStoreAddress}
+              sameAsProfile={sameAsProfile}
+              onSameAsProfileChange={setSameAsProfile}
+              openTime={openTime}
+              onOpenTimeChange={setOpenTime}
+              closeTime={closeTime}
+              onCloseTimeChange={setCloseTime}
+              profileError={profileError}
+              savingProfile={savingProfile}
+              onContinue={onProfileContinue}
+              onSkip={onProfileSkip}
+            />
+          )}
 
-            {step === "welcome" && <WelcomeStep onNext={goToProfileStep} />}
+          {step === "products" && (
+            <ProductsStep onContinue={goToStockAlertsStep} onSkip={goToStockAlertsStep} />
+          )}
 
-            {step === "profile" && (
-              <ProfileStep
-                displayedAvatar={displayedAvatar}
-                avatarError={avatarError}
-                processingAvatar={processingAvatar}
-                onAvatarSelect={onAvatarSelect}
-                name={name}
-                onNameChange={setName}
-                phone={phone}
-                onPhoneChange={setPhone}
-                address={address}
-                onAddressChange={setAddress}
-                profileError={profileError}
-                savingProfile={savingProfile}
-                onNext={onProfileNext}
-              />
-            )}
+          {step === "stockAlerts" && (
+            <StockAlertsStep onContinue={goToOpenRegisterStep} onUseDefault={goToOpenRegisterStep} />
+          )}
 
-            {step === "store" && (
-              <StoreStep
-                displayedStorePhoto={displayedStorePhoto}
-                storePhotoError={storePhotoError}
-                processingStorePhoto={processingStorePhoto}
-                onStorePhotoSelect={onStorePhotoSelect}
-                storeName={storeName}
-                onStoreNameChange={setStoreName}
-                displayedStoreAddress={displayedStoreAddress}
-                onStoreAddressChange={setStoreAddress}
-                sameAsProfile={sameAsProfile}
-                onSameAsProfileChange={setSameAsProfile}
-                storeError={storeError}
-                savingStore={savingStore}
-                onBack={goToProfileStep}
-                onFinish={onStoreFinish}
-              />
-            )}
-
-            {step === "congrats" && (
-              <CongratsStep
-                name={name}
-                storeName={storeName}
-                finishError={finishError}
-                finishing={finishing}
-                onGoToDashboard={onGoToDashboard}
-              />
-            )}
-          </div>
-        )}
+          {step === "openRegister" && (
+            <OpenRegisterStep onOpenRegister={goToCongratsStep} onSkipCount={goToCongratsStep} />
+          )}
+        </div>
       </div>
     </OnboardingShell>
   );

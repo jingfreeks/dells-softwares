@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useAuth,
@@ -9,20 +9,14 @@ import {
   ERROR_STORE_NAME_REQUIRED,
   ERROR_COULD_NOT_PROCESS_IMAGE,
   ERROR_COULD_NOT_SAVE_YOUR_PROFILE,
-  ERROR_COULD_NOT_SAVE_YOUR_STORE,
 } from "@/lib";
+import { loadOnboardingStep, saveOnboardingStep, clearOnboardingStep } from "./onboardingProgress";
+import { loadOpeningHours, saveOpeningHours, DEFAULT_OPENING_HOURS } from "./openingHoursSettings";
 
 const AVATAR_MAX_DIMENSION = 512;
 const STORE_PHOTO_MAX_DIMENSION = 1024;
 
-export type OnboardingStep =
-  | "welcome"
-  | "profile"
-  | "store"
-  | "products"
-  | "stockAlerts"
-  | "openRegister"
-  | "congrats";
+export type OnboardingStep = "welcome" | "profile" | "products" | "stockAlerts" | "openRegister" | "congrats";
 
 export function useOnboardingWizard() {
   const { user, store, updateProfile, updateStore, completeOnboarding } = useAuth();
@@ -36,8 +30,6 @@ export function useOnboardingWizard() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [processingAvatar, setProcessingAvatar] = useState(false);
-  const [profileError, setProfileError] = useState<string | null>(null);
-  const [savingProfile, setSavingProfile] = useState(false);
 
   const [storeName, setStoreName] = useState("");
   const [storeAddress, setStoreAddress] = useState("");
@@ -46,11 +38,31 @@ export function useOnboardingWizard() {
   const [storePhotoPreview, setStorePhotoPreview] = useState<string | null>(null);
   const [storePhotoError, setStorePhotoError] = useState<string | null>(null);
   const [processingStorePhoto, setProcessingStorePhoto] = useState(false);
-  const [storeError, setStoreError] = useState<string | null>(null);
-  const [savingStore, setSavingStore] = useState(false);
+
+  const [openTime, setOpenTime] = useState(DEFAULT_OPENING_HOURS.openTime);
+  const [closeTime, setCloseTime] = useState(DEFAULT_OPENING_HOURS.closeTime);
+
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const [finishing, setFinishing] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
+
+  // Resume mid-flow on reload instead of always restarting at "welcome".
+  // Guarded by a ref so the very first run — which may flip `step` away
+  // from its "welcome" default — doesn't immediately re-save that stale
+  // default and clobber the value it just loaded.
+  const hasResumedRef = useRef(false);
+  useEffect(() => {
+    if (!user) return;
+    if (!hasResumedRef.current) {
+      hasResumedRef.current = true;
+      const savedStep = loadOnboardingStep(user.storeId);
+      if (savedStep) setStep(savedStep);
+      return;
+    }
+    saveOnboardingStep(user.storeId, step);
+  }, [user, step]);
 
   // Seed once per signed-in user, not on every keystroke re-render.
   useEffect(() => {
@@ -66,6 +78,22 @@ export function useOnboardingWizard() {
     setStoreAddress(store?.address ?? "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store?.id]);
+
+  // Opening hours have no backend column yet — draft auto-saves to
+  // localStorage as the admin picks them, separate from the Supabase
+  // updateProfile/updateStore writes that only happen on Continue.
+  useEffect(() => {
+    if (!user) return;
+    const saved = loadOpeningHours(user.storeId);
+    setOpenTime(saved.openTime);
+    setCloseTime(saved.closeTime);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.storeId]);
+
+  useEffect(() => {
+    if (!user) return;
+    saveOpeningHours(user.storeId, { openTime, closeTime });
+  }, [user, openTime, closeTime]);
 
   useEffect(() => {
     return () => {
@@ -113,10 +141,14 @@ export function useOnboardingWizard() {
     }
   }
 
-  async function handleProfileNext() {
+  async function handleProfileContinue() {
     if (!user) return;
     if (!name.trim()) {
       setProfileError(ERROR_NAME_REQUIRED);
+      return;
+    }
+    if (!storeName.trim()) {
+      setProfileError(ERROR_STORE_NAME_REQUIRED);
       return;
     }
     setSavingProfile(true);
@@ -127,17 +159,34 @@ export function useOnboardingWizard() {
         const path = `${user.storeId}/${user.id}/avatar.webp`;
         avatarUrl = await uploadImage(supabase, "avatars", path, avatarBlob);
       }
-      const result = await updateProfile({
+      const profileResult = await updateProfile({
         name: name.trim(),
         phone: phone.trim() || null,
         address: address.trim() || null,
         ...(avatarUrl !== undefined && { avatarUrl }),
       });
-      if (!result.ok) {
-        setProfileError(result.error);
+      if (!profileResult.ok) {
+        setProfileError(profileResult.error);
         return;
       }
-      setStep("store");
+
+      let photoUrl: string | undefined;
+      if (storePhotoBlob) {
+        const path = `${user.storeId}/store-photo.webp`;
+        photoUrl = await uploadImage(supabase, "store-photos", path, storePhotoBlob);
+      }
+      const effectiveAddress = sameAsProfile ? address : storeAddress;
+      const storeResult = await updateStore({
+        name: storeName.trim(),
+        address: effectiveAddress.trim() || null,
+        ...(photoUrl !== undefined && { photoUrl }),
+      });
+      if (!storeResult.ok) {
+        setProfileError(storeResult.error);
+        return;
+      }
+
+      setStep("products");
     } catch (err) {
       setProfileError(err instanceof Error ? err.message : ERROR_COULD_NOT_SAVE_YOUR_PROFILE);
     } finally {
@@ -145,36 +194,12 @@ export function useOnboardingWizard() {
     }
   }
 
-  async function handleStoreFinish() {
-    if (!user) return;
-    if (!storeName.trim()) {
-      setStoreError(ERROR_STORE_NAME_REQUIRED);
-      return;
-    }
-    const effectiveAddress = sameAsProfile ? address : storeAddress;
-    setSavingStore(true);
-    setStoreError(null);
-    try {
-      let photoUrl: string | undefined;
-      if (storePhotoBlob) {
-        const path = `${user.storeId}/store-photo.webp`;
-        photoUrl = await uploadImage(supabase, "store-photos", path, storePhotoBlob);
-      }
-      const storeResult = await updateStore({
-        name: storeName.trim(),
-        address: effectiveAddress.trim() || null,
-        ...(photoUrl !== undefined && { photoUrl }),
-      });
-      if (!storeResult.ok) {
-        setStoreError(storeResult.error);
-        return;
-      }
-      setStep("products");
-    } catch (err) {
-      setStoreError(err instanceof Error ? err.message : ERROR_COULD_NOT_SAVE_YOUR_STORE);
-    } finally {
-      setSavingStore(false);
-    }
+  function handleProfileSkip() {
+    setStep("products");
+  }
+
+  function goToProfileStep() {
+    setStep("profile");
   }
 
   function goToStockAlertsStep() {
@@ -189,11 +214,11 @@ export function useOnboardingWizard() {
     // Deliberately not marking onboarding complete yet — that flips
     // user.onboardedAt, and OnboardingRoute would immediately redirect
     // away before the congrats step ever renders. It's marked complete
-    // when they leave via "Go to dashboard" instead.
+    // when they leave via "Start selling"/"See the dashboard" instead.
     setStep("congrats");
   }
 
-  async function handleGoToDashboard() {
+  async function handleFinish(destination: "/pos" | "/admin") {
     setFinishing(true);
     setFinishError(null);
     const result = await completeOnboarding();
@@ -202,11 +227,8 @@ export function useOnboardingWizard() {
       setFinishing(false);
       return;
     }
-    navigate("/admin", { replace: true });
-  }
-
-  function goToProfileStep() {
-    setStep("profile");
+    if (user) clearOnboardingStep(user.storeId);
+    navigate(destination, { replace: true });
   }
 
   const displayedAvatar = avatarPreview ?? user?.avatarUrl ?? null;
@@ -230,9 +252,6 @@ export function useOnboardingWizard() {
     avatarError,
     processingAvatar,
     onAvatarSelect: handleAvatarSelect,
-    profileError,
-    savingProfile,
-    onProfileNext: handleProfileNext,
 
     storeName,
     setStoreName,
@@ -245,12 +264,19 @@ export function useOnboardingWizard() {
     storePhotoError,
     processingStorePhoto,
     onStorePhotoSelect: handleStorePhotoSelect,
-    storeError,
-    savingStore,
-    onStoreFinish: handleStoreFinish,
+
+    openTime,
+    setOpenTime,
+    closeTime,
+    setCloseTime,
+
+    profileError,
+    savingProfile,
+    onProfileContinue: handleProfileContinue,
+    onProfileSkip: handleProfileSkip,
 
     finishing,
     finishError,
-    onGoToDashboard: handleGoToDashboard,
+    onFinish: handleFinish,
   };
 }
