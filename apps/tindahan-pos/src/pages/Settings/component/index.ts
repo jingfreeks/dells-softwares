@@ -10,3 +10,8 @@ export * from "./deleteaccountmodal";
 export * from "./storeidentitycard";
 export * from "./openinghourscard";
 export * from "./birregistrationcard";
+export * from "./howtosenditcard";
+export * from "./whattoincludecard";
+export * from "./footermessagecard";
+export * from "./receiptnumberingcard";
+export * from "./receiptpreviewpanel";
