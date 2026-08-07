@@ -876,3 +876,27 @@ export const TEXT_PREVIEW_CASHIER_LABEL = "Cashier:";
 export const TEXT_PREVIEW_TOTAL = "TOTAL";
 export const TEXT_PREVIEW_CASH = "Cash";
 export const TEXT_PREVIEW_CHANGE = "Change";
+
+// Settings — Fees and Limits
+export const PAGE_HEADING_FEES_AND_LIMITS = "Fees and limits";
+export const TEXT_FEES_AND_LIMITS_DESCRIPTION = "What you charge, and what staff can do without you";
+export const LABEL_ELOAD_FEE = "E-load fee";
+export const LABEL_CASH_IN_FEE = "Cash-in fee";
+export const LABEL_CASH_OUT_FEE = "Cash-out fee";
+export const LABEL_ADD_BRACKET = "Add bracket";
+export const TEXT_BRACKET_UP_TO_PREFIX = "Up to";
+export const TEXT_BRACKET_AND_UP_SUFFIX = "and up";
+export const LABEL_PRINT_AND_PHOTOCOPY = "Print and photocopy";
+export const LABEL_PRINT_BW = "Print B&W";
+export const LABEL_PRINT_COLOUR = "Print colour";
+export const LABEL_PHOTOCOPY = "Photocopy";
+export const LABEL_BULK_FROM = "Bulk from";
+export const LABEL_CASH_AND_CREDIT_LIMITS = "Cash and credit limits";
+export const LABEL_KEEP_IN_DRAWER = "Keep in drawer";
+export const LABEL_DEFAULT_CREDIT_LIMIT = "Default credit limit";
+export const LABEL_CASHIER_CASH_OUT_CAP = "Cashier cash-out cap";
+export const LABEL_BLOCK_UTANG_PAST_LIMIT = "Block utang past the customer's limit";
+export const LABEL_VOID_NEEDS_PIN = "Voiding a paid sale needs your PIN";
+export const LABEL_WARN_LOW_ELOAD_FLOAT = "Warn when e-load float drops below ₱500";
+export const ERROR_COULD_NOT_SAVE_FEES_AND_LIMITS = "Could not save fees and limits.";
+export const TEXT_FEES_AND_LIMITS_UPDATED = "Fees and limits updated.";

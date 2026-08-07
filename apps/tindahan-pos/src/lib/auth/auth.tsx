@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { togglablePersistenceStorage } from "@/lib/supabaseClient/togglablePersistenceStorage";
-import type { StaffAccount, Store } from "@/lib/types";
+import type { StaffAccount, Store, StoreFeeConfig } from "@/lib/types";
 import { AuthContext, type AuthResult, type RegisterResult } from "./authContext";
 
 async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
@@ -29,7 +29,7 @@ async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
 async function loadStore(storeId: string): Promise<Store | null> {
   const { data, error } = await supabase
     .from("stores")
-    .select("id, name, address, photo_url")
+    .select("id, name, address, photo_url, fee_config")
     .eq("id", storeId)
     .single();
 
@@ -40,6 +40,7 @@ async function loadStore(storeId: string): Promise<Store | null> {
     name: data.name,
     address: data.address,
     photoUrl: data.photo_url,
+    feeConfig: data.fee_config,
   };
 }
 
@@ -207,6 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     name?: string;
     address?: string | null;
     photoUrl?: string | null;
+    feeConfig?: StoreFeeConfig | null;
   }): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
     const { error } = await supabase
@@ -215,6 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...(patch.name !== undefined && { name: patch.name }),
         ...(patch.address !== undefined && { address: patch.address }),
         ...(patch.photoUrl !== undefined && { photo_url: patch.photoUrl }),
+        ...(patch.feeConfig !== undefined && { fee_config: patch.feeConfig }),
       })
       .eq("id", user.storeId);
     if (error) return { ok: false, error: error.message };

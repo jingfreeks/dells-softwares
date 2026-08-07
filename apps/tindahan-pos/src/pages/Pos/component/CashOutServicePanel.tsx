@@ -17,6 +17,7 @@ import {
   TEXT_FLOAT_SUFFIX,
   TEXT_CANT_MAKE_CHANGE_SUFFIX,
   BUTTON_ADD_TO_SALE,
+  useAuth,
 } from "@/lib";
 
 export function CashOutServicePanel({
@@ -31,14 +32,16 @@ export function CashOutServicePanel({
   // than the shared (label, amount, fee) shape the other services use.
   onAdd: (label: string, feeRevenue: number, cashHandedOver: number) => void;
 }) {
+  const { store } = useAuth();
   const [provider, setProvider] = useState<CashProvider>(CASH_PROVIDERS[0]);
   const [selectedDenomination, setSelectedDenomination] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
   const [showCustom, setShowCustom] = useState(false);
   const [referenceNo, setReferenceNo] = useState("");
 
+  const cashOutBrackets = store?.feeConfig?.cashOut;
   const amount = showCustom ? Number(customAmount) || 0 : (selectedDenomination ?? 0);
-  const fee = amount > 0 ? cashOutFee(amount) : 0;
+  const fee = amount > 0 ? cashOutFee(amount, cashOutBrackets) : 0;
   const cashToHandOver = Math.max(0, amount - fee);
   const canAdd = amount > 0 && referenceNo.trim() !== "";
 
@@ -82,7 +85,7 @@ export function CashOutServicePanel({
             className={`tpl-denom${!showCustom && selectedDenomination === d ? " tpl-on" : ""}`}
           >
             <span>{PESO.format(d).replace(".00", "")}</span>
-            <span>+{cashOutFee(d)}</span>
+            <span>+{cashOutFee(d, cashOutBrackets)}</span>
           </button>
         ))}
         {showCustom ? (
