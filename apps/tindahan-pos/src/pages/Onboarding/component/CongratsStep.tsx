@@ -65,11 +65,11 @@ export function CongratsStep({ finishError, finishing, onFinish }: CongratsStepP
           {productCount} {TEXT_PRODUCTS_LOADED_SUFFIX}, {TEXT_ALERTS_SET_AT_PREFIX} {thresholdDays}{" "}
           {TEXT_DAYS_OF_COVER}, {TEXT_AND_SEPARATOR} {PESO.format(registerFloat)} {TEXT_COUNTED_INTO_DRAWER_SUFFIX}
         </p>
-        <div className="tpl-row" style={{ gap: 12, marginBottom: 16 }}>
+        <div className="tpl-row" style={{ gap: 12, marginBottom: 16, flexWrap: "wrap", rowGap: 12 }}>
           <button
             type="button"
             className="tpl-btnp"
-            style={{ width: "auto", padding: "0 24px", marginBottom: 0 }}
+            style={{ width: "auto", padding: "0 24px", marginBottom: 0, whiteSpace: "nowrap" }}
             disabled={finishing}
             onClick={() => onFinish("/pos")}
           >
@@ -78,7 +78,7 @@ export function CongratsStep({ finishError, finishing, onFinish }: CongratsStepP
           <button
             type="button"
             className="tpl-btn"
-            style={{ width: "auto", padding: "0 20px", marginBottom: 0 }}
+            style={{ width: "auto", padding: "0 20px", marginBottom: 0, whiteSpace: "nowrap" }}
             disabled={finishing}
             onClick={() => onFinish("/admin")}
           >

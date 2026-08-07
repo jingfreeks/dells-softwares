@@ -101,7 +101,7 @@ export function StockAlertsStep({ onContinue, onUseDefault }: StockAlertsStepPro
       </div>
 
       <div className="tpl-card" style={{ marginBottom: 14 }}>
-        <div className="tpl-sp" style={{ marginBottom: 11 }}>
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between" style={{ marginBottom: 11 }}>
           <p className="tpl-h3">{LABEL_WARN_ME_WHEN_LESS_THAN}</p>
           <p style={{ color: "var(--tpl-a4)", fontSize: 19, fontWeight: 500 }}>
             {thresholdDays} {thresholdDays === 1 ? TEXT_DAY_SUFFIX : TEXT_DAYS_SUFFIX}
@@ -119,16 +119,16 @@ export function StockAlertsStep({ onContinue, onUseDefault }: StockAlertsStepPro
           aria-label={LABEL_WARN_ME_WHEN_LESS_THAN}
           style={{ ["--tpl-range-fill" as string]: `${sliderPercent}%` }}
         />
-        <div className="tpl-sp">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <span className="tpl-ts">{TEXT_ONE_DAY_RISKY}</span>
           <span className="tpl-ts">{TEXT_SEVEN_DAYS_LOTS_OF_CAPITAL}</span>
         </div>
       </div>
 
       <div className="tpl-card" style={{ marginBottom: 14 }}>
-        <div className="tpl-sp" style={{ marginBottom: 11 }}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between" style={{ marginBottom: 11 }}>
           <p className="tpl-h3">{TEXT_TODAY_YOU_WOULD_BE_WARNED_ABOUT_PREFIX}</p>
-          <span className="tpl-chip tpl-w">
+          <span className="tpl-chip tpl-w" style={{ flexShrink: 0 }}>
             {preview.affectedCount} {TEXT_ITEMS_SUFFIX}
           </span>
         </div>
@@ -148,8 +148,10 @@ export function StockAlertsStep({ onContinue, onUseDefault }: StockAlertsStepPro
 
       <div className="tpl-card" style={{ marginBottom: 18 }}>
         <div className="tpl-sp" style={{ borderBottom: "0.5px solid var(--tpl-bd3)", padding: "7px 0" }}>
-          <div className="tpl-flex1">
-            <p className="tpl-tp">{LABEL_FAST_MOVERS_TITLE}</p>
+          <div className="tpl-flex1" style={{ marginRight: 12 }}>
+            <p className="tpl-tp" style={{ whiteSpace: "normal" }}>
+              {LABEL_FAST_MOVERS_TITLE}
+            </p>
             <p className="tpl-ts">{TEXT_FAST_MOVERS_DESC}</p>
           </div>
           <button
@@ -164,8 +166,10 @@ export function StockAlertsStep({ onContinue, onUseDefault }: StockAlertsStepPro
           </button>
         </div>
         <div className="tpl-sp" style={{ padding: "7px 0" }}>
-          <div className="tpl-flex1">
-            <p className="tpl-tp">{LABEL_DAILY_SUMMARY_TITLE}</p>
+          <div className="tpl-flex1" style={{ marginRight: 12 }}>
+            <p className="tpl-tp" style={{ whiteSpace: "normal" }}>
+              {LABEL_DAILY_SUMMARY_TITLE}
+            </p>
             <p className="tpl-ts">{TEXT_DAILY_SUMMARY_DESC}</p>
           </div>
           <button
@@ -181,14 +185,19 @@ export function StockAlertsStep({ onContinue, onUseDefault }: StockAlertsStepPro
         </div>
       </div>
 
-      <div className="tpl-row">
-        <button type="button" className="tpl-btnp" style={{ width: "auto", marginBottom: 0 }} onClick={onContinue}>
+      <div className="tpl-row" style={{ flexWrap: "wrap", rowGap: 8 }}>
+        <button
+          type="button"
+          className="tpl-btnp"
+          style={{ width: "auto", marginBottom: 0, whiteSpace: "nowrap" }}
+          onClick={onContinue}
+        >
           {BUTTON_CONTINUE} <i className="ti ti-arrow-right" aria-hidden />
         </button>
-        <button type="button" className="tpl-txt" onClick={onUseDefault}>
+        <button type="button" className="tpl-txt" style={{ whiteSpace: "nowrap" }} onClick={onUseDefault}>
           {BUTTON_USE_THE_DEFAULT}
         </button>
-        <p className="tpl-ts" style={{ marginLeft: "auto" }}>
+        <p className="tpl-ts" style={{ marginLeft: "auto", whiteSpace: "nowrap" }}>
           {TEXT_SAVED_AUTOMATICALLY}
         </p>
       </div>

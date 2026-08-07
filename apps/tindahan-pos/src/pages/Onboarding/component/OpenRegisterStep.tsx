@@ -124,27 +124,27 @@ export function OpenRegisterStep({ onOpenRegister, onSkipCount }: OpenRegisterSt
       </div>
 
       <div className="tpl-card" style={{ marginBottom: 18 }}>
-        <div className="tpl-sp">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="tpl-flex1">
             <p className="tpl-tp">{LABEL_WHOS_ON_THE_REGISTER}</p>
             <p className="tpl-ts">{TEXT_SALES_RECORDED_UNDER_THIS_PERSON}</p>
           </div>
-          <span className="tpl-chip tpl-on">
+          <span className="tpl-chip tpl-on" style={{ flexShrink: 0, alignSelf: "flex-start" }}>
             {assignedStaffName} {TEXT_YOU_SUFFIX} <i className="ti ti-chevron-down" aria-hidden />
           </span>
         </div>
       </div>
 
-      <div className="tpl-row">
+      <div className="tpl-row" style={{ flexWrap: "wrap", rowGap: 8 }}>
         <button
           type="button"
           className="tpl-btnp"
-          style={{ width: "auto", height: 40, marginBottom: 0 }}
+          style={{ width: "auto", height: 40, marginBottom: 0, whiteSpace: "nowrap" }}
           onClick={handleOpenRegister}
         >
           {BUTTON_OPEN_THE_REGISTER} <i className="ti ti-arrow-right" aria-hidden />
         </button>
-        <button type="button" className="tpl-txt" onClick={onSkipCount}>
+        <button type="button" className="tpl-txt" style={{ whiteSpace: "nowrap" }} onClick={onSkipCount}>
           {BUTTON_SKIP_THE_COUNT}
         </button>
       </div>

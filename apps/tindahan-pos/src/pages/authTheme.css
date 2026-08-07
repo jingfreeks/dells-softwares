@@ -646,6 +646,11 @@
   gap: 11px;
   margin: 14px 0;
 }
+@media (max-width: 640px) {
+  .tpl-g3 {
+    grid-template-columns: 1fr;
+  }
+}
 .tpl-metric {
   background: var(--tpl-gl);
   border: 0.5px solid var(--tpl-bd);

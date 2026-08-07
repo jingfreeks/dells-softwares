@@ -230,14 +230,14 @@ export function ProfileStep({
       </div>
 
       <div className="tpl-card" style={{ marginBottom: 14 }}>
-        <div className="tpl-sp">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="tpl-flex1">
             <p className="tpl-tp" style={{ fontSize: 13.5 }}>
               {LABEL_WHEN_ARE_YOU_USUALLY_OPEN}
             </p>
             <p className="tpl-ts">{TEXT_OPENING_HOURS_HINT}</p>
           </div>
-          <div className="tpl-row" style={{ gap: 8 }}>
+          <div className="tpl-row" style={{ gap: 8, flexShrink: 0 }}>
             <div className="tpl-fld tpl-mono" style={{ height: 34, width: 120 }}>
               <input
                 type="time"
@@ -266,20 +266,20 @@ export function ProfileStep({
         </p>
       )}
 
-      <div className="tpl-row">
+      <div className="tpl-row" style={{ flexWrap: "wrap", rowGap: 8 }}>
         <button
           type="button"
           className="tpl-btnp"
-          style={{ width: "auto", height: 40, marginBottom: 0 }}
+          style={{ width: "auto", height: 40, marginBottom: 0, whiteSpace: "nowrap" }}
           disabled={savingProfile || processingAvatar || processingStorePhoto}
           onClick={onContinue}
         >
           {BUTTON_CONTINUE} <i className="ti ti-arrow-right" aria-hidden />
         </button>
-        <button type="button" className="tpl-txt" onClick={onSkip}>
+        <button type="button" className="tpl-txt" style={{ whiteSpace: "nowrap" }} onClick={onSkip}>
           {BUTTON_SKIP_FOR_NOW}
         </button>
-        <p className="tpl-ts" style={{ marginLeft: "auto" }}>
+        <p className="tpl-ts" style={{ marginLeft: "auto", whiteSpace: "nowrap" }}>
           {TEXT_SAVED_AUTOMATICALLY}
         </p>
       </div>
