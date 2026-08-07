@@ -13,11 +13,11 @@ import {
   Customers,
   Suppliers,
   ProfileSettings,
+  StoreDetails,
   ComingSoonSettingsPage,
   Onboarding,
 } from "@/pages";
 import {
-  NAV_LABEL_STORE_DETAILS,
   NAV_LABEL_RECEIPTS,
   NAV_LABEL_FEES_AND_LIMITS,
   NAV_LABEL_ALERTS,
@@ -104,7 +104,7 @@ function App() {
                     path="/settings/store"
                     element={
                       <ProtectedRoute>
-                        <ComingSoonSettingsPage heading={NAV_LABEL_STORE_DETAILS} subheading="Appears on receipts and reports" />
+                        <StoreDetails />
                       </ProtectedRoute>
                     }
                   />
