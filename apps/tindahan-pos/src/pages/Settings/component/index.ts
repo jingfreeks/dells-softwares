@@ -7,3 +7,6 @@ export * from "./notificationscard";
 export * from "./signouteverywherenote";
 export * from "./dangerzonecard";
 export * from "./deleteaccountmodal";
+export * from "./storeidentitycard";
+export * from "./openinghourscard";
+export * from "./birregistrationcard";

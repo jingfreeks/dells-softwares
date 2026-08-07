@@ -824,3 +824,26 @@ export const TEXT_PASSWORD_UPDATED = "Password updated.";
 export const ERROR_COULD_NOT_UPDATE_PASSWORD = "Could not update password.";
 export const ERROR_COULD_NOT_SIGN_OUT_EVERYWHERE = "Could not sign out other sessions.";
 export const TEXT_SIGNED_OUT_EVERYWHERE = "Signed out of all other sessions.";
+
+// Settings — Store Details
+export const PAGE_HEADING_STORE_DETAILS = "Store details";
+export const TEXT_STORE_DETAILS_DESCRIPTION = "Appears on receipts and reports";
+export const BUTTON_CHANGE_LOGO = "Change logo";
+export const TEXT_LOGO_HINT = "Printed at the top of every receipt";
+export const LABEL_CONTACT_NUMBER = "Contact number";
+export const LABEL_CITY = "City";
+export const LABEL_CURRENCY = "Currency";
+export const LABEL_TIME_ZONE = "Time zone";
+export const LABEL_OPENING_HOURS = "Opening hours";
+export const TEXT_SAME_EVERY_DAY = "Same every day";
+export const LABEL_OPENS = "Opens";
+export const LABEL_CLOSES = "Closes";
+export const TEXT_OPENING_HOURS_STOCK_HINT = 'Used to work out "sells per day" for stock alerts.';
+export const LABEL_REGISTERED_WITH_BIR = "Registered with BIR";
+export const TEXT_REGISTERED_WITH_BIR_DESC = "Turn on if you issue official receipts";
+export const LABEL_TIN = "TIN";
+export const LABEL_BUSINESS_PERMIT_NO = "Business permit no.";
+export const TEXT_BIR_HINT =
+  "Printed on receipts. Check the current BIR requirements for your registration type — this app doesn't verify them.";
+export const ERROR_COULD_NOT_SAVE_STORE_DETAILS = "Could not save store details.";
+export const TEXT_STORE_DETAILS_UPDATED = "Store details updated.";
