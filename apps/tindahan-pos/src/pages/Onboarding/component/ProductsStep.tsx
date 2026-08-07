@@ -124,11 +124,11 @@ export function ProductsStep({ onContinue, onSkip }: ProductsStepProps) {
           })}
         </div>
 
-        <div className="tpl-row">
+        <div className="tpl-row" style={{ flexWrap: "wrap", rowGap: 8 }}>
           <button
             type="button"
             className="tpl-btnp"
-            style={{ width: "auto", marginBottom: 0 }}
+            style={{ width: "auto", marginBottom: 0, whiteSpace: "nowrap" }}
             disabled={importingStarter || starterItemsToAddCount === 0}
             onClick={onImportStarterCatalog}
           >
@@ -205,14 +205,19 @@ export function ProductsStep({ onContinue, onSkip }: ProductsStepProps) {
         </div>
       </div>
 
-      <div className="tpl-row">
-        <button type="button" className="tpl-btnp" style={{ width: "auto", marginBottom: 0 }} onClick={onContinue}>
+      <div className="tpl-row" style={{ flexWrap: "wrap", rowGap: 8 }}>
+        <button
+          type="button"
+          className="tpl-btnp"
+          style={{ width: "auto", marginBottom: 0, whiteSpace: "nowrap" }}
+          onClick={onContinue}
+        >
           {BUTTON_CONTINUE} <i className="ti ti-arrow-right" aria-hidden />
         </button>
-        <button type="button" className="tpl-txt" onClick={onSkip}>
+        <button type="button" className="tpl-txt" style={{ whiteSpace: "nowrap" }} onClick={onSkip}>
           {BUTTON_SKIP_FOR_NOW}
         </button>
-        <p className="tpl-ts" style={{ marginLeft: "auto" }}>
+        <p className="tpl-ts" style={{ marginLeft: "auto", whiteSpace: "nowrap" }}>
           {TEXT_SAVED_AUTOMATICALLY}
         </p>
       </div>

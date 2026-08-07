@@ -57,14 +57,19 @@ export function WelcomeStep({ onStartSetup, onSkipToRegister }: WelcomeStepProps
         <p style={{ color: "#8593AB", fontSize: 15, lineHeight: 1.6, marginBottom: 26, maxWidth: "44ch" }}>
           {TEXT_WELCOME_SUBTITLE}
         </p>
-        <div className="tpl-row" style={{ gap: 12, marginBottom: 16 }}>
-          <button type="button" className="tpl-btnp" style={{ width: "auto", padding: "0 24px", marginBottom: 0 }} onClick={onStartSetup}>
+        <div className="tpl-row" style={{ gap: 12, marginBottom: 16, flexWrap: "wrap", rowGap: 12 }}>
+          <button
+            type="button"
+            className="tpl-btnp"
+            style={{ width: "auto", padding: "0 24px", marginBottom: 0, whiteSpace: "nowrap" }}
+            onClick={onStartSetup}
+          >
             {BUTTON_START_SETUP} <i className="ti ti-arrow-right" aria-hidden />
           </button>
           <button
             type="button"
             className="tpl-btn"
-            style={{ width: "auto", padding: "0 20px", marginBottom: 0 }}
+            style={{ width: "auto", padding: "0 20px", marginBottom: 0, whiteSpace: "nowrap" }}
             onClick={onSkipToRegister}
           >
             {BUTTON_SKIP_TO_REGISTER}
