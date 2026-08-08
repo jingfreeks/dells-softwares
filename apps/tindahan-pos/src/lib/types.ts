@@ -25,6 +25,13 @@ export interface CashierProfile {
   avatarUrl: string | null;
 }
 
+/** A paired register (Phase 3) — a real Supabase Auth session with no human `StaffAccount` behind it. */
+export interface DeviceSession {
+  id: string;
+  storeId: string;
+  name: string;
+}
+
 export interface StoreFeeConfig {
   eload?: { max: number; fee: number }[];
   cashIn?: { max: number; fee: number }[];

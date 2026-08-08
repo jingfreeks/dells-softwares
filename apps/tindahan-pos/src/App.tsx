@@ -12,6 +12,7 @@ import {
   Login,
   Register,
   ForgotPassword,
+  Pair,
   Pos,
   Inventory,
   Dashboard,
@@ -25,6 +26,7 @@ import {
   FeesLimits,
   AlertsSettings,
   BackupSettings,
+  DevicesSettings,
   Onboarding,
 } from "@/pages";
 
@@ -41,6 +43,7 @@ function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/pair" element={<Pair />} />
                     <Route
                       path="/pos"
                       element={
@@ -142,6 +145,14 @@ function App() {
                       element={
                         <ProtectedRoute>
                           <BackupSettings />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/settings/devices"
+                      element={
+                        <ProtectedRoute>
+                          <DevicesSettings />
                         </ProtectedRoute>
                       }
                     />
