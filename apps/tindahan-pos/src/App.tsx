@@ -17,10 +17,9 @@ import {
   ReceiptsSettings,
   FeesLimits,
   AlertsSettings,
-  ComingSoonSettingsPage,
+  BackupSettings,
   Onboarding,
 } from "@/pages";
-import { NAV_LABEL_BACKUP } from "@/lib";
 
 function App() {
   return (
@@ -134,7 +133,7 @@ function App() {
                     path="/settings/backup"
                     element={
                       <ProtectedRoute>
-                        <ComingSoonSettingsPage heading={NAV_LABEL_BACKUP} subheading="Your sales history is the store's memory" />
+                        <BackupSettings />
                       </ProtectedRoute>
                     }
                   />

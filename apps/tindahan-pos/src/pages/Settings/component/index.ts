@@ -21,3 +21,8 @@ export * from "./cashandcreditlimitscard";
 export * from "./stockalertcard";
 export * from "./moneyalertcard";
 export * from "./howandwhencard";
+export * from "./syncstatuscard";
+export * from "./automaticbackupcard";
+export * from "./offlinequeuecard";
+export * from "./exportcard";
+export * from "./restorenote";
