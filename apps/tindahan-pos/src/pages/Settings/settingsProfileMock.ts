@@ -7,14 +7,12 @@ export interface NotificationPreferences {
 
 export interface SettingsProfileMock {
   displayName: string;
-  overridePin: string | null;
   twoStepSignIn: boolean;
   notifications: NotificationPreferences;
 }
 
 export const DEFAULT_SETTINGS_PROFILE_MOCK: SettingsProfileMock = {
   displayName: "",
-  overridePin: null,
   twoStepSignIn: false,
   notifications: {
     lowStockDaily: true,
@@ -27,10 +25,12 @@ export const DEFAULT_SETTINGS_PROFILE_MOCK: SettingsProfileMock = {
 const STORAGE_KEY_PREFIX = "tindahan-pos:settings-profile:";
 
 /**
- * Display name, override PIN, two-step sign-in, and notification
- * preferences have no backend column/table yet — this is a UI-only
- * redesign, so they persist client-side for now.
- * TODO: move to real staff/store columns once they exist.
+ * Display name, two-step sign-in, and notification preferences have no
+ * backend column/table yet — this is a UI-only redesign, so they persist
+ * client-side for now. (The override PIN moved to a real, hashed
+ * `staff.pin_hash` column — see set_own_pin() — since it's now actually
+ * used to authorize an over-limit Utang sale.)
+ * TODO: move the rest to real staff/store columns once they exist.
  */
 export function loadSettingsProfileMock(userId: string): SettingsProfileMock {
   try {

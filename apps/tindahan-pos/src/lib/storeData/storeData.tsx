@@ -315,6 +315,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       p_customer_id: payment.type === "credit" ? payment.customerId : null,
       p_payment_type: payment.type,
       p_reference_no: payment.type === "qr" ? payment.referenceNo!.trim() : null,
+      p_override_pin: payment.type === "credit" ? (payment.overridePin?.trim() || null) : null,
     });
     if (err) throw err;
     const result = data?.[0];

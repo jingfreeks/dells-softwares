@@ -37,6 +37,8 @@ export interface AuthContextValue {
     photoUrl?: string | null;
     feeConfig?: StoreFeeConfig | null;
   }) => Promise<AuthResult>;
+  /** Sets or changes the signed-in staff member's own 4-digit PIN (used to approve an over-limit Utang sale). */
+  setOwnPin: (pin: string) => Promise<AuthResult>;
   /** Marks the signed-in admin's onboarding wizard as finished. */
   completeOnboarding: () => Promise<AuthResult>;
   /** Permanently deletes the signed-in staff member's own account. */

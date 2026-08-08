@@ -3,6 +3,7 @@ export * from "./settingssidebar";
 export * from "./identitycard";
 export * from "./signingincard";
 export * from "./changepasswordmodal";
+export * from "./setpinmodal";
 export * from "./notificationscard";
 export * from "./signouteverywherenote";
 export * from "./dangerzonecard";

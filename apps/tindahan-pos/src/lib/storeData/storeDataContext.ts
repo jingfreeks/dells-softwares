@@ -28,6 +28,8 @@ export interface CheckoutPayment {
   customerId?: string | null;
   /** Required when type is "qr" — the GCash/Maya transaction number the cashier read off their phone. */
   referenceNo?: string;
+  /** An admin's PIN, supplied only when a credit sale would exceed the customer's limit and an owner has approved it. */
+  overridePin?: string;
 }
 
 export interface StoreDataContextValue {

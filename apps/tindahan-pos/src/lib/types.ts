@@ -11,6 +11,8 @@ export interface StaffAccount {
   address: string | null;
   /** Set once this admin finishes the post-registration onboarding wizard. */
   onboardedAt: string | null;
+  /** Whether this staff member has set a 4-digit PIN (used to approve an over-limit Utang sale). */
+  hasPin: boolean;
 }
 
 export interface StoreFeeConfig {

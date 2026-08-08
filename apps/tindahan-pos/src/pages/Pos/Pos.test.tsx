@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { useAuth, useStoreData, useFeatureFlag, EloadWalletProvider, DrawerFloatProvider } from "@/lib";
@@ -208,6 +208,74 @@ describe("Pos", () => {
     await user.click(screen.getByText("Mang Jose"));
 
     expect(screen.getByText(/over their/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Needs owner's PIN/ })).toBeInTheDocument();
+  });
+
+  it("opens the owner-approval modal and completes the sale with a valid PIN", async () => {
+    const user = userEvent.setup();
+    const customers = [makeCustomer({ id: "c1", name: "Aling Rosa", balance: 1132, creditLimit: 1000 })];
+    const checkout = vi.fn().mockResolvedValue({});
+    setup({ customers, checkout });
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "Utang" }));
+    await user.type(screen.getByLabelText("Charge to customer"), "Rosa");
+    await user.click(screen.getByText("Aling Rosa"));
+    await user.click(screen.getByRole("button", { name: /Needs owner's PIN/ }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/Aling Rosa/)).toBeInTheDocument();
+    for (const digit of ["1", "2", "3", "4"]) {
+      await user.click(within(dialog).getByRole("button", { name: digit }));
+    }
+
+    expect(checkout).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array),
+      "Aling Nena",
+      expect.objectContaining({ type: "credit", customerId: "c1", overridePin: "1234" })
+    );
+  });
+
+  it("shows an error and lets the cashier retry when the override PIN is wrong", async () => {
+    const user = userEvent.setup();
+    const customers = [makeCustomer({ id: "c1", name: "Aling Rosa", balance: 1132, creditLimit: 1000 })];
+    const checkout = vi.fn().mockRejectedValue(new Error("INVALID_OVERRIDE_PIN"));
+    setup({ customers, checkout });
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "Utang" }));
+    await user.type(screen.getByLabelText("Charge to customer"), "Rosa");
+    await user.click(screen.getByText("Aling Rosa"));
+    await user.click(screen.getByRole("button", { name: /Needs owner's PIN/ }));
+
+    const dialog = await screen.findByRole("dialog");
+    for (const digit of ["9", "9", "9", "9"]) {
+      await user.click(within(dialog).getByRole("button", { name: digit }));
+    }
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("That PIN doesn't match any admin at this store.");
+  });
+
+  it("switches to cash and closes the modal via 'Pay cash instead'", async () => {
+    const user = userEvent.setup();
+    const customers = [makeCustomer({ id: "c1", name: "Aling Rosa", balance: 1132, creditLimit: 1000 })];
+    setup({ customers });
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "Utang" }));
+    await user.type(screen.getByLabelText("Charge to customer"), "Rosa");
+    await user.click(screen.getByText("Aling Rosa"));
+    await user.click(screen.getByRole("button", { name: /Needs owner's PIN/ }));
+
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Pay cash instead" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cash" })).toHaveClass("tpl-on");
   });
 
   it("quick-adds a new customer while on Utang", async () => {

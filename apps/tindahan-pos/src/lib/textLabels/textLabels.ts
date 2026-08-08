@@ -614,7 +614,7 @@ export const PLACEHOLDER_REFERENCE_NO = "e.g. 0123456789012";
 export const TEXT_LIMIT_PREFIX = "· limit";
 export const BUTTON_CHANGE = "Change";
 export const TEXT_CREDIT_LIMIT_WARNING_MIDDLE = "over their";
-export const TEXT_CREDIT_LIMIT_WARNING_SUFFIX = "credit limit — not blocked, just a heads up.";
+export const TEXT_CREDIT_LIMIT_WARNING_SUFFIX = "credit limit — an admin's PIN will be needed to complete this sale.";
 export const LABEL_CHARGE_TO_CUSTOMER = "Charge to customer";
 export const TEXT_ADD_AS_NEW_CUSTOMER_PREFIX = "+ Add";
 export const TEXT_ADD_AS_NEW_CUSTOMER_SUFFIX = "as a new customer";
@@ -957,3 +957,18 @@ export const LABEL_RESTORE_FROM_BACKUP = "Restore from a backup";
 export const TEXT_RESTORE_DESC = "Not available yet — this would replace everything currently in the app";
 export const BUTTON_RESTORE = "Restore";
 export const TEXT_BACKUP_SETTINGS_UPDATED = "Backup settings updated.";
+
+// Owner PIN override (POS credit-limit approval)
+export const LABEL_NEEDS_OWNER_PIN = "Needs owner's PIN";
+export const LABEL_OWNER_APPROVAL_NEEDED = "Owner approval needed";
+export const TEXT_OWNER_APPROVAL_RECORDED_HINT = "This override is recorded with your name as the approving admin.";
+export const BUTTON_PAY_CASH_INSTEAD = "Pay cash instead";
+export const ERROR_INVALID_OVERRIDE_PIN = "That PIN doesn't match any admin at this store.";
+export const ERROR_COULD_NOT_SET_PIN = "Could not save your PIN.";
+export const TEXT_PIN_UPDATED = "PIN updated.";
+export const LABEL_YOUR_OVERRIDE_PIN_ENTER = "Enter a new 4-digit PIN";
+export const LABEL_YOUR_OVERRIDE_PIN_CONFIRM = "Confirm your new PIN";
+export const ERROR_PIN_MUST_BE_4_DIGITS = "PIN must be exactly 4 digits.";
+export const ERROR_PINS_DO_NOT_MATCH = "PINs don't match.";
+export const BUTTON_SET_PIN = "Set PIN";
+export const BUTTON_CHANGE_PIN = "Change PIN";
