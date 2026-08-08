@@ -16,13 +16,11 @@ import {
   StoreDetails,
   ReceiptsSettings,
   FeesLimits,
+  AlertsSettings,
   ComingSoonSettingsPage,
   Onboarding,
 } from "@/pages";
-import {
-  NAV_LABEL_ALERTS,
-  NAV_LABEL_BACKUP,
-} from "@/lib";
+import { NAV_LABEL_BACKUP } from "@/lib";
 
 function App() {
   return (
@@ -128,7 +126,7 @@ function App() {
                     path="/settings/alerts"
                     element={
                       <ProtectedRoute>
-                        <ComingSoonSettingsPage heading={NAV_LABEL_ALERTS} subheading="What reaches you, when, and how" />
+                        <AlertsSettings />
                       </ProtectedRoute>
                     }
                   />
