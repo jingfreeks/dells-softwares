@@ -12,6 +12,7 @@ import {
   IdentityCard,
   SigningInCard,
   ChangePasswordModal,
+  SetPinModal,
   NotificationsCard,
   SignOutEverywhereNote,
   DangerZoneCard,
@@ -40,8 +41,13 @@ export function ProfileSettings() {
     handleSubmit,
     handleDiscard,
 
-    overridePin,
-    onRegeneratePin,
+    hasPin,
+    showSetPinModal,
+    onSetPinClick,
+    closeSetPinModal,
+    setPinSubmitting,
+    setPinError,
+    onSetPinSubmit,
     twoStepSignIn,
     setTwoStepSignIn,
     notifications,
@@ -100,8 +106,8 @@ export function ProfileSettings() {
         />
 
         <SigningInCard
-          overridePin={overridePin}
-          onRegeneratePin={onRegeneratePin}
+          hasPin={hasPin}
+          onSetPinClick={onSetPinClick}
           twoStepSignIn={twoStepSignIn}
           onTwoStepSignInChange={setTwoStepSignIn}
           onChangePasswordClick={openChangePassword}
@@ -163,6 +169,14 @@ export function ProfileSettings() {
         deleting={deleting}
         onCancel={closeDeleteModal}
         onConfirm={handleDeleteAccount}
+      />
+
+      <SetPinModal
+        open={showSetPinModal}
+        submitting={setPinSubmitting}
+        error={setPinError}
+        onCancel={closeSetPinModal}
+        onSubmit={onSetPinSubmit}
       />
     </SettingsLayout>
   );

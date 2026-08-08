@@ -24,6 +24,7 @@ export function makeStaffAccount(overrides: Partial<StaffAccount> = {}): StaffAc
     phone: null,
     address: null,
     onboardedAt: "2026-07-27T10:00:00Z",
+    hasPin: false,
     ...overrides,
   };
 }
@@ -130,6 +131,7 @@ function baseAuthValue() {
     requestPasswordReset: vi.fn().mockResolvedValue({ ok: true }),
     updateProfile: vi.fn().mockResolvedValue({ ok: true }),
     updateStore: vi.fn().mockResolvedValue({ ok: true }),
+    setOwnPin: vi.fn().mockResolvedValue({ ok: true }),
     completeOnboarding: vi.fn().mockResolvedValue({ ok: true }),
     deleteAccount: vi.fn().mockResolvedValue({ ok: true }),
   };

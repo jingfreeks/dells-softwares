@@ -12,8 +12,8 @@ import {
   ERROR_PASSWORDS_DO_NOT_MATCH,
   ERROR_COULD_NOT_UPDATE_PASSWORD,
   ERROR_COULD_NOT_SIGN_OUT_EVERYWHERE,
+  ERROR_COULD_NOT_SET_PIN,
 } from "@/lib";
-import { generatePin } from "@/pages/Staff/lib";
 import {
   loadSettingsProfileMock,
   saveSettingsProfileMock,
@@ -25,7 +25,7 @@ const AVATAR_MAX_DIMENSION = 512;
 const MIN_PASSWORD_LENGTH = 8;
 
 export function useSettingsProfilePage() {
-  const { user, updateProfile, deleteAccount } = useAuth();
+  const { user, updateProfile, deleteAccount, setOwnPin } = useAuth();
   const navigate = useNavigate();
 
   const [name, setName] = useState(user?.name ?? "");
@@ -40,7 +40,9 @@ export function useSettingsProfilePage() {
   const [saved, setSaved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const [overridePin, setOverridePin] = useState<string | null>(null);
+  const [showSetPinModal, setShowSetPinModal] = useState(false);
+  const [setPinSubmitting, setSetPinSubmitting] = useState(false);
+  const [setPinError, setSetPinError] = useState<string | null>(null);
   const [twoStepSignIn, setTwoStepSignIn] = useState(false);
   const [notifications, setNotifications] = useState<NotificationPreferences>(
     DEFAULT_SETTINGS_PROFILE_MOCK.notifications
@@ -69,7 +71,6 @@ export function useSettingsProfilePage() {
     if (!user) return;
     const savedMock = loadSettingsProfileMock(user.id);
     setDisplayName(savedMock.displayName);
-    setOverridePin(savedMock.overridePin);
     setTwoStepSignIn(savedMock.twoStepSignIn);
     setNotifications(savedMock.notifications);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,8 +78,8 @@ export function useSettingsProfilePage() {
 
   useEffect(() => {
     if (!user) return;
-    saveSettingsProfileMock(user.id, { displayName, overridePin, twoStepSignIn, notifications });
-  }, [user, displayName, overridePin, twoStepSignIn, notifications]);
+    saveSettingsProfileMock(user.id, { displayName, twoStepSignIn, notifications });
+  }, [user, displayName, twoStepSignIn, notifications]);
 
   useEffect(() => {
     return () => {
@@ -148,7 +149,6 @@ export function useSettingsProfilePage() {
       }
       saveSettingsProfileMock(user.id, {
         displayName,
-        overridePin,
         twoStepSignIn,
         notifications,
       });
@@ -173,8 +173,30 @@ export function useSettingsProfilePage() {
     if (user) setDisplayName(loadSettingsProfileMock(user.id).displayName);
   }
 
-  function handleRegeneratePin() {
-    setOverridePin(generatePin());
+  function openSetPinModal() {
+    setSetPinError(null);
+    setShowSetPinModal(true);
+  }
+
+  function closeSetPinModal() {
+    setShowSetPinModal(false);
+  }
+
+  async function handleSetPin(pin: string) {
+    setSetPinSubmitting(true);
+    setSetPinError(null);
+    try {
+      const result = await setOwnPin(pin);
+      if (!result.ok) {
+        setSetPinError(result.error);
+        return;
+      }
+      setShowSetPinModal(false);
+    } catch (err) {
+      setSetPinError(err instanceof Error ? err.message : ERROR_COULD_NOT_SET_PIN);
+    } finally {
+      setSetPinSubmitting(false);
+    }
   }
 
   function toggleNotification(key: keyof NotificationPreferences) {
@@ -282,8 +304,13 @@ export function useSettingsProfilePage() {
     handleSubmit,
     handleDiscard,
 
-    overridePin,
-    onRegeneratePin: handleRegeneratePin,
+    hasPin: user?.hasPin ?? false,
+    showSetPinModal,
+    onSetPinClick: openSetPinModal,
+    closeSetPinModal,
+    setPinSubmitting,
+    setPinError,
+    onSetPinSubmit: handleSetPin,
     twoStepSignIn,
     setTwoStepSignIn,
     notifications,

@@ -11,6 +11,7 @@ export * from "./HomeRedirect";
 export * from "./MobileHeader";
 export * from "./OnboardingRoute";
 export * from "./PageLoadingOverlay";
+export * from "./PinKeypad";
 export * from "./ProtectedRoute";
 export * from "./ScannerLoadingOverlay";
 export * from "./Sidebar";

@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { PAGE_HEADING_POS, TEXT_POS_DESCRIPTION } from "@/lib";
 import { ScannerLoadingOverlay } from "@/components";
-import { PosTabs, ProductBrowsePanel, ServicesPanel, CartPanel } from "./component";
+import { PosTabs, ProductBrowsePanel, ServicesPanel, CartPanel, OwnerApprovalModal } from "./component";
 import { usePosPage } from "./hooks";
 import "../authTheme.css";
 
@@ -72,6 +72,14 @@ export function Pos() {
     quickCashAmounts,
     handleCompleteSale,
     handleCancelSale,
+    ownerApprovalOpen,
+    overridePin,
+    setOverridePin,
+    overridePinError,
+    overrideSubmitting,
+    closeOwnerApproval,
+    payCashInstead,
+    submitOwnerApproval,
     effectiveTab,
     packPricingEnabled,
     posServicesEnabled,
@@ -165,6 +173,19 @@ export function Pos() {
           <BarcodeScanner onDetected={handleCameraDetected} onClose={() => setShowScanner(false)} />
         </Suspense>
       )}
+
+      <OwnerApprovalModal
+        open={ownerApprovalOpen}
+        customer={selectedCustomer}
+        total={total}
+        pin={overridePin}
+        onPinChange={setOverridePin}
+        onSubmit={submitOwnerApproval}
+        pinError={overridePinError}
+        submitting={overrideSubmitting}
+        onCancel={closeOwnerApproval}
+        onPayCashInstead={payCashInstead}
+      />
     </div>
   );
 }

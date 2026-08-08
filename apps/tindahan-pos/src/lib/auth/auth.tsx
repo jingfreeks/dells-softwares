@@ -7,7 +7,7 @@ import { AuthContext, type AuthResult, type RegisterResult } from "./authContext
 async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
   const { data, error } = await supabase
     .from("staff")
-    .select("id, store_id, name, email, role, avatar_url, phone, address, onboarded_at")
+    .select("id, store_id, name, email, role, avatar_url, phone, address, onboarded_at, pin_hash")
     .eq("id", userId)
     .single();
 
@@ -23,6 +23,7 @@ async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
     phone: data.phone,
     address: data.address,
     onboardedAt: data.onboarded_at,
+    hasPin: data.pin_hash !== null,
   };
 }
 
@@ -204,6 +205,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
+  async function setOwnPin(pin: string): Promise<AuthResult> {
+    if (!user) return { ok: false, error: "Not signed in." };
+    const { error } = await supabase.rpc("set_own_pin", { p_pin: pin });
+    if (error) return { ok: false, error: error.message };
+    const profile = await loadStaffProfile(user.id);
+    setUser(profile);
+    return { ok: true };
+  }
+
   async function updateStore(patch: {
     name?: string;
     address?: string | null;
@@ -267,6 +277,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         requestPasswordReset,
         updateProfile,
         updateStore,
+        setOwnPin,
         completeOnboarding,
         deleteAccount,
       }}

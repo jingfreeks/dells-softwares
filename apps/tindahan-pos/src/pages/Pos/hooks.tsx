@@ -6,9 +6,11 @@ import {
   useDrawerFloat,
   packPriceLabel,
   useFeatureFlag,
+  wouldExceedCreditLimit,
   ERROR_PRODUCT_NOT_FOUND_BARCODE_PREFIX,
   ERROR_COULD_NOT_ADD_CUSTOMER,
   ERROR_COULD_NOT_COMPLETE_SALE,
+  ERROR_INVALID_OVERRIDE_PIN,
   SERVICE_LABEL_ELOAD,
   SERVICE_LABEL_CASHIN,
   SERVICE_LABEL_CASHOUT,
@@ -62,6 +64,10 @@ export function usePosPage() {
   const [lastReceiptTotal, setLastReceiptTotal] = useState<number | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [ownerApprovalOpen, setOwnerApprovalOpen] = useState(false);
+  const [overridePin, setOverridePin] = useState("");
+  const [overridePinError, setOverridePinError] = useState<string | null>(null);
+  const [overrideSubmitting, setOverrideSubmitting] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [activeTab, setActiveTab] = useState<PosTab>("products");
   const [activeCategory, setActiveCategory] = useState<string>("All");
@@ -334,6 +340,27 @@ export function usePosPage() {
     }
   }
 
+  function resetSaleState() {
+    setCart([]);
+    setServiceLines([]);
+    setTendered("0");
+    setPaymentType("cash");
+    setReferenceNo("");
+    clearCustomer();
+  }
+
+  async function runCheckout(overridePinValue?: string) {
+    await checkout(cart, serviceLines, user?.name ?? "Cashier", {
+      type: paymentType,
+      customerId: selectedCustomerId,
+      ...(paymentType === "qr" ? { referenceNo: referenceNo.trim() } : {}),
+      ...(overridePinValue ? { overridePin: overridePinValue } : {}),
+    });
+    setLastReceiptTotal(total);
+    resetSaleState();
+    setTimeout(() => setLastReceiptTotal(null), 4000);
+  }
+
   async function handleCompleteSale() {
     if (cart.length === 0 && serviceLines.length === 0) return;
     if (paymentType === "credit" && !selectedCustomerId) return;
@@ -343,22 +370,20 @@ export function usePosPage() {
       setCheckoutError(formatInsufficientStockMessage(insufficientLines));
       return;
     }
+    // A credit sale that would exceed the customer's limit needs an
+    // authorized admin's PIN before it can go through — checked here for
+    // instant UX, and re-verified server-side inside checkout_sale() itself
+    // (the source of truth, since this client-side check could be stale).
+    if (paymentType === "credit" && selectedCustomer && wouldExceedCreditLimit(selectedCustomer, total)) {
+      setOverridePinError(null);
+      setOverridePin("");
+      setOwnerApprovalOpen(true);
+      return;
+    }
     setCheckingOut(true);
     setCheckoutError(null);
     try {
-      await checkout(cart, serviceLines, user?.name ?? "Cashier", {
-        type: paymentType,
-        customerId: selectedCustomerId,
-        ...(paymentType === "qr" ? { referenceNo: referenceNo.trim() } : {}),
-      });
-      setLastReceiptTotal(total);
-      setCart([]);
-      setServiceLines([]);
-      setTendered("0");
-      setPaymentType("cash");
-      setReferenceNo("");
-      clearCustomer();
-      setTimeout(() => setLastReceiptTotal(null), 4000);
+      await runCheckout();
     } catch (err) {
       setCheckoutError(err instanceof Error ? err.message : ERROR_COULD_NOT_COMPLETE_SALE);
     } finally {
@@ -366,13 +391,34 @@ export function usePosPage() {
     }
   }
 
-  function handleCancelSale() {
-    setCart([]);
-    setServiceLines([]);
-    setTendered("0");
+  function closeOwnerApproval() {
+    setOwnerApprovalOpen(false);
+    setOverridePin("");
+    setOverridePinError(null);
+  }
+
+  function payCashInstead() {
     setPaymentType("cash");
-    setReferenceNo("");
-    clearCustomer();
+    closeOwnerApproval();
+  }
+
+  async function submitOwnerApproval(pin: string) {
+    setOverrideSubmitting(true);
+    setOverridePinError(null);
+    try {
+      await runCheckout(pin);
+      closeOwnerApproval();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ERROR_COULD_NOT_COMPLETE_SALE;
+      setOverridePinError(message.includes("INVALID_OVERRIDE_PIN") ? ERROR_INVALID_OVERRIDE_PIN : message);
+      setOverridePin("");
+    } finally {
+      setOverrideSubmitting(false);
+    }
+  }
+
+  function handleCancelSale() {
+    resetSaleState();
   }
 
   const effectiveTab: PosTab = posServicesEnabled ? activeTab : "products";
@@ -443,6 +489,14 @@ export function usePosPage() {
     quickCashAmounts,
     handleCompleteSale,
     handleCancelSale,
+    ownerApprovalOpen,
+    overridePin,
+    setOverridePin,
+    overridePinError,
+    overrideSubmitting,
+    closeOwnerApproval,
+    payCashInstead,
+    submitOwnerApproval,
     effectiveTab,
     focusProductInput,
     packPricingEnabled,

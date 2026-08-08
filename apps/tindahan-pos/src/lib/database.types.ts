@@ -50,6 +50,7 @@ export interface Database {
           phone: string | null;
           address: string | null;
           onboarded_at: string | null;
+          pin_hash: string | null;
           created_at: string;
         };
         Insert: {
@@ -62,6 +63,7 @@ export interface Database {
           phone?: string | null;
           address?: string | null;
           onboarded_at?: string | null;
+          pin_hash?: string | null;
           created_at?: string;
         };
         Update: {
@@ -74,6 +76,7 @@ export interface Database {
           phone?: string | null;
           address?: string | null;
           onboarded_at?: string | null;
+          pin_hash?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -479,6 +482,7 @@ export interface Database {
           p_customer_id?: string | null;
           p_payment_type?: PaymentType;
           p_reference_no?: string | null;
+          p_override_pin?: string | null;
         };
         Returns: { sale_id: string; total: number }[];
       };
@@ -489,6 +493,12 @@ export interface Database {
           p_note?: string | null;
         };
         Returns: { customer_id: string; new_balance: number }[];
+      };
+      set_own_pin: {
+        Args: {
+          p_pin: string;
+        };
+        Returns: undefined;
       };
     };
     Enums: {
