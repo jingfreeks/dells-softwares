@@ -44,118 +44,22 @@ function App() {
                     <Route path="/register" element={<Register />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/pair" element={<Pair />} />
-                    <Route
-                      path="/pos"
-                      element={
-                        <ProtectedRoute>
-                          <Pos />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/inventory"
-                      element={
-                        <ProtectedRoute>
-                          <Inventory />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/admin"
-                      element={
-                        <ProtectedRoute>
-                          <Dashboard />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/staff"
-                      element={
-                        <ProtectedRoute>
-                          <Staff />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/inventory/receiving"
-                      element={
-                        <ProtectedRoute>
-                          <Receiving />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/customers"
-                      element={
-                        <ProtectedRoute>
-                          <Customers />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/suppliers"
-                      element={
-                        <ProtectedRoute>
-                          <Suppliers />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/settings/profile"
-                      element={
-                        <ProtectedRoute>
-                          <ProfileSettings />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/settings/store"
-                      element={
-                        <ProtectedRoute>
-                          <StoreDetails />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/settings/receipts"
-                      element={
-                        <ProtectedRoute>
-                          <ReceiptsSettings />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/settings/fees"
-                      element={
-                        <ProtectedRoute>
-                          <FeesLimits />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/settings/alerts"
-                      element={
-                        <ProtectedRoute>
-                          <AlertsSettings />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/settings/backup"
-                      element={
-                        <ProtectedRoute>
-                          <BackupSettings />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/settings/devices"
-                      element={
-                        <ProtectedRoute>
-                          <DevicesSettings />
-                        </ProtectedRoute>
-                      }
-                    />
+                    <Route element={<ProtectedRoute />}>
+                      <Route path="/pos" element={<Pos />} />
+                      <Route path="/inventory" element={<Inventory />} />
+                      <Route path="/admin" element={<Dashboard />} />
+                      <Route path="/staff" element={<Staff />} />
+                      <Route path="/inventory/receiving" element={<Receiving />} />
+                      <Route path="/customers" element={<Customers />} />
+                      <Route path="/suppliers" element={<Suppliers />} />
+                      <Route path="/settings/profile" element={<ProfileSettings />} />
+                      <Route path="/settings/store" element={<StoreDetails />} />
+                      <Route path="/settings/receipts" element={<ReceiptsSettings />} />
+                      <Route path="/settings/fees" element={<FeesLimits />} />
+                      <Route path="/settings/alerts" element={<AlertsSettings />} />
+                      <Route path="/settings/backup" element={<BackupSettings />} />
+                      <Route path="/settings/devices" element={<DevicesSettings />} />
+                    </Route>
                     <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
                     <Route path="/profile" element={<Navigate to="/settings/profile" replace />} />
                     <Route

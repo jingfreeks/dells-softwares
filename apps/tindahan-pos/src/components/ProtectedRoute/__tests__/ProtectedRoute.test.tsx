@@ -14,22 +14,10 @@ function renderProtected(initialEntry = "/pos") {
         <Routes>
           <Route path="/login" element={<p>Login page</p>} />
           <Route path="/onboarding" element={<p>Onboarding page</p>} />
-          <Route
-            path="/pos"
-            element={
-              <ProtectedRoute>
-                <p>Protected content</p>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/inventory"
-            element={
-              <ProtectedRoute>
-                <p>Inventory content</p>
-              </ProtectedRoute>
-            }
-          />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/pos" element={<p>Protected content</p>} />
+            <Route path="/inventory" element={<p>Inventory content</p>} />
+          </Route>
         </Routes>
       </MemoryRouter>
     </EloadWalletProvider>

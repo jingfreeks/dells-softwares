@@ -1,5 +1,4 @@
-import type { ReactNode } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileHeader } from "@/components/MobileHeader";
@@ -7,7 +6,13 @@ import { BottomNav } from "@/components/BottomNav";
 import { PageLoadingOverlay } from "@/components/PageLoadingOverlay";
 import "@/pages/authTheme.css";
 
-export function ProtectedRoute({ children }: { children: ReactNode }) {
+// A layout route (rendered once via <Route element={<ProtectedRoute />}>
+// wrapping every authenticated page as a child route) rather than a
+// wrapper taking `children`. Sidebar/MobileHeader/BottomNav mount once and
+// stay mounted across navigation between authenticated pages — only
+// <Outlet /> swaps — so switching pages no longer unmounts and remounts
+// the whole shell (which showed up as a white flash between pages).
+export function ProtectedRoute() {
   const { user, deviceSession, loading } = useAuth();
   const location = useLocation();
 
@@ -23,7 +28,11 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     if (location.pathname !== "/pos") {
       return <Navigate to="/pos" replace />;
     }
-    return <main className="tpl-root tpl-shell-bg h-screen">{children}</main>;
+    return (
+      <main className="tpl-root tpl-shell-bg h-screen">
+        <Outlet />
+      </main>
+    );
   }
 
   if (!user) {
@@ -42,7 +51,9 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
       <Sidebar />
       <div className="flex min-h-0 flex-1 flex-col">
         <MobileHeader />
-        <main className="tpl-main flex-1 pb-16 lg:pb-0">{children}</main>
+        <main className="tpl-main flex-1 pb-16 lg:pb-0">
+          <Outlet />
+        </main>
       </div>
       <BottomNav />
     </div>
