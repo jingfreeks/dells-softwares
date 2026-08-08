@@ -26,3 +26,5 @@ export * from "./automaticbackupcard";
 export * from "./offlinequeuecard";
 export * from "./exportcard";
 export * from "./restorenote";
+export * from "./devicelistcard";
+export * from "./unpairdevicemodal";

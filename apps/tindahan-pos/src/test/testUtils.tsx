@@ -6,6 +6,7 @@ import type {
   CashierProfile,
   CreditPayment,
   Customer,
+  DeviceSession,
   Product,
   Role,
   SaleRecord,
@@ -125,6 +126,7 @@ export function makeAuthValue(overrides: Partial<ReturnType<typeof baseAuthValue
 function baseAuthValue() {
   return {
     user: makeStaffAccount() as StaffAccount | null,
+    deviceSession: null as DeviceSession | null,
     store: makeStore() as Store | null,
     loading: false,
     login: vi.fn().mockResolvedValue({ ok: true }),

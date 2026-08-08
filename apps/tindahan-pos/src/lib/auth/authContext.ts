@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { StaffAccount, Store, StoreFeeConfig } from "@/lib/types";
+import type { DeviceSession, StaffAccount, Store, StoreFeeConfig } from "@/lib/types";
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
 export type RegisterResult =
@@ -8,7 +8,9 @@ export type RegisterResult =
 
 export interface AuthContextValue {
   user: StaffAccount | null;
-  /** The signed-in staff member's store — loaded alongside the profile. */
+  /** Set instead of `user` when this session is a paired device (Phase 3), not a human staff member. */
+  deviceSession: DeviceSession | null;
+  /** The signed-in staff member's (or paired device's) store — loaded alongside the profile. */
   store: Store | null;
   /** True until the initial session check completes — avoids a false
    * redirect-to-login flash while Supabase restores a persisted session. */

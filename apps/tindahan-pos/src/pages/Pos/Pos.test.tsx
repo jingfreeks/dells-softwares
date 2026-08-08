@@ -32,7 +32,8 @@ vi.mock("@/lib/supabaseClient", () => {
   const eq = vi.fn(() => ({ order }));
   const select = vi.fn(() => ({ eq }));
   const from = vi.fn(() => ({ select }));
-  return { supabase: { from, __mocks: { order, eq, select, from } } };
+  const rpc = vi.fn();
+  return { supabase: { from, rpc, __mocks: { order, eq, select, from, rpc } } };
 });
 
 vi.mock("@/components/BarcodeScanner", () => ({
@@ -622,6 +623,7 @@ type MockedSupabase = typeof supabase & {
     eq: ReturnType<typeof vi.fn>;
     select: ReturnType<typeof vi.fn>;
     from: ReturnType<typeof vi.fn>;
+    rpc: ReturnType<typeof vi.fn>;
   };
 };
 
@@ -635,7 +637,7 @@ describe("Pos — cashier quick-switch gate", () => {
     vi.mocked(useCashierSession).mockReturnValue(makeCashierSessionValue({ activeCashier: null }));
     vi.mocked(useFeatureFlag).mockReturnValue(true);
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
-    mockedSupabase.__mocks.order.mockResolvedValue({
+    mockedSupabase.__mocks.rpc.mockResolvedValue({
       data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
       error: null,
     });
@@ -658,7 +660,7 @@ describe("Pos — cashier quick-switch gate", () => {
     );
     vi.mocked(useFeatureFlag).mockReturnValue(true);
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
-    mockedSupabase.__mocks.order.mockResolvedValue({
+    mockedSupabase.__mocks.rpc.mockResolvedValue({
       data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
       error: null,
     });
@@ -685,7 +687,7 @@ describe("Pos — cashier quick-switch gate", () => {
     );
     vi.mocked(useFeatureFlag).mockReturnValue(true);
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
-    mockedSupabase.__mocks.order.mockResolvedValue({
+    mockedSupabase.__mocks.rpc.mockResolvedValue({
       data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
       error: null,
     });
@@ -698,5 +700,56 @@ describe("Pos — cashier quick-switch gate", () => {
     }
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Incorrect PIN. Please try again.");
+  });
+
+  it("shows the device name in the header and device-only footer links for a paired device session", async () => {
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        user: null,
+        deviceSession: { id: "d1", storeId: "s1", name: "Counter tablet" },
+        store: makeStore({ name: "Dell's Sari-Sari Store" }),
+      })
+    );
+    vi.mocked(useCashierSession).mockReturnValue(makeCashierSessionValue({ activeCashier: null }));
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    mockedSupabase.__mocks.rpc.mockResolvedValue({
+      data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
+      error: null,
+    });
+
+    renderPage();
+
+    await screen.findByText("WHO'S ON THE REGISTER?");
+    expect(screen.getByText(/Counter tablet/)).toBeInTheDocument();
+    expect(screen.getByText("Forgot your PIN? Ask an owner")).toBeInTheDocument();
+    expect(screen.getByText("Owner sign-in")).toBeInTheDocument();
+    expect(screen.getByText("Wrong store?")).toBeInTheDocument();
+  });
+
+  it("signs out and navigates to /pair when a device session picks 'Wrong store?'", async () => {
+    const user = userEvent.setup();
+    const logout = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        user: null,
+        deviceSession: { id: "d1", storeId: "s1", name: "Counter tablet" },
+        store: makeStore({ name: "Dell's Sari-Sari Store" }),
+        logout,
+      })
+    );
+    vi.mocked(useCashierSession).mockReturnValue(makeCashierSessionValue({ activeCashier: null }));
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    mockedSupabase.__mocks.rpc.mockResolvedValue({
+      data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
+      error: null,
+    });
+
+    renderPage();
+
+    await user.click(await screen.findByText("Wrong store?"));
+
+    expect(logout).toHaveBeenCalled();
   });
 });

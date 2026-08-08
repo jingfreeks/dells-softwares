@@ -4,6 +4,7 @@ export * from "./ForgotPassword";
 export * from "./Inventory";
 export * from "./Login";
 export * from "./Onboarding";
+export * from "./Pair";
 export * from "./Pos";
 export * from "./Receiving";
 export * from "./Register";

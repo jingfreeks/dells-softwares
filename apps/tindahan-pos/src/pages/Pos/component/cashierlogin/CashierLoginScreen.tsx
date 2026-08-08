@@ -6,7 +6,10 @@ import {
   TEXT_ENTER_YOUR_PIN_SUFFIX,
   LABEL_CASHIER_PIN_ARIA,
   TEXT_FORGOT_PIN_PREFIX,
+  TEXT_ASK_AN_OWNER,
   LINK_SIGN_IN_WITH_EMAIL,
+  LINK_OWNER_SIGN_IN,
+  LINK_WRONG_STORE,
   TEXT_LOADING_STAFF,
   BUTTON_SWITCH_CASHIER,
   TEXT_GREETING_HI_PREFIX,
@@ -21,7 +24,7 @@ function initialsOf(name: string): string {
 }
 
 export function CashierLoginScreen() {
-  const { store, user } = useAuth();
+  const { store, user, deviceSession } = useAuth();
   const {
     staffList,
     loadingStaff,
@@ -35,6 +38,7 @@ export function CashierLoginScreen() {
     submitting,
     submitPin,
     signInWithEmailInstead,
+    wrongStore,
   } = useCashierLoginScreen();
 
   const now = new Date();
@@ -53,6 +57,7 @@ export function CashierLoginScreen() {
         </p>
       </div>
       <p className="tpl-ts" style={{ marginBottom: 26 }}>
+        {deviceSession && <>{deviceSession.name} &middot; </>}
         {dateLabel} &middot; {timeLabel}
       </p>
 
@@ -118,12 +123,26 @@ export function CashierLoginScreen() {
       )}
 
       <div className="tpl-row" style={{ gap: 22, marginTop: 20 }}>
-        <span className="tpl-txt">
-          {TEXT_FORGOT_PIN_PREFIX} {user?.name}
-        </span>
-        <button type="button" className="tpl-lnk" onClick={signInWithEmailInstead}>
-          {LINK_SIGN_IN_WITH_EMAIL}
-        </button>
+        {deviceSession ? (
+          <>
+            <span className="tpl-txt">{TEXT_ASK_AN_OWNER}</span>
+            <button type="button" className="tpl-lnk" onClick={signInWithEmailInstead}>
+              {LINK_OWNER_SIGN_IN}
+            </button>
+            <button type="button" className="tpl-lnk" onClick={wrongStore}>
+              {LINK_WRONG_STORE}
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="tpl-txt">
+              {TEXT_FORGOT_PIN_PREFIX} {user?.name}
+            </span>
+            <button type="button" className="tpl-lnk" onClick={signInWithEmailInstead}>
+              {LINK_SIGN_IN_WITH_EMAIL}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
