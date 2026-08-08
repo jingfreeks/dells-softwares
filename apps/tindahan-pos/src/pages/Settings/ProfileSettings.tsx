@@ -127,16 +127,16 @@ export function ProfileSettings() {
           </p>
         )}
 
-        <div className="tpl-row" style={{ marginBottom: 18, flexWrap: "wrap", rowGap: 8 }}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3" style={{ marginBottom: 18 }}>
           <button
             type="submit"
-            className="tpl-btnp"
-            style={{ width: "auto", marginBottom: 0, whiteSpace: "nowrap" }}
+            className="tpl-btnp w-full! sm:w-auto!"
+            style={{ marginBottom: 0, whiteSpace: "nowrap" }}
             disabled={submitting || processingImage}
           >
             {submitting ? BUTTON_SAVING : BUTTON_SAVE_CHANGES}
           </button>
-          <button type="button" className="tpl-txt" onClick={handleDiscard}>
+          <button type="button" className="tpl-txt text-center sm:text-left" onClick={handleDiscard}>
             {BUTTON_DISCARD}
           </button>
         </div>
