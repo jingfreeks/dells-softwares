@@ -11,10 +11,23 @@ interface StaffTableProps {
   removingId: string | null;
   onEditName: (id: string, name: string) => void;
   onResetPassword: (email: string) => void;
+  onSetPin: (id: string) => void;
+  onToggleActive: (id: string, currentlyActive: boolean) => void;
   onRemove: (id: string) => void;
 }
 
-export function StaffTable({ staff, loading, sales, currentUserId, removingId, onEditName, onResetPassword, onRemove }: StaffTableProps) {
+export function StaffTable({
+  staff,
+  loading,
+  sales,
+  currentUserId,
+  removingId,
+  onEditName,
+  onResetPassword,
+  onSetPin,
+  onToggleActive,
+  onRemove,
+}: StaffTableProps) {
   return (
     <div className="tpl-card" style={{ padding: 0, marginBottom: 14 }}>
       <div className="tpl-thead" style={{ gridTemplateColumns: STAFF_ROW_COLUMNS }}>
@@ -41,6 +54,8 @@ export function StaffTable({ staff, loading, sales, currentUserId, removingId, o
             removingId={removingId}
             onEditName={onEditName}
             onResetPassword={onResetPassword}
+            onSetPin={onSetPin}
+            onToggleActive={onToggleActive}
             onRemove={onRemove}
           />
         ))}

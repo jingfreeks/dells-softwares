@@ -7,12 +7,12 @@ import {
   BUTTON_DISCARD,
   TEXT_PROFILE_UPDATED,
 } from "@/lib";
+import { SetPinModal } from "@/components";
 import {
   SettingsLayout,
   IdentityCard,
   SigningInCard,
   ChangePasswordModal,
-  SetPinModal,
   NotificationsCard,
   SignOutEverywhereNote,
   DangerZoneCard,

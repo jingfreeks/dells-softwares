@@ -2,13 +2,38 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { useAuth, useStoreData, useFeatureFlag, EloadWalletProvider, DrawerFloatProvider } from "@/lib";
-import { makeAuthValue, makeCustomer, makeProduct, makeStaffAccount, makeStore, makeStoreDataValue } from "../../test/testUtils";
+import {
+  useAuth,
+  useCashierSession,
+  useStoreData,
+  useFeatureFlag,
+  supabase,
+  EloadWalletProvider,
+  DrawerFloatProvider,
+} from "@/lib";
+import {
+  makeAuthValue,
+  makeCashierSessionValue,
+  makeCustomer,
+  makeProduct,
+  makeStaffAccount,
+  makeStore,
+  makeStoreDataValue,
+} from "../../test/testUtils";
 import { Pos } from "./Pos";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
+vi.mock("@/lib/cashierSession", () => ({ useCashierSession: vi.fn() }));
 vi.mock("@/lib/storeData", () => ({ useStoreData: vi.fn() }));
 vi.mock("@/lib/featureFlags", () => ({ useFeatureFlag: vi.fn() }));
+
+vi.mock("@/lib/supabaseClient", () => {
+  const order = vi.fn();
+  const eq = vi.fn(() => ({ order }));
+  const select = vi.fn(() => ({ eq }));
+  const from = vi.fn(() => ({ select }));
+  return { supabase: { from, __mocks: { order, eq, select, from } } };
+});
 
 vi.mock("@/components/BarcodeScanner", () => ({
   BarcodeScanner: ({ onDetected }: { onDetected: (c: string) => void }) => (
@@ -25,6 +50,9 @@ const products = [
 
 function setup(overrides: Partial<ReturnType<typeof makeStoreDataValue>> = {}) {
   vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
+  vi.mocked(useCashierSession).mockReturnValue(
+    makeCashierSessionValue({ activeCashier: makeStaffAccount({ name: "Aling Nena" }) })
+  );
   vi.mocked(useFeatureFlag).mockReturnValue(true);
   vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, ...overrides }));
 }
@@ -143,7 +171,8 @@ describe("Pos", () => {
       expect.any(Array),
       expect.any(Array),
       "Aling Nena",
-      { type: "cash", customerId: null }
+      { type: "cash", customerId: null },
+      null
     );
     expect(await screen.findByRole("status")).toHaveTextContent("Sale recorded");
   });
@@ -192,7 +221,8 @@ describe("Pos", () => {
       expect.any(Array),
       expect.any(Array),
       "Aling Nena",
-      { type: "credit", customerId: "c1" }
+      { type: "credit", customerId: "c1" },
+      null
     );
   });
 
@@ -234,7 +264,8 @@ describe("Pos", () => {
       expect.any(Array),
       expect.any(Array),
       "Aling Nena",
-      expect.objectContaining({ type: "credit", customerId: "c1", overridePin: "1234" })
+      expect.objectContaining({ type: "credit", customerId: "c1", overridePin: "1234" }),
+      null
     );
   });
 
@@ -475,7 +506,8 @@ describe("Pos", () => {
       expect.any(Array),
       expect.any(Array),
       "Aling Nena",
-      { type: "qr", customerId: null, referenceNo: "0123456789012" }
+      { type: "qr", customerId: null, referenceNo: "0123456789012" },
+      null
     );
   });
 
@@ -581,5 +613,90 @@ describe("Pos", () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId("cart-total")).toHaveTextContent("₱25.00"));
+  });
+});
+
+type MockedSupabase = typeof supabase & {
+  __mocks: {
+    order: ReturnType<typeof vi.fn>;
+    eq: ReturnType<typeof vi.fn>;
+    select: ReturnType<typeof vi.fn>;
+    from: ReturnType<typeof vi.fn>;
+  };
+};
+
+const mockedSupabase = supabase as MockedSupabase;
+
+describe("Pos — cashier quick-switch gate", () => {
+  it("shows the cashier picker when no active cashier session exists for this tab", async () => {
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ name: "Lyndell Dobluis" }), store: makeStore({ name: "Dell's Sari-Sari Store" }) })
+    );
+    vi.mocked(useCashierSession).mockReturnValue(makeCashierSessionValue({ activeCashier: null }));
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    mockedSupabase.__mocks.order.mockResolvedValue({
+      data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
+      error: null,
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("WHO'S ON THE REGISTER?")).toBeInTheDocument();
+    expect(screen.getByText("Maricel")).toBeInTheDocument();
+    expect(screen.queryByTestId("cart-total")).not.toBeInTheDocument();
+  });
+
+  it("starts a cashier session after picking a name and entering the PIN", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ name: "Lyndell Dobluis" }), store: makeStore({ name: "Dell's Sari-Sari Store" }) })
+    );
+    const startCashierSession = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useCashierSession).mockReturnValue(
+      makeCashierSessionValue({ activeCashier: null, startCashierSession })
+    );
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    mockedSupabase.__mocks.order.mockResolvedValue({
+      data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
+      error: null,
+    });
+
+    renderPage();
+
+    await user.click(await screen.findByText("Maricel"));
+    expect(screen.getByText(/Hi Maricel/)).toBeInTheDocument();
+    for (const digit of ["1", "2", "3", "4"]) {
+      await user.click(screen.getByRole("button", { name: digit }));
+    }
+
+    expect(startCashierSession).toHaveBeenCalledWith("staff-2", "1234");
+  });
+
+  it("shows an inline error when the PIN is wrong", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ name: "Lyndell Dobluis" }), store: makeStore({ name: "Dell's Sari-Sari Store" }) })
+    );
+    const startCashierSession = vi.fn().mockResolvedValue({ ok: false, error: "INVALID_PIN" });
+    vi.mocked(useCashierSession).mockReturnValue(
+      makeCashierSessionValue({ activeCashier: null, startCashierSession })
+    );
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    mockedSupabase.__mocks.order.mockResolvedValue({
+      data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
+      error: null,
+    });
+
+    renderPage();
+
+    await user.click(await screen.findByText("Maricel"));
+    for (const digit of ["1", "2", "3", "4"]) {
+      await user.click(screen.getByRole("button", { name: digit }));
+    }
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Incorrect PIN. Please try again.");
   });
 });

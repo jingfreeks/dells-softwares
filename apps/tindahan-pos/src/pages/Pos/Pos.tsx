@@ -1,7 +1,14 @@
 import { lazy, Suspense } from "react";
-import { PAGE_HEADING_POS, TEXT_POS_DESCRIPTION } from "@/lib";
+import { PAGE_HEADING_POS, TEXT_POS_DESCRIPTION, BUTTON_SWITCH_CASHIER } from "@/lib";
 import { ScannerLoadingOverlay } from "@/components";
-import { PosTabs, ProductBrowsePanel, ServicesPanel, CartPanel, OwnerApprovalModal } from "./component";
+import {
+  PosTabs,
+  ProductBrowsePanel,
+  ServicesPanel,
+  CartPanel,
+  OwnerApprovalModal,
+  CashierLoginScreen,
+} from "./component";
 import { usePosPage } from "./hooks";
 import "../authTheme.css";
 
@@ -83,16 +90,30 @@ export function Pos() {
     effectiveTab,
     packPricingEnabled,
     posServicesEnabled,
+    activeCashier,
+    switchCashier,
   } = usePosPage();
+
+  if (!activeCashier) {
+    return <CashierLoginScreen />;
+  }
 
   return (
     <div className="tpl-root grid grid-cols-1 gap-6 p-6 lg:h-full lg:grid-cols-[1fr_360px]">
       <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="tpl-h1">{PAGE_HEADING_POS}</h1>
-          <p className="tpl-sub" style={{ marginBottom: 0 }}>
-            {TEXT_POS_DESCRIPTION}
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="tpl-h1">{PAGE_HEADING_POS}</h1>
+            <p className="tpl-sub" style={{ marginBottom: 0 }}>
+              {TEXT_POS_DESCRIPTION}
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className="tpl-ts">{activeCashier.name}</span>
+            <button type="button" className="tpl-lnk" onClick={switchCashier}>
+              {BUTTON_SWITCH_CASHIER}
+            </button>
+          </div>
         </div>
 
         <PosTabs visible={posServicesEnabled} activeTab={activeTab} onTabChange={setActiveTab} />

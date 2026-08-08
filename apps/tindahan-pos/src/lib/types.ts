@@ -13,6 +13,16 @@ export interface StaffAccount {
   onboardedAt: string | null;
   /** Whether this staff member has set a 4-digit PIN (used to approve an over-limit Utang sale). */
   hasPin: boolean;
+  /** False if an admin has deactivated this staff member — blocks cashier quick-switch. */
+  active: boolean;
+}
+
+/** A staff member picked from the "WHO'S ON THE REGISTER?" quick-switch screen, once their PIN is verified. */
+export interface CashierProfile {
+  id: string;
+  name: string;
+  role: Role;
+  avatarUrl: string | null;
 }
 
 export interface StoreFeeConfig {

@@ -13,15 +13,19 @@ vi.mock("@/lib/supabaseClient", () => {
   const order2 = vi.fn();
   const order1 = vi.fn(() => ({ order: order2 }));
   const select = vi.fn(() => ({ order: order1 }));
-  const from = vi.fn(() => ({ select, delete: deleteFn }));
   const deleteEqFn = vi.fn();
   const deleteFn = vi.fn(() => ({ eq: deleteEqFn }));
+  const updateEqFn = vi.fn().mockResolvedValue({ error: null });
+  const updateFn = vi.fn(() => ({ eq: updateEqFn }));
+  const from = vi.fn(() => ({ select, delete: deleteFn, update: updateFn }));
+  const rpc = vi.fn();
   return {
     supabase: {
       from,
+      rpc,
       auth: { getSession: vi.fn() },
       functions: { invoke: vi.fn() },
-      __mocks: { order1, order2, select, from, deleteFn, deleteEqFn },
+      __mocks: { order1, order2, select, from, deleteFn, deleteEqFn, updateFn, updateEqFn, rpc },
     },
   };
 });
@@ -34,14 +38,17 @@ type MockedSupabase = typeof supabase & {
     from: ReturnType<typeof vi.fn>;
     deleteFn: ReturnType<typeof vi.fn>;
     deleteEqFn: ReturnType<typeof vi.fn>;
+    updateFn: ReturnType<typeof vi.fn>;
+    updateEqFn: ReturnType<typeof vi.fn>;
+    rpc: ReturnType<typeof vi.fn>;
   };
 };
 
 const mockedSupabase = supabase as MockedSupabase;
 
 const staffRows = [
-  { id: "staff-1", name: "Aling Nena", email: "nena@example.com", role: "admin" },
-  { id: "staff-2", name: "Cashier Joy", email: "joy@example.com", role: "cashier" },
+  { id: "staff-1", name: "Aling Nena", email: "nena@example.com", role: "admin", active: true, pin_hash: null },
+  { id: "staff-2", name: "Cashier Joy", email: "joy@example.com", role: "cashier", active: true, pin_hash: null },
 ];
 
 function renderStaff() {
@@ -178,36 +185,6 @@ describe("Staff", () => {
     expect(pinTablet).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("generates a 4-digit PIN and can regenerate it", async () => {
-    const user = userEvent.setup();
-    renderStaff();
-    await screen.findByText("Aling Nena");
-    await openAddStaffModal(user);
-
-    const digits = () => screen.getAllByTestId("pin-digit");
-    expect(digits()).toHaveLength(4);
-    const firstPin = digits().map((el) => el.textContent).join("");
-    expect(firstPin).toMatch(/^\d{4}$/);
-
-    await user.click(screen.getByRole("button", { name: /Generate another/ }));
-    const secondPin = digits().map((el) => el.textContent).join("");
-    expect(secondPin).toMatch(/^\d{4}$/);
-  });
-
-  it("copies the PIN to the clipboard", async () => {
-    const user = userEvent.setup();
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
-    renderStaff();
-    await screen.findByText("Aling Nena");
-    await openAddStaffModal(user);
-
-    await user.click(screen.getByRole("button", { name: "Copy PIN" }));
-    expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/^\d{4}$/));
-    expect(await screen.findByText("Copied!")).toBeInTheDocument();
-    vi.unstubAllGlobals();
-  });
-
   it("selects a usual shift", async () => {
     const user = userEvent.setup();
     renderStaff();
@@ -256,5 +233,63 @@ describe("Staff", () => {
     const row = await openRowMenu(user, "Cashier Joy");
     await user.click(row.getByRole("menuitem", { name: "Remove" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not remove");
+  });
+
+  it("sets a cashier's PIN via admin_set_staff_pin", async () => {
+    const user = userEvent.setup();
+    mockedSupabase.__mocks.rpc.mockResolvedValue({ error: null });
+    renderStaff();
+    await screen.findByText("Cashier Joy");
+
+    const row = await openRowMenu(user, "Cashier Joy");
+    await user.click(row.getByRole("menuitem", { name: "Set PIN" }));
+
+    const dialog = await screen.findByRole("dialog");
+    for (const digit of ["1", "2", "3", "4"]) {
+      await user.click(within(dialog).getByRole("button", { name: digit }));
+    }
+    for (const digit of ["1", "2", "3", "4"]) {
+      await user.click(within(dialog).getByRole("button", { name: digit }));
+    }
+
+    await waitFor(() =>
+      expect(mockedSupabase.__mocks.rpc).toHaveBeenCalledWith("admin_set_staff_pin", {
+        p_staff_id: "staff-2",
+        p_pin: "1234",
+      })
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("shows an error when setting a PIN fails", async () => {
+    const user = userEvent.setup();
+    mockedSupabase.__mocks.rpc.mockResolvedValue({ error: { message: "Could not save this PIN." } });
+    renderStaff();
+    await screen.findByText("Cashier Joy");
+
+    const row = await openRowMenu(user, "Cashier Joy");
+    await user.click(row.getByRole("menuitem", { name: "Set PIN" }));
+
+    const dialog = await screen.findByRole("dialog");
+    for (const digit of ["1", "2", "3", "4"]) {
+      await user.click(within(dialog).getByRole("button", { name: digit }));
+    }
+    for (const digit of ["1", "2", "3", "4"]) {
+      await user.click(within(dialog).getByRole("button", { name: digit }));
+    }
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Could not save this PIN.");
+  });
+
+  it("deactivates a cashier", async () => {
+    const user = userEvent.setup();
+    renderStaff();
+    await screen.findByText("Cashier Joy");
+
+    const row = await openRowMenu(user, "Cashier Joy");
+    await user.click(row.getByRole("menuitem", { name: "Deactivate" }));
+
+    await waitFor(() => expect(mockedSupabase.__mocks.updateFn).toHaveBeenCalledWith({ active: false }));
+    expect(mockedSupabase.__mocks.updateEqFn).toHaveBeenCalledWith("id", "staff-2");
   });
 });

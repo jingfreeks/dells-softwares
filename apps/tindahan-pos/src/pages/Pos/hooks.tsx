@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   useAuth,
+  useCashierSession,
   useStoreData,
   useEloadWallet,
   useDrawerFloat,
@@ -11,6 +12,7 @@ import {
   ERROR_COULD_NOT_ADD_CUSTOMER,
   ERROR_COULD_NOT_COMPLETE_SALE,
   ERROR_INVALID_OVERRIDE_PIN,
+  TEXT_CASHIER_SESSION_EXPIRED,
   SERVICE_LABEL_ELOAD,
   SERVICE_LABEL_CASHIN,
   SERVICE_LABEL_CASHOUT,
@@ -46,6 +48,7 @@ export type PosTab = "products" | "services";
 
 export function usePosPage() {
   const { user } = useAuth();
+  const { activeCashier, cashierToken, endCashierSession, reportExpiredSession } = useCashierSession();
   const { products, customers, checkout, addCustomer, loading: storeDataLoading } = useStoreData();
   const { balance: walletBalance, deduct: deductWallet } = useEloadWallet();
   const { balance: drawerBalance, add: addToDrawer, deduct: deductFromDrawer } = useDrawerFloat();
@@ -350,12 +353,18 @@ export function usePosPage() {
   }
 
   async function runCheckout(overridePinValue?: string) {
-    await checkout(cart, serviceLines, user?.name ?? "Cashier", {
-      type: paymentType,
-      customerId: selectedCustomerId,
-      ...(paymentType === "qr" ? { referenceNo: referenceNo.trim() } : {}),
-      ...(overridePinValue ? { overridePin: overridePinValue } : {}),
-    });
+    await checkout(
+      cart,
+      serviceLines,
+      activeCashier?.name ?? user?.name ?? "Cashier",
+      {
+        type: paymentType,
+        customerId: selectedCustomerId,
+        ...(paymentType === "qr" ? { referenceNo: referenceNo.trim() } : {}),
+        ...(overridePinValue ? { overridePin: overridePinValue } : {}),
+      },
+      cashierToken
+    );
     setLastReceiptTotal(total);
     resetSaleState();
     setTimeout(() => setLastReceiptTotal(null), 4000);
@@ -385,7 +394,13 @@ export function usePosPage() {
     try {
       await runCheckout();
     } catch (err) {
-      setCheckoutError(err instanceof Error ? err.message : ERROR_COULD_NOT_COMPLETE_SALE);
+      const message = err instanceof Error ? err.message : ERROR_COULD_NOT_COMPLETE_SALE;
+      if (message.includes("EXPIRED_CASHIER_SESSION")) {
+        reportExpiredSession();
+        setCheckoutError(TEXT_CASHIER_SESSION_EXPIRED);
+      } else {
+        setCheckoutError(message);
+      }
     } finally {
       setCheckingOut(false);
     }
@@ -410,6 +425,12 @@ export function usePosPage() {
       closeOwnerApproval();
     } catch (err) {
       const message = err instanceof Error ? err.message : ERROR_COULD_NOT_COMPLETE_SALE;
+      if (message.includes("EXPIRED_CASHIER_SESSION")) {
+        reportExpiredSession();
+        closeOwnerApproval();
+        setCheckoutError(TEXT_CASHIER_SESSION_EXPIRED);
+        return;
+      }
       setOverridePinError(message.includes("INVALID_OVERRIDE_PIN") ? ERROR_INVALID_OVERRIDE_PIN : message);
       setOverridePin("");
     } finally {
@@ -501,5 +522,7 @@ export function usePosPage() {
     focusProductInput,
     packPricingEnabled,
     posServicesEnabled,
+    activeCashier,
+    switchCashier: endCashierSession,
   };
 }

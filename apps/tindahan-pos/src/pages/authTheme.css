@@ -406,6 +406,26 @@
   border: 0.5px solid rgba(255, 255, 255, 0.12);
   color: var(--tpl-t5);
 }
+.tpl-av.tpl-l {
+  width: 58px;
+  height: 58px;
+  font-size: 18px;
+}
+.tpl-av.tpl-l.tpl-b {
+  border: 2px solid var(--tpl-a1);
+  box-shadow: 0 0 24px rgba(76, 141, 255, 0.3);
+}
+.tpl-av-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
 .tpl-step-title {
   font-size: 14px;
   margin: 0;

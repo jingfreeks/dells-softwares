@@ -1,4 +1,5 @@
 export * from "./auth";
+export * from "./cashierSession";
 export * from "./csvExport";
 export * from "./customers";
 export * from "./drawerFloat";
