@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { StaffAccount, Store } from "@/lib/types";
+import type { StaffAccount, Store, StoreFeeConfig } from "@/lib/types";
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
 export type RegisterResult =
@@ -35,6 +35,7 @@ export interface AuthContextValue {
     name?: string;
     address?: string | null;
     photoUrl?: string | null;
+    feeConfig?: StoreFeeConfig | null;
   }) => Promise<AuthResult>;
   /** Marks the signed-in admin's onboarding wizard as finished. */
   completeOnboarding: () => Promise<AuthResult>;

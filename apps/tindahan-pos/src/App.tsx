@@ -12,7 +12,12 @@ import {
   Receiving,
   Customers,
   Suppliers,
-  Profile,
+  ProfileSettings,
+  StoreDetails,
+  ReceiptsSettings,
+  FeesLimits,
+  AlertsSettings,
+  BackupSettings,
   Onboarding,
 } from "@/pages";
 
@@ -85,13 +90,55 @@ function App() {
                     }
                   />
                   <Route
-                    path="/profile"
+                    path="/settings/profile"
                     element={
                       <ProtectedRoute>
-                        <Profile />
+                        <ProfileSettings />
                       </ProtectedRoute>
                     }
                   />
+                  <Route
+                    path="/settings/store"
+                    element={
+                      <ProtectedRoute>
+                        <StoreDetails />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings/receipts"
+                    element={
+                      <ProtectedRoute>
+                        <ReceiptsSettings />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings/fees"
+                    element={
+                      <ProtectedRoute>
+                        <FeesLimits />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings/alerts"
+                    element={
+                      <ProtectedRoute>
+                        <AlertsSettings />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings/backup"
+                    element={
+                      <ProtectedRoute>
+                        <BackupSettings />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
+                  <Route path="/profile" element={<Navigate to="/settings/profile" replace />} />
                   <Route
                     path="/onboarding"
                     element={

@@ -22,6 +22,7 @@ import {
   LABEL_CUSTOMER_PAYS,
   BUTTON_ADD_TO_SALE,
   TEXT_WALLET_AFTER_SALE_PREFIX,
+  useAuth,
 } from "@/lib";
 
 export function EloadServicePanel({
@@ -31,6 +32,7 @@ export function EloadServicePanel({
   walletBalance: number;
   onAdd: (label: string, amount: number, fee: number) => void;
 }) {
+  const { store } = useAuth();
   const [mobileNumber, setMobileNumber] = useState("");
   const [network, setNetwork] = useState<Network | null>(null);
   const [networkTouched, setNetworkTouched] = useState(false);
@@ -41,9 +43,10 @@ export function EloadServicePanel({
   const detectedNetwork = detectNetwork(mobileNumber);
   const effectiveNetwork = networkTouched ? network : (network ?? detectedNetwork);
   const numberIsValid = isValidMobileNumber(mobileNumber);
+  const eloadBrackets = store?.feeConfig?.eload;
 
   const amount = showCustom ? Number(customAmount) || 0 : (selectedDenomination ?? 0);
-  const fee = amount > 0 ? eloadFee(amount) : 0;
+  const fee = amount > 0 ? eloadFee(amount, eloadBrackets) : 0;
   const customerPays = amount + fee;
   const canAdd = amount > 0 && numberIsValid && effectiveNetwork !== null;
 
@@ -122,7 +125,7 @@ export function EloadServicePanel({
             className={`tpl-denom${!showCustom && selectedDenomination === d ? " tpl-on" : ""}`}
           >
             <span>{PESO.format(d).replace(".00", "")}</span>
-            <span>+{eloadFee(d)}</span>
+            <span>+{eloadFee(d, eloadBrackets)}</span>
           </button>
         ))}
         {showCustom ? (

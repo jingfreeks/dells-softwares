@@ -132,15 +132,51 @@ export const TEXT_STAFF_DESCRIPTION = "Who can log in, and what they did";
 export const LABEL_YOU_SUFFIX = "(you)";
 export const BUTTON_REMOVING = "Removing…";
 export const EMPTY_STATE_NO_STAFF = "No staff yet.";
-export const TEXT_ADD_CASHIER_DESCRIPTION =
-  "Creates a login for this store only — they'll be able to use POS but not view sales reports or manage inventory.";
-export const LABEL_TEMPORARY_PASSWORD = "Temporary password";
+export const TEXT_ADD_CASHIER_DESCRIPTION = "Gives access to this store only";
 export const BUTTON_CREATING = "Creating…";
-export const BUTTON_CREATE_CASHIER_ACCOUNT = "Create cashier account";
+export const BUTTON_CREATE_CASHIER_ACCOUNT = "Create account";
 export const ERROR_NAME_EMAIL_REQUIRED = "Name and email are required.";
 export const ERROR_PASSWORD_MIN_LENGTH = "Password must be at least 8 characters.";
 export const ERROR_COULD_NOT_CREATE_CASHIER = "Could not create cashier account.";
 export const ERROR_COULD_NOT_REMOVE_STAFF = "Could not remove staff member.";
+
+// Staff page — Add staff modal v2: role, permissions, sign-in method, PIN, shift, drawer
+export const LABEL_ROLE_CASHIER_TITLE = "Cashier";
+export const TEXT_ROLE_CASHIER_DESC = "Sells only";
+export const LABEL_ROLE_SUPERVISOR_TITLE = "Supervisor";
+export const TEXT_ROLE_SUPERVISOR_DESC = "+ stock, voids";
+export const LABEL_ROLE_OWNER_TITLE = "Owner";
+export const TEXT_ROLE_OWNER_DESC = "Everything";
+export const TEXT_A_ROLE_CAN_SUFFIX = "CAN";
+export const LABEL_PERMISSION_RING_UP = "Ring up sales";
+export const LABEL_PERMISSION_UTANG_WITHIN_LIMIT = "Utang within limit";
+export const LABEL_PERMISSION_UTANG_UNCAPPED = "Utang, uncapped";
+export const LABEL_PERMISSION_ELOAD_CASHIN_SHORT = "E-load, cash-in";
+export const LABEL_PERMISSION_ADJUST_STOCK = "Adjust stock";
+export const LABEL_PERMISSION_VOID_YOUR_PIN = "Voids · your PIN";
+export const LABEL_PERMISSION_VOID_SALES = "Void sales";
+export const LABEL_PERMISSION_NO_REPORTS = "No reports";
+export const LABEL_PERMISSION_NO_PRICE_EDITS = "No price edits";
+export const LABEL_PERMISSION_PRICE_EDITS_OWNER_PIN = "Price edits · owner PIN";
+export const LABEL_PERMISSION_PRICE_EDITS = "Price edits";
+export const LABEL_PERMISSION_VIEW_REPORTS_FULL = "View reports";
+export const LABEL_SIGN_IN_METHOD = "How she signs in";
+export const LABEL_SIGN_IN_PIN_TABLET = "PIN on this tablet";
+export const TEXT_SIGN_IN_PIN_TABLET_DESC = "Fastest at the counter";
+export const LABEL_SIGN_IN_PIN_EMAIL = "PIN + email";
+export const TEXT_SIGN_IN_PIN_EMAIL_DESC = "Can also use own phone";
+export const LABEL_HER_PIN = "HER PIN";
+export const LINK_GENERATE_ANOTHER = "Generate another";
+export const ARIA_COPY_PIN = "Copy PIN";
+export const TEXT_PIN_COPIED = "Copied!";
+export const HINT_PIN_SHOWN_ONCE = "Shown once. They change it on first sign-in.";
+export const LABEL_USUAL_SHIFT = "Usual shift";
+export const TEXT_OPTIONAL_LOWER = "optional";
+export const LABEL_SHIFT_MORNING = "Morning · 7 AM–2 PM";
+export const LABEL_SHIFT_AFTERNOON = "Afternoon";
+export const LABEL_SHIFT_NONE = "No fixed";
+export const LABEL_DRAWER_COUNTING_TITLE = "Count the drawer at shift start and end";
+export const TEXT_DRAWER_COUNTING_DESC = "This is what catches a short till";
 
 // Staff page — redesign: header, metrics, table, permissions, activity, shift history
 export const BUTTON_SHIFT_HISTORY = "Shift history";
@@ -375,36 +411,172 @@ export const TEXT_SAVED_RECEIVING_PREFIX = "Saved —";
 export const ERROR_COULD_NOT_SAVE_RECEIVING_ENTRY = "Could not save receiving entry.";
 
 // Onboarding page
-export const LABEL_STEP_YOUR_PROFILE = "Your profile";
-export const LABEL_STEP_YOUR_STORE = "Your store";
-export const TEXT_WELCOME_HEADING_PREFIX = "Welcome to";
-export const TEXT_WELCOME_DESCRIPTION =
-  "Let's get your account set up. It only takes a minute — we'll grab a few details about you and your store, then you're ready to start selling.";
-export const BUTTON_LETS_GET_STARTED = "Let's get started";
-export const LABEL_TELL_US_ABOUT_YOU = "Tell us about you";
-export const TEXT_PROFILE_STEP_DESCRIPTION = "This shows up on your account and receipts.";
 export const LABEL_YOUR_ADDRESS_OPTIONAL = "Your address (optional)";
 export const PLACEHOLDER_ADDRESS = "House no., street, barangay, city";
-export const BUTTON_NEXT_YOUR_STORE = "Next: Your store";
-export const LABEL_TELL_US_ABOUT_YOUR_STORE = "Tell us about your store";
-export const TEXT_STORE_STEP_DESCRIPTION =
-  "This appears on the dashboard and any future customer-facing pages.";
-export const LABEL_STORE_PHOTO = "Store photo";
 export const LABEL_STORE_ADDRESS = "Store address";
-export const LABEL_SAME_AS_MY_ADDRESS = "Same as my address";
-export const BUTTON_BACK = "Back";
-export const BUTTON_FINISH_SETUP = "Finish setup";
-export const TEXT_CONGRATULATIONS_PREFIX = "Congratulations,";
 export const TEXT_FALLBACK_THERE = "there";
-export const TEXT_FALLBACK_YOUR_STORE = "Your store";
-export const TEXT_STORE_READY_SUFFIX = "is all set up and ready to go.";
-export const LABEL_PROFILE_SAVED = "Profile saved";
-export const LABEL_STORE_DETAILS_SAVED = "Store details saved";
-export const BUTTON_FINISHING = "Finishing…";
-export const BUTTON_GO_TO_DASHBOARD = "Go to dashboard";
 export const ERROR_STORE_NAME_REQUIRED = "Store name is required.";
 export const ERROR_COULD_NOT_SAVE_YOUR_PROFILE = "Could not save your profile.";
-export const ERROR_COULD_NOT_SAVE_YOUR_STORE = "Could not save your store.";
+
+// Onboarding — wizard shell sidebar
+export const TEXT_SETTING_UP = "Setting up";
+export const LABEL_STEP_STORE_PROFILE = "Store profile";
+export const TEXT_STEP_STORE_PROFILE_DESC = "Name, hours, currency";
+export const LABEL_STEP_ADD_PRODUCTS = "Add products";
+export const TEXT_STEP_ADD_PRODUCTS_DESC = "Type or import";
+export const LABEL_STEP_STOCK_ALERTS = "Set stock alerts";
+export const TEXT_STEP_STOCK_ALERTS_DESC = "When to reorder";
+export const LABEL_STEP_OPEN_REGISTER = "Open the register";
+export const TEXT_STEP_OPEN_REGISTER_DESC = "Count your float";
+export const TEXT_MINUTES_LEFT_SUFFIX = "minutes left";
+export const TEXT_ABOUT_PREFIX = "About";
+export const TEXT_ALMOST_DONE = "Almost done";
+
+// Onboarding — Add Products step
+export const LABEL_WHAT_DO_YOU_SELL = "What do you sell?";
+export const TEXT_PRODUCTS_STEP_DESCRIPTION = "Pick the fastest way in. You can add the rest later.";
+export const LABEL_STARTER_CATALOG_HEADING = "Start from a sari-sari starter list";
+export const LABEL_FASTEST_BADGE = "Fastest";
+export const TEXT_STARTER_CATALOG_DESCRIPTION =
+  "Common items with typical prices already filled in. Untick what you don't carry.";
+export const BUTTON_ADD_N_ITEMS_PREFIX = "Add";
+export const TEXT_ITEMS_SUFFIX = "items";
+export const TEXT_YOU_SET_OWN_PRICES_NEXT = "You'll set your own prices next.";
+export const LABEL_SCAN_SHELF_TITLE = "Scan what's on the shelf";
+export const TEXT_SCAN_SHELF_DESC = "Point the camera at the barcode, then fill in the name and price";
+export const LABEL_IMPORT_SPREADSHEET_TITLE = "Import a spreadsheet";
+export const TEXT_IMPORT_SPREADSHEET_DESC = "CSV for now · Excel coming soon";
+export const LABEL_TYPE_THEM_IN_TITLE = "Type them in";
+export const TEXT_TYPE_THEM_IN_DESC = "Fine for 20 items or fewer";
+export const LABEL_ADDED_SO_FAR = "Added so far";
+export const TEXT_PRODUCTS_SUFFIX = "products";
+export const TEXT_MORE_SUFFIX_PREFIX = "+";
+export const TEXT_MORE_SUFFIX = "more";
+export const BUTTON_CONTINUE = "Continue";
+export const BUTTON_SKIP_FOR_NOW = "Skip for now";
+export const TEXT_SAVED_AUTOMATICALLY = "Saved automatically";
+export const ERROR_CSV_EMPTY = "That file doesn't have any product rows.";
+export const ERROR_CSV_MISSING_COLUMNS = "The file needs at least a name and a price column.";
+export const ERROR_EXCEL_NOT_SUPPORTED_YET =
+  "Excel import isn't available yet — save the file as CSV and try again.";
+export const ERROR_COULD_NOT_IMPORT_FILE = "Could not read that file.";
+export const LABEL_QUICK_ADD_PRODUCT = "Add a product";
+export const BUTTON_DONE = "Done";
+export const ERROR_INVALID_PRICE = "Enter a valid price.";
+export const ERROR_COULD_NOT_ADD_PRODUCT = "Could not add that product.";
+export const ERROR_COULD_NOT_IMPORT_STARTER_CATALOG = "Could not import the starter catalog.";
+
+// Onboarding — Stock Alerts step
+export const LABEL_WHEN_SHOULD_WE_WARN_YOU = "When should we warn you?";
+export const TEXT_STOCK_ALERTS_STEP_DESCRIPTION = "One rule now, fine-tune per product later.";
+export const LABEL_BY_DAYS_OF_COVER = "By days of cover";
+export const LABEL_BETTER_BADGE = "Better";
+export const TEXT_BY_DAYS_OF_COVER_DESC =
+  "Warn when stock will run out within a set number of days, based on how fast it actually sells.";
+export const LABEL_BY_FIXED_QUANTITY = "By fixed quantity";
+export const TEXT_BY_FIXED_QUANTITY_DESC = "Warn at a set number of pieces, the same for everything.";
+export const LABEL_WARN_ME_WHEN_LESS_THAN = "Warn me when less than";
+export const TEXT_OF_STOCK_LEFT_SUFFIX = "of stock left";
+export const TEXT_ONE_DAY_RISKY = "1 day · risky";
+export const TEXT_SEVEN_DAYS_LOTS_OF_CAPITAL = "7 days · lots of capital tied up";
+export const TEXT_TODAY_YOU_WOULD_BE_WARNED_ABOUT_PREFIX = "With that rule, today you'd be warned about";
+export const TEXT_SLIDE_LEFT_HINT = "Sounds about right? Slide left if that feels like too many.";
+export const TEXT_OUT_NOW = "out now";
+export const TEXT_DAY_SUFFIX = "day";
+export const LABEL_FAST_MOVERS_TITLE = "Fast movers get a longer warning";
+export const TEXT_FAST_MOVERS_DESC = "Anything selling 10+ a day warns at 5 days instead";
+export const LABEL_DAILY_SUMMARY_TITLE = "Send the list every morning at 7 AM";
+export const TEXT_DAILY_SUMMARY_DESC = "One message before you open, not all day";
+export const BUTTON_USE_THE_DEFAULT = "Use the default";
+
+// Onboarding — Open Register step
+export const LABEL_COUNT_YOUR_STARTING_CASH = "Count your starting cash";
+export const TEXT_OPEN_REGISTER_STEP_DESCRIPTION =
+  "Do this every morning. It's the only way to know if the drawer is short later.";
+export const LABEL_HOW_MANY_OF_EACH = "HOW MANY OF EACH";
+export const LABEL_COINS = "Coins";
+export const LABEL_STARTING_FLOAT = "STARTING FLOAT";
+export const LABEL_KEEP_AS_MINIMUM = "KEEP AS MINIMUM";
+export const TEXT_BLOCKS_CASH_OUTS_BELOW = "Blocks cash-outs below this";
+export const LABEL_CASH_HEALTH_GOOD_TITLE = "Plenty of small notes and coins";
+export const TEXT_CASH_HEALTH_GOOD_WITH_AVERAGE_PREFIX = "Your average sale is around";
+export const TEXT_CASH_HEALTH_GOOD_WITH_AVERAGE_SUFFIX = "so this covers change comfortably.";
+export const TEXT_CASH_HEALTH_GOOD_NO_SALES = "You've got a good mix of small bills and coins for giving change.";
+export const LABEL_CASH_HEALTH_LOW_TITLE = "Mostly big bills";
+export const TEXT_CASH_HEALTH_LOW_WITH_AVERAGE_PREFIX = "Your average sale is around";
+export const TEXT_CASH_HEALTH_LOW_WITH_AVERAGE_SUFFIX = "so you might run out of change quickly.";
+export const TEXT_CASH_HEALTH_LOW_NO_SALES = "Keep some small bills and coins handy so you can give change.";
+export const LABEL_WHOS_ON_THE_REGISTER = "Who's on the register?";
+export const TEXT_SALES_RECORDED_UNDER_THIS_PERSON = "Sales get recorded under this person";
+export const TEXT_YOU_SUFFIX = "(you)";
+export const BUTTON_OPEN_THE_REGISTER = "Open the register";
+export const BUTTON_SKIP_THE_COUNT = "Skip the count";
+
+// Onboarding — Welcome hero (redesign)
+export const TEXT_WELCOME_HEADLINE = "Let's get your shop ready to sell.";
+export const TEXT_WELCOME_SUBTITLE =
+  "Four short steps. Everything saves as you go, so you can stop after any of them and pick it up later from the dashboard.";
+export const BUTTON_START_SETUP = "Start setup";
+export const BUTTON_SKIP_TO_REGISTER = "Skip — take me to the register";
+export const TEXT_WELCOME_FOOTNOTE = "About 8 minutes end to end. No card, nothing to install.";
+export const LABEL_WHAT_WELL_DO = "What we'll do";
+export const LABEL_STEPS_COUNT_CHIP = "4 steps";
+export const TEXT_WELCOME_STEP_PROFILE_DESC = "Your name and shop details";
+export const TEXT_WELCOME_STEP_PRODUCTS_DESC = "Start from a ready-made list";
+export const TEXT_WELCOME_STEP_STOCK_ALERTS_DESC = "We suggest a sensible default";
+export const TEXT_WELCOME_STEP_OPEN_REGISTER_DESC = "Count your starting cash";
+export const TEXT_ABOUT_LOWERCASE_PREFIX = "about";
+export const TEXT_MIN_SUFFIX = "min";
+export const TEXT_YOU_CAN_LEAVE_ANY_STEP_TITLE = "You can leave any step for later";
+export const TEXT_YOU_CAN_LEAVE_ANY_STEP_DESC =
+  "The only one that really matters today is opening the register — you can sell with a handful of products and add the rest as you go.";
+
+// Onboarding — merged Profile + Store step (redesign)
+export const LABEL_TELL_US_ABOUT_YOU_AND_SHOP = "Tell us about you and your shop";
+export const TEXT_PROFILE_MERGED_DESCRIPTION =
+  "This appears on your receipts and on the dashboard. You can change any of it later in Settings.";
+export const LABEL_ADD_YOUR_PHOTO = "Add your photo";
+export const TEXT_PHOTO_OPTIONAL_SHOWN_TO_STAFF = "Optional · shown to your staff";
+export const TEXT_MOBILE_NUMBER_HINT = "Used to reach you about your account and to reset your PIN.";
+export const LABEL_ADD_STORE_LOGO = "Add store logo";
+export const TEXT_STORE_LOGO_OPTIONAL_PRINTED_ON_RECEIPTS = "Optional · printed on receipts";
+export const LABEL_SAME_AS_MY_OWN_ADDRESS = "Same as my own address";
+export const LABEL_WHEN_ARE_YOU_USUALLY_OPEN = "When are you usually open?";
+export const TEXT_OPENING_HOURS_HINT = "Used to work out how fast things sell, so stock alerts are accurate";
+export const LABEL_TO_SEPARATOR = "to";
+export const LABEL_OPENING_TIME = "Opening time";
+export const LABEL_CLOSING_TIME = "Closing time";
+
+// Onboarding — Setup Complete hero (redesign)
+export const LABEL_SETUP_COMPLETE_CHIP = "Setup complete";
+export const TEXT_REGISTER_IS_OPEN_PREFIX = "The register is open,";
+export const TEXT_PRODUCTS_LOADED_SUFFIX = "products loaded";
+export const TEXT_ALERTS_SET_AT_PREFIX = "alerts set at";
+export const TEXT_DAYS_OF_COVER = "days of cover";
+export const TEXT_AND_SEPARATOR = "and";
+export const TEXT_COUNTED_INTO_DRAWER_SUFFIX = "counted into the drawer.";
+export const BUTTON_START_SELLING = "Start selling";
+export const BUTTON_SEE_THE_DASHBOARD = "See the dashboard";
+export const TEXT_FIRST_SALE_FOOTNOTE =
+  "Your first sale is what turns the dashboard on — until then it has nothing to show.";
+export const LABEL_WHATS_SET_UP = "What's set up";
+export const TEXT_OPEN_HOURS_PREFIX = "open";
+export const TEXT_READY_TO_SELL = "Ready to sell";
+export const LABEL_STOCK_ALERTS_ITEM = "Stock alerts";
+export const TEXT_WARN_AT_PREFIX = "Warn at";
+export const TEXT_DAILY_AT_7AM_SUFFIX = "7 AM daily";
+export const LABEL_REGISTER_OPEN_ITEM = "Register open";
+export const TEXT_FLOAT_PREFIX = "Float";
+export const TEXT_COUNTED_BY_YOU_SUFFIX = "counted by you";
+export const LABEL_WORTH_DOING_THIS_WEEK = "Worth doing this week";
+export const LABEL_OPTIONAL_BADGE = "optional";
+export const LABEL_ADD_YOUR_STAFF = "Add your staff";
+export const TEXT_ADD_STAFF_DESC = "So sales are recorded per person";
+export const LABEL_ENTER_EXISTING_UTANG = "Enter existing utang";
+export const TEXT_ENTER_UTANG_DESC = "Move balances over from your notebook";
+export const LABEL_CHECK_YOUR_SERVICE_FEES = "Check your service fees";
+export const TEXT_SERVICE_FEES_DESC = "E-load and cash-in rates are on defaults";
+export const BUTTON_REVIEW_CHIP = "Review";
 
 // POS page
 export const TEXT_POS_DESCRIPTION = "Scan a barcode, search by name, or tap a product.";
@@ -605,3 +777,183 @@ export const ERROR_CAMERA_IN_USE =
   "The camera is already in use by another app or tab. Close it and try again, or use manual entry below.";
 export const ERROR_CAMERA_GENERIC =
   "Could not access the camera. Check that you've allowed camera access for this site, or use manual entry below.";
+
+// Settings — shared sidebar
+export const LABEL_SETTINGS_HEADING = "Settings";
+export const NAV_LABEL_YOUR_PROFILE = "Your profile";
+export const NAV_LABEL_STORE_DETAILS = "Store details";
+export const NAV_LABEL_RECEIPTS = "Receipts";
+export const NAV_LABEL_FEES_AND_LIMITS = "Fees and limits";
+export const NAV_LABEL_ALERTS = "Alerts";
+export const NAV_LABEL_BACKUP = "Backup";
+export const TEXT_COMING_SOON = "Coming soon";
+export const TEXT_COMING_SOON_DESCRIPTION = "This settings page hasn't been built yet — check back soon.";
+
+// Settings — Your Profile
+export const PAGE_HEADING_YOUR_PROFILE = "Your profile";
+export const TEXT_YOUR_PROFILE_DESCRIPTION = "How you appear and how you sign in";
+export const LABEL_UNSAVED_CHANGES_CHIP = "Unsaved changes";
+export const LABEL_FULL_NAME = "Full name";
+export const LABEL_DISPLAY_NAME = "Display name";
+export const TEXT_AVATAR_HINT = "Square image, at least 200×200. Shown on receipts.";
+export const LABEL_MOBILE = "Mobile";
+export const LABEL_SIGNING_IN = "Signing in";
+export const LABEL_YOUR_OVERRIDE_PIN = "Your override PIN";
+export const TEXT_OVERRIDE_PIN_DESC = "Approves voids, big cash-outs, utang over limit";
+export const LABEL_TWO_STEP_SIGN_IN = "Two-step sign-in";
+export const TEXT_TWO_STEP_SIGN_IN_DESC = "Code by SMS when signing in on a new device";
+export const LABEL_ON_BADGE = "On";
+export const LABEL_OFF_BADGE = "Off";
+export const LABEL_TELL_ME_ABOUT = "Tell me about";
+export const TEXT_NOTIFY_LOW_STOCK = "Low stock, once each morning";
+export const TEXT_NOTIFY_DRAWER_VARIANCE = "Drawer variance at shift close";
+export const TEXT_NOTIFY_UTANG_AGING = "Utang older than 30 days";
+export const TEXT_NOTIFY_EVERY_SALE = "Every completed sale";
+export const LABEL_SIGN_OUT_EVERYWHERE = "Sign out everywhere";
+export const TEXT_SIGN_OUT_EVERYWHERE_DESC = "Ends every other signed-in session for your account";
+export const BUTTON_SIGN_OUT_ALL = "Sign out all";
+export const BUTTON_DISCARD = "Discard";
+export const LABEL_CHANGE_PASSWORD_HEADING = "Change your password";
+export const LABEL_NEW_PASSWORD = "New password";
+export const LABEL_CONFIRM_NEW_PASSWORD = "Confirm new password";
+export const BUTTON_UPDATE_PASSWORD = "Update password";
+export const BUTTON_UPDATING = "Updating…";
+export const ERROR_PASSWORD_TOO_SHORT = "Password must be at least 8 characters.";
+export const ERROR_PASSWORDS_DO_NOT_MATCH = "Passwords don't match.";
+export const TEXT_PASSWORD_UPDATED = "Password updated.";
+export const ERROR_COULD_NOT_UPDATE_PASSWORD = "Could not update password.";
+export const ERROR_COULD_NOT_SIGN_OUT_EVERYWHERE = "Could not sign out other sessions.";
+export const TEXT_SIGNED_OUT_EVERYWHERE = "Signed out of all other sessions.";
+
+// Settings — Store Details
+export const PAGE_HEADING_STORE_DETAILS = "Store details";
+export const TEXT_STORE_DETAILS_DESCRIPTION = "Appears on receipts and reports";
+export const BUTTON_CHANGE_LOGO = "Change logo";
+export const TEXT_LOGO_HINT = "Printed at the top of every receipt";
+export const LABEL_CONTACT_NUMBER = "Contact number";
+export const LABEL_CITY = "City";
+export const LABEL_CURRENCY = "Currency";
+export const LABEL_TIME_ZONE = "Time zone";
+export const LABEL_OPENING_HOURS = "Opening hours";
+export const TEXT_SAME_EVERY_DAY = "Same every day";
+export const LABEL_OPENS = "Opens";
+export const LABEL_CLOSES = "Closes";
+export const TEXT_OPENING_HOURS_STOCK_HINT = 'Used to work out "sells per day" for stock alerts.';
+export const LABEL_REGISTERED_WITH_BIR = "Registered with BIR";
+export const TEXT_REGISTERED_WITH_BIR_DESC = "Turn on if you issue official receipts";
+export const LABEL_TIN = "TIN";
+export const LABEL_BUSINESS_PERMIT_NO = "Business permit no.";
+export const TEXT_BIR_HINT =
+  "Printed on receipts. Check the current BIR requirements for your registration type — this app doesn't verify them.";
+export const ERROR_COULD_NOT_SAVE_STORE_DETAILS = "Could not save store details.";
+export const TEXT_STORE_DETAILS_UPDATED = "Store details updated.";
+
+// Settings — Receipts
+export const PAGE_HEADING_RECEIPTS = "Receipts";
+export const TEXT_RECEIPTS_DESCRIPTION = "What the customer gets after a sale";
+export const LABEL_HOW_TO_SEND_IT = "How to send it";
+export const LABEL_PRINT_ON_THERMAL_PRINTER = "Print on the thermal printer";
+export const LABEL_OFFER_SMS_RECEIPT = "Offer SMS receipt";
+export const LABEL_PRINT_AUTOMATICALLY_EVERY_SALE = "Print automatically every sale";
+export const TEXT_RECEIPT_SEND_HINT = "Most sari-sari customers don't want paper. Ask, don't assume.";
+export const LABEL_WHAT_TO_INCLUDE = "What to include";
+export const LABEL_INCLUDE_LOGO = "Logo";
+export const LABEL_INCLUDE_TIN_AND_PERMIT = "TIN and permit";
+export const LABEL_INCLUDE_CASHIER_NAME = "Cashier name";
+export const LABEL_INCLUDE_UTANG_BALANCE = "Utang balance";
+export const LABEL_INCLUDE_QR_TO_PAY = "QR to pay";
+export const LABEL_FOOTER_MESSAGE = "Footer message";
+export const TEXT_CHARACTERS_LEFT = "characters left";
+export const LABEL_RECEIPT_NUMBERING = "Receipt numbering";
+export const TEXT_NEXT_RECEIPT_NUMBER_PREFIX = "Next:";
+export const LABEL_PREVIEW = "Preview";
+export const BUTTON_TEST_PRINT = "Test print";
+export const BUTTON_58MM = "58mm";
+export const ERROR_COULD_NOT_SAVE_RECEIPT_SETTINGS = "Could not save receipt settings.";
+export const TEXT_RECEIPT_SETTINGS_UPDATED = "Receipt settings updated.";
+export const TEXT_PREVIEW_STORE_ADDRESS_FALLBACK = "Store address not set yet";
+export const TEXT_PREVIEW_CASHIER_LABEL = "Cashier:";
+export const TEXT_PREVIEW_TOTAL = "TOTAL";
+export const TEXT_PREVIEW_CASH = "Cash";
+export const TEXT_PREVIEW_CHANGE = "Change";
+
+// Settings — Fees and Limits
+export const PAGE_HEADING_FEES_AND_LIMITS = "Fees and limits";
+export const TEXT_FEES_AND_LIMITS_DESCRIPTION = "What you charge, and what staff can do without you";
+export const LABEL_ELOAD_FEE = "E-load fee";
+export const LABEL_CASH_IN_FEE = "Cash-in fee";
+export const LABEL_CASH_OUT_FEE = "Cash-out fee";
+export const LABEL_ADD_BRACKET = "Add bracket";
+export const TEXT_BRACKET_UP_TO_PREFIX = "Up to";
+export const TEXT_BRACKET_AND_UP_SUFFIX = "and up";
+export const LABEL_PRINT_AND_PHOTOCOPY = "Print and photocopy";
+export const LABEL_PRINT_BW = "Print B&W";
+export const LABEL_PRINT_COLOUR = "Print colour";
+export const LABEL_PHOTOCOPY = "Photocopy";
+export const LABEL_BULK_FROM = "Bulk from";
+export const LABEL_CASH_AND_CREDIT_LIMITS = "Cash and credit limits";
+export const LABEL_KEEP_IN_DRAWER = "Keep in drawer";
+export const LABEL_DEFAULT_CREDIT_LIMIT = "Default credit limit";
+export const LABEL_CASHIER_CASH_OUT_CAP = "Cashier cash-out cap";
+export const LABEL_BLOCK_UTANG_PAST_LIMIT = "Block utang past the customer's limit";
+export const LABEL_VOID_NEEDS_PIN = "Voiding a paid sale needs your PIN";
+export const LABEL_WARN_LOW_ELOAD_FLOAT = "Warn when e-load float drops below ₱500";
+export const ERROR_COULD_NOT_SAVE_FEES_AND_LIMITS = "Could not save fees and limits.";
+export const TEXT_FEES_AND_LIMITS_UPDATED = "Fees and limits updated.";
+
+// Settings — Alerts
+export const PAGE_HEADING_ALERTS = "Alerts";
+export const TEXT_ALERTS_DESCRIPTION = "What reaches you, when, and how";
+export const LABEL_ALERTS_STOCK = "Stock";
+export const LABEL_WARN_BELOW = "Warn below";
+export const TEXT_DAYS_OF_COVER_SUFFIX = "of cover";
+export const LABEL_FAST_MOVERS_WARN_EARLIER = "Fast movers warn earlier";
+export const LABEL_OUT_OF_STOCK_STRAIGHT_AWAY = "Out of stock, straight away";
+export const LABEL_ALERTS_MONEY = "Money";
+export const LABEL_DRAWER_OFF_BY_MORE_THAN = "Drawer off by more than";
+export const LABEL_UTANG_OLDER_THAN = "Utang older than";
+export const LABEL_ANY_VOID_AFTER_PAYMENT = "Any void after payment";
+export const LABEL_HOW_AND_WHEN = "How and when";
+export const LABEL_CHANNEL_PUSH = "Push";
+export const TEXT_CHANNEL_PUSH_DESC = "On this device";
+export const LABEL_CHANNEL_SMS = "SMS";
+export const TEXT_CHANNEL_SMS_DESC = "Money alerts only";
+export const LABEL_CHANNEL_EMAIL = "Email";
+export const TEXT_CHANNEL_OFF = "Off";
+export const LABEL_DAILY_SUMMARY_AT = "Daily summary at";
+export const TEXT_DAILY_SUMMARY_AT_DESC = "One message instead of many";
+export const LABEL_QUIET_HOURS = "Quiet hours";
+export const TEXT_QUIET_HOURS_DESC = "Nothing except money alerts";
+export const ERROR_COULD_NOT_SAVE_ALERTS = "Could not save alerts.";
+export const TEXT_ALERTS_UPDATED = "Alerts updated.";
+
+// Settings — Backup
+export const PAGE_HEADING_BACKUP = "Backup";
+export const TEXT_BACKUP_DESCRIPTION = "Your sales history is the store's memory";
+export const TEXT_ALWAYS_SYNCED_HEADING = "Always up to date";
+export const TEXT_ALWAYS_SYNCED_DESC = "Every sale, product, and customer saves straight to the cloud as you go";
+export const TEXT_SALES_COUNT_SUFFIX = "sales";
+export const TEXT_PRODUCTS_COUNT_SUFFIX = "products";
+export const TEXT_CUSTOMERS_COUNT_SUFFIX = "customers";
+export const BUTTON_REFRESH_NOW = "Refresh now";
+export const BUTTON_REFRESHING = "Refreshing…";
+export const LABEL_AUTOMATIC_BACKUP = "Automatic backup";
+export const LABEL_BACK_UP_TO_CLOUD = "Back up to the cloud";
+export const LABEL_HOW_OFTEN = "How often";
+export const LABEL_ONLY_ON_WIFI = "Only on wi-fi";
+export const LABEL_WHEN_INTERNET_DROPS = "When the internet drops";
+export const TEXT_OFFLINE_QUEUE_DESC =
+  "The register needs a connection to check out a sale — there's no offline queue yet.";
+export const LABEL_WAITING_TO_UPLOAD = "Waiting to upload";
+export const TEXT_ZERO_SALES = "0 sales";
+export const LABEL_TAKE_A_COPY = "Take a copy for yourself";
+export const LABEL_EXPORT_SALES_CSV = "Sales as CSV";
+export const TEXT_EXPORT_SALES_CSV_DESC = "Opens in Excel";
+export const LABEL_EXPORT_PRODUCTS_CSV = "Product list";
+export const TEXT_EXPORT_PRODUCTS_CSV_DESC = "With prices and stock";
+export const LABEL_EXPORT_EVERYTHING = "Everything";
+export const TEXT_EXPORT_EVERYTHING_DESC = "Full backup file";
+export const LABEL_RESTORE_FROM_BACKUP = "Restore from a backup";
+export const TEXT_RESTORE_DESC = "Not available yet — this would replace everything currently in the app";
+export const BUTTON_RESTORE = "Restore";
+export const TEXT_BACKUP_SETTINGS_UPDATED = "Backup settings updated.";

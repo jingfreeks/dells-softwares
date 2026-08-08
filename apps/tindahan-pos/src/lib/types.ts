@@ -13,11 +13,18 @@ export interface StaffAccount {
   onboardedAt: string | null;
 }
 
+export interface StoreFeeConfig {
+  eload?: { max: number; fee: number }[];
+  cashIn?: { max: number; fee: number }[];
+  cashOut?: { max: number; fee: number }[];
+}
+
 export interface Store {
   id: string;
   name: string;
   address: string | null;
   photoUrl: string | null;
+  feeConfig: StoreFeeConfig | null;
 }
 
 export interface Category {
