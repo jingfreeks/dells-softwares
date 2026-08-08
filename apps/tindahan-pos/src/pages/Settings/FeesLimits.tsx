@@ -107,16 +107,16 @@ export function FeesLimits() {
           </p>
         )}
 
-        <div className="tpl-row" style={{ flexWrap: "wrap", rowGap: 8 }}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <button
             type="submit"
-            className="tpl-btnp"
-            style={{ width: "auto", marginBottom: 0, whiteSpace: "nowrap" }}
+            className="tpl-btnp w-full! sm:w-auto!"
+            style={{ marginBottom: 0, whiteSpace: "nowrap" }}
             disabled={submitting || !isDirty}
           >
             {submitting ? BUTTON_SAVING : BUTTON_SAVE_CHANGES}
           </button>
-          <button type="button" className="tpl-txt" onClick={onDiscard}>
+          <button type="button" className="tpl-txt text-center sm:text-left" onClick={onDiscard}>
             {BUTTON_DISCARD}
           </button>
         </div>
