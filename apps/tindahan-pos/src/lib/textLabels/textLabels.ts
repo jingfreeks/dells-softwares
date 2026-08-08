@@ -926,3 +926,34 @@ export const LABEL_QUIET_HOURS = "Quiet hours";
 export const TEXT_QUIET_HOURS_DESC = "Nothing except money alerts";
 export const ERROR_COULD_NOT_SAVE_ALERTS = "Could not save alerts.";
 export const TEXT_ALERTS_UPDATED = "Alerts updated.";
+
+// Settings — Backup
+export const PAGE_HEADING_BACKUP = "Backup";
+export const TEXT_BACKUP_DESCRIPTION = "Your sales history is the store's memory";
+export const TEXT_ALWAYS_SYNCED_HEADING = "Always up to date";
+export const TEXT_ALWAYS_SYNCED_DESC = "Every sale, product, and customer saves straight to the cloud as you go";
+export const TEXT_SALES_COUNT_SUFFIX = "sales";
+export const TEXT_PRODUCTS_COUNT_SUFFIX = "products";
+export const TEXT_CUSTOMERS_COUNT_SUFFIX = "customers";
+export const BUTTON_REFRESH_NOW = "Refresh now";
+export const BUTTON_REFRESHING = "Refreshing…";
+export const LABEL_AUTOMATIC_BACKUP = "Automatic backup";
+export const LABEL_BACK_UP_TO_CLOUD = "Back up to the cloud";
+export const LABEL_HOW_OFTEN = "How often";
+export const LABEL_ONLY_ON_WIFI = "Only on wi-fi";
+export const LABEL_WHEN_INTERNET_DROPS = "When the internet drops";
+export const TEXT_OFFLINE_QUEUE_DESC =
+  "The register needs a connection to check out a sale — there's no offline queue yet.";
+export const LABEL_WAITING_TO_UPLOAD = "Waiting to upload";
+export const TEXT_ZERO_SALES = "0 sales";
+export const LABEL_TAKE_A_COPY = "Take a copy for yourself";
+export const LABEL_EXPORT_SALES_CSV = "Sales as CSV";
+export const TEXT_EXPORT_SALES_CSV_DESC = "Opens in Excel";
+export const LABEL_EXPORT_PRODUCTS_CSV = "Product list";
+export const TEXT_EXPORT_PRODUCTS_CSV_DESC = "With prices and stock";
+export const LABEL_EXPORT_EVERYTHING = "Everything";
+export const TEXT_EXPORT_EVERYTHING_DESC = "Full backup file";
+export const LABEL_RESTORE_FROM_BACKUP = "Restore from a backup";
+export const TEXT_RESTORE_DESC = "Not available yet — this would replace everything currently in the app";
+export const BUTTON_RESTORE = "Restore";
+export const TEXT_BACKUP_SETTINGS_UPDATED = "Backup settings updated.";
