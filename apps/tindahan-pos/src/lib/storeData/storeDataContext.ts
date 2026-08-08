@@ -48,7 +48,9 @@ export interface StoreDataContextValue {
     cart: CartLine[],
     services: ServiceLine[],
     cashierName: string,
-    payment?: CheckoutPayment
+    payment?: CheckoutPayment,
+    /** The quick-switched cashier's session token (see useCashierSession) — attributes the sale to them, not the signed-in admin. */
+    cashierToken?: string | null
   ) => Promise<SaleRecord>;
   refresh: () => Promise<void>;
   addCategory: (name: string) => Promise<Category>;

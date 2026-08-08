@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { render } from "@testing-library/react";
 import { vi } from "vitest";
 import type {
+  CashierProfile,
   CreditPayment,
   Customer,
   Product,
@@ -25,6 +26,7 @@ export function makeStaffAccount(overrides: Partial<StaffAccount> = {}): StaffAc
     address: null,
     onboardedAt: "2026-07-27T10:00:00Z",
     hasPin: false,
+    active: true,
     ...overrides,
   };
 }
@@ -134,6 +136,22 @@ function baseAuthValue() {
     setOwnPin: vi.fn().mockResolvedValue({ ok: true }),
     completeOnboarding: vi.fn().mockResolvedValue({ ok: true }),
     deleteAccount: vi.fn().mockResolvedValue({ ok: true }),
+  };
+}
+
+/** Full default CashierSessionContext value — override just what a test cares about. */
+export function makeCashierSessionValue(overrides: Partial<ReturnType<typeof baseCashierSessionValue>> = {}) {
+  return { ...baseCashierSessionValue(), ...overrides };
+}
+
+function baseCashierSessionValue() {
+  return {
+    activeCashier: makeStaffAccount() as CashierProfile | null,
+    loading: false,
+    startCashierSession: vi.fn().mockResolvedValue({ ok: true }),
+    endCashierSession: vi.fn().mockResolvedValue(undefined),
+    cashierToken: null as string | null,
+    reportExpiredSession: vi.fn(),
   };
 }
 

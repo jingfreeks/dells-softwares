@@ -198,7 +198,8 @@ export const LABEL_ROLE_CASHIER = "Cashier";
 export const ARIA_STAFF_ACTIONS = "More actions";
 export const BUTTON_EDIT_NAME = "Edit name";
 export const BUTTON_RESET_PASSWORD = "Reset password";
-export const BUTTON_DEACTIVATE_SOON = "Deactivate (coming soon)";
+export const BUTTON_DEACTIVATE = "Deactivate";
+export const BUTTON_ACTIVATE = "Activate";
 export const HEADING_CASHIER_PERMISSIONS = "What a cashier can do";
 export const LINK_EDIT_ROLE = "Edit role";
 export const LABEL_PERMISSION_RING_UP_SALES = "Ring up sales";
@@ -972,3 +973,26 @@ export const ERROR_PIN_MUST_BE_4_DIGITS = "PIN must be exactly 4 digits.";
 export const ERROR_PINS_DO_NOT_MATCH = "PINs don't match.";
 export const BUTTON_SET_PIN = "Set PIN";
 export const BUTTON_CHANGE_PIN = "Change PIN";
+
+// Cashier PIN quick-switch login
+export const LABEL_CASHIER_PICKER_HEADING = "WHO'S ON THE REGISTER?";
+export const TEXT_GREETING_HI_PREFIX = "Hi";
+export const TEXT_ENTER_YOUR_PIN_SUFFIX = "enter your PIN";
+export const LABEL_CASHIER_PIN_ARIA = "Enter your PIN";
+export const TEXT_FORGOT_PIN_PREFIX = "Forgot your PIN? Ask";
+export const LINK_SIGN_IN_WITH_EMAIL = "Sign in with email";
+export const BUTTON_SWITCH_CASHIER = "Switch cashier";
+export const ERROR_INVALID_PIN = "Incorrect PIN. Please try again.";
+export const ERROR_PIN_LOCKED = "Too many wrong attempts. Please wait 15 minutes and try again.";
+export const ERROR_INACTIVE_EMPLOYEE = "This account is inactive. Please ask an admin.";
+export const TEXT_CASHIER_SESSION_EXPIRED = "Please sign in again.";
+export const TEXT_LOADING_STAFF = "Loading staff…";
+export const ERROR_COULD_NOT_LOAD_STAFF = "Could not load staff.";
+
+// Staff page: per-cashier PIN + active toggle (admin only)
+export const LABEL_STAFF_PIN = "PIN";
+export const TEXT_STAFF_NO_PIN_SET = "No PIN set";
+export const LABEL_ACTIVE = "Active";
+export const LABEL_INACTIVE = "Inactive";
+export const ERROR_COULD_NOT_SET_STAFF_PIN = "Could not save this PIN.";
+export const ERROR_COULD_NOT_UPDATE_STAFF_STATUS = "Could not update this staff member's status.";

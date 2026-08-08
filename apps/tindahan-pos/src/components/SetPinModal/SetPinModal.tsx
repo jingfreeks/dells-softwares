@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PinKeypad } from "@/components";
+import { PinKeypad } from "@/components/PinKeypad";
 import {
   LABEL_YOUR_OVERRIDE_PIN,
   LABEL_YOUR_OVERRIDE_PIN_ENTER,
@@ -14,9 +14,11 @@ interface SetPinModalProps {
   error: string | null;
   onCancel: () => void;
   onSubmit: (pin: string) => void;
+  /** Defaults to "Your override PIN" (self-service, Settings page). Pass a custom heading when an admin is setting someone else's PIN (Staff page). */
+  heading?: string;
 }
 
-export function SetPinModal({ open, submitting, error, onCancel, onSubmit }: SetPinModalProps) {
+export function SetPinModal({ open, submitting, error, onCancel, onSubmit, heading }: SetPinModalProps) {
   const [firstPin, setFirstPin] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [mismatchError, setMismatchError] = useState(false);
@@ -61,7 +63,7 @@ export function SetPinModal({ open, submitting, error, onCancel, onSubmit }: Set
         onClick={(e) => e.stopPropagation()}
       >
         <p id="setPinHeading" className="tpl-h3" style={{ marginBottom: 16 }}>
-          {LABEL_YOUR_OVERRIDE_PIN}
+          {heading ?? LABEL_YOUR_OVERRIDE_PIN}
         </p>
         <p className="tpl-ts" style={{ marginBottom: 14 }}>
           {firstPin === null ? LABEL_YOUR_OVERRIDE_PIN_ENTER : LABEL_YOUR_OVERRIDE_PIN_CONFIRM}

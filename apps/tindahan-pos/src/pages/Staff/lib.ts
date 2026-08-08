@@ -119,11 +119,6 @@ export type StaffRoleSelection = "cashier" | "supervisor" | "owner";
 export type SignInMethod = "pin" | "pin-email";
 export type ShiftSelection = "morning" | "afternoon" | "none";
 
-/** A random 4-digit PIN, shown once to the admin when adding staff. */
-export function generatePin(): string {
-  return String(Math.floor(1000 + Math.random() * 9000));
-}
-
 /**
  * A password for the real create-cashier call — the new design replaces
  * the temporary-password field with a PIN shown to the admin, but the

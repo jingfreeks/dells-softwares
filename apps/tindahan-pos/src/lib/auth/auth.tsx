@@ -7,7 +7,7 @@ import { AuthContext, type AuthResult, type RegisterResult } from "./authContext
 async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
   const { data, error } = await supabase
     .from("staff")
-    .select("id, store_id, name, email, role, avatar_url, phone, address, onboarded_at, pin_hash")
+    .select("id, store_id, name, email, role, avatar_url, phone, address, onboarded_at, pin_hash, active")
     .eq("id", userId)
     .single();
 
@@ -24,6 +24,7 @@ async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
     address: data.address,
     onboardedAt: data.onboarded_at,
     hasPin: data.pin_hash !== null,
+    active: data.active,
   };
 }
 

@@ -8,15 +8,19 @@ import {
   ERROR_COULD_NOT_REMOVE_STAFF,
   ERROR_COULD_NOT_UPDATE_STAFF,
   ERROR_COULD_NOT_SEND_RESET,
+  ERROR_COULD_NOT_SET_STAFF_PIN,
+  ERROR_COULD_NOT_UPDATE_STAFF_STATUS,
   type Role,
 } from "@/lib";
-import { generatePassword, generatePin, type StaffRoleSelection, type SignInMethod, type ShiftSelection } from "./lib";
+import { generatePassword, type StaffRoleSelection, type SignInMethod, type ShiftSelection } from "./lib";
 
 export interface StaffRow {
   id: string;
   name: string;
   email: string;
   role: Role;
+  active: boolean;
+  hasPin: boolean;
 }
 
 export interface StaffFormValues {
@@ -24,7 +28,6 @@ export interface StaffFormValues {
   email: string;
   roleSelection: StaffRoleSelection;
   signInMethod: SignInMethod;
-  pin: string;
   shift: ShiftSelection;
   drawerCounting: boolean;
 }
@@ -35,7 +38,6 @@ function makeEmptyForm(): StaffFormValues {
     email: "",
     roleSelection: "cashier",
     signInMethod: "pin",
-    pin: generatePin(),
     shift: "morning",
     drawerCounting: true,
   };
@@ -53,19 +55,31 @@ export function useStaffPage() {
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showShiftHistory, setShowShiftHistory] = useState(false);
+  const [setPinForId, setSetPinForId] = useState<string | null>(null);
+  const [setPinSubmitting, setSetPinSubmitting] = useState(false);
+  const [setPinError, setSetPinError] = useState<string | null>(null);
 
   const fetchStaff = useCallback(async () => {
     setLoadError(null);
     const { data, error } = await supabase
       .from("staff")
-      .select("id, name, email, role")
+      .select("id, name, email, role, active, pin_hash")
       .order("role")
       .order("name");
     if (error) {
       setLoadError(error.message);
       return;
     }
-    setStaff(data ?? []);
+    setStaff(
+      (data ?? []).map((row) => ({
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        role: row.role,
+        active: row.active,
+        hasPin: row.pin_hash !== null,
+      }))
+    );
   }, []);
 
   useEffect(() => {
@@ -153,6 +167,41 @@ export function useStaffPage() {
     return result.ok;
   }
 
+  function openSetPinModal(id: string) {
+    setSetPinForId(id);
+    setSetPinError(null);
+  }
+
+  function closeSetPinModal() {
+    setSetPinForId(null);
+    setSetPinError(null);
+  }
+
+  async function handleSetPin(pin: string) {
+    if (!setPinForId) return;
+    setSetPinSubmitting(true);
+    setSetPinError(null);
+    const { error } = await supabase.rpc("admin_set_staff_pin", { p_staff_id: setPinForId, p_pin: pin });
+    setSetPinSubmitting(false);
+    if (error) {
+      setSetPinError(error.message || ERROR_COULD_NOT_SET_STAFF_PIN);
+      return;
+    }
+    await fetchStaff();
+    closeSetPinModal();
+  }
+
+  async function handleToggleActive(id: string, currentlyActive: boolean) {
+    setLoadError(null);
+    try {
+      const { error } = await supabase.from("staff").update({ active: !currentlyActive }).eq("id", id);
+      if (error) throw error;
+      await fetchStaff();
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : ERROR_COULD_NOT_UPDATE_STAFF_STATUS);
+    }
+  }
+
   return {
     user,
     sales,
@@ -173,5 +222,12 @@ export function useStaffPage() {
     handleRemove,
     handleEditName,
     handleResetPassword,
+    setPinForId,
+    setPinSubmitting,
+    setPinError,
+    openSetPinModal,
+    closeSetPinModal,
+    handleSetPin,
+    handleToggleActive,
   };
 }

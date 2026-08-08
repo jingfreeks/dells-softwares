@@ -1,5 +1,13 @@
 import type { SaleRecord } from "@/lib";
-import { PESO, LABEL_YOU_SUFFIX, LABEL_EMAIL_LOGIN, LABEL_ROLE_ADMIN, LABEL_ROLE_CASHIER, TEXT_EDIT_STAFF_NAME_PROMPT } from "@/lib";
+import {
+  PESO,
+  LABEL_YOU_SUFFIX,
+  LABEL_EMAIL_LOGIN,
+  LABEL_ROLE_ADMIN,
+  LABEL_ROLE_CASHIER,
+  LABEL_INACTIVE,
+  TEXT_EDIT_STAFF_NAME_PROMPT,
+} from "@/lib";
 import type { StaffRow as StaffRowData } from "../../../hooks";
 import { staffInitials, computeSalesToday, lastActiveLabel } from "../../../lib";
 import { StaffActionsMenu } from "../../staffactionsmenu";
@@ -13,10 +21,22 @@ interface StaffRowProps {
   removingId: string | null;
   onEditName: (id: string, name: string) => void;
   onResetPassword: (email: string) => void;
+  onSetPin: (id: string) => void;
+  onToggleActive: (id: string, currentlyActive: boolean) => void;
   onRemove: (id: string) => void;
 }
 
-export function StaffRow({ member, currentUserId, sales, removingId, onEditName, onResetPassword, onRemove }: StaffRowProps) {
+export function StaffRow({
+  member,
+  currentUserId,
+  sales,
+  removingId,
+  onEditName,
+  onResetPassword,
+  onSetPin,
+  onToggleActive,
+  onRemove,
+}: StaffRowProps) {
   const isSelf = member.id === currentUserId;
   const salesToday = computeSalesToday(sales, member.name);
 
@@ -52,14 +72,18 @@ export function StaffRow({ member, currentUserId, sales, removingId, onEditName,
       <span className="tpl-tp tpl-right">{salesToday > 0 ? PESO.format(salesToday) : "—"}</span>
 
       <span className="tpl-ts" style={{ fontSize: 12 }}>
-        {lastActiveLabel(sales, member.name)}
+        {member.active ? lastActiveLabel(sales, member.name) : <span className="tpl-chip tpl-bad">{LABEL_INACTIVE}</span>}
       </span>
 
       <StaffActionsMenu
         canRemove={member.role === "cashier"}
         removing={removingId === member.id}
+        hasPin={member.hasPin}
+        active={member.active}
         onEditName={handleEditName}
         onResetPassword={() => onResetPassword(member.email)}
+        onSetPin={() => onSetPin(member.id)}
+        onToggleActive={() => onToggleActive(member.id, member.active)}
         onRemove={() => onRemove(member.id)}
       />
     </div>

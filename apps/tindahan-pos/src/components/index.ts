@@ -14,4 +14,5 @@ export * from "./PageLoadingOverlay";
 export * from "./PinKeypad";
 export * from "./ProtectedRoute";
 export * from "./ScannerLoadingOverlay";
+export * from "./SetPinModal";
 export * from "./Sidebar";

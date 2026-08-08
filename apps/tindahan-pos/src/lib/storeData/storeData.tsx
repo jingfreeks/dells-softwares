@@ -301,7 +301,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     cart: CartLine[],
     services: ServiceLine[],
     cashierName: string,
-    payment: CheckoutPayment = { type: "cash" }
+    payment: CheckoutPayment = { type: "cash" },
+    cashierToken: string | null = null
   ): Promise<SaleRecord> {
     if (payment.type === "credit" && !payment.customerId) {
       throw new Error("A customer is required for a credit sale.");
@@ -316,6 +317,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       p_payment_type: payment.type,
       p_reference_no: payment.type === "qr" ? payment.referenceNo!.trim() : null,
       p_override_pin: payment.type === "credit" ? (payment.overridePin?.trim() || null) : null,
+      p_cashier_token: cashierToken,
     });
     if (err) throw err;
     const result = data?.[0];
