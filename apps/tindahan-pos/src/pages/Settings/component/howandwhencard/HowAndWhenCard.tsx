@@ -75,12 +75,18 @@ export function HowAndWhenCard({
         ))}
       </div>
 
-      <div className="tpl-sp" style={{ padding: "6px 0", borderBottom: "0.5px solid var(--tpl-bd3)" }}>
+      <div
+        className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+        style={{ padding: "6px 0", borderBottom: "0.5px solid var(--tpl-bd3)" }}
+      >
         <div className="tpl-flex1">
           <p className="tpl-tp">{LABEL_DAILY_SUMMARY_AT}</p>
           <p className="tpl-ts">{TEXT_DAILY_SUMMARY_AT_DESC}</p>
         </div>
-        <div className="tpl-fld tpl-mono" style={{ height: 28, width: 90, justifyContent: "center" }}>
+        <div
+          className="tpl-fld tpl-mono"
+          style={{ height: 28, width: 110, justifyContent: "center", flexShrink: 0 }}
+        >
           <input
             type="time"
             value={dailySummaryTime}
@@ -90,13 +96,16 @@ export function HowAndWhenCard({
         </div>
       </div>
 
-      <div className="tpl-sp" style={{ padding: "6px 0" }}>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between" style={{ padding: "6px 0" }}>
         <div className="tpl-flex1">
           <p className="tpl-tp">{LABEL_QUIET_HOURS}</p>
           <p className="tpl-ts">{TEXT_QUIET_HOURS_DESC}</p>
         </div>
-        <div className="tpl-row" style={{ gap: 6 }}>
-          <div className="tpl-fld tpl-mono" style={{ height: 28, width: 100, justifyContent: "center" }}>
+        <div className="tpl-row" style={{ gap: 6, flexShrink: 0 }}>
+          <div
+            className="tpl-fld tpl-mono"
+            style={{ height: 28, width: 110, justifyContent: "center", flexShrink: 0 }}
+          >
             <input
               type="time"
               value={quietHoursStart}
@@ -104,7 +113,10 @@ export function HowAndWhenCard({
               aria-label={`${LABEL_QUIET_HOURS} start`}
             />
           </div>
-          <div className="tpl-fld tpl-mono" style={{ height: 28, width: 100, justifyContent: "center" }}>
+          <div
+            className="tpl-fld tpl-mono"
+            style={{ height: 28, width: 110, justifyContent: "center", flexShrink: 0 }}
+          >
             <input
               type="time"
               value={quietHoursEnd}
