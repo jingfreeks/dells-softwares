@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileHeader } from "@/components/MobileHeader";
@@ -8,10 +8,22 @@ import { PageLoadingOverlay } from "@/components/PageLoadingOverlay";
 import "@/pages/authTheme.css";
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, deviceSession, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <PageLoadingOverlay variant="dark" />;
+  }
+
+  // A paired device (Phase 3) has a real session but no human staff member
+  // behind it — it can only ever reach /pos (the cashier picker / POS
+  // checkout screen), never Staff/Settings/Admin/Inventory/Customers. No
+  // Sidebar/BottomNav — a bare register isn't meant to navigate anywhere.
+  if (deviceSession && !user) {
+    if (location.pathname !== "/pos") {
+      return <Navigate to="/pos" replace />;
+    }
+    return <main className="tpl-root tpl-shell-bg h-screen">{children}</main>;
   }
 
   if (!user) {

@@ -7,10 +7,10 @@ import { ProtectedRoute } from "../ProtectedRoute";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 
-function renderProtected() {
+function renderProtected(initialEntry = "/pos") {
   return render(
     <EloadWalletProvider>
-      <MemoryRouter initialEntries={["/pos"]}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
           <Route path="/login" element={<p>Login page</p>} />
           <Route path="/onboarding" element={<p>Onboarding page</p>} />
@@ -19,6 +19,14 @@ function renderProtected() {
             element={
               <ProtectedRoute>
                 <p>Protected content</p>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/inventory"
+            element={
+              <ProtectedRoute>
+                <p>Inventory content</p>
               </ProtectedRoute>
             }
           />
@@ -73,5 +81,30 @@ describe("ProtectedRoute", () => {
     );
     renderProtected();
     expect(screen.getByText("Protected content")).toBeInTheDocument();
+  });
+
+  it("redirects a paired device session away from a non-/pos route", () => {
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        loading: false,
+        user: null,
+        deviceSession: { id: "d1", storeId: "s1", name: "Counter tablet" },
+      })
+    );
+    renderProtected("/inventory");
+    expect(screen.getByText("Protected content")).toBeInTheDocument();
+  });
+
+  it("renders a bare minimal shell (no Sidebar/BottomNav) for a paired device session on /pos", () => {
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        loading: false,
+        user: null,
+        deviceSession: { id: "d1", storeId: "s1", name: "Counter tablet" },
+      })
+    );
+    renderProtected("/pos");
+    expect(screen.getByText("Protected content")).toBeInTheDocument();
+    expect(screen.queryAllByRole("navigation", { name: "Main" }).length).toBe(0);
   });
 });

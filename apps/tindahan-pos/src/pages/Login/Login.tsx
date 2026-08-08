@@ -23,6 +23,8 @@ import {
   TEXT_LOGIN_PREVIEW_BULLET_2,
   TEXT_LOGIN_PREVIEW_BULLET_3,
   TEXT_LOGIN_PREVIEW_RECENT_SALES,
+  LABEL_SET_UP_THIS_DEVICE,
+  TEXT_SET_UP_THIS_DEVICE_DESC,
 } from "@/lib";
 import { useLoginForm } from "./hooks";
 import { Titleheader, SalesItem,Salesheader } from "./component";
@@ -222,6 +224,20 @@ export function Login() {
             </Link>
           </p>
           <p className="tpl-foot-fine">{TEXT_CONTACT_SUPPORT}</p>
+
+          <Link to="/pair" className="tpl-note tpl-b" style={{ marginTop: 16, textDecoration: "none" }}>
+            <span className="tpl-ic tpl-b" style={{ width: 30, height: 30, borderRadius: 10, fontSize: 16 }}>
+              <i className="ti ti-device-tablet" aria-hidden />
+            </span>
+            <div>
+              <p className="tpl-h3" style={{ fontSize: 14 }}>
+                {LABEL_SET_UP_THIS_DEVICE}
+              </p>
+              <p className="tpl-ns" style={{ color: "#8593AB" }}>
+                {TEXT_SET_UP_THIS_DEVICE_DESC}
+              </p>
+            </div>
+          </Link>
         </div>
       </div>
 

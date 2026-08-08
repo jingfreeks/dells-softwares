@@ -7,6 +7,7 @@ import {
   NAV_LABEL_FEES_AND_LIMITS,
   NAV_LABEL_ALERTS,
   NAV_LABEL_BACKUP,
+  NAV_LABEL_DEVICES,
 } from "@/lib";
 
 const SETTINGS_NAV_ITEMS = [
@@ -16,6 +17,7 @@ const SETTINGS_NAV_ITEMS = [
   { to: "/settings/fees", label: NAV_LABEL_FEES_AND_LIMITS, icon: "ti-coin" },
   { to: "/settings/alerts", label: NAV_LABEL_ALERTS, icon: "ti-bell" },
   { to: "/settings/backup", label: NAV_LABEL_BACKUP, icon: "ti-database-export" },
+  { to: "/settings/devices", label: NAV_LABEL_DEVICES, icon: "ti-device-tablet" },
 ];
 
 export function SettingsSidebar() {

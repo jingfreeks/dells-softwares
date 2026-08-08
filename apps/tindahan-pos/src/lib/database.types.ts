@@ -527,6 +527,49 @@ export interface Database {
           },
         ];
       };
+      devices: {
+        Row: {
+          id: string;
+          store_id: string;
+          name: string;
+          paired_by: string;
+          paired_at: string;
+          last_seen_at: string | null;
+          unpaired_at: string | null;
+        };
+        Insert: {
+          id: string;
+          store_id: string;
+          name: string;
+          paired_by: string;
+          paired_at?: string;
+          last_seen_at?: string | null;
+          unpaired_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          name?: string;
+          paired_by?: string;
+          paired_at?: string;
+          last_seen_at?: string | null;
+          unpaired_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "devices_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "devices_paired_by_fkey";
+            columns: ["paired_by"];
+            referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -582,6 +625,21 @@ export interface Database {
       end_cashier_session: {
         Args: {
           p_token: string;
+        };
+        Returns: undefined;
+      };
+      generate_pairing_code: {
+        Args: Record<string, never>;
+        Returns: { code: string; expires_at: string }[];
+      };
+      list_pickable_cashiers: {
+        Args: Record<string, never>;
+        Returns: { id: string; name: string; avatar_url: string | null }[];
+      };
+      admin_unpair_device: {
+        Args: {
+          p_device_id: string;
+          p_owner_pin: string;
         };
         Returns: undefined;
       };

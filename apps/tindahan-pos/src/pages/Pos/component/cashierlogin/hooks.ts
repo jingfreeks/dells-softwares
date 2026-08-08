@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase, useCashierSession, useAuth, ERROR_COULD_NOT_LOAD_STAFF } from "@/lib";
 import { ERROR_INVALID_PIN, ERROR_PIN_LOCKED, ERROR_INACTIVE_EMPLOYEE } from "@/lib";
 
@@ -18,6 +19,7 @@ function friendlyStartSessionError(message: string): string {
 export function useCashierLoginScreen() {
   const { startCashierSession } = useCashierSession();
   const { logout } = useAuth();
+  const navigate = useNavigate();
   const [staffList, setStaffList] = useState<CashierPickerRow[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -29,11 +31,7 @@ export function useCashierLoginScreen() {
   const fetchStaffList = useCallback(async () => {
     setLoadingStaff(true);
     setLoadError(null);
-    const { data, error } = await supabase
-      .from("staff")
-      .select("id, name, avatar_url")
-      .eq("active", true)
-      .order("name");
+    const { data, error } = await supabase.rpc("list_pickable_cashiers");
     if (error) {
       setLoadError(ERROR_COULD_NOT_LOAD_STAFF);
     } else {
@@ -79,6 +77,17 @@ export function useCashierLoginScreen() {
     await logout();
   }
 
+  // "Wrong store?" (paired devices only): this device was paired to the
+  // wrong store — sign out of its current session and go re-redeem a new
+  // pairing code, rather than making anyone reinstall the app. No PIN
+  // required — no cashier has signed in yet, nothing sensitive has
+  // happened. The old `devices` row is left paired-but-abandoned until an
+  // admin notices and unpairs it from Settings.
+  async function wrongStore() {
+    await logout();
+    navigate("/pair");
+  }
+
   return {
     staffList,
     loadingStaff,
@@ -92,5 +101,6 @@ export function useCashierLoginScreen() {
     submitting,
     submitPin,
     signInWithEmailInstead,
+    wrongStore,
   };
 }
