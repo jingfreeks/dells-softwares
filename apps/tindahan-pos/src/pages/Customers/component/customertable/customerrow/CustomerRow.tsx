@@ -1,22 +1,23 @@
 import type { KeyboardEvent } from "react";
 import type { Customer } from "@/lib";
-import { PESO, TEXT_OLDEST_DEBT_PREFIX, TEXT_DAYS_SUFFIX, TEXT_PAID_IN_FULL } from "@/lib";
+import { PESO, TEXT_OLDEST_DEBT_PREFIX, TEXT_DAYS_SUFFIX, TEXT_PAID_IN_FULL, creditUsageVariant, isOverdueDebt } from "@/lib";
 import { CreditProgress } from "../../creditprogress";
 import { CustomerActions } from "../../customeractions";
-import { creditUsageVariant, customerInitials, isOverdueDebt } from "../../../lib";
+import { customerInitials } from "../../../lib";
 
 export const CUSTOMER_ROW_COLUMNS = "minmax(0,2fr) 96px minmax(0,1.4fr) 86px";
 
 interface CustomerRowProps {
   customer: Customer;
   oldestDebtDays: number | null;
+  thresholdDays: number;
   selectedId: string | null;
   onSelect: (customer: Customer) => void;
 }
 
-export function CustomerRow({ customer, oldestDebtDays, selectedId, onSelect }: CustomerRowProps) {
-  const overdue = isOverdueDebt(oldestDebtDays);
-  const variant = creditUsageVariant(customer, oldestDebtDays);
+export function CustomerRow({ customer, oldestDebtDays, thresholdDays, selectedId, onSelect }: CustomerRowProps) {
+  const overdue = isOverdueDebt(oldestDebtDays, thresholdDays);
+  const variant = creditUsageVariant(customer, oldestDebtDays, thresholdDays);
   const avatarVariant = customer.balance <= 0 ? "tpl-g" : overdue ? "tpl-r" : "tpl-b";
 
   function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {

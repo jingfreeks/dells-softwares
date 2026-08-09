@@ -1,12 +1,18 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { useStoreData } from "@/lib";
-import { makeCreditPayment, makeCustomer, makeStoreDataValue } from "../../test/testUtils";
+import { useAuth, useStoreData } from "@/lib";
+import { makeAuthValue, makeCreditPayment, makeCustomer, makeSaleRecord, makeStoreDataValue } from "../../test/testUtils";
 import { Customers } from "./Customers";
 
+vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/lib/storeData", () => ({ useStoreData: vi.fn() }));
+
+beforeEach(() => {
+  window.localStorage.clear();
+  vi.mocked(useAuth).mockReturnValue(makeAuthValue());
+});
 
 const customers = [
   makeCustomer({ id: "c1", name: "Mang Jose", balance: 300 }),
@@ -213,5 +219,29 @@ describe("Customers", () => {
     renderPage();
     await user.click(screen.getByText("Mang Jose"));
     expect(await screen.findByText(/Credit limit: ₱500\.00/)).toBeInTheDocument();
+  });
+
+  it("uses the utang aging threshold from Settings → Alerts instead of a hardcoded 30 days", async () => {
+    window.localStorage.setItem(
+      "tindahan-pos:alerts:store-1",
+      JSON.stringify({ utangAgingThresholdDays: 14 })
+    );
+    const twentyDaysAgo = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString();
+    const debtCustomers = [makeCustomer({ id: "c1", name: "Mang Jose", balance: 300 })];
+    const sales = [
+      makeSaleRecord({
+        id: "s1",
+        customerId: "c1",
+        paymentType: "credit",
+        timestamp: twentyDaysAgo,
+      }),
+    ];
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ customers: debtCustomers, sales }));
+    renderPage();
+
+    // With the default 30-day threshold, 20 days would NOT be overdue —
+    // with the 14-day threshold read from Settings, it is.
+    expect(screen.getByText(/oldest 20 days/)).toHaveClass("tpl-bad");
+    expect(screen.getByText("Over 14 days")).toBeInTheDocument();
   });
 });

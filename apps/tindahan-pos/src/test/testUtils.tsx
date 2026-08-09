@@ -77,6 +77,7 @@ export function makeSaleRecord(overrides: Partial<SaleRecord> = {}): SaleRecord 
     ],
     total: 50,
     cashierName: "Aling Nena",
+    cashierId: "staff-1",
     paymentType: "cash",
     customerId: null,
     referenceNo: null,
@@ -196,6 +197,7 @@ function baseStoreDataValue() {
     addSupplier: vi.fn().mockResolvedValue(makeSupplier()),
     updateSupplier: vi.fn().mockResolvedValue(undefined),
     findSupplierByScanCode: vi.fn().mockResolvedValue(null as Supplier | null),
+    fetchSalesInRange: vi.fn().mockResolvedValue([] as SaleRecord[]),
   };
 }
 

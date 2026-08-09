@@ -10,4 +10,5 @@ export * from "./CheckoutStatusMessages";
 export * from "./CheckoutActions";
 export * from "./CartPanel";
 export * from "./ownerapprovalmodal";
+export * from "./receiptmodal";
 export * from "./cashierlogin";

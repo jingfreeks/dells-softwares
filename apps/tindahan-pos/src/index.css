@@ -43,3 +43,73 @@ html {
     0 1px 2px rgba(15, 23, 42, 0.04),
     0 14px 32px -18px rgba(201, 59, 46, 0.22);
 }
+
+/* Printable receipt — thermal-width, monospace. Reusable by any future
+   print surface: whatever carries .print-area is the only thing the
+   browser's print dialog renders. */
+.tpl-receipt {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  color: #0f172a;
+}
+.tpl-receipt-center {
+  text-align: center;
+}
+.tpl-receipt-store {
+  font-weight: 700;
+  font-size: 14px;
+  margin: 0 0 2px;
+}
+.tpl-receipt-heading {
+  margin: 6px 0 0;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+.tpl-receipt-line {
+  margin: 2px 0;
+  line-height: 1.4;
+}
+.tpl-receipt-hr {
+  border-top: 1px dashed #94a3b8;
+  margin: 8px 0;
+}
+.tpl-receipt-item {
+  margin-bottom: 4px;
+}
+.tpl-receipt-item-sub {
+  margin: 0;
+  color: #64748b;
+  font-size: 11.5px;
+}
+.tpl-receipt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 2px 0;
+}
+.tpl-receipt-total {
+  font-weight: 700;
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+  }
+}

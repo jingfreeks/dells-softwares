@@ -72,6 +72,11 @@ export interface StoreDataContextValue {
     patch: Partial<{ name: string; phone: string | null; address: string | null }>
   ) => Promise<void>;
   findSupplierByScanCode: (scanCode: string) => Promise<Supplier | null>;
+  fetchSalesInRange: (params: {
+    startDate: string;
+    endDate: string;
+    cashierId?: string | null;
+  }) => Promise<SaleRecord[]>;
 }
 
 export const StoreDataContext = createContext<StoreDataContextValue | null>(null);
