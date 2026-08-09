@@ -11,6 +11,8 @@ export * from "./inventory";
 export * from "./mockData";
 export * from "./money";
 export * from "./nav";
+export * from "./network";
+export * from "./offlineQueue";
 export * from "./pos";
 export * from "./qr";
 // reportPdf is intentionally excluded — it's dynamically import()'d (see

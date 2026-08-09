@@ -16,6 +16,13 @@ vi.mock("../../supabaseClient", () => ({
   },
 }));
 
+vi.mock("@/lib/offlineQueue", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/offlineQueue")>("@/lib/offlineQueue");
+  return { ...actual, enqueueSale: vi.fn().mockResolvedValue(undefined) };
+});
+
+const mockedEnqueueSale = (await import("@/lib/offlineQueue")).enqueueSale as unknown as ReturnType<typeof vi.fn>;
+
 const mockedSupabase = supabase as unknown as {
   from: ReturnType<typeof vi.fn>;
   rpc: ReturnType<typeof vi.fn>;
@@ -87,6 +94,7 @@ describe("StoreDataProvider", () => {
     mockedSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: "user-1" } } });
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount() }));
     captured = null;
+    mockedEnqueueSale.mockClear();
   });
 
   it("throws when useStoreData is used outside a provider", () => {
@@ -641,6 +649,50 @@ describe("StoreDataProvider", () => {
     await expect(captured!.checkout([], [], "Aling Nena")).rejects.toThrow(
       "Checkout did not return a result."
     );
+  });
+
+  it("queues the sale and resolves with syncStatus 'pending' on a connectivity failure, still patching state optimistically", async () => {
+    tableResults.products.list = {
+      data: [
+        {
+          id: "p1",
+          barcode: null,
+          name: "Sardines",
+          price: 25,
+          stock: 20,
+          low_stock_threshold: 5,
+          category_id: "cat1",
+          pack_quantity: null,
+          pack_price: null,
+          image_url: null,
+          categories: { name: "Canned" },
+        },
+      ],
+      error: null,
+    };
+    mockedSupabase.rpc.mockRejectedValue(new TypeError("Failed to fetch"));
+    renderProvider(<Capture />);
+    await waitFor(() => expect(captured?.loading).toBe(false));
+
+    const product = captured!.products.find((p) => p.id === "p1")!;
+    const sale = await captured!.checkout([{ product, quantity: 2 }], [], "Aling Nena");
+
+    expect(sale.syncStatus).toBe("pending");
+    expect(sale.total).toBe(50);
+    await waitFor(() => expect(captured!.products.find((p) => p.id === "p1")?.stock).toBe(18));
+    expect(captured!.sales[0]?.id).toBe(sale.id);
+    expect(mockedEnqueueSale).toHaveBeenCalledWith(
+      "store-1",
+      expect.objectContaining({ id: sale.id, cashierName: "Aling Nena", total: 50 })
+    );
+  });
+
+  it("does not queue a business-rule rejection — it still rejects immediately", async () => {
+    mockedSupabase.rpc.mockResolvedValue({ data: null, error: { message: "CREDIT_LIMIT_EXCEEDED" } });
+    renderProvider(<Capture />);
+    await waitFor(() => expect(captured?.loading).toBe(false));
+    await expect(captured!.checkout([], [], "Aling Nena")).rejects.toEqual({ message: "CREDIT_LIMIT_EXCEEDED" });
+    expect(mockedEnqueueSale).not.toHaveBeenCalled();
   });
 
   it("propagates a checkout RPC error", async () => {

@@ -96,6 +96,8 @@ export interface SaleRecord {
   customerId: string | null;
   /** GCash/Maya transaction number the cashier entered — set only for a "qr" sale. */
   referenceNo: string | null;
+  /** Set when checkout() queued this sale offline instead of confirming it live — undefined/omitted for a normal live sale. */
+  syncStatus?: "pending";
 }
 
 export interface ServiceLine {
