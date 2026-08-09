@@ -961,9 +961,22 @@ export const LABEL_HOW_OFTEN = "How often";
 export const LABEL_ONLY_ON_WIFI = "Only on wi-fi";
 export const LABEL_WHEN_INTERNET_DROPS = "When the internet drops";
 export const TEXT_OFFLINE_QUEUE_DESC =
-  "The register needs a connection to check out a sale — there's no offline queue yet.";
+  "If the connection drops mid-sale, checkout keeps working — sales are saved on this device and upload automatically once you're back online.";
 export const LABEL_WAITING_TO_UPLOAD = "Waiting to upload";
 export const TEXT_ZERO_SALES = "0 sales";
+export const TEXT_SYNC_PENDING_HEADING = "Some sales are waiting to sync";
+export const TEXT_SYNC_PENDING_DESC = "Saved on this device — they'll upload automatically once you're back online";
+export const LABEL_LAST_SYNCED = "Last synced";
+export const TEXT_NEVER_SYNCED_YET = "Not yet";
+export const LABEL_QUEUED_SALE_STATUS_PENDING = "Pending";
+export const LABEL_QUEUED_SALE_STATUS_SYNCING = "Syncing…";
+export const LABEL_QUEUED_SALE_STATUS_SYNCED = "Synced";
+export const LABEL_QUEUED_SALE_STATUS_NEEDS_REAUTH = "Needs sign-in";
+export const LABEL_QUEUED_SALE_STATUS_FAILED = "Failed";
+export const TEXT_QUEUE_NEEDS_REAUTH =
+  "Sign back in as a cashier to resume syncing these sales.";
+export const BUTTON_RETRY_NOW = "Retry now";
+export const TEXT_SAVED_OFFLINE_BADGE = "Saved offline — will sync when back online";
 export const LABEL_TAKE_A_COPY = "Take a copy for yourself";
 export const LABEL_EXPORT_SALES_CSV = "Sales as CSV";
 export const TEXT_EXPORT_SALES_CSV_DESC = "Opens in Excel";

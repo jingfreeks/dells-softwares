@@ -23,6 +23,7 @@ export function BackupSettings() {
     customersCount,
     refreshing,
     onRefreshNow,
+    pendingCount,
 
     cloudBackupEnabled,
     toggleCloudBackupEnabled,
@@ -60,6 +61,7 @@ export function BackupSettings() {
           customersCount={customersCount}
           refreshing={refreshing}
           onRefreshNow={onRefreshNow}
+          pendingCount={pendingCount}
         />
 
         <div className="grid gap-3 sm:grid-cols-2" style={{ marginBottom: 11 }}>

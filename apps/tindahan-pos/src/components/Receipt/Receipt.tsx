@@ -12,6 +12,7 @@ import {
   LABEL_REFERENCE_NO_PREFIX,
   LABEL_UTANG_BALANCE_NOTE,
   LABEL_TOTAL_POS,
+  TEXT_SAVED_OFFLINE_BADGE,
 } from "@/lib/textLabels";
 
 const PAYMENT_LABEL: Record<SaleRecord["paymentType"], string> = {
@@ -92,6 +93,11 @@ export function Receipt({ sale, store, settings, tin, businessPermitNo, tendered
         <span>{LABEL_TOTAL_POS}</span>
         <span>{PESO.format(sale.total)}</span>
       </div>
+      {sale.syncStatus === "pending" && (
+        <p className="tpl-receipt-center tpl-receipt-line" style={{ marginTop: 4 }}>
+          {TEXT_SAVED_OFFLINE_BADGE}
+        </p>
+      )}
       <div className="tpl-receipt-row">
         <span>{PAYMENT_LABEL[sale.paymentType]}</span>
         <span />

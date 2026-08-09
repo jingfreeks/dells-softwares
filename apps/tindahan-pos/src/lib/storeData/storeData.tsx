@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth";
-import { lineTotal } from "@/lib/pos";
+import { cartTotal, lineTotal } from "@/lib/pos";
 import { supabase } from "@/lib/supabaseClient";
+import { enqueueSale, isConnectivityFailure } from "@/lib/offlineQueue";
 import type { ReceivingLine } from "@/lib/inventory";
 import type {
   CartLine,
@@ -53,11 +54,12 @@ function friendlyProductError(err: { code?: string; message: string }): Error {
 }
 
 const SALE_SELECT =
-  "id, created_at, total, customer_id, payment_type, reference_no, staff:cashier_id(id, name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)";
+  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, staff:cashier_id(id, name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)";
 
 function mapSaleRow(row: {
   id: string;
   created_at: string;
+  occurred_at: string | null;
   total: number;
   customer_id: string | null;
   payment_type: SaleRecord["paymentType"];
@@ -78,7 +80,10 @@ function mapSaleRow(row: {
   const staff = Array.isArray(row.staff) ? row.staff[0] : row.staff;
   return {
     id: row.id,
-    timestamp: row.created_at,
+    // occurred_at (set only for a sale that was queued offline and synced
+    // later) reflects when the sale actually happened, not when it landed
+    // in Postgres — falls back to created_at for a normal live sale.
+    timestamp: row.occurred_at ?? row.created_at,
     total: row.total,
     cashierName: staff?.name ?? "Unknown",
     cashierId: staff?.id ?? null,
@@ -354,7 +359,14 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     if (payment.type === "qr" && !payment.referenceNo?.trim()) {
       throw new Error("A reference number is required for a QR payment.");
     }
-    const { data, error: err } = await supabase.rpc("checkout_sale", {
+
+    // Captured once, up front — reused whether this sale goes live or gets
+    // queued below, so a sale synced later is indistinguishable server-side
+    // from one that went through immediately.
+    const clientRequestId = crypto.randomUUID();
+    const occurredAt = new Date().toISOString();
+
+    const rpcParams = {
       p_items: cart.map((line) => ({ product_id: line.product.id, quantity: line.quantity })),
       p_services: services.map((line) => ({ label: line.label, amount: line.amount, fee: line.fee })),
       p_customer_id: payment.type === "credit" ? payment.customerId : null,
@@ -362,14 +374,71 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       p_reference_no: payment.type === "qr" ? payment.referenceNo!.trim() : null,
       p_override_pin: payment.type === "credit" ? (payment.overridePin?.trim() || null) : null,
       p_cashier_token: cashierToken,
-    });
-    if (err) throw err;
-    const result = data?.[0];
-    if (!result) throw new Error("Checkout did not return a result.");
+      p_client_request_id: clientRequestId,
+      p_occurred_at: occurredAt,
+    };
+
+    let total: number;
+    let saleId: string;
+    let queued = false;
+    let rpcError: unknown = null;
+    let rpcResult: { sale_id: string; total: number } | undefined;
+    try {
+      const { data, error: err } = await supabase.rpc("checkout_sale", rpcParams);
+      if (err) {
+        rpcError = err;
+      } else {
+        rpcResult = data?.[0];
+      }
+    } catch (thrown) {
+      // The RPC call itself threw (a fetch failure) rather than resolving
+      // with an { error } — this is always a genuine connectivity failure,
+      // not a business-rule response from the server.
+      rpcError = thrown;
+    }
+
+    if (rpcError) {
+      // Genuine business-rule rejections (insufficient stock, an over-limit
+      // credit sale, etc.) are not connectivity failures — surface them to
+      // the cashier right now, exactly as before.
+      if (!isConnectivityFailure(rpcError)) throw rpcError;
+
+      // Only a real connectivity failure reaches here. The sale is queued
+      // for replay instead of blocked, since it already looks "done" from
+      // the cashier's side.
+      total = cartTotal(cart) + services.reduce((sum, line) => sum + line.amount + line.fee, 0);
+      saleId = clientRequestId;
+      queued = true;
+      const storeId = user?.storeId ?? deviceSession?.storeId ?? null;
+      if (storeId) {
+        await enqueueSale(storeId, {
+          id: clientRequestId,
+          payload: {
+            items: rpcParams.p_items,
+            services: rpcParams.p_services,
+            customerId: rpcParams.p_customer_id ?? null,
+            paymentType: payment.type,
+            referenceNo: rpcParams.p_reference_no,
+            overridePin: rpcParams.p_override_pin,
+            cashierToken: rpcParams.p_cashier_token,
+          },
+          occurredAt,
+          cashierName,
+          total,
+        });
+      }
+    } else {
+      // The RPC responded successfully but with an empty/malformed result —
+      // not a connectivity problem (we got a response), so this always
+      // surfaces immediately rather than being queued.
+      if (!rpcResult) throw new Error("Checkout did not return a result.");
+      total = rpcResult.total;
+      saleId = rpcResult.sale_id;
+    }
 
     const saleRecord: SaleRecord = {
-      id: result.sale_id,
-      timestamp: new Date().toISOString(),
+      id: saleId,
+      timestamp: occurredAt,
       items: [
         ...cart.map((line) => ({
           productId: line.product.id,
@@ -390,7 +459,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
           lineTotal: line.amount + line.fee,
         })),
       ],
-      total: result.total,
+      total,
       cashierName,
       // The RPC resolves the real cashier_id server-side (possibly via
       // cashierToken, not the signed-in user) without returning it here —
@@ -401,6 +470,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       paymentType: payment.type,
       customerId: payment.type === "credit" ? (payment.customerId ?? null) : null,
       referenceNo: payment.type === "qr" ? (payment.referenceNo?.trim() ?? null) : null,
+      ...(queued ? { syncStatus: "pending" as const } : {}),
     };
 
     // The RPC above already decremented stock, recorded the sale, and (for
@@ -408,7 +478,10 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     // changes into local state instead of re-fetching the entire products
     // table and sales history on every checkout. That refetch pattern was
     // the single biggest cost under concurrent load: every cashier's sale
-    // re-pulled the whole store's product catalog.
+    // re-pulled the whole store's product catalog. A queued sale gets the
+    // exact same optimistic patch, applied here and only here — the sync
+    // engine that later confirms it server-side never re-applies it, so the
+    // totals the cashier already saw on the receipt never change afterward.
     setProducts((prev) =>
       prev.map((p) => {
         const line = cart.find((l) => l.product.id === p.id);
@@ -418,9 +491,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     setSales((prev) => [saleRecord, ...prev].slice(0, 100));
     if (payment.type === "credit" && payment.customerId) {
       const customerId = payment.customerId;
-      setCustomers((prev) =>
-        prev.map((c) => (c.id === customerId ? { ...c, balance: c.balance + result.total } : c))
-      );
+      setCustomers((prev) => prev.map((c) => (c.id === customerId ? { ...c, balance: c.balance + total } : c)));
     }
 
     return saleRecord;

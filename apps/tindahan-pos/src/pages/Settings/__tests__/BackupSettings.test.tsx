@@ -2,13 +2,17 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { useAuth, useStoreData } from "@/lib";
+import { useAuth, useStoreData, useOfflineQueue } from "@/lib";
 import { makeAuthValue, makeStaffAccount, makeProduct, makeSaleRecord, makeCustomer, makeStoreDataValue } from "../../../test/testUtils";
 import { BackupSettings } from "../BackupSettings";
 import { ComingSoonSettingsPage } from "../ComingSoonSettingsPage";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/lib/storeData", () => ({ useStoreData: vi.fn() }));
+vi.mock("@/lib/offlineQueue", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/offlineQueue")>("@/lib/offlineQueue");
+  return { ...actual, useOfflineQueue: vi.fn() };
+});
 
 function renderPage() {
   return render(
@@ -35,6 +39,13 @@ describe("BackupSettings", () => {
         customers: [makeCustomer()],
       })
     );
+    vi.mocked(useOfflineQueue).mockReturnValue({
+      pendingCount: 0,
+      items: [],
+      lastSyncedAt: null,
+      retryNow: vi.fn(),
+      needsReauth: false,
+    });
   });
 
   it("shows real counts from store data", () => {
@@ -98,10 +109,51 @@ describe("BackupSettings", () => {
     expect(JSON.parse(raw as string)).toMatchObject({ wifiOnly: true });
   });
 
-  it("shows the offline-queue note as always zero, and the restore button as inert", () => {
+  it("shows the offline queue as empty when nothing is pending, and the restore button as inert", () => {
     renderPage();
     expect(screen.getByText("0 sales")).toBeInTheDocument();
     expect(screen.getByText("Restore")).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("shows real pending-sale counts and a retry action when sales are queued offline", async () => {
+    const user = userEvent.setup();
+    const retryNow = vi.fn();
+    vi.mocked(useOfflineQueue).mockReturnValue({
+      pendingCount: 2,
+      items: [
+        {
+          id: "q1",
+          payload: {
+            items: [],
+            services: [],
+            customerId: null,
+            paymentType: "cash",
+            referenceNo: null,
+            overridePin: null,
+            cashierToken: null,
+          },
+          occurredAt: "2026-08-09T10:00:00Z",
+          cashierName: "Aling Nena",
+          total: 54,
+          status: "pending",
+          attempts: 0,
+          lastError: null,
+          createdAt: "2026-08-09T10:00:00Z",
+          updatedAt: "2026-08-09T10:00:00Z",
+        },
+      ],
+      lastSyncedAt: null,
+      retryNow,
+      needsReauth: false,
+    });
+    renderPage();
+
+    expect(screen.getByText("Some sales are waiting to sync")).toBeInTheDocument();
+    expect(screen.getAllByText(/2 sales/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Aling Nena/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Retry now" }));
+    expect(retryNow).toHaveBeenCalled();
   });
 
   describe("settings sidebar", () => {
