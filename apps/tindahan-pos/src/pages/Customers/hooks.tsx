@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useLocation } from "react-router-dom";
 import {
+  useAuth,
   useStoreData,
   ERROR_NAME_REQUIRED,
   ERROR_CREDIT_LIMIT_INVALID,
@@ -8,10 +9,14 @@ import {
   ERROR_OPENING_BALANCE_INVALID,
   ERROR_PAYMENT_AMOUNT_INVALID,
   ERROR_COULD_NOT_RECORD_PAYMENT,
+  buildDebtAgingSummary,
+  computeOldestDebtDays,
+  isOverdueDebt,
   type Customer,
   type CreditPayment,
 } from "@/lib";
-import { buildDebtAgingSummary, computeOldestDebtDays, findDuplicateCustomer, isOverdueDebt } from "./lib";
+import { DEFAULT_ALERTS_MOCK, loadAlertsMock } from "@/pages/Settings/alertsMock";
+import { findDuplicateCustomer } from "./lib";
 
 export type PaymentSchedule = "biweekly" | "weekly" | "none";
 
@@ -28,6 +33,11 @@ const emptyPaymentForm = { amount: "0", note: "" };
 
 export function useCustomersPage() {
   const { customers, sales, addCustomer, recordCreditPayment, fetchCreditPayments } = useStoreData();
+  const { store } = useAuth();
+  const thresholdDays = useMemo(
+    () => (store ? loadAlertsMock(store.id).utangAgingThresholdDays : DEFAULT_ALERTS_MOCK.utangAgingThresholdDays),
+    [store]
+  );
   const location = useLocation();
   const [query, setQuery] = useState(
     () => (location.state as { initialQuery?: string } | null)?.initialQuery ?? ""
@@ -73,13 +83,13 @@ export function useCustomersPage() {
   }, [customers, sales]);
 
   const overdueCount = useMemo(
-    () => customers.filter((c) => isOverdueDebt(oldestDebtDaysById.get(c.id) ?? null)).length,
-    [customers, oldestDebtDaysById]
+    () => customers.filter((c) => isOverdueDebt(oldestDebtDaysById.get(c.id) ?? null, thresholdDays)).length,
+    [customers, oldestDebtDaysById, thresholdDays]
   );
 
   const debtAging = useMemo(
-    () => buildDebtAgingSummary(customers, oldestDebtDaysById),
-    [customers, oldestDebtDaysById]
+    () => buildDebtAgingSummary(customers, oldestDebtDaysById, thresholdDays),
+    [customers, oldestDebtDaysById, thresholdDays]
   );
 
   const filtered = useMemo(() => {
@@ -91,7 +101,7 @@ export function useCustomersPage() {
       );
     }
     if (overdueOnly) {
-      rows = rows.filter((c) => isOverdueDebt(oldestDebtDaysById.get(c.id) ?? null));
+      rows = rows.filter((c) => isOverdueDebt(oldestDebtDaysById.get(c.id) ?? null, thresholdDays));
     }
     if (hasUtangOnly) {
       rows = rows.filter((c) => c.balance > 0);
@@ -102,7 +112,7 @@ export function useCustomersPage() {
       rows.sort((a, b) => b.balance - a.balance);
     }
     return rows;
-  }, [customers, query, overdueOnly, hasUtangOnly, sortByOldestDebt, oldestDebtDaysById]);
+  }, [customers, query, overdueOnly, hasUtangOnly, sortByOldestDebt, oldestDebtDaysById, thresholdDays]);
 
   const totalOutstanding = useMemo(
     () => customers.reduce((sum, c) => sum + c.balance, 0),
@@ -242,5 +252,6 @@ export function useCustomersPage() {
     overdueCount,
     oldestDebtDaysById,
     debtAging,
+    thresholdDays,
   };
 }

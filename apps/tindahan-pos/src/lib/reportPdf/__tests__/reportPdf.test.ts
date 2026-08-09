@@ -20,6 +20,7 @@ const baseReport: DailyReport = {
       items: [{ productId: "p1", name: "Sardines", quantity: 2, price: 25, itemType: "product", fee: 0, lineTotal: 50 }],
       total: 50,
       cashierName: "Aling Nena",
+      cashierId: "staff-1",
       paymentType: "cash",
       customerId: null,
       referenceNo: null,

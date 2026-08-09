@@ -1,0 +1,80 @@
+import { useEffect } from "react";
+import { Receipt, type ReceiptDisplaySettings } from "@/components";
+import { BUTTON_PRINT_RECEIPT, BUTTON_NEW_SALE, type SaleRecord, type Store } from "@/lib";
+
+interface ReceiptModalProps {
+  open: boolean;
+  sale: SaleRecord | null;
+  store: Store | null;
+  settings: ReceiptDisplaySettings;
+  tin?: string;
+  businessPermitNo?: string;
+  tendered: number;
+  change: number;
+  autoPrint: boolean;
+  onClose: () => void;
+}
+
+export function ReceiptModal({
+  open,
+  sale,
+  store,
+  settings,
+  tin,
+  businessPermitNo,
+  tendered,
+  change,
+  autoPrint,
+  onClose,
+}: ReceiptModalProps) {
+  useEffect(() => {
+    if (open && autoPrint) {
+      window.print();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  if (!open || !sale || !store) return null;
+
+  return (
+    <div className="tpl-modal-overlay" onClick={onClose}>
+      <div
+        className="tpl-modal-panel tpl-card"
+        style={{ maxWidth: 380 }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={BUTTON_NEW_SALE}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Receipt
+          sale={sale}
+          store={store}
+          settings={settings}
+          tin={tin}
+          businessPermitNo={businessPermitNo}
+          tendered={tendered}
+          change={change}
+        />
+
+        <div className="tpl-row" style={{ marginTop: 18 }}>
+          <button
+            type="button"
+            className="tpl-btn"
+            style={{ flex: 1, marginBottom: 0, justifyContent: "center", height: 40 }}
+            onClick={() => window.print()}
+          >
+            {BUTTON_PRINT_RECEIPT}
+          </button>
+          <button
+            type="button"
+            className="tpl-btnp"
+            style={{ flex: 1, marginBottom: 0, justifyContent: "center", height: 40 }}
+            onClick={onClose}
+          >
+            {BUTTON_NEW_SALE}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

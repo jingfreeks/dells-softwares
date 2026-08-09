@@ -8,6 +8,7 @@ import {
   CartPanel,
   OwnerApprovalModal,
   CashierLoginScreen,
+  ReceiptModal,
 } from "./component";
 import { usePosPage } from "./hooks";
 import "../authTheme.css";
@@ -95,6 +96,14 @@ export function Pos() {
     productsLoading,
     productsError,
     onRetryProducts,
+    store,
+    lastSaleRecord,
+    lastSaleTendered,
+    lastSaleChange,
+    receiptSettings,
+    receiptTin,
+    receiptBusinessPermitNo,
+    closeReceipt,
   } = usePosPage();
 
   if (!activeCashier) {
@@ -212,6 +221,19 @@ export function Pos() {
         submitting={overrideSubmitting}
         onCancel={closeOwnerApproval}
         onPayCashInstead={payCashInstead}
+      />
+
+      <ReceiptModal
+        open={!!lastSaleRecord}
+        sale={lastSaleRecord}
+        store={store}
+        settings={receiptSettings}
+        tin={receiptTin}
+        businessPermitNo={receiptBusinessPermitNo}
+        tendered={lastSaleTendered}
+        change={lastSaleChange}
+        autoPrint={receiptSettings.autoPrintEverySale}
+        onClose={closeReceipt}
       />
     </div>
   );

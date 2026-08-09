@@ -5,5 +5,4 @@ export * from "./customerbalancecard";
 export * from "./PaymentHistoryCard";
 export * from "./customerfilters";
 export * from "./customertable";
-export * from "./debtagecard";
 export * from "./recentpaymentscard";

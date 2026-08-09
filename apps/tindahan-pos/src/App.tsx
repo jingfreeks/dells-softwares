@@ -28,6 +28,7 @@ import {
   BackupSettings,
   DevicesSettings,
   Onboarding,
+  Reports,
 } from "@/pages";
 
 function App() {
@@ -49,6 +50,7 @@ function App() {
                       <Route path="/inventory" element={<Inventory />} />
                       <Route path="/admin" element={<Dashboard />} />
                       <Route path="/staff" element={<Staff />} />
+                      <Route path="/reports" element={<Reports />} />
                       <Route path="/inventory/receiving" element={<Receiving />} />
                       <Route path="/customers" element={<Customers />} />
                       <Route path="/suppliers" element={<Suppliers />} />

@@ -1,5 +1,5 @@
 import { PESO, TEXT_OF_INFIX, TEXT_OVER_LIMIT_SUFFIX, LABEL_NO_CREDIT_LIMIT_SET } from "@/lib";
-import type { CreditUsageVariant } from "../../lib";
+import type { CreditUsageVariant } from "@/lib";
 
 interface CreditProgressProps {
   used: number;

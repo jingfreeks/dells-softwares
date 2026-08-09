@@ -5,6 +5,7 @@ import {
   NAV_LABEL_CUSTOMERS,
   NAV_LABEL_ADMIN,
   NAV_LABEL_STAFF,
+  NAV_LABEL_REPORTS,
 } from "./textLabels";
 
 const NAV_ITEMS_ALL = [
@@ -23,6 +24,7 @@ const NAV_ITEMS_ALL = [
     icon: "customers" as const,
     roles: ["admin", "cashier"] as Role[],
   },
+  { to: "/reports", label: NAV_LABEL_REPORTS, icon: "reports" as const, roles: ["admin"] as Role[] },
 ];
 
 export type NavItem = (typeof NAV_ITEMS_ALL)[number];

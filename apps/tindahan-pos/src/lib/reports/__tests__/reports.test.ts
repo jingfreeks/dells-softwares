@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bestSellers, buildDailyReport, isToday, salesByCategory } from "../reports";
+import { bestSellers, buildDailyReport, buildRangeReport, isToday, salesByCategory, salesByCashier } from "../reports";
 import type { Customer, Product, SaleRecord } from "../../types";
 
 function makeCustomer(overrides: Partial<Customer> = {}): Customer {
@@ -36,6 +36,7 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     timestamp: "2026-07-18T10:00:00Z",
     total: 0,
     cashierName: "Cashier",
+    cashierId: "staff-1",
     items: [],
     paymentType: "cash",
     customerId: null,
@@ -303,5 +304,71 @@ describe("buildDailyReport (admin PDF/dashboard source of truth)", () => {
     );
     const report = buildDailyReport([], sales, [], now);
     expect(report.recentSales).toHaveLength(10);
+  });
+});
+
+describe("salesByCashier", () => {
+  it("groups sales by cashier, highest total first", () => {
+    const sales = [
+      makeSale({ id: "s1", cashierId: "c1", cashierName: "Aling Nena", total: 100 }),
+      makeSale({ id: "s2", cashierId: "c2", cashierName: "Mang Jose", total: 50 }),
+      makeSale({ id: "s3", cashierId: "c1", cashierName: "Aling Nena", total: 30 }),
+    ];
+    expect(salesByCashier(sales)).toEqual([
+      { cashierId: "c1", cashierName: "Aling Nena", total: 130, transactionCount: 2 },
+      { cashierId: "c2", cashierName: "Mang Jose", total: 50, transactionCount: 1 },
+    ]);
+  });
+
+  it("buckets sales with no cashier id together under their reported name", () => {
+    const sales = [
+      makeSale({ id: "s1", cashierId: null, cashierName: "Unknown", total: 20 }),
+      makeSale({ id: "s2", cashierId: null, cashierName: "Unknown", total: 15 }),
+    ];
+    expect(salesByCashier(sales)).toEqual([
+      { cashierId: null, cashierName: "Unknown", total: 35, transactionCount: 2 },
+    ]);
+  });
+});
+
+describe("buildRangeReport", () => {
+  it("computes total, count, and average across the given sales", () => {
+    const sales = [
+      makeSale({ id: "s1", total: 100 }),
+      makeSale({ id: "s2", total: 50 }),
+    ];
+    const report = buildRangeReport(sales, []);
+    expect(report.totalSales).toBe(150);
+    expect(report.transactionCount).toBe(2);
+    expect(report.averageSale).toBe(75);
+    expect(report.sales).toBe(sales);
+  });
+
+  it("reports a zero average sale for an empty range instead of NaN", () => {
+    const report = buildRangeReport([], []);
+    expect(report.totalSales).toBe(0);
+    expect(report.transactionCount).toBe(0);
+    expect(report.averageSale).toBe(0);
+  });
+
+  it("includes per-cashier, best-seller, and category breakdowns", () => {
+    const products = [makeProduct({ id: "p1", category: "Snacks" })];
+    const sales = [
+      makeSale({
+        id: "s1",
+        cashierId: "c1",
+        cashierName: "Aling Nena",
+        total: 20,
+        items: [
+          { productId: "p1", name: "Chips", quantity: 2, price: 10, itemType: "product", fee: 0, lineTotal: 20 },
+        ],
+      }),
+    ];
+    const report = buildRangeReport(sales, products);
+    expect(report.byCashier).toEqual([
+      { cashierId: "c1", cashierName: "Aling Nena", total: 20, transactionCount: 1 },
+    ]);
+    expect(report.bestSellers).toEqual([{ name: "Chips", quantity: 2 }]);
+    expect(report.categoryTotals.rows).toEqual([{ category: "Snacks", total: 20 }]);
   });
 });
