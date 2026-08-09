@@ -49,7 +49,7 @@ describe("Reports", () => {
     const { container } = renderPage();
 
     await waitFor(() => expect(container.querySelectorAll(".tpl-mval")).toHaveLength(3));
-    const values = [...container.querySelectorAll(".tpl-mval")].map((el) => el.textContent);
+    const values = Array.from(container.querySelectorAll(".tpl-mval")).map((el) => el.textContent);
     expect(values).toEqual(["₱150.00", "2", "₱75.00"]);
   });
 
