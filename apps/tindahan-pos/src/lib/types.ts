@@ -90,6 +90,8 @@ export interface SaleRecord {
   items: SaleItem[];
   total: number;
   cashierName: string;
+  /** Staff id the sale is attributed to — null if the cashier account was later deleted. */
+  cashierId: string | null;
   paymentType: PaymentType;
   customerId: string | null;
   /** GCash/Maya transaction number the cashier entered — set only for a "qr" sale. */

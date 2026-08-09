@@ -21,6 +21,7 @@ import {
   type PaymentType,
   type ServiceLine,
   type Product,
+  type SaleRecord,
 } from "@/lib";
 import {
   addToCart,
@@ -36,6 +37,11 @@ import {
   setQuantity,
   suggestedCashAmounts,
 } from "@/lib/pos";
+import {
+  loadReceiptSettingsMock,
+  DEFAULT_RECEIPT_SETTINGS_MOCK,
+} from "@/pages/Settings/receiptSettingsMock";
+import { loadStoreDetailsMock } from "@/pages/Settings/storeDetailsMock";
 
 export const SERVICE_TYPES = [
   { key: "eload", label: SERVICE_LABEL_ELOAD, badge: "L", badgeClass: "bg-violet-100 text-violet-700" },
@@ -47,7 +53,7 @@ export const SERVICE_TYPES = [
 export type PosTab = "products" | "services";
 
 export function usePosPage() {
-  const { user } = useAuth();
+  const { user, store } = useAuth();
   const { activeCashier, cashierToken, endCashierSession, reportExpiredSession } = useCashierSession();
   const {
     products,
@@ -73,6 +79,9 @@ export function usePosPage() {
   const [addingCustomer, setAddingCustomer] = useState(false);
   const [customerError, setCustomerError] = useState<string | null>(null);
   const [lastReceiptTotal, setLastReceiptTotal] = useState<number | null>(null);
+  const [lastSaleRecord, setLastSaleRecord] = useState<SaleRecord | null>(null);
+  const [lastSaleTendered, setLastSaleTendered] = useState(0);
+  const [lastSaleChange, setLastSaleChange] = useState(0);
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [ownerApprovalOpen, setOwnerApprovalOpen] = useState(false);
@@ -183,6 +192,12 @@ export function usePosPage() {
   }
 
   const quickCashAmounts = useMemo(() => suggestedCashAmounts(total), [total]);
+
+  const receiptSettings = useMemo(
+    () => (store ? loadReceiptSettingsMock(store.id) : DEFAULT_RECEIPT_SETTINGS_MOCK),
+    [store]
+  );
+  const storeDetails = useMemo(() => (store ? loadStoreDetailsMock(store.id) : null), [store]);
 
   const tenderedNumber = Number(tendered);
   const change =
@@ -361,7 +376,7 @@ export function usePosPage() {
   }
 
   async function runCheckout(overridePinValue?: string) {
-    await checkout(
+    const saleRecord = await checkout(
       cart,
       serviceLines,
       activeCashier?.name ?? user?.name ?? "Cashier",
@@ -373,9 +388,18 @@ export function usePosPage() {
       },
       cashierToken
     );
+    // Capture tendered/change before resetSaleState() clears them — the
+    // receipt needs both, and neither is part of SaleRecord.
+    setLastSaleTendered(paymentType === "cash" ? tenderedNumber : 0);
+    setLastSaleChange(paymentType === "cash" ? (change ?? 0) : 0);
+    setLastSaleRecord(saleRecord);
     setLastReceiptTotal(total);
     resetSaleState();
     setTimeout(() => setLastReceiptTotal(null), 4000);
+  }
+
+  function closeReceipt() {
+    setLastSaleRecord(null);
   }
 
   async function handleCompleteSale() {
@@ -535,5 +559,13 @@ export function usePosPage() {
     productsLoading: storeDataLoading,
     productsError: storeDataError,
     onRetryProducts: refreshStoreData,
+    store,
+    lastSaleRecord,
+    lastSaleTendered,
+    lastSaleChange,
+    receiptSettings,
+    receiptTin: storeDetails?.tin,
+    receiptBusinessPermitNo: storeDetails?.businessPermitNo,
+    closeReceipt,
   };
 }

@@ -12,11 +12,19 @@ interface CustomerTableProps {
   query: string;
   customers: Customer[];
   oldestDebtDaysById: Map<string, number | null>;
+  thresholdDays: number;
   selectedId: string | null;
   onSelect: (customer: Customer) => void;
 }
 
-export function CustomerTable({ query, customers, oldestDebtDaysById, selectedId, onSelect }: CustomerTableProps) {
+export function CustomerTable({
+  query,
+  customers,
+  oldestDebtDaysById,
+  thresholdDays,
+  selectedId,
+  onSelect,
+}: CustomerTableProps) {
   return (
     <div className="tpl-card" style={{ padding: 0 }}>
       <div className="tpl-thead" style={{ gridTemplateColumns: CUSTOMER_ROW_COLUMNS }}>
@@ -31,6 +39,7 @@ export function CustomerTable({ query, customers, oldestDebtDaysById, selectedId
           key={customer.id}
           customer={customer}
           oldestDebtDays={oldestDebtDaysById.get(customer.id) ?? null}
+          thresholdDays={thresholdDays}
           selectedId={selectedId}
           onSelect={onSelect}
         />

@@ -1,4 +1,5 @@
 import { TEXT_SELECT_CUSTOMER_PROMPT } from "@/lib";
+import { DebtAgeCard } from "@/components";
 import {
   CustomersHeader,
   SummaryCards,
@@ -7,7 +8,6 @@ import {
   AddCustomerModal,
   CustomerBalanceCard,
   PaymentHistoryCard,
-  DebtAgeCard,
   RecentPaymentsCard,
 } from "./component";
 import { useCustomersPage } from "./hooks";
@@ -47,6 +47,7 @@ export function Customers() {
     overdueCount,
     oldestDebtDaysById,
     debtAging,
+    thresholdDays,
   } = useCustomersPage();
 
   return (
@@ -76,6 +77,7 @@ export function Customers() {
           query={query}
           customers={filtered}
           oldestDebtDaysById={oldestDebtDaysById}
+          thresholdDays={thresholdDays}
           selectedId={selectedId}
           onSelect={selectCustomer}
         />
@@ -103,7 +105,7 @@ export function Customers() {
       </div>
 
       <div className="tpl-g2" style={{ marginTop: 14 }}>
-        <DebtAgeCard aging={debtAging} />
+        <DebtAgeCard aging={debtAging} thresholdDays={thresholdDays} />
         <RecentPaymentsCard />
       </div>
 

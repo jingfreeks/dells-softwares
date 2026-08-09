@@ -199,6 +199,7 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     timestamp: "2026-07-30T10:00:00.000Z",
     total: 0,
     cashierName: "Aling Nena",
+    cashierId: "staff-1",
     paymentType: "cash",
     customerId: null,
     referenceNo: null,

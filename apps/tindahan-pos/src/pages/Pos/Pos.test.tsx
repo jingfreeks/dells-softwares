@@ -16,6 +16,7 @@ import {
   makeCashierSessionValue,
   makeCustomer,
   makeProduct,
+  makeSaleRecord,
   makeStaffAccount,
   makeStore,
   makeStoreDataValue,
@@ -174,7 +175,7 @@ describe("Pos", () => {
 
   it("computes change for a cash sale and completes it", async () => {
     const user = userEvent.setup();
-    const checkout = vi.fn().mockResolvedValue({});
+    const checkout = vi.fn().mockResolvedValue(makeSaleRecord());
     setup({ checkout });
     renderPage();
 
@@ -193,6 +194,81 @@ describe("Pos", () => {
       null
     );
     expect(await screen.findByRole("status")).toHaveTextContent("Sale recorded");
+  });
+
+  it("opens the receipt modal with the completed sale's items and total after checkout", async () => {
+    const user = userEvent.setup();
+    const checkout = vi.fn().mockResolvedValue(
+      makeSaleRecord({
+        items: [
+          {
+            productId: "p1",
+            name: "Sardines",
+            quantity: 2,
+            price: 25,
+            itemType: "product",
+            fee: 0,
+            lineTotal: 50,
+          },
+        ],
+        total: 50,
+      })
+    );
+    setup({ checkout });
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    const tendered = screen.getByLabelText("Amount tendered");
+    await user.clear(tendered);
+    await user.type(tendered, "50");
+    await user.click(screen.getByRole("button", { name: "Complete sale" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "New sale" });
+    expect(within(dialog).getByText("Sardines")).toBeInTheDocument();
+    expect(within(dialog).getAllByText("₱50.00").length).toBeGreaterThan(0);
+  });
+
+  it("closes the receipt modal and clears the cart when 'New sale' is clicked", async () => {
+    const user = userEvent.setup();
+    const checkout = vi.fn().mockResolvedValue(makeSaleRecord());
+    setup({ checkout });
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    const tendered = screen.getByLabelText("Amount tendered");
+    await user.clear(tendered);
+    await user.type(tendered, "50");
+    await user.click(screen.getByRole("button", { name: "Complete sale" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "New sale" });
+    await user.click(within(dialog).getByRole("button", { name: "New sale" }));
+
+    expect(screen.queryByRole("dialog", { name: "New sale" })).not.toBeInTheDocument();
+    expect(screen.getByText("Cart is empty. Scan or search an item to begin.")).toBeInTheDocument();
+  });
+
+  it("automatically prints the receipt when autoPrintEverySale is on", async () => {
+    const user = userEvent.setup();
+    const checkout = vi.fn().mockResolvedValue(makeSaleRecord());
+    setup({ checkout });
+    window.localStorage.setItem(
+      `tindahan-pos:receipt-settings:${makeStore().id}`,
+      JSON.stringify({ autoPrintEverySale: true })
+    );
+    const printSpy = vi.spyOn(window, "print").mockImplementation(() => {});
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    const tendered = screen.getByLabelText("Amount tendered");
+    await user.clear(tendered);
+    await user.type(tendered, "50");
+    await user.click(screen.getByRole("button", { name: "Complete sale" }));
+
+    await screen.findByRole("dialog", { name: "New sale" });
+    expect(printSpy).toHaveBeenCalled();
+
+    printSpy.mockRestore();
+    window.localStorage.clear();
   });
 
   it("shows an error when checkout fails", async () => {
@@ -223,7 +299,7 @@ describe("Pos", () => {
   it("switches to Utang and searches for an existing customer", async () => {
     const user = userEvent.setup();
     const customers = [makeCustomer({ id: "c1", name: "Mang Jose", balance: 100 })];
-    const checkout = vi.fn().mockResolvedValue({});
+    const checkout = vi.fn().mockResolvedValue(makeSaleRecord());
     setup({ customers, checkout });
     renderPage();
 
@@ -262,7 +338,7 @@ describe("Pos", () => {
   it("opens the owner-approval modal and completes the sale with a valid PIN", async () => {
     const user = userEvent.setup();
     const customers = [makeCustomer({ id: "c1", name: "Aling Rosa", balance: 1132, creditLimit: 1000 })];
-    const checkout = vi.fn().mockResolvedValue({});
+    const checkout = vi.fn().mockResolvedValue(makeSaleRecord());
     setup({ customers, checkout });
     renderPage();
 
@@ -506,7 +582,7 @@ describe("Pos", () => {
 
   it("requires a reference number before completing a QR sale, then submits it", async () => {
     const user = userEvent.setup();
-    const checkout = vi.fn().mockResolvedValue({});
+    const checkout = vi.fn().mockResolvedValue(makeSaleRecord());
     setup({ checkout });
     renderPage();
 
