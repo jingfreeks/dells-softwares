@@ -98,6 +98,20 @@ describe("DevicesSettings", () => {
     expect(await screen.findByText("AB12CD")).toBeInTheDocument();
   });
 
+  it("shows a friendly message when the plan's device limit is reached", async () => {
+    const user = userEvent.setup();
+    mockedSupabase.__mocks.single.mockResolvedValue({
+      data: null,
+      error: { message: "DEVICE_LIMIT_REACHED" },
+    });
+    renderPage();
+    await waitFor(() => expect(screen.getByText("No devices paired yet.")).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: /Generate pairing code/ }));
+
+    expect(await screen.findByText(/Your plan includes 1 device/)).toBeInTheDocument();
+  });
+
   it("unpairs a device after entering the owner PIN", async () => {
     const user = userEvent.setup();
     mockDeviceList([

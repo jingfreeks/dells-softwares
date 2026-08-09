@@ -39,6 +39,7 @@ export function makeStore(overrides: Partial<Store> = {}): Store {
     address: null,
     photoUrl: null,
     feeConfig: null,
+    plan: "free_trial",
     ...overrides,
   };
 }

@@ -111,6 +111,29 @@ Deno.serve(async (req) => {
 
     const newDeviceId = created.user.id;
 
+    // Defense in depth: generate_pairing_code() already checked this before
+    // issuing the code, but re-check right before the insert to close the
+    // race where a code was generated moments before the store's plan was
+    // downgraded to tindahan, or two codes were issued back-to-back.
+    const { data: targetStore } = await adminClient
+      .from("stores")
+      .select("plan")
+      .eq("id", storeId)
+      .single();
+
+    if (targetStore?.plan === "tindahan") {
+      const { count: activeDeviceCount } = await adminClient
+        .from("devices")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", storeId)
+        .is("unpaired_at", null);
+
+      if ((activeDeviceCount ?? 0) >= 1) {
+        await adminClient.auth.admin.deleteUser(newDeviceId);
+        return json({ error: "DEVICE_LIMIT_REACHED" }, 400);
+      }
+    }
+
     // The trigger just gave this new auth user a throwaway store as its
     // admin. Remove it, then attach the real devices row to the store the
     // pairing code actually belongs to.

@@ -19,33 +19,53 @@ function endOfDay(d: Date): Date {
  * month-to-date — both avoid ambiguity over which day a week/month starts
  * on, and match "how have the last N days gone" better than a calendar
  * boundary that could be just 1 day old.
+ *
+ * `maxLookbackDays` clamps the resolved `startDate` to no earlier than
+ * `now - maxLookbackDays` — the client-side mirror of the Tindahan-plan
+ * RLS cap on `sales`/`sale_items` (see migration 0029), so the UI's
+ * request matches what the server will actually return instead of the
+ * two silently disagreeing.
  */
 export function dateRangeForPreset(
   preset: DateRangePreset,
   customStart: string,
   customEnd: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  maxLookbackDays?: number
 ): { startDate: string; endDate: string } {
+  let start: Date;
+  const end = endOfDay(now);
+
   if (preset === "custom") {
-    const start = customStart ? startOfDay(new Date(customStart)) : startOfDay(now);
-    const end = customEnd ? endOfDay(new Date(customEnd)) : endOfDay(now);
-    return { startDate: start.toISOString(), endDate: end.toISOString() };
+    start = customStart ? startOfDay(new Date(customStart)) : startOfDay(now);
+  } else if (preset === "week") {
+    start = startOfDay(now);
+    start.setDate(start.getDate() - 6);
+  } else if (preset === "month") {
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+  } else {
+    start = startOfDay(now);
   }
 
-  const end = endOfDay(now);
-  if (preset === "week") {
-    const start = startOfDay(now);
-    start.setDate(start.getDate() - 6);
-    return { startDate: start.toISOString(), endDate: end.toISOString() };
+  const resolvedEnd = preset === "custom" && customEnd ? endOfDay(new Date(customEnd)) : end;
+
+  if (maxLookbackDays !== undefined) {
+    const earliestAllowed = startOfDay(now);
+    earliestAllowed.setDate(earliestAllowed.getDate() - (maxLookbackDays - 1));
+    if (start.getTime() < earliestAllowed.getTime()) start = earliestAllowed;
   }
-  if (preset === "month") {
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    return { startDate: start.toISOString(), endDate: end.toISOString() };
-  }
-  return { startDate: startOfDay(now).toISOString(), endDate: end.toISOString() };
+
+  return { startDate: start.toISOString(), endDate: resolvedEnd.toISOString() };
 }
 
 /** yyyy-mm-dd, for CSV filenames and <input type="date"> defaults. */
 export function toDateInputValue(d: Date): string {
   return d.toISOString().slice(0, 10);
+}
+
+/** yyyy-mm-dd for the custom-range date inputs' `min` attribute under a lookback cap. */
+export function earliestAllowedDateInputValue(maxLookbackDays: number, now: Date = new Date()): string {
+  const earliest = startOfDay(now);
+  earliest.setDate(earliest.getDate() - (maxLookbackDays - 1));
+  return toDateInputValue(earliest);
 }
