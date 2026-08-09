@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   LABEL_SIGNING_IN,
   LABEL_PASSWORD,
@@ -9,31 +8,25 @@ import {
   TEXT_TWO_STEP_SIGN_IN_DESC,
   LABEL_ON_BADGE,
   LABEL_OFF_BADGE,
+  BUTTON_SET_PIN,
+  BUTTON_CHANGE_PIN,
 } from "@/lib";
 
 interface SigningInCardProps {
-  overridePin: string | null;
-  onRegeneratePin: () => void;
+  hasPin: boolean;
+  onSetPinClick: () => void;
   twoStepSignIn: boolean;
   onTwoStepSignInChange: (value: boolean) => void;
   onChangePasswordClick: () => void;
 }
 
 export function SigningInCard({
-  overridePin,
-  onRegeneratePin,
+  hasPin,
+  onSetPinClick,
   twoStepSignIn,
   onTwoStepSignInChange,
   onChangePasswordClick,
 }: SigningInCardProps) {
-  const [justRegenerated, setJustRegenerated] = useState(false);
-
-  function handleRegenerate() {
-    onRegeneratePin();
-    setJustRegenerated(true);
-    window.setTimeout(() => setJustRegenerated(false), 4000);
-  }
-
   return (
     <div className="tpl-card" style={{ marginBottom: 11 }}>
       <p className="tpl-h3" style={{ marginBottom: 14 }}>
@@ -61,16 +54,18 @@ export function SigningInCard({
           <p className="tpl-ts">{TEXT_OVERRIDE_PIN_DESC}</p>
         </div>
         <div className="tpl-row" style={{ gap: 9 }}>
-          <span className="tpl-mono" style={{ color: "var(--tpl-t2)", fontSize: 15, letterSpacing: 3 }}>
-            {justRegenerated && overridePin ? overridePin : "····"}
-          </span>
+          {hasPin && (
+            <span className="tpl-mono" style={{ color: "var(--tpl-t2)", fontSize: 15, letterSpacing: 3 }}>
+              ····
+            </span>
+          )}
           <button
             type="button"
             className="tpl-btn"
             style={{ width: "auto", height: 32, padding: "0 14px", marginBottom: 0 }}
-            onClick={handleRegenerate}
+            onClick={onSetPinClick}
           >
-            {BUTTON_CHANGE}
+            {hasPin ? BUTTON_CHANGE_PIN : BUTTON_SET_PIN}
           </button>
         </div>
       </div>

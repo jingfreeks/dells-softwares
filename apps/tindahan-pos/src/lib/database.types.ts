@@ -50,6 +50,10 @@ export interface Database {
           phone: string | null;
           address: string | null;
           onboarded_at: string | null;
+          pin_hash: string | null;
+          active: boolean;
+          pin_failed_attempts: number;
+          pin_locked_until: string | null;
           created_at: string;
         };
         Insert: {
@@ -62,6 +66,10 @@ export interface Database {
           phone?: string | null;
           address?: string | null;
           onboarded_at?: string | null;
+          pin_hash?: string | null;
+          active?: boolean;
+          pin_failed_attempts?: number;
+          pin_locked_until?: string | null;
           created_at?: string;
         };
         Update: {
@@ -74,6 +82,10 @@ export interface Database {
           phone?: string | null;
           address?: string | null;
           onboarded_at?: string | null;
+          pin_hash?: string | null;
+          active?: boolean;
+          pin_failed_attempts?: number;
+          pin_locked_until?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -469,6 +481,95 @@ export interface Database {
         Update: { key?: string; enabled?: boolean; description?: string; updated_at?: string };
         Relationships: [];
       };
+      cashier_sessions: {
+        Row: {
+          id: string;
+          token: string;
+          store_id: string;
+          staff_id: string;
+          created_by: string;
+          created_at: string;
+          expires_at: string;
+          revoked_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          token?: string;
+          store_id: string;
+          staff_id: string;
+          created_by: string;
+          created_at?: string;
+          expires_at: string;
+          revoked_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          token?: string;
+          store_id?: string;
+          staff_id?: string;
+          created_by?: string;
+          created_at?: string;
+          expires_at?: string;
+          revoked_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "cashier_sessions_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "cashier_sessions_staff_id_fkey";
+            columns: ["staff_id"];
+            referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      devices: {
+        Row: {
+          id: string;
+          store_id: string;
+          name: string;
+          paired_by: string;
+          paired_at: string;
+          last_seen_at: string | null;
+          unpaired_at: string | null;
+        };
+        Insert: {
+          id: string;
+          store_id: string;
+          name: string;
+          paired_by: string;
+          paired_at?: string;
+          last_seen_at?: string | null;
+          unpaired_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          name?: string;
+          paired_by?: string;
+          paired_at?: string;
+          last_seen_at?: string | null;
+          unpaired_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "devices_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "devices_paired_by_fkey";
+            columns: ["paired_by"];
+            referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -479,6 +580,8 @@ export interface Database {
           p_customer_id?: string | null;
           p_payment_type?: PaymentType;
           p_reference_no?: string | null;
+          p_override_pin?: string | null;
+          p_cashier_token?: string | null;
         };
         Returns: { sale_id: string; total: number }[];
       };
@@ -489,6 +592,56 @@ export interface Database {
           p_note?: string | null;
         };
         Returns: { customer_id: string; new_balance: number }[];
+      };
+      set_own_pin: {
+        Args: {
+          p_pin: string;
+        };
+        Returns: undefined;
+      };
+      admin_set_staff_pin: {
+        Args: {
+          p_staff_id: string;
+          p_pin: string;
+        };
+        Returns: undefined;
+      };
+      start_cashier_session: {
+        Args: {
+          p_staff_id: string;
+          p_pin: string;
+        };
+        Returns: {
+          ok: boolean;
+          error_code: string | null;
+          token: string | null;
+          staff_id: string | null;
+          name: string | null;
+          role: StaffRole | null;
+          avatar_url: string | null;
+          expires_at: string | null;
+        }[];
+      };
+      end_cashier_session: {
+        Args: {
+          p_token: string;
+        };
+        Returns: undefined;
+      };
+      generate_pairing_code: {
+        Args: Record<string, never>;
+        Returns: { code: string; expires_at: string }[];
+      };
+      list_pickable_cashiers: {
+        Args: Record<string, never>;
+        Returns: { id: string; name: string; avatar_url: string | null }[];
+      };
+      admin_unpair_device: {
+        Args: {
+          p_device_id: string;
+          p_owner_pin: string;
+        };
+        Returns: undefined;
       };
     };
     Enums: {

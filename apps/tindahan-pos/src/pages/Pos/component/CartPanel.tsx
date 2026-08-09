@@ -1,5 +1,5 @@
 import type { CartLine, Customer, PaymentType, Product, ServiceLine } from "@/lib";
-import { PESO, LABEL_CURRENT_SALE, TABLE_HEADER_TOTAL } from "@/lib";
+import { PESO, wouldExceedCreditLimit, LABEL_CURRENT_SALE, TABLE_HEADER_TOTAL } from "@/lib";
 import { CartItemsList } from "./CartItemsList";
 import { PaymentMethodTabs } from "./PaymentMethodTabs";
 import { CashPaymentFields } from "./CashPaymentFields";
@@ -74,6 +74,8 @@ export function CartPanel({
   onCompleteSale,
 }: CartPanelProps) {
   const cartEmpty = cart.length === 0 && serviceLines.length === 0;
+  const needsOwnerPin =
+    paymentType === "credit" && selectedCustomer !== null && wouldExceedCreditLimit(selectedCustomer, total);
   const disableComplete =
     cartEmpty ||
     (paymentType === "cash"
@@ -152,6 +154,7 @@ export function CartPanel({
           cartEmpty={cartEmpty}
           checkingOut={checkingOut}
           disableComplete={disableComplete}
+          needsOwnerPin={needsOwnerPin}
           onCancel={onCancelSale}
           onComplete={onCompleteSale}
         />

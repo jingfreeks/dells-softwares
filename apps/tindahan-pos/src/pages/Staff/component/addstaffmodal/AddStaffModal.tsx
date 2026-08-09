@@ -10,11 +10,9 @@ import {
   BUTTON_CREATE_CASHIER_ACCOUNT,
 } from "@/lib";
 import type { StaffFormValues } from "../../hooks";
-import { generatePin } from "../../lib";
 import { RoleSelector } from "./roleselector";
 import { PermissionPreview } from "./permissionpreview";
 import { SignInMethodSelector } from "./signinmethodselector";
-import { PinGenerator } from "./pingenerator";
 import { ShiftSelector } from "./shiftselector";
 import { DrawerCountingToggle } from "./drawercountingtoggle";
 
@@ -85,8 +83,6 @@ export function AddStaffModal({ form, formError, submitting, onFormChange, onCan
           <div className="tpl-divider" style={{ margin: "16px 0" }} />
 
           <SignInMethodSelector value={form.signInMethod} onChange={(signInMethod) => onFormChange({ ...form, signInMethod })} />
-
-          <PinGenerator pin={form.pin} onRegenerate={() => onFormChange({ ...form, pin: generatePin() })} />
 
           <ShiftSelector value={form.shift} onChange={(shift) => onFormChange({ ...form, shift })} />
 

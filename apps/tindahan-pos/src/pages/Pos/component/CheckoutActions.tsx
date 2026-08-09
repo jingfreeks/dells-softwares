@@ -1,18 +1,35 @@
-import { BUTTON_CANCEL_SALE, BUTTON_PROCESSING, BUTTON_COMPLETE_SALE } from "@/lib";
+import { BUTTON_CANCEL_SALE, BUTTON_PROCESSING, BUTTON_COMPLETE_SALE, LABEL_NEEDS_OWNER_PIN } from "@/lib";
 
 interface CheckoutActionsProps {
   cartEmpty: boolean;
   checkingOut: boolean;
   disableComplete: boolean;
+  needsOwnerPin: boolean;
   onCancel: () => void;
   onComplete: () => void;
 }
 
-export function CheckoutActions({ cartEmpty, checkingOut, disableComplete, onCancel, onComplete }: CheckoutActionsProps) {
+export function CheckoutActions({
+  cartEmpty,
+  checkingOut,
+  disableComplete,
+  needsOwnerPin,
+  onCancel,
+  onComplete,
+}: CheckoutActionsProps) {
   return (
     <div style={{ marginTop: 14 }}>
       <button type="button" onClick={onComplete} disabled={disableComplete} className="tpl-btnp">
-        {checkingOut ? BUTTON_PROCESSING : BUTTON_COMPLETE_SALE}
+        {checkingOut ? (
+          BUTTON_PROCESSING
+        ) : needsOwnerPin ? (
+          <>
+            <i className="ti ti-lock" aria-hidden style={{ marginRight: 6 }} />
+            {LABEL_NEEDS_OWNER_PIN}
+          </>
+        ) : (
+          BUTTON_COMPLETE_SALE
+        )}
       </button>
       <button
         type="button"

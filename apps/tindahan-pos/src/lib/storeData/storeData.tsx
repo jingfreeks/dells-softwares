@@ -53,7 +53,8 @@ function friendlyProductError(err: { code?: string; message: string }): Error {
 }
 
 export function StoreDataProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, deviceSession } = useAuth();
+  const sessionId = user?.id ?? deviceSession?.id ?? null;
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -201,7 +202,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   // returns zero rows, and nothing here would ever retry until the user
   // hit "refresh" by hand.
   useEffect(() => {
-    if (!user) {
+    if (!sessionId) {
       setProducts([]);
       setSales([]);
       setCategories([]);
@@ -216,7 +217,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     // browser discards a backgrounded tab and reloads it) instead of a
     // blank spinner, then quietly reconcile with a real fetch below —
     // this is what actually happened server-side wins once it lands.
-    const cached = loadCachedStoreData(user.id);
+    const cached = loadCachedStoreData(sessionId);
     if (cached) {
       setProducts(cached.products);
       setCategories(cached.categories);
@@ -227,13 +228,13 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       setLoading(true);
     }
     refresh().finally(() => setLoading(false));
-  }, [user?.id, refresh]);
+  }, [sessionId, refresh]);
 
   // Keep the cache fresh so the next reload has something recent to show.
   useEffect(() => {
-    if (!user) return;
-    saveCachedStoreData(user.id, { products, categories, customers, suppliers });
-  }, [user?.id, products, categories, customers, suppliers]);
+    if (!sessionId) return;
+    saveCachedStoreData(sessionId, { products, categories, customers, suppliers });
+  }, [sessionId, products, categories, customers, suppliers]);
 
   async function addProduct(product: Omit<Product, "id" | "category">): Promise<Product> {
     if (!user) throw new Error("Not signed in.");
@@ -301,7 +302,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     cart: CartLine[],
     services: ServiceLine[],
     cashierName: string,
-    payment: CheckoutPayment = { type: "cash" }
+    payment: CheckoutPayment = { type: "cash" },
+    cashierToken: string | null = null
   ): Promise<SaleRecord> {
     if (payment.type === "credit" && !payment.customerId) {
       throw new Error("A customer is required for a credit sale.");
@@ -315,6 +317,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       p_customer_id: payment.type === "credit" ? payment.customerId : null,
       p_payment_type: payment.type,
       p_reference_no: payment.type === "qr" ? payment.referenceNo!.trim() : null,
+      p_override_pin: payment.type === "credit" ? (payment.overridePin?.trim() || null) : null,
+      p_cashier_token: cashierToken,
     });
     if (err) throw err;
     const result = data?.[0];

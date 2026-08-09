@@ -1,14 +1,40 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { useAuth, useStoreData, useFeatureFlag, EloadWalletProvider, DrawerFloatProvider } from "@/lib";
-import { makeAuthValue, makeCustomer, makeProduct, makeStaffAccount, makeStore, makeStoreDataValue } from "../../test/testUtils";
+import {
+  useAuth,
+  useCashierSession,
+  useStoreData,
+  useFeatureFlag,
+  supabase,
+  EloadWalletProvider,
+  DrawerFloatProvider,
+} from "@/lib";
+import {
+  makeAuthValue,
+  makeCashierSessionValue,
+  makeCustomer,
+  makeProduct,
+  makeStaffAccount,
+  makeStore,
+  makeStoreDataValue,
+} from "../../test/testUtils";
 import { Pos } from "./Pos";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
+vi.mock("@/lib/cashierSession", () => ({ useCashierSession: vi.fn() }));
 vi.mock("@/lib/storeData", () => ({ useStoreData: vi.fn() }));
 vi.mock("@/lib/featureFlags", () => ({ useFeatureFlag: vi.fn() }));
+
+vi.mock("@/lib/supabaseClient", () => {
+  const order = vi.fn();
+  const eq = vi.fn(() => ({ order }));
+  const select = vi.fn(() => ({ eq }));
+  const from = vi.fn(() => ({ select }));
+  const rpc = vi.fn();
+  return { supabase: { from, rpc, __mocks: { order, eq, select, from, rpc } } };
+});
 
 vi.mock("@/components/BarcodeScanner", () => ({
   BarcodeScanner: ({ onDetected }: { onDetected: (c: string) => void }) => (
@@ -25,6 +51,9 @@ const products = [
 
 function setup(overrides: Partial<ReturnType<typeof makeStoreDataValue>> = {}) {
   vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
+  vi.mocked(useCashierSession).mockReturnValue(
+    makeCashierSessionValue({ activeCashier: makeStaffAccount({ name: "Aling Nena" }) })
+  );
   vi.mocked(useFeatureFlag).mockReturnValue(true);
   vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, ...overrides }));
 }
@@ -71,6 +100,23 @@ describe("Pos", () => {
     await user.click(await screen.findByText("Fake scan"));
 
     expect(screen.getByTestId("cart-total")).toHaveTextContent("₱25.00");
+  });
+
+  it("shows a loading message instead of an empty grid while products are loading", async () => {
+    setup({ loading: true, products: [] });
+    renderPage();
+    expect(screen.getByText("Loading products…")).toBeInTheDocument();
+  });
+
+  it("shows an error with a retry button when products fail to load", async () => {
+    const user = userEvent.setup();
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    setup({ error: "Failed to load store data.", products: [], refresh });
+    renderPage();
+
+    expect(screen.getByText("Unable to load products.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    expect(refresh).toHaveBeenCalled();
   });
 
   it("searches products by name and adds one by tapping its tile", async () => {
@@ -143,7 +189,8 @@ describe("Pos", () => {
       expect.any(Array),
       expect.any(Array),
       "Aling Nena",
-      { type: "cash", customerId: null }
+      { type: "cash", customerId: null },
+      null
     );
     expect(await screen.findByRole("status")).toHaveTextContent("Sale recorded");
   });
@@ -192,7 +239,8 @@ describe("Pos", () => {
       expect.any(Array),
       expect.any(Array),
       "Aling Nena",
-      { type: "credit", customerId: "c1" }
+      { type: "credit", customerId: "c1" },
+      null
     );
   });
 
@@ -208,6 +256,75 @@ describe("Pos", () => {
     await user.click(screen.getByText("Mang Jose"));
 
     expect(screen.getByText(/over their/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Needs owner's PIN/ })).toBeInTheDocument();
+  });
+
+  it("opens the owner-approval modal and completes the sale with a valid PIN", async () => {
+    const user = userEvent.setup();
+    const customers = [makeCustomer({ id: "c1", name: "Aling Rosa", balance: 1132, creditLimit: 1000 })];
+    const checkout = vi.fn().mockResolvedValue({});
+    setup({ customers, checkout });
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "Utang" }));
+    await user.type(screen.getByLabelText("Charge to customer"), "Rosa");
+    await user.click(screen.getByText("Aling Rosa"));
+    await user.click(screen.getByRole("button", { name: /Needs owner's PIN/ }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/Aling Rosa/)).toBeInTheDocument();
+    for (const digit of ["1", "2", "3", "4"]) {
+      await user.click(within(dialog).getByRole("button", { name: digit }));
+    }
+
+    expect(checkout).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array),
+      "Aling Nena",
+      expect.objectContaining({ type: "credit", customerId: "c1", overridePin: "1234" }),
+      null
+    );
+  });
+
+  it("shows an error and lets the cashier retry when the override PIN is wrong", async () => {
+    const user = userEvent.setup();
+    const customers = [makeCustomer({ id: "c1", name: "Aling Rosa", balance: 1132, creditLimit: 1000 })];
+    const checkout = vi.fn().mockRejectedValue(new Error("INVALID_OVERRIDE_PIN"));
+    setup({ customers, checkout });
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "Utang" }));
+    await user.type(screen.getByLabelText("Charge to customer"), "Rosa");
+    await user.click(screen.getByText("Aling Rosa"));
+    await user.click(screen.getByRole("button", { name: /Needs owner's PIN/ }));
+
+    const dialog = await screen.findByRole("dialog");
+    for (const digit of ["9", "9", "9", "9"]) {
+      await user.click(within(dialog).getByRole("button", { name: digit }));
+    }
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("That PIN doesn't match any admin at this store.");
+  });
+
+  it("switches to cash and closes the modal via 'Pay cash instead'", async () => {
+    const user = userEvent.setup();
+    const customers = [makeCustomer({ id: "c1", name: "Aling Rosa", balance: 1132, creditLimit: 1000 })];
+    setup({ customers });
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "Utang" }));
+    await user.type(screen.getByLabelText("Charge to customer"), "Rosa");
+    await user.click(screen.getByText("Aling Rosa"));
+    await user.click(screen.getByRole("button", { name: /Needs owner's PIN/ }));
+
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Pay cash instead" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cash" })).toHaveClass("tpl-on");
   });
 
   it("quick-adds a new customer while on Utang", async () => {
@@ -407,7 +524,8 @@ describe("Pos", () => {
       expect.any(Array),
       expect.any(Array),
       "Aling Nena",
-      { type: "qr", customerId: null, referenceNo: "0123456789012" }
+      { type: "qr", customerId: null, referenceNo: "0123456789012" },
+      null
     );
   });
 
@@ -513,5 +631,195 @@ describe("Pos", () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId("cart-total")).toHaveTextContent("₱25.00"));
+  });
+});
+
+type MockedSupabase = typeof supabase & {
+  __mocks: {
+    order: ReturnType<typeof vi.fn>;
+    eq: ReturnType<typeof vi.fn>;
+    select: ReturnType<typeof vi.fn>;
+    from: ReturnType<typeof vi.fn>;
+    rpc: ReturnType<typeof vi.fn>;
+  };
+};
+
+const mockedSupabase = supabase as MockedSupabase;
+
+describe("Pos — cashier quick-switch gate", () => {
+  it("shows the cashier picker when no active cashier session exists for this tab", async () => {
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ name: "Lyndell Dobluis" }), store: makeStore({ name: "Dell's Sari-Sari Store" }) })
+    );
+    vi.mocked(useCashierSession).mockReturnValue(makeCashierSessionValue({ activeCashier: null }));
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    mockedSupabase.__mocks.rpc.mockResolvedValue({
+      data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
+      error: null,
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("WHO'S ON THE REGISTER?")).toBeInTheDocument();
+    expect(screen.getByText("Maricel")).toBeInTheDocument();
+    expect(screen.queryByTestId("cart-total")).not.toBeInTheDocument();
+  });
+
+  it("starts a cashier session after picking a name and entering the PIN", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ name: "Lyndell Dobluis" }), store: makeStore({ name: "Dell's Sari-Sari Store" }) })
+    );
+    const startCashierSession = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useCashierSession).mockReturnValue(
+      makeCashierSessionValue({ activeCashier: null, startCashierSession })
+    );
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    mockedSupabase.__mocks.rpc.mockResolvedValue({
+      data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
+      error: null,
+    });
+
+    renderPage();
+
+    await user.click(await screen.findByText("Maricel"));
+    expect(screen.getByText(/Hi Maricel/)).toBeInTheDocument();
+    for (const digit of ["1", "2", "3", "4"]) {
+      await user.click(screen.getByRole("button", { name: digit }));
+    }
+
+    expect(startCashierSession).toHaveBeenCalledWith("staff-2", "1234");
+  });
+
+  it("shows a spinner/message while the cashier session is being set up, instead of an inert keypad", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ name: "Lyndell Dobluis" }), store: makeStore({ name: "Dell's Sari-Sari Store" }) })
+    );
+    let resolveStart!: (value: { ok: true }) => void;
+    const startCashierSession = vi.fn(
+      () => new Promise<{ ok: true }>((resolve) => (resolveStart = resolve))
+    );
+    vi.mocked(useCashierSession).mockReturnValue(
+      makeCashierSessionValue({ activeCashier: null, startCashierSession })
+    );
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    mockedSupabase.__mocks.rpc.mockResolvedValue({
+      data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
+      error: null,
+    });
+
+    renderPage();
+
+    await user.click(await screen.findByText("Maricel"));
+    for (const digit of ["1", "2", "3", "4"]) {
+      await user.click(screen.getByRole("button", { name: digit }));
+    }
+
+    expect(await screen.findByText("Setting up your cashier session…")).toBeInTheDocument();
+    resolveStart({ ok: true });
+  });
+
+  it("shows an error with a retry button when the cashier list fails to load, and retry re-fetches", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ name: "Lyndell Dobluis" }), store: makeStore({ name: "Dell's Sari-Sari Store" }) })
+    );
+    vi.mocked(useCashierSession).mockReturnValue(makeCashierSessionValue({ activeCashier: null }));
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    mockedSupabase.__mocks.rpc.mockRejectedValueOnce(new Error("network down"));
+
+    renderPage();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not load staff.");
+
+    mockedSupabase.__mocks.rpc.mockResolvedValue({
+      data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
+      error: null,
+    });
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(await screen.findByText("Maricel")).toBeInTheDocument();
+  });
+
+  it("shows an inline error when the PIN is wrong", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ name: "Lyndell Dobluis" }), store: makeStore({ name: "Dell's Sari-Sari Store" }) })
+    );
+    const startCashierSession = vi.fn().mockResolvedValue({ ok: false, error: "INVALID_PIN" });
+    vi.mocked(useCashierSession).mockReturnValue(
+      makeCashierSessionValue({ activeCashier: null, startCashierSession })
+    );
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    mockedSupabase.__mocks.rpc.mockResolvedValue({
+      data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
+      error: null,
+    });
+
+    renderPage();
+
+    await user.click(await screen.findByText("Maricel"));
+    for (const digit of ["1", "2", "3", "4"]) {
+      await user.click(screen.getByRole("button", { name: digit }));
+    }
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Incorrect PIN. Please try again.");
+  });
+
+  it("shows the device name in the header and device-only footer links for a paired device session", async () => {
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        user: null,
+        deviceSession: { id: "d1", storeId: "s1", name: "Counter tablet" },
+        store: makeStore({ name: "Dell's Sari-Sari Store" }),
+      })
+    );
+    vi.mocked(useCashierSession).mockReturnValue(makeCashierSessionValue({ activeCashier: null }));
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    mockedSupabase.__mocks.rpc.mockResolvedValue({
+      data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
+      error: null,
+    });
+
+    renderPage();
+
+    await screen.findByText("WHO'S ON THE REGISTER?");
+    expect(screen.getByText(/Counter tablet/)).toBeInTheDocument();
+    expect(screen.getByText("Forgot your PIN? Ask an owner")).toBeInTheDocument();
+    expect(screen.getByText("Owner sign-in")).toBeInTheDocument();
+    expect(screen.getByText("Wrong store?")).toBeInTheDocument();
+  });
+
+  it("signs out and navigates to /pair when a device session picks 'Wrong store?'", async () => {
+    const user = userEvent.setup();
+    const logout = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        user: null,
+        deviceSession: { id: "d1", storeId: "s1", name: "Counter tablet" },
+        store: makeStore({ name: "Dell's Sari-Sari Store" }),
+        logout,
+      })
+    );
+    vi.mocked(useCashierSession).mockReturnValue(makeCashierSessionValue({ activeCashier: null }));
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    mockedSupabase.__mocks.rpc.mockResolvedValue({
+      data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
+      error: null,
+    });
+
+    renderPage();
+
+    await user.click(await screen.findByText("Wrong store?"));
+
+    expect(logout).toHaveBeenCalled();
   });
 });

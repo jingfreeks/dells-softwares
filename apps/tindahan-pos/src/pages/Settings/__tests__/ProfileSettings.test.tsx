@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useAuth, validateAndOptimizeImage, uploadImage } from "@/lib";
@@ -206,17 +206,55 @@ describe("ProfileSettings", () => {
       expect(await screen.findByRole("alert")).toHaveTextContent("Passwords don't match.");
     });
 
-    it("regenerates the override PIN", async () => {
+    it("sets a real PIN via set_own_pin when the two entries match", async () => {
       const user = userEvent.setup();
-      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ id: "staff-9" }) }));
+      const setOwnPin = vi.fn().mockResolvedValue({ ok: true });
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ id: "staff-9", hasPin: false }), setOwnPin })
+      );
+      renderPage();
+
+      expect(screen.queryByText("····")).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Set PIN" }));
+
+      const dialog = screen.getByRole("dialog");
+      for (const digit of ["1", "2", "3", "4"]) {
+        await user.click(within(dialog).getByRole("button", { name: digit }));
+      }
+      for (const digit of ["1", "2", "3", "4"]) {
+        await user.click(within(dialog).getByRole("button", { name: digit }));
+      }
+
+      expect(setOwnPin).toHaveBeenCalledWith("1234");
+    });
+
+    it("shows an error when the two PIN entries don't match", async () => {
+      const user = userEvent.setup();
+      const setOwnPin = vi.fn().mockResolvedValue({ ok: true });
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ id: "staff-9", hasPin: false }), setOwnPin })
+      );
+      renderPage();
+
+      await user.click(screen.getByRole("button", { name: "Set PIN" }));
+      const dialog = screen.getByRole("dialog");
+      for (const digit of ["1", "2", "3", "4"]) {
+        await user.click(within(dialog).getByRole("button", { name: digit }));
+      }
+      for (const digit of ["5", "6", "7", "8"]) {
+        await user.click(within(dialog).getByRole("button", { name: digit }));
+      }
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("PINs don't match.");
+      expect(setOwnPin).not.toHaveBeenCalled();
+    });
+
+    it("shows '····' and a Change PIN button once a PIN is set", () => {
+      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ id: "staff-9", hasPin: true }) }));
       renderPage();
 
       expect(screen.getByText("····")).toBeInTheDocument();
-      await user.click(screen.getAllByRole("button", { name: "Change" })[1]);
-
-      const raw = window.localStorage.getItem("tindahan-pos:settings-profile:staff-9");
-      const saved = JSON.parse(raw as string);
-      expect(saved.overridePin).toMatch(/^\d{4}$/);
+      expect(screen.getByRole("button", { name: "Change PIN" })).toBeInTheDocument();
     });
 
     it("toggles two-step sign-in", async () => {

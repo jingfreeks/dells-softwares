@@ -7,6 +7,9 @@ import {
   ARIA_SCAN_WITH_CAMERA,
   LABEL_CATEGORY_ALL,
   EMPTY_STATE_NO_PRODUCTS,
+  TEXT_LOADING_PRODUCTS,
+  ERROR_COULD_NOT_LOAD_PRODUCTS,
+  BUTTON_TRY_AGAIN,
   TEXT_CUSTOM_ITEM,
   LABEL_CUSTOM_ITEM_NAME,
   LABEL_CUSTOM_ITEM_PRICE,
@@ -53,6 +56,9 @@ function iconForProduct(product: Product): string {
 }
 
 interface ProductBrowsePanelProps {
+  productsLoading: boolean;
+  productsError: string | null;
+  onRetryProducts: () => void;
   productInputRef: RefObject<HTMLInputElement | null>;
   productQuery: string;
   onProductQueryChange: (value: string) => void;
@@ -77,6 +83,9 @@ interface ProductBrowsePanelProps {
 }
 
 export function ProductBrowsePanel({
+  productsLoading,
+  productsError,
+  onRetryProducts,
   productInputRef,
   productQuery,
   onProductQueryChange,
@@ -156,29 +165,45 @@ export function ProductBrowsePanel({
       )}
 
       <div className="tpl-g4" style={{ marginTop: 14 }}>
-        {visibleProducts.map((product) => {
-          const quantity = cartQuantityByProductId.get(product.id) ?? 0;
-          const lowStock = product.stock > 0 && product.stock <= product.lowStockThreshold;
-          return (
-            <button
-              key={product.id}
-              type="button"
-              onClick={() => onAddProduct(product.id)}
-              className={`tpl-tile${quantity > 0 ? " tpl-on" : ""}`}
-            >
-              {quantity > 0 && <span className="tpl-tile-badge">{quantity}</span>}
-              <i className={`ti ${iconForProduct(product)}`} aria-hidden />
-              <p className="tpl-tn">{product.name}</p>
-              <p className="tpl-tpr">{priceLabel(product) ?? PESO.format(product.price)}</p>
-              {lowStock && (
-                <p className="tpl-tw">
-                  {product.stock} {TEXT_LOW_STOCK_LEFT_SUFFIX}
-                </p>
-              )}
+        {productsLoading ? (
+          <p className="tpl-ts">{TEXT_LOADING_PRODUCTS}</p>
+        ) : productsError ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+            <p role="alert" className="tpl-emsg">
+              <i className="ti ti-alert-circle" aria-hidden />
+              {ERROR_COULD_NOT_LOAD_PRODUCTS}
+            </p>
+            <button type="button" className="tpl-btnp" style={{ width: "auto" }} onClick={onRetryProducts}>
+              {BUTTON_TRY_AGAIN}
             </button>
-          );
-        })}
-        {visibleProducts.length === 0 && <p className="tpl-ts">{EMPTY_STATE_NO_PRODUCTS}</p>}
+          </div>
+        ) : (
+          <>
+            {visibleProducts.map((product) => {
+              const quantity = cartQuantityByProductId.get(product.id) ?? 0;
+              const lowStock = product.stock > 0 && product.stock <= product.lowStockThreshold;
+              return (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => onAddProduct(product.id)}
+                  className={`tpl-tile${quantity > 0 ? " tpl-on" : ""}`}
+                >
+                  {quantity > 0 && <span className="tpl-tile-badge">{quantity}</span>}
+                  <i className={`ti ${iconForProduct(product)}`} aria-hidden />
+                  <p className="tpl-tn">{product.name}</p>
+                  <p className="tpl-tpr">{priceLabel(product) ?? PESO.format(product.price)}</p>
+                  {lowStock && (
+                    <p className="tpl-tw">
+                      {product.stock} {TEXT_LOW_STOCK_LEFT_SUFFIX}
+                    </p>
+                  )}
+                </button>
+              );
+            })}
+            {visibleProducts.length === 0 && <p className="tpl-ts">{EMPTY_STATE_NO_PRODUCTS}</p>}
+          </>
+        )}
       </div>
 
       <div className="tpl-g4" style={{ marginTop: 9 }}>

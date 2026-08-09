@@ -30,6 +30,28 @@ function staffSelectChain(row: unknown, error: unknown = null) {
     select: vi.fn().mockReturnValue({
       eq: vi.fn().mockReturnValue({
         single: vi.fn().mockResolvedValue({ data: row, error }),
+        // loadStaffProfile and loadDeviceProfile now run in parallel
+        // (Promise.all) on every session resolution, so this table-agnostic
+        // mock (returned regardless of which table .from() was called for)
+        // must also satisfy loadDeviceProfile's `.eq().is().single()` chain
+        // — resolving to "not found" here is correct for every test that
+        // isn't specifically exercising a device session.
+        is: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: null, error: { message: "not found" } }),
+        }),
+      }),
+    }),
+  };
+}
+
+/** Mirrors `loadDeviceProfile`'s `.select().eq().is().single()` chain. */
+function deviceSelectChain(row: unknown, error: unknown = null) {
+  return {
+    select: vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        is: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: row, error }),
+        }),
       }),
     }),
   };
@@ -37,15 +59,22 @@ function staffSelectChain(row: unknown, error: unknown = null) {
 
 /** Dispatches `.from(table)` to a different chain per table, for tests that touch both staff and stores. */
 function multiTableFrom(map: Record<string, unknown>) {
-  return (table: string) => map[table];
+  // loadDeviceProfile always queries "devices" in parallel with the staff
+  // lookup now — tests that don't care about device sessions don't list it
+  // in the map, so fall back to a chain that resolves gracefully to "no row".
+  return (table: string) => map[table] ?? deviceSelectChain(null, { message: "not found" });
 }
 
 function Probe() {
-  const { user, loading, login, register, logout, requestPasswordReset } = useAuth();
+  const { user, deviceSession, loading, authError, retryAuth, login, register, logout, requestPasswordReset } =
+    useAuth();
   return (
     <div>
       <p data-testid="loading">{String(loading)}</p>
       <p data-testid="user">{user ? user.name : "none"}</p>
+      <p data-testid="device">{deviceSession ? deviceSession.name : "none"}</p>
+      <p data-testid="authError">{authError ?? "none"}</p>
+      <button onClick={retryAuth}>do-retry</button>
       <button onClick={() => login("nena@example.com", "secret")}>do-login</button>
       <button
         onClick={() =>
@@ -111,10 +140,115 @@ describe("AuthProvider", () => {
     mockedSupabase.auth.getSession.mockResolvedValue({
       data: { session: { user: { id: "u1" } } },
     });
-    mockedSupabase.from.mockReturnValue(staffSelectChain(null, { message: "not found" }));
+    mockedSupabase.from.mockImplementation(
+      multiTableFrom({
+        staff: staffSelectChain(null, { message: "not found" }),
+        devices: deviceSelectChain(null, { message: "not found" }),
+      })
+    );
+    mockedSupabase.auth.signOut.mockResolvedValue({ error: null });
     renderProbe();
     await waitFor(() => expect(screen.getByTestId("loading")).toHaveTextContent("false"));
     expect(screen.getByTestId("user")).toHaveTextContent("none");
+  });
+
+  it("sets a retryable authError instead of hanging when session resolution throws", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" } } },
+    });
+    // A genuine network failure (thrown, not a normal { data, error } RPC
+    // response) — this used to leave `loading` stuck `true` forever since
+    // nothing reset it once the promise rejected.
+    mockedSupabase.from.mockImplementation(() => {
+      throw new Error("network down");
+    });
+    renderProbe();
+    await waitFor(() => expect(screen.getByTestId("loading")).toHaveTextContent("false"));
+    expect(screen.getByTestId("authError")).not.toHaveTextContent("none");
+    expect(screen.getByTestId("user")).toHaveTextContent("none");
+
+    // Retrying clears the error and re-resolves once the connection recovers.
+    mockedSupabase.from.mockReturnValue(
+      staffSelectChain({ id: "u1", store_id: "s1", name: "Aling Nena", email: "nena@example.com", role: "admin" })
+    );
+    screen.getByText("do-retry").click();
+    await waitFor(() => expect(screen.getByTestId("user")).toHaveTextContent("Aling Nena"));
+    expect(screen.getByTestId("authError")).toHaveTextContent("none");
+  });
+
+  it("resolves a paired device's session into deviceSession, not user", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "d1" } } },
+    });
+    mockedSupabase.from.mockImplementation(
+      multiTableFrom({
+        staff: staffSelectChain(null, { message: "not found" }),
+        devices: deviceSelectChain({ id: "d1", store_id: "s1", name: "Counter tablet" }),
+        stores: staffSelectChain({
+          id: "s1",
+          name: "Dell's Store",
+          address: "123 Main St",
+          photo_url: null,
+        }),
+      })
+    );
+    renderProbe();
+    await waitFor(() => expect(screen.getByTestId("device")).toHaveTextContent("Counter tablet"));
+    expect(screen.getByTestId("user")).toHaveTextContent("none");
+  });
+
+  it("loads the store alongside a paired device's session", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "d1" } } },
+    });
+    mockedSupabase.from.mockImplementation(
+      multiTableFrom({
+        staff: staffSelectChain(null, { message: "not found" }),
+        devices: deviceSelectChain({ id: "d1", store_id: "s1", name: "Counter tablet" }),
+        stores: staffSelectChain({
+          id: "s1",
+          name: "Dell's Store",
+          address: "123 Main St",
+          photo_url: "https://cdn.test/store.webp",
+        }),
+      })
+    );
+    let capturedStore: unknown;
+    function Capture() {
+      const { store } = useAuth();
+      capturedStore = store;
+      return <p data-testid="store-name">{store?.name}</p>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("store-name")).toHaveTextContent("Dell's Store"));
+    expect(capturedStore).toEqual({
+      id: "s1",
+      name: "Dell's Store",
+      address: "123 Main St",
+      photoUrl: "https://cdn.test/store.webp",
+    });
+  });
+
+  it("signs out when a session matches neither a staff nor a device row", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "stale-1" } } },
+    });
+    mockedSupabase.from.mockImplementation(
+      multiTableFrom({
+        staff: staffSelectChain(null, { message: "not found" }),
+        devices: deviceSelectChain(null, { message: "not found" }),
+      })
+    );
+    mockedSupabase.auth.signOut.mockResolvedValue({ error: null });
+    renderProbe();
+    await waitFor(() => expect(screen.getByTestId("loading")).toHaveTextContent("false"));
+    expect(screen.getByTestId("user")).toHaveTextContent("none");
+    expect(screen.getByTestId("device")).toHaveTextContent("none");
+    expect(mockedSupabase.auth.signOut).toHaveBeenCalled();
   });
 
   it("stays loading while resolving a fresh sign-in's profile, instead of briefly reporting no user", async () => {
@@ -135,7 +269,12 @@ describe("AuthProvider", () => {
     });
     mockedSupabase.from.mockReturnValue({
       select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({ single: vi.fn().mockReturnValue(profilePromise) }),
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockReturnValue(profilePromise),
+          is: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: null, error: { message: "not found" } }),
+          }),
+        }),
       }),
     });
 

@@ -1,5 +1,13 @@
 import { Navigate } from "react-router-dom";
-import { NAV_LABEL_STAFF, TEXT_STAFF_DESCRIPTION, BUTTON_SHIFT_HISTORY, BUTTON_ADD_STAFF } from "@/lib";
+import {
+  NAV_LABEL_STAFF,
+  TEXT_STAFF_DESCRIPTION,
+  BUTTON_SHIFT_HISTORY,
+  BUTTON_ADD_STAFF,
+  BUTTON_SET_PIN,
+  BUTTON_CHANGE_PIN,
+} from "@/lib";
+import { SetPinModal } from "@/components";
 import {
   StaffTable,
   StaffMetrics,
@@ -32,11 +40,20 @@ export function Staff() {
     handleRemove,
     handleEditName,
     handleResetPassword,
+    setPinForId,
+    setPinSubmitting,
+    setPinError,
+    openSetPinModal,
+    closeSetPinModal,
+    handleSetPin,
+    handleToggleActive,
   } = useStaffPage();
 
   if (user && user.role !== "admin") {
     return <Navigate to="/pos" replace />;
   }
+
+  const setPinTarget = staff.find((member) => member.id === setPinForId) ?? null;
 
   return (
     <div className="tpl-root p-6">
@@ -83,6 +100,8 @@ export function Staff() {
         removingId={removingId}
         onEditName={handleEditName}
         onResetPassword={handleResetPassword}
+        onSetPin={openSetPinModal}
+        onToggleActive={handleToggleActive}
         onRemove={handleRemove}
       />
 
@@ -103,6 +122,15 @@ export function Staff() {
       )}
 
       {showShiftHistory && <ShiftHistoryModal onClose={() => setShowShiftHistory(false)} />}
+
+      <SetPinModal
+        open={setPinForId !== null}
+        submitting={setPinSubmitting}
+        error={setPinError}
+        onCancel={closeSetPinModal}
+        onSubmit={handleSetPin}
+        heading={setPinTarget ? `${setPinTarget.hasPin ? BUTTON_CHANGE_PIN : BUTTON_SET_PIN} — ${setPinTarget.name}` : undefined}
+      />
     </div>
   );
 }

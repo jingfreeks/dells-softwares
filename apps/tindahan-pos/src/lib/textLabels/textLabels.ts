@@ -198,7 +198,8 @@ export const LABEL_ROLE_CASHIER = "Cashier";
 export const ARIA_STAFF_ACTIONS = "More actions";
 export const BUTTON_EDIT_NAME = "Edit name";
 export const BUTTON_RESET_PASSWORD = "Reset password";
-export const BUTTON_DEACTIVATE_SOON = "Deactivate (coming soon)";
+export const BUTTON_DEACTIVATE = "Deactivate";
+export const BUTTON_ACTIVATE = "Activate";
 export const HEADING_CASHIER_PERMISSIONS = "What a cashier can do";
 export const LINK_EDIT_ROLE = "Edit role";
 export const LABEL_PERMISSION_RING_UP_SALES = "Ring up sales";
@@ -614,7 +615,7 @@ export const PLACEHOLDER_REFERENCE_NO = "e.g. 0123456789012";
 export const TEXT_LIMIT_PREFIX = "· limit";
 export const BUTTON_CHANGE = "Change";
 export const TEXT_CREDIT_LIMIT_WARNING_MIDDLE = "over their";
-export const TEXT_CREDIT_LIMIT_WARNING_SUFFIX = "credit limit — not blocked, just a heads up.";
+export const TEXT_CREDIT_LIMIT_WARNING_SUFFIX = "credit limit — an admin's PIN will be needed to complete this sale.";
 export const LABEL_CHARGE_TO_CUSTOMER = "Charge to customer";
 export const TEXT_ADD_AS_NEW_CUSTOMER_PREFIX = "+ Add";
 export const TEXT_ADD_AS_NEW_CUSTOMER_SUFFIX = "as a new customer";
@@ -957,3 +958,84 @@ export const LABEL_RESTORE_FROM_BACKUP = "Restore from a backup";
 export const TEXT_RESTORE_DESC = "Not available yet — this would replace everything currently in the app";
 export const BUTTON_RESTORE = "Restore";
 export const TEXT_BACKUP_SETTINGS_UPDATED = "Backup settings updated.";
+
+// Owner PIN override (POS credit-limit approval)
+export const LABEL_NEEDS_OWNER_PIN = "Needs owner's PIN";
+export const LABEL_OWNER_APPROVAL_NEEDED = "Owner approval needed";
+export const TEXT_OWNER_APPROVAL_RECORDED_HINT = "This override is recorded with your name as the approving admin.";
+export const BUTTON_PAY_CASH_INSTEAD = "Pay cash instead";
+export const ERROR_INVALID_OVERRIDE_PIN = "That PIN doesn't match any admin at this store.";
+export const ERROR_COULD_NOT_SET_PIN = "Could not save your PIN.";
+export const TEXT_PIN_UPDATED = "PIN updated.";
+export const LABEL_YOUR_OVERRIDE_PIN_ENTER = "Enter a new 4-digit PIN";
+export const LABEL_YOUR_OVERRIDE_PIN_CONFIRM = "Confirm your new PIN";
+export const ERROR_PIN_MUST_BE_4_DIGITS = "PIN must be exactly 4 digits.";
+export const ERROR_PINS_DO_NOT_MATCH = "PINs don't match.";
+export const BUTTON_SET_PIN = "Set PIN";
+export const BUTTON_CHANGE_PIN = "Change PIN";
+
+// Cashier PIN quick-switch login
+export const LABEL_CASHIER_PICKER_HEADING = "WHO'S ON THE REGISTER?";
+export const TEXT_GREETING_HI_PREFIX = "Hi";
+export const TEXT_ENTER_YOUR_PIN_SUFFIX = "enter your PIN";
+export const LABEL_CASHIER_PIN_ARIA = "Enter your PIN";
+export const TEXT_FORGOT_PIN_PREFIX = "Forgot your PIN? Ask";
+export const LINK_SIGN_IN_WITH_EMAIL = "Sign in with email";
+export const BUTTON_SWITCH_CASHIER = "Switch cashier";
+export const ERROR_INVALID_PIN = "Incorrect PIN. Please try again.";
+export const ERROR_PIN_LOCKED = "Too many wrong attempts. Please wait 15 minutes and try again.";
+export const ERROR_INACTIVE_EMPLOYEE = "This account is inactive. Please ask an admin.";
+export const TEXT_CASHIER_SESSION_EXPIRED = "Please sign in again.";
+export const TEXT_LOADING_STAFF = "Loading staff…";
+export const ERROR_COULD_NOT_LOAD_STAFF = "Could not load staff.";
+
+// Staff page: per-cashier PIN + active toggle (admin only)
+export const LABEL_STAFF_PIN = "PIN";
+export const TEXT_STAFF_NO_PIN_SET = "No PIN set";
+export const LABEL_ACTIVE = "Active";
+export const LABEL_INACTIVE = "Inactive";
+export const ERROR_COULD_NOT_SET_STAFF_PIN = "Could not save this PIN.";
+export const ERROR_COULD_NOT_UPDATE_STAFF_STATUS = "Could not update this staff member's status.";
+
+// Device pairing (Phase 3)
+export const TEXT_ASK_AN_OWNER = "Forgot your PIN? Ask an owner";
+export const LINK_OWNER_SIGN_IN = "Owner sign-in";
+export const LINK_WRONG_STORE = "Wrong store?";
+export const LABEL_SET_UP_THIS_DEVICE = "Set up this device as a register";
+export const TEXT_SET_UP_THIS_DEVICE_DESC = "For the tablet at the counter. Pair it once, then staff sign in with a PIN.";
+export const LABEL_PAIR_THIS_DEVICE = "Pair this device";
+export const TEXT_PAIR_INSTRUCTIONS =
+  "Open Tindahan POS on your phone, go to Settings → Devices, and read out the 6-character code.";
+export const LABEL_PAIRING_CODE_ARIA = "6-character pairing code";
+export const LABEL_NAME_THIS_DEVICE = "NAME THIS DEVICE";
+export const TEXT_NAME_THIS_DEVICE_HINT = "Shows in your device list and on shift records.";
+export const PLACEHOLDER_DEVICE_NAME = "Counter tablet";
+export const BUTTON_PAIR_WITH_THIS_STORE = "Pair with this store";
+export const TEXT_ONLY_OWNER_PIN_CAN_UNPAIR = "Only an owner PIN can unpair it later.";
+export const ERROR_INVALID_OR_EXPIRED_CODE = "That code is invalid or has expired.";
+export const ERROR_COULD_NOT_PAIR_DEVICE = "Could not pair this device. Please try again.";
+export const BUTTON_PAIRING = "Pairing…";
+export const NAV_LABEL_DEVICES = "Devices";
+export const PAGE_HEADING_DEVICES = "Devices";
+export const TEXT_DEVICES_DESCRIPTION = "Registers paired to this store.";
+export const BUTTON_GENERATE_PAIRING_CODE = "Generate pairing code";
+export const TEXT_PAIRING_CODE_EXPIRES_PREFIX = "Expires in";
+export const LABEL_PAIRED_BY_PREFIX = "Paired by";
+export const BUTTON_UNPAIR = "Unpair";
+export const LABEL_UNPAIR_DEVICE_HEADING = "Unpair";
+export const TEXT_ENTER_OWNER_PIN = "Enter your owner PIN to confirm";
+export const ERROR_INVALID_OWNER_PIN = "That PIN doesn't match any admin at this store.";
+export const ERROR_COULD_NOT_UNPAIR_DEVICE = "Could not unpair this device.";
+export const EMPTY_STATE_NO_DEVICES = "No devices paired yet.";
+export const LINK_BACK_TO_SIGN_IN = "Back to sign in";
+export const LABEL_DEVICE_NAME = "Device name";
+export const LABEL_PAIRED_DEVICES_HEADING = "Paired devices";
+export const BUTTON_DISMISS = "Dismiss";
+
+// Connection resilience (freeze/blank-screen fix)
+export const TEXT_SETTING_UP_CASHIER_SESSION = "Setting up your cashier session…";
+export const BUTTON_TRY_AGAIN = "Try again";
+export const TITLE_UNABLE_TO_CONNECT = "Unable to connect";
+export const ERROR_COULD_NOT_START_SESSION = "We couldn't connect to the cashier system. Please check your connection and try again.";
+export const TEXT_LOADING_PRODUCTS = "Loading products…";
+export const ERROR_COULD_NOT_LOAD_PRODUCTS = "Unable to load products.";

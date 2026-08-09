@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { wouldExceedCreditLimit } from "../customers";
+import { wouldExceedCreditLimit, creditOverageAmount } from "../customers";
 import type { Customer } from "../../types";
 
 function makeCustomer(overrides: Partial<Customer> = {}): Customer {
@@ -13,7 +13,7 @@ function makeCustomer(overrides: Partial<Customer> = {}): Customer {
   };
 }
 
-describe("wouldExceedCreditLimit (advisory only, per product decision)", () => {
+describe("wouldExceedCreditLimit (server-enforced by checkout_sale)", () => {
   it("is false when the customer has no credit limit set", () => {
     const customer = makeCustomer({ creditLimit: null, balance: 500 });
     expect(wouldExceedCreditLimit(customer, 1000)).toBe(false);
@@ -32,5 +32,22 @@ describe("wouldExceedCreditLimit (advisory only, per product decision)", () => {
   it("is false for a brand-new customer (zero balance) whose sale stays under their limit", () => {
     const customer = makeCustomer({ creditLimit: 1000, balance: 0 });
     expect(wouldExceedCreditLimit(customer, 999)).toBe(false);
+  });
+});
+
+describe("creditOverageAmount", () => {
+  it("is 0 when the customer has no credit limit set", () => {
+    const customer = makeCustomer({ creditLimit: null, balance: 500 });
+    expect(creditOverageAmount(customer, 1000)).toBe(0);
+  });
+
+  it("is 0 when balance + sale stays at or under the limit", () => {
+    const customer = makeCustomer({ creditLimit: 500, balance: 300 });
+    expect(creditOverageAmount(customer, 200)).toBe(0);
+  });
+
+  it("returns the exact amount over the limit", () => {
+    const customer = makeCustomer({ creditLimit: 1000, balance: 1132 });
+    expect(creditOverageAmount(customer, 69)).toBe(201);
   });
 });
