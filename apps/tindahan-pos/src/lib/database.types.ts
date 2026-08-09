@@ -19,7 +19,6 @@ export interface Database {
           address: string | null;
           photo_url: string | null;
           fee_config: StoreFeeConfigRow | null;
-          plan: string;
           created_at: string;
         };
         Insert: {
@@ -28,7 +27,6 @@ export interface Database {
           address?: string | null;
           photo_url?: string | null;
           fee_config?: StoreFeeConfigRow | null;
-          plan?: string;
           created_at?: string;
         };
         Update: {
@@ -37,7 +35,6 @@ export interface Database {
           address?: string | null;
           photo_url?: string | null;
           fee_config?: StoreFeeConfigRow | null;
-          plan?: string;
           created_at?: string;
         };
         Relationships: [];

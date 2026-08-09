@@ -25,11 +25,6 @@ export function useReportsPage() {
     () => (store ? loadAlertsMock(store.id).utangAgingThresholdDays : DEFAULT_ALERTS_MOCK.utangAgingThresholdDays),
     [store]
   );
-  // Tindahan plan (₱499/mo) includes a 7-day report lookback; higher plans
-  // get full history. This client-side clamp is a UX mirror of the real
-  // enforcement, which lives in the sales/sale_items RLS policies
-  // (migration 0029) — the server, not this value, is the actual gate.
-  const maxLookbackDays = store?.plan === "tindahan" ? 7 : undefined;
   const [preset, setPreset] = useState<DateRangePreset>("today");
   const now = useMemo(() => new Date(), []);
   const [customStart, setCustomStart] = useState(toDateInputValue(now));
@@ -41,8 +36,8 @@ export function useReportsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const { startDate, endDate } = useMemo(
-    () => dateRangeForPreset(preset, customStart, customEnd, new Date(), maxLookbackDays),
-    [preset, customStart, customEnd, maxLookbackDays]
+    () => dateRangeForPreset(preset, customStart, customEnd),
+    [preset, customStart, customEnd]
   );
 
   useEffect(() => {
@@ -108,6 +103,5 @@ export function useReportsPage() {
     onRetry: load,
     debtAging,
     thresholdDays,
-    maxLookbackDays,
   };
 }

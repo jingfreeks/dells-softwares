@@ -38,16 +38,12 @@ export interface StoreFeeConfig {
   cashOut?: { max: number; fee: number }[];
 }
 
-export type SubscriptionPlan = "free_trial" | "tindahan" | "convenience" | "super_market";
-
 export interface Store {
   id: string;
   name: string;
   address: string | null;
   photoUrl: string | null;
   feeConfig: StoreFeeConfig | null;
-  /** Manually assigned — no self-serve upgrade flow or payment gateway exists yet. */
-  plan: SubscriptionPlan;
 }
 
 export interface Category {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { togglablePersistenceStorage } from "@/lib/supabaseClient/togglablePersistenceStorage";
-import type { DeviceSession, StaffAccount, Store, StoreFeeConfig, SubscriptionPlan } from "@/lib/types";
+import type { DeviceSession, StaffAccount, Store, StoreFeeConfig } from "@/lib/types";
 import { AuthContext, type AuthResult, type RegisterResult } from "./authContext";
 import { ERROR_COULD_NOT_START_SESSION } from "@/lib/textLabels";
 
@@ -46,7 +46,7 @@ async function loadDeviceProfile(userId: string): Promise<DeviceSession | null> 
 async function loadStore(storeId: string): Promise<Store | null> {
   const { data, error } = await supabase
     .from("stores")
-    .select("id, name, address, photo_url, fee_config, plan")
+    .select("id, name, address, photo_url, fee_config")
     .eq("id", storeId)
     .single();
 
@@ -58,7 +58,6 @@ async function loadStore(storeId: string): Promise<Store | null> {
     address: data.address,
     photoUrl: data.photo_url,
     feeConfig: data.fee_config,
-    plan: data.plan as SubscriptionPlan,
   };
 }
 
