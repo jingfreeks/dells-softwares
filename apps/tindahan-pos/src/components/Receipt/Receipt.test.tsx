@@ -84,6 +84,26 @@ describe("Receipt", () => {
     expect(screen.getByText("Charged to Utang account.")).toBeInTheDocument();
   });
 
+  it("shows a 'saved offline' badge when the sale was queued instead of confirmed live", () => {
+    render(
+      <Receipt
+        sale={makeSaleRecord({ syncStatus: "pending" })}
+        store={makeStore()}
+        settings={baseSettings}
+        tendered={100}
+        change={50}
+      />
+    );
+    expect(screen.getByText(/Saved offline/)).toBeInTheDocument();
+  });
+
+  it("shows no 'saved offline' badge for a normal, live sale", () => {
+    render(
+      <Receipt sale={makeSaleRecord()} store={makeStore()} settings={baseSettings} tendered={100} change={50} />
+    );
+    expect(screen.queryByText(/Saved offline/)).not.toBeInTheDocument();
+  });
+
   it("shows the reference number for a QR sale", () => {
     render(
       <Receipt
