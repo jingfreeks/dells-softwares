@@ -52,6 +52,51 @@ function friendlyProductError(err: { code?: string; message: string }): Error {
   return new Error(err.message);
 }
 
+const SALE_SELECT =
+  "id, created_at, total, customer_id, payment_type, reference_no, staff:cashier_id(id, name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)";
+
+function mapSaleRow(row: {
+  id: string;
+  created_at: string;
+  total: number;
+  customer_id: string | null;
+  payment_type: SaleRecord["paymentType"];
+  reference_no: string | null;
+  staff: { id: string; name: string } | { id: string; name: string }[] | null;
+  sale_items:
+    | {
+        product_id: string | null;
+        name: string;
+        quantity: number;
+        price: number;
+        item_type: "product" | "service";
+        fee: number;
+        line_total: number;
+      }[]
+    | null;
+}): SaleRecord {
+  const staff = Array.isArray(row.staff) ? row.staff[0] : row.staff;
+  return {
+    id: row.id,
+    timestamp: row.created_at,
+    total: row.total,
+    cashierName: staff?.name ?? "Unknown",
+    cashierId: staff?.id ?? null,
+    paymentType: row.payment_type,
+    customerId: row.customer_id,
+    referenceNo: row.reference_no,
+    items: (row.sale_items ?? []).map((item) => ({
+      productId: item.product_id ?? "",
+      name: item.name,
+      quantity: item.quantity,
+      price: item.price,
+      itemType: item.item_type,
+      fee: item.fee,
+      lineTotal: item.line_total,
+    })),
+  };
+}
+
 export function StoreDataProvider({ children }: { children: ReactNode }) {
   const { user, deviceSession } = useAuth();
   const sessionId = user?.id ?? deviceSession?.id ?? null;
@@ -86,37 +131,35 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   const fetchSales = useCallback(async () => {
     const { data, error: err } = await supabase
       .from("sales")
-      .select(
-        "id, created_at, total, customer_id, payment_type, reference_no, staff:cashier_id(name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)"
-      )
+      .select(SALE_SELECT)
       .order("created_at", { ascending: false })
       .limit(100);
     if (err) throw err;
-    setSales(
-      (data ?? []).map((row) => {
-        const staff = row.staff as unknown as { name: string } | { name: string }[] | null;
-        const cashierName = Array.isArray(staff) ? staff[0]?.name : staff?.name;
-        return {
-          id: row.id,
-          timestamp: row.created_at,
-          total: row.total,
-          cashierName: cashierName ?? "Unknown",
-          paymentType: row.payment_type,
-          customerId: row.customer_id,
-          referenceNo: row.reference_no,
-          items: (row.sale_items ?? []).map((item) => ({
-            productId: item.product_id ?? "",
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-            itemType: item.item_type,
-            fee: item.fee,
-            lineTotal: item.line_total,
-          })),
-        };
-      })
-    );
+    setSales((data ?? []).map(mapSaleRow));
   }, []);
+
+  // Server-side date-range + optional cashier filter for the Reports page —
+  // deliberately independent of `sales`/fetchSales (which stays capped at
+  // 100 rows for the Dashboard) so a report over a full month isn't silently
+  // truncated.
+  const fetchSalesInRange = useCallback(
+    async (params: { startDate: string; endDate: string; cashierId?: string | null }) => {
+      let query = supabase
+        .from("sales")
+        .select(SALE_SELECT)
+        .gte("created_at", params.startDate)
+        .lte("created_at", params.endDate)
+        .order("created_at", { ascending: false })
+        .limit(1000);
+      if (params.cashierId) {
+        query = query.eq("cashier_id", params.cashierId);
+      }
+      const { data, error: err } = await query;
+      if (err) throw err;
+      return (data ?? []).map(mapSaleRow);
+    },
+    []
+  );
 
   const fetchCustomers = useCallback(async () => {
     const { data, error: err } = await supabase
@@ -349,6 +392,12 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       ],
       total: result.total,
       cashierName,
+      // The RPC resolves the real cashier_id server-side (possibly via
+      // cashierToken, not the signed-in user) without returning it here —
+      // this optimistic local record is only used for the Dashboard's
+      // recent-sales list, so an unknown id is fine; the Reports page reads
+      // fresh, accurate rows via fetchSalesInRange instead.
+      cashierId: null,
       paymentType: payment.type,
       customerId: payment.type === "credit" ? (payment.customerId ?? null) : null,
       referenceNo: payment.type === "qr" ? (payment.referenceNo?.trim() ?? null) : null,
@@ -601,6 +650,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         addSupplier,
         updateSupplier,
         findSupplierByScanCode,
+        fetchSalesInRange,
       }}
     >
       {children}

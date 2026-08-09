@@ -157,6 +157,67 @@ function yesterday(now: Date): Date {
   return d;
 }
 
+export interface CashierTotal {
+  cashierId: string | null;
+  cashierName: string;
+  total: number;
+  transactionCount: number;
+}
+
+export interface RangeReport {
+  totalSales: number;
+  transactionCount: number;
+  averageSale: number;
+  byCashier: CashierTotal[];
+  bestSellers: BestSeller[];
+  categoryTotals: SalesByCategory;
+  sales: SaleRecord[];
+}
+
+/** Per-cashier sales totals for the given sales, highest total first. */
+export function salesByCashier(sales: SaleRecord[]): CashierTotal[] {
+  const totals = new Map<string | null, CashierTotal>();
+
+  for (const sale of sales) {
+    const key = sale.cashierId;
+    const current = totals.get(key);
+    if (current) {
+      current.total += sale.total;
+      current.transactionCount += 1;
+    } else {
+      totals.set(key, {
+        cashierId: sale.cashierId,
+        cashierName: sale.cashierName,
+        total: sale.total,
+        transactionCount: 1,
+      });
+    }
+  }
+
+  return Array.from(totals.values()).sort((a, b) => b.total - a.total);
+}
+
+/**
+ * Sales summary for an arbitrary date range and optional cashier filter —
+ * the Reports page's equivalent of `buildDailyReport`, minus the
+ * today-vs-yesterday framing (the caller has already filtered `sales` to
+ * the desired range before calling this).
+ */
+export function buildRangeReport(sales: SaleRecord[], products: Product[]): RangeReport {
+  const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
+  const transactionCount = sales.length;
+
+  return {
+    totalSales,
+    transactionCount,
+    averageSale: transactionCount > 0 ? totalSales / transactionCount : 0,
+    byCashier: salesByCashier(sales),
+    bestSellers: bestSellers(sales),
+    categoryTotals: salesByCategory(sales, products),
+    sales,
+  };
+}
+
 /**
  * Single source of truth for the admin "Daily report" — both the
  * dashboard cards and the PDF export are built from this, so the two

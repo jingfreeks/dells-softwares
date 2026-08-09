@@ -8,6 +8,7 @@ export * from "./Pair";
 export * from "./Pos";
 export * from "./Receiving";
 export * from "./Register";
+export * from "./Reports";
 export * from "./Settings";
 export * from "./Staff";
 export * from "./Suppliers";

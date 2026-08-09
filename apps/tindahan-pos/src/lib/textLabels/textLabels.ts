@@ -12,6 +12,7 @@ export const NAV_LABEL_INVENTORY = "Inventory";
 export const NAV_LABEL_CUSTOMERS = "Customers";
 export const NAV_LABEL_ADMIN = "Admin";
 export const NAV_LABEL_STAFF = "Staff";
+export const NAV_LABEL_REPORTS = "Reports";
 
 export const PAGE_HEADING_POS = "POS Checkout";
 export const PAGE_HEADING_ADMIN_DASHBOARD = "Admin dashboard";
@@ -312,9 +313,6 @@ export const TEXT_OF_INFIX = "of";
 export const TEXT_OVER_LIMIT_SUFFIX = "over";
 export const LABEL_NO_CREDIT_LIMIT_SET = "No limit set";
 export const HEADING_DEBT_AGING = "How old the utang is";
-export const LABEL_AGING_0_14 = "0–14 days";
-export const LABEL_AGING_15_30 = "15–30 days";
-export const LABEL_AGING_OVER_30 = "Over 30 days";
 export const TEXT_AGING_SUMMARY_SUFFIX =
   "of your utang is older than a month. That is working capital sitting on the shelf.";
 export const HEADING_RECENT_PAYMENTS = "Recent payments";
@@ -359,6 +357,25 @@ export const BUTTON_EXPORT_REPORT = "Export report";
 export const ARIA_EXPORT_REPORT = "Export report as PDF";
 export const LABEL_TODAYS_SALES = "Today's sales";
 export const TEXT_VS_YESTERDAY_SUFFIX = "vs yesterday";
+
+// Reports page
+export const PAGE_HEADING_REPORTS = "Reports";
+export const TEXT_REPORTS_DESCRIPTION = "Sales by date range and by cashier";
+export const LABEL_PERIOD_WEEK = "This week";
+export const LABEL_PERIOD_MONTH = "This month";
+export const LABEL_PERIOD_CUSTOM = "Custom";
+export const LABEL_ALL_CASHIERS = "All cashiers";
+export const LABEL_TOTAL_SALES = "Total sales";
+export const LABEL_TRANSACTIONS = "Transactions";
+export const LABEL_AVERAGE_SALE = "Average sale";
+export const LABEL_CASHIER_BREAKDOWN = "By cashier";
+export const LABEL_SALES_LIST = "Sales";
+export const BUTTON_EXPORT_CSV = "Export CSV";
+export const TEXT_NO_SALES_IN_RANGE = "No sales in this period.";
+export const COLUMN_TOTAL = "Total";
+export const COLUMN_DATE = "Date";
+export const COLUMN_ITEMS = "Items";
+export const COLUMN_PAYMENT = "Payment";
 export const LABEL_TRANSACTIONS_TODAY = "Transactions today";
 export const TEXT_AVERAGE_BASKET_SUFFIX = "average basket";
 export const LABEL_LOW_STOCK = "Low stock";
@@ -1039,3 +1056,13 @@ export const TITLE_UNABLE_TO_CONNECT = "Unable to connect";
 export const ERROR_COULD_NOT_START_SESSION = "We couldn't connect to the cashier system. Please check your connection and try again.";
 export const TEXT_LOADING_PRODUCTS = "Loading products…";
 export const ERROR_COULD_NOT_LOAD_PRODUCTS = "Unable to load products.";
+
+// Printable receipt
+export const LABEL_RECEIPT_HEADING = "Official Receipt";
+export const LABEL_RECEIPT_NUMBER_PREFIX = "Receipt No.";
+export const LABEL_CASHIER_ON_RECEIPT_PREFIX = "Cashier:";
+export const LABEL_CASH_TENDERED = "Cash tendered";
+export const LABEL_REFERENCE_NO_PREFIX = "Reference no.";
+export const LABEL_UTANG_BALANCE_NOTE = "Charged to Utang account.";
+export const BUTTON_PRINT_RECEIPT = "Print receipt";
+export const BUTTON_NEW_SALE = "New sale";
