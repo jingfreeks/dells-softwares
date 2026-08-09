@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { togglablePersistenceStorage } from "@/lib/supabaseClient/togglablePersistenceStorage";
 import type { DeviceSession, StaffAccount, Store, StoreFeeConfig } from "@/lib/types";
 import { AuthContext, type AuthResult, type RegisterResult } from "./authContext";
+import { ERROR_COULD_NOT_START_SESSION } from "@/lib/textLabels";
 
 async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
   const { data, error } = await supabase
@@ -75,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [deviceSession, setDeviceSession] = useState<DeviceSession | null>(null);
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Tracks the currently-loaded session's id (staff OR device) for the
   // auth-state-change subscription below, updated synchronously alongside
@@ -82,45 +84,71 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // scheduling isn't guaranteed to have flushed before the next Supabase
   // event arrives).
   const sessionIdRef = useRef<string | null>(null);
+  // A ref (not an effect-local `let`) so `retryAuth` below can share the
+  // exact same "am I still mounted" guard as the initial mount effect.
+  const cancelledRef = useRef(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadSessionUser = useCallback(async (userId: string) => {
+    // Fired in parallel rather than sequential fallback: a paired device
+    // (Phase 3) has no `staff` row, so trying that lookup first always
+    // wasted one full round-trip before ever reaching loadDeviceProfile.
+    const [profile, device] = await Promise.all([loadStaffProfile(userId), loadDeviceProfile(userId)]);
+    if (cancelledRef.current) return;
 
-    async function loadSessionUser(userId: string) {
-      const profile = await loadStaffProfile(userId);
-      if (cancelled) return;
-      if (profile) {
-        sessionIdRef.current = profile.id;
-        setUser(profile);
-        setDeviceSession(null);
-        setStore(await loadStore(profile.storeId));
-        return;
-      }
-
-      // No staff row — this may be a paired device instead.
-      const device = await loadDeviceProfile(userId);
-      if (cancelled) return;
-      if (device) {
-        sessionIdRef.current = device.id;
-        setUser(null);
-        setDeviceSession(device);
-        setStore(await loadStore(device.storeId));
-        return;
-      }
-
-      // Neither a staff nor a device row — a stale JWT for a
-      // deleted/unpaired identity. Nothing valid to show; sign out.
-      sessionIdRef.current = null;
-      setUser(null);
+    if (profile) {
+      sessionIdRef.current = profile.id;
+      setUser(profile);
       setDeviceSession(null);
-      setStore(null);
-      await supabase.auth.signOut();
+      setStore(await loadStore(profile.storeId));
+      return;
     }
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    if (device) {
+      sessionIdRef.current = device.id;
+      setUser(null);
+      setDeviceSession(device);
+      setStore(await loadStore(device.storeId));
+      return;
+    }
+
+    // Neither a staff nor a device row — a stale JWT for a
+    // deleted/unpaired identity. Nothing valid to show; sign out.
+    sessionIdRef.current = null;
+    setUser(null);
+    setDeviceSession(null);
+    setStore(null);
+    await supabase.auth.signOut();
+  }, []);
+
+  // Shared by the initial mount resolution and `retryAuth` — a thrown
+  // error here (a genuine network failure, not a normal "no row found"
+  // case, which loadStaffProfile/loadDeviceProfile already swallow) used
+  // to leave `loading` stuck `true` forever (an infinite spinner) or
+  // surface as an unhandled promise rejection with no UI feedback at all.
+  // try/finally guarantees `loading` always resolves; the catch turns a
+  // thrown error into a real, retryable error state instead.
+  const resolveSession = useCallback(async () => {
+    setLoading(true);
+    setAuthError(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session?.user) await loadSessionUser(session.user.id);
-      if (!cancelled) setLoading(false);
-    });
+    } catch {
+      if (!cancelledRef.current) setAuthError(ERROR_COULD_NOT_START_SESSION);
+    } finally {
+      if (!cancelledRef.current) setLoading(false);
+    }
+  }, [loadSessionUser]);
+
+  const retryAuth = useCallback(() => {
+    resolveSession();
+  }, [resolveSession]);
+
+  useEffect(() => {
+    cancelledRef.current = false;
+    resolveSession();
 
     const {
       data: { subscription },
@@ -142,10 +170,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // role) has loaded — without this, a consumer reading `loading`
         // right after login sees `false` + `user: null` simultaneously and
         // concludes "signed out", bouncing straight back to /login.
-        if (!cancelled) setLoading(true);
-        await loadSessionUser(session.user.id);
-        if (!cancelled) setLoading(false);
-      } else if (!session?.user && !cancelled) {
+        if (!cancelledRef.current) {
+          setLoading(true);
+          setAuthError(null);
+        }
+        try {
+          await loadSessionUser(session.user.id);
+        } catch {
+          if (!cancelledRef.current) setAuthError(ERROR_COULD_NOT_START_SESSION);
+        } finally {
+          if (!cancelledRef.current) setLoading(false);
+        }
+      } else if (!session?.user && !cancelledRef.current) {
         sessionIdRef.current = null;
         setUser(null);
         setDeviceSession(null);
@@ -155,10 +191,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [resolveSession, loadSessionUser]);
 
   async function login(email: string, password: string, keepSignedIn = true): Promise<AuthResult> {
     togglablePersistenceStorage.setPersistenceEnabled(keepSignedIn);
@@ -313,6 +349,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         deviceSession,
         store,
         loading,
+        authError,
+        retryAuth,
         login,
         register,
         logout,

@@ -1031,3 +1031,11 @@ export const LINK_BACK_TO_SIGN_IN = "Back to sign in";
 export const LABEL_DEVICE_NAME = "Device name";
 export const LABEL_PAIRED_DEVICES_HEADING = "Paired devices";
 export const BUTTON_DISMISS = "Dismiss";
+
+// Connection resilience (freeze/blank-screen fix)
+export const TEXT_SETTING_UP_CASHIER_SESSION = "Setting up your cashier session…";
+export const BUTTON_TRY_AGAIN = "Try again";
+export const TITLE_UNABLE_TO_CONNECT = "Unable to connect";
+export const ERROR_COULD_NOT_START_SESSION = "We couldn't connect to the cashier system. Please check your connection and try again.";
+export const TEXT_LOADING_PRODUCTS = "Loading products…";
+export const ERROR_COULD_NOT_LOAD_PRODUCTS = "Unable to load products.";

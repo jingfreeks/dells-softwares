@@ -92,6 +92,9 @@ export function Pos() {
     posServicesEnabled,
     activeCashier,
     switchCashier,
+    productsLoading,
+    productsError,
+    onRetryProducts,
   } = usePosPage();
 
   if (!activeCashier) {
@@ -120,6 +123,9 @@ export function Pos() {
 
         {effectiveTab === "products" ? (
           <ProductBrowsePanel
+            productsLoading={productsLoading}
+            productsError={productsError}
+            onRetryProducts={onRetryProducts}
             productInputRef={productInputRef}
             productQuery={productQuery}
             onProductQueryChange={setProductQuery}

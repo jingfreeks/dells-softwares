@@ -102,6 +102,23 @@ describe("Pos", () => {
     expect(screen.getByTestId("cart-total")).toHaveTextContent("₱25.00");
   });
 
+  it("shows a loading message instead of an empty grid while products are loading", async () => {
+    setup({ loading: true, products: [] });
+    renderPage();
+    expect(screen.getByText("Loading products…")).toBeInTheDocument();
+  });
+
+  it("shows an error with a retry button when products fail to load", async () => {
+    const user = userEvent.setup();
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    setup({ error: "Failed to load store data.", products: [], refresh });
+    renderPage();
+
+    expect(screen.getByText("Unable to load products.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    expect(refresh).toHaveBeenCalled();
+  });
+
   it("searches products by name and adds one by tapping its tile", async () => {
     const user = userEvent.setup();
     setup();
@@ -674,6 +691,59 @@ describe("Pos — cashier quick-switch gate", () => {
     }
 
     expect(startCashierSession).toHaveBeenCalledWith("staff-2", "1234");
+  });
+
+  it("shows a spinner/message while the cashier session is being set up, instead of an inert keypad", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ name: "Lyndell Dobluis" }), store: makeStore({ name: "Dell's Sari-Sari Store" }) })
+    );
+    let resolveStart!: (value: { ok: true }) => void;
+    const startCashierSession = vi.fn(
+      () => new Promise<{ ok: true }>((resolve) => (resolveStart = resolve))
+    );
+    vi.mocked(useCashierSession).mockReturnValue(
+      makeCashierSessionValue({ activeCashier: null, startCashierSession })
+    );
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    mockedSupabase.__mocks.rpc.mockResolvedValue({
+      data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
+      error: null,
+    });
+
+    renderPage();
+
+    await user.click(await screen.findByText("Maricel"));
+    for (const digit of ["1", "2", "3", "4"]) {
+      await user.click(screen.getByRole("button", { name: digit }));
+    }
+
+    expect(await screen.findByText("Setting up your cashier session…")).toBeInTheDocument();
+    resolveStart({ ok: true });
+  });
+
+  it("shows an error with a retry button when the cashier list fails to load, and retry re-fetches", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ name: "Lyndell Dobluis" }), store: makeStore({ name: "Dell's Sari-Sari Store" }) })
+    );
+    vi.mocked(useCashierSession).mockReturnValue(makeCashierSessionValue({ activeCashier: null }));
+    vi.mocked(useFeatureFlag).mockReturnValue(true);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products }));
+    mockedSupabase.__mocks.rpc.mockRejectedValueOnce(new Error("network down"));
+
+    renderPage();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not load staff.");
+
+    mockedSupabase.__mocks.rpc.mockResolvedValue({
+      data: [{ id: "staff-2", name: "Maricel", avatar_url: null }],
+      error: null,
+    });
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+
+    expect(await screen.findByText("Maricel")).toBeInTheDocument();
   });
 
   it("shows an inline error when the PIN is wrong", async () => {

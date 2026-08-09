@@ -13,6 +13,8 @@ import {
   TEXT_LOADING_STAFF,
   BUTTON_SWITCH_CASHIER,
   TEXT_GREETING_HI_PREFIX,
+  TEXT_SETTING_UP_CASHIER_SESSION,
+  BUTTON_TRY_AGAIN,
 } from "@/lib";
 import "@/pages/authTheme.css";
 import { useCashierLoginScreen } from "./hooks";
@@ -29,6 +31,7 @@ export function CashierLoginScreen() {
     staffList,
     loadingStaff,
     loadError,
+    retryLoadStaff,
     selectedStaff,
     selectStaff,
     backToPicker,
@@ -67,10 +70,15 @@ export function CashierLoginScreen() {
           {loadingStaff ? (
             <p className="tpl-ts">{TEXT_LOADING_STAFF}</p>
           ) : loadError ? (
-            <p role="alert" className="tpl-emsg">
-              <i className="ti ti-alert-circle" aria-hidden />
-              {loadError}
-            </p>
+            <>
+              <p role="alert" className="tpl-emsg" style={{ justifyContent: "center" }}>
+                <i className="ti ti-alert-circle" aria-hidden />
+                {loadError}
+              </p>
+              <button type="button" className="tpl-btnp" style={{ width: "auto", marginTop: 12 }} onClick={retryLoadStaff}>
+                {BUTTON_TRY_AGAIN}
+              </button>
+            </>
           ) : (
             <div className="tpl-row" style={{ gap: 16, marginBottom: 26, flexWrap: "wrap", justifyContent: "center" }}>
               {staffList.map((staffRow) => (
@@ -110,6 +118,12 @@ export function CashierLoginScreen() {
             disabled={submitting}
             ariaLabel={LABEL_CASHIER_PIN_ARIA}
           />
+          {submitting && (
+            <p className="tpl-row" style={{ marginTop: 14, justifyContent: "center", gap: 8, color: "var(--tpl-t5)" }}>
+              <span aria-hidden className="tpl-spinner" />
+              {TEXT_SETTING_UP_CASHIER_SESSION}
+            </p>
+          )}
           {pinError && (
             <p role="alert" className="tpl-emsg" style={{ marginTop: 14, justifyContent: "center" }}>
               <i className="ti ti-alert-circle" aria-hidden />

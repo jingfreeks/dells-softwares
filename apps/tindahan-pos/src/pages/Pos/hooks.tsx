@@ -49,7 +49,15 @@ export type PosTab = "products" | "services";
 export function usePosPage() {
   const { user } = useAuth();
   const { activeCashier, cashierToken, endCashierSession, reportExpiredSession } = useCashierSession();
-  const { products, customers, checkout, addCustomer, loading: storeDataLoading } = useStoreData();
+  const {
+    products,
+    customers,
+    checkout,
+    addCustomer,
+    loading: storeDataLoading,
+    error: storeDataError,
+    refresh: refreshStoreData,
+  } = useStoreData();
   const { balance: walletBalance, deduct: deductWallet } = useEloadWallet();
   const { balance: drawerBalance, add: addToDrawer, deduct: deductFromDrawer } = useDrawerFloat();
   const packPricingEnabled = useFeatureFlag("pack_pricing");
@@ -524,5 +532,8 @@ export function usePosPage() {
     posServicesEnabled,
     activeCashier,
     switchCashier: endCashierSession,
+    productsLoading: storeDataLoading,
+    productsError: storeDataError,
+    onRetryProducts: refreshStoreData,
   };
 }

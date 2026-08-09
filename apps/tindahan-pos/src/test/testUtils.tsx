@@ -129,6 +129,8 @@ function baseAuthValue() {
     deviceSession: null as DeviceSession | null,
     store: makeStore() as Store | null,
     loading: false,
+    authError: null as string | null,
+    retryAuth: vi.fn(),
     login: vi.fn().mockResolvedValue({ ok: true }),
     register: vi.fn().mockResolvedValue({ ok: true, needsEmailConfirmation: false }),
     logout: vi.fn().mockResolvedValue(undefined),
