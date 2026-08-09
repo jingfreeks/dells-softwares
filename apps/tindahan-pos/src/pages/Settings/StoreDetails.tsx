@@ -6,11 +6,27 @@ import {
   BUTTON_SAVING,
   BUTTON_DISCARD,
   TEXT_STORE_DETAILS_UPDATED,
+  LABEL_CURRENT_PLAN,
+  TEXT_CONTACT_TO_CHANGE_PLAN,
+  PLAN_LABEL_FREE_TRIAL,
+  PLAN_LABEL_TINDAHAN,
+  PLAN_LABEL_CONVENIENCE,
+  PLAN_LABEL_SUPER_MARKET,
+  useAuth,
+  type SubscriptionPlan,
 } from "@/lib";
 import { SettingsLayout, StoreIdentityCard, OpeningHoursCard, BirRegistrationCard } from "./component";
 import { useStoreDetailsPage } from "./useStoreDetailsPage";
 
+const PLAN_LABEL: Record<SubscriptionPlan, string> = {
+  free_trial: PLAN_LABEL_FREE_TRIAL,
+  tindahan: PLAN_LABEL_TINDAHAN,
+  convenience: PLAN_LABEL_CONVENIENCE,
+  super_market: PLAN_LABEL_SUPER_MARKET,
+};
+
 export function StoreDetails() {
+  const { store } = useAuth();
   const {
     storeName,
     setStoreName,
@@ -57,6 +73,13 @@ export function StoreDetails() {
           </div>
           {isDirty && <span className="tpl-chip tpl-w">{LABEL_UNSAVED_CHANGES_CHIP}</span>}
         </div>
+
+        {store && (
+          <p className="tpl-ts" style={{ marginBottom: 14 }}>
+            {LABEL_CURRENT_PLAN}: <span className="tpl-chip tpl-on">{PLAN_LABEL[store.plan]}</span>{" "}
+            {TEXT_CONTACT_TO_CHANGE_PLAN}
+          </p>
+        )}
 
         <StoreIdentityCard
           displayedPhoto={displayedPhoto}

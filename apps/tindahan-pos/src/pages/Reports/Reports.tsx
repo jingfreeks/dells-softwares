@@ -28,6 +28,7 @@ export function Reports() {
     onRetry,
     debtAging,
     thresholdDays,
+    maxLookbackDays,
   } = useReportsPage();
 
   return (
@@ -50,6 +51,7 @@ export function Reports() {
           onCustomStartChange={setCustomStart}
           customEnd={customEnd}
           onCustomEndChange={setCustomEnd}
+          maxLookbackDays={maxLookbackDays}
         />
         <CashierFilter cashiers={cashiers} cashierId={cashierId} onChange={setCashierId} />
       </div>
