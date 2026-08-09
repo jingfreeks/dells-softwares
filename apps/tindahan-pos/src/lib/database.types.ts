@@ -19,7 +19,6 @@ export interface Database {
           address: string | null;
           photo_url: string | null;
           fee_config: StoreFeeConfigRow | null;
-          plan: string;
           created_at: string;
         };
         Insert: {
@@ -28,7 +27,6 @@ export interface Database {
           address?: string | null;
           photo_url?: string | null;
           fee_config?: StoreFeeConfigRow | null;
-          plan?: string;
           created_at?: string;
         };
         Update: {
@@ -37,7 +35,6 @@ export interface Database {
           address?: string | null;
           photo_url?: string | null;
           fee_config?: StoreFeeConfigRow | null;
-          plan?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -187,6 +184,9 @@ export interface Database {
           payment_type: PaymentType;
           reference_no: string | null;
           created_at: string;
+          client_request_id: string | null;
+          occurred_at: string | null;
+          is_offline_replay: boolean;
         };
         Insert: {
           id?: string;
@@ -197,6 +197,9 @@ export interface Database {
           payment_type?: PaymentType;
           reference_no?: string | null;
           created_at?: string;
+          client_request_id?: string | null;
+          occurred_at?: string | null;
+          is_offline_replay?: boolean;
         };
         Update: {
           id?: string;
@@ -207,6 +210,9 @@ export interface Database {
           payment_type?: PaymentType;
           reference_no?: string | null;
           created_at?: string;
+          client_request_id?: string | null;
+          occurred_at?: string | null;
+          is_offline_replay?: boolean;
         };
         Relationships: [
           {
@@ -585,6 +591,9 @@ export interface Database {
           p_reference_no?: string | null;
           p_override_pin?: string | null;
           p_cashier_token?: string | null;
+          p_client_request_id?: string | null;
+          p_occurred_at?: string | null;
+          p_is_offline_replay?: boolean;
         };
         Returns: { sale_id: string; total: number }[];
       };

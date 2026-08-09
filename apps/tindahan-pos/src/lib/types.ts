@@ -38,16 +38,12 @@ export interface StoreFeeConfig {
   cashOut?: { max: number; fee: number }[];
 }
 
-export type SubscriptionPlan = "free_trial" | "tindahan" | "convenience" | "super_market";
-
 export interface Store {
   id: string;
   name: string;
   address: string | null;
   photoUrl: string | null;
   feeConfig: StoreFeeConfig | null;
-  /** Manually assigned — no self-serve upgrade flow or payment gateway exists yet. */
-  plan: SubscriptionPlan;
 }
 
 export interface Category {
@@ -100,6 +96,8 @@ export interface SaleRecord {
   customerId: string | null;
   /** GCash/Maya transaction number the cashier entered — set only for a "qr" sale. */
   referenceNo: string | null;
+  /** Set when checkout() queued this sale offline instead of confirming it live — undefined/omitted for a normal live sale. */
+  syncStatus?: "pending";
 }
 
 export interface ServiceLine {

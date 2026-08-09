@@ -2,14 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useAuth, useStoreData } from "@/lib";
-import {
-  makeAuthValue,
-  makeCustomer,
-  makeProduct,
-  makeSaleRecord,
-  makeStore,
-  makeStoreDataValue,
-} from "../../../test/testUtils";
+import { makeAuthValue, makeCustomer, makeProduct, makeSaleRecord, makeStoreDataValue } from "../../../test/testUtils";
 import { Reports } from "../Reports";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
@@ -142,29 +135,5 @@ describe("Reports", () => {
 
     expect(screen.getByText("How old the utang is")).toBeInTheDocument();
     expect(screen.getByText("0–15 days")).toBeInTheDocument();
-  });
-
-  it("disables 'This month' and shows the lookback note for a tindahan-plan store", async () => {
-    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ store: makeStore({ plan: "tindahan" }) }));
-    const fetchSalesInRange = vi.fn().mockResolvedValue([]);
-    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products: [], fetchSalesInRange }));
-
-    renderPage();
-    await waitFor(() => expect(fetchSalesInRange).toHaveBeenCalled());
-
-    expect(screen.getByRole("button", { name: "This month" })).toBeDisabled();
-    expect(screen.getByText(/Tindahan plan: last 7 days/)).toBeInTheDocument();
-  });
-
-  it("leaves 'This month' enabled and shows no lookback note for a non-tindahan-plan store", async () => {
-    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ store: makeStore({ plan: "convenience" }) }));
-    const fetchSalesInRange = vi.fn().mockResolvedValue([]);
-    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products: [], fetchSalesInRange }));
-
-    renderPage();
-    await waitFor(() => expect(fetchSalesInRange).toHaveBeenCalled());
-
-    expect(screen.getByRole("button", { name: "This month" })).toBeEnabled();
-    expect(screen.queryByText(/Tindahan plan: last/)).not.toBeInTheDocument();
   });
 });

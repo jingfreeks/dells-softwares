@@ -1,5 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useAuth, useStoreData, productsToCsv, salesToCsv, everythingToJson, downloadTextFile } from "@/lib";
+import {
+  useAuth,
+  useStoreData,
+  useOfflineQueue,
+  productsToCsv,
+  salesToCsv,
+  everythingToJson,
+  downloadTextFile,
+} from "@/lib";
 import { loadBackupMock, saveBackupMock, DEFAULT_BACKUP_MOCK, type BackupMock, type BackupFrequency } from "./backupMock";
 
 function today(): string {
@@ -9,6 +17,7 @@ function today(): string {
 export function useBackupPage() {
   const { user } = useAuth();
   const { products, sales, customers, refresh } = useStoreData();
+  const { pendingCount } = useOfflineQueue();
 
   const [saved, setSaved] = useState<BackupMock>(DEFAULT_BACKUP_MOCK);
   const [settings, setSettings] = useState<BackupMock>(DEFAULT_BACKUP_MOCK);
@@ -80,6 +89,7 @@ export function useBackupPage() {
     customersCount: customers.length,
     refreshing,
     onRefreshNow: handleRefreshNow,
+    pendingCount,
 
     cloudBackupEnabled: settings.cloudBackupEnabled,
     toggleCloudBackupEnabled,

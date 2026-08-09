@@ -376,19 +376,6 @@ export const COLUMN_TOTAL = "Total";
 export const COLUMN_DATE = "Date";
 export const COLUMN_ITEMS = "Items";
 export const COLUMN_PAYMENT = "Payment";
-export const TEXT_REPORTS_LOOKBACK_LIMIT_PREFIX = "Tindahan plan: last";
-export const TEXT_REPORTS_LOOKBACK_LIMIT_SUFFIX = "days — upgrade for full history.";
-
-// Subscription plans
-export const PLAN_LABEL_FREE_TRIAL = "Free 30-day trial";
-export const PLAN_LABEL_TINDAHAN = "Tindahan · ₱499/mo";
-export const PLAN_LABEL_CONVENIENCE = "Convenience";
-export const PLAN_LABEL_SUPER_MARKET = "Super Market";
-export const LABEL_CURRENT_PLAN = "Current plan";
-export const TEXT_CONTACT_TO_CHANGE_PLAN = "Contact us to change your plan.";
-export const ERROR_DEVICE_LIMIT_REACHED =
-  "Your plan includes 1 device. Unpair the current device first, or upgrade your plan.";
-
 export const LABEL_TRANSACTIONS_TODAY = "Transactions today";
 export const TEXT_AVERAGE_BASKET_SUFFIX = "average basket";
 export const LABEL_LOW_STOCK = "Low stock";
@@ -974,9 +961,22 @@ export const LABEL_HOW_OFTEN = "How often";
 export const LABEL_ONLY_ON_WIFI = "Only on wi-fi";
 export const LABEL_WHEN_INTERNET_DROPS = "When the internet drops";
 export const TEXT_OFFLINE_QUEUE_DESC =
-  "The register needs a connection to check out a sale — there's no offline queue yet.";
+  "If the connection drops mid-sale, checkout keeps working — sales are saved on this device and upload automatically once you're back online.";
 export const LABEL_WAITING_TO_UPLOAD = "Waiting to upload";
 export const TEXT_ZERO_SALES = "0 sales";
+export const TEXT_SYNC_PENDING_HEADING = "Some sales are waiting to sync";
+export const TEXT_SYNC_PENDING_DESC = "Saved on this device — they'll upload automatically once you're back online";
+export const LABEL_LAST_SYNCED = "Last synced";
+export const TEXT_NEVER_SYNCED_YET = "Not yet";
+export const LABEL_QUEUED_SALE_STATUS_PENDING = "Pending";
+export const LABEL_QUEUED_SALE_STATUS_SYNCING = "Syncing…";
+export const LABEL_QUEUED_SALE_STATUS_SYNCED = "Synced";
+export const LABEL_QUEUED_SALE_STATUS_NEEDS_REAUTH = "Needs sign-in";
+export const LABEL_QUEUED_SALE_STATUS_FAILED = "Failed";
+export const TEXT_QUEUE_NEEDS_REAUTH =
+  "Sign back in as a cashier to resume syncing these sales.";
+export const BUTTON_RETRY_NOW = "Retry now";
+export const TEXT_SAVED_OFFLINE_BADGE = "Saved offline — will sync when back online";
 export const LABEL_TAKE_A_COPY = "Take a copy for yourself";
 export const LABEL_EXPORT_SALES_CSV = "Sales as CSV";
 export const TEXT_EXPORT_SALES_CSV_DESC = "Opens in Excel";

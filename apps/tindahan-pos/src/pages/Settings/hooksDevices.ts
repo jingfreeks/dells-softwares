@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  supabase,
-  ERROR_COULD_NOT_PAIR_DEVICE,
-  ERROR_INVALID_OWNER_PIN,
-  ERROR_COULD_NOT_UNPAIR_DEVICE,
-  ERROR_DEVICE_LIMIT_REACHED,
-} from "@/lib";
+import { supabase, ERROR_COULD_NOT_PAIR_DEVICE, ERROR_INVALID_OWNER_PIN, ERROR_COULD_NOT_UNPAIR_DEVICE } from "@/lib";
 
 export interface DeviceRow {
   id: string;
@@ -19,11 +13,6 @@ export interface DeviceRow {
 function friendlyUnpairError(message: string): string {
   if (message.includes("INVALID_OWNER_PIN")) return ERROR_INVALID_OWNER_PIN;
   return message || ERROR_COULD_NOT_UNPAIR_DEVICE;
-}
-
-function friendlyGenerateError(message: string): string {
-  if (message.includes("DEVICE_LIMIT_REACHED")) return ERROR_DEVICE_LIMIT_REACHED;
-  return message || ERROR_COULD_NOT_PAIR_DEVICE;
 }
 
 export function useDevicesPage() {
@@ -79,7 +68,7 @@ export function useDevicesPage() {
     const { data, error } = await supabase.rpc("generate_pairing_code").single();
     setGenerating(false);
     if (error || !data) {
-      setGenerateError(friendlyGenerateError(error?.message ?? ""));
+      setGenerateError(error?.message ?? ERROR_COULD_NOT_PAIR_DEVICE);
       return;
     }
     setGeneratedCode(data.code);
