@@ -15,6 +15,18 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
+/* Every full-screen route (Login, Register, Pair, the authenticated
+   ProtectedRoute shell) paints its own dark background on mount — but
+   swapping between two such routes unmounts one full-screen tree and
+   mounts another, and the browser can paint the gap between those two
+   commits. Without this, that gap showed body's default light canvas
+   color as a white flash (most noticeable on logout, since the outgoing
+   and incoming pages are both dark). Matching body to the same dark base
+   makes that inevitable gap invisible instead of a flash. */
+html {
+  background-color: #070b14;
+}
+
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }

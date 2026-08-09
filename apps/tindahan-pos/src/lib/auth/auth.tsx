@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { togglablePersistenceStorage } from "@/lib/supabaseClient/togglablePersistenceStorage";
-import type { StaffAccount, Store } from "@/lib/types";
+import type { DeviceSession, StaffAccount, Store, StoreFeeConfig } from "@/lib/types";
 import { AuthContext, type AuthResult, type RegisterResult } from "./authContext";
+import { ERROR_COULD_NOT_START_SESSION } from "@/lib/textLabels";
 
 async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
   const { data, error } = await supabase
     .from("staff")
-    .select("id, store_id, name, email, role, avatar_url, phone, address, onboarded_at")
+    .select("id, store_id, name, email, role, avatar_url, phone, address, onboarded_at, pin_hash, active")
     .eq("id", userId)
     .single();
 
@@ -23,13 +24,29 @@ async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
     phone: data.phone,
     address: data.address,
     onboardedAt: data.onboarded_at,
+    hasPin: data.pin_hash !== null,
+    active: data.active,
   };
+}
+
+/** Paired devices have no `staff` row — they're a separate identity `auth_store_id()` also resolves (0026). */
+async function loadDeviceProfile(userId: string): Promise<DeviceSession | null> {
+  const { data, error } = await supabase
+    .from("devices")
+    .select("id, store_id, name")
+    .eq("id", userId)
+    .is("unpaired_at", null)
+    .single();
+
+  if (error || !data) return null;
+
+  return { id: data.id, storeId: data.store_id, name: data.name };
 }
 
 async function loadStore(storeId: string): Promise<Store | null> {
   const { data, error } = await supabase
     .from("stores")
-    .select("id, name, address, photo_url")
+    .select("id, name, address, photo_url, fee_config")
     .eq("id", storeId)
     .single();
 
@@ -40,6 +57,7 @@ async function loadStore(storeId: string): Promise<Store | null> {
     name: data.name,
     address: data.address,
     photoUrl: data.photo_url,
+    feeConfig: data.fee_config,
   };
 }
 
@@ -55,68 +73,128 @@ function friendlyAuthError(message: string): string {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<StaffAccount | null>(null);
+  const [deviceSession, setDeviceSession] = useState<DeviceSession | null>(null);
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  // Tracks the currently-loaded user id for the auth-state-change
-  // subscription below, updated synchronously alongside `setUser` (not via
-  // a separate `useEffect`, whose scheduling isn't guaranteed to have
-  // flushed before the next Supabase event arrives).
-  const userIdRef = useRef<string | null>(null);
+  // Tracks the currently-loaded session's id (staff OR device) for the
+  // auth-state-change subscription below, updated synchronously alongside
+  // setUser/setDeviceSession (not via a separate `useEffect`, whose
+  // scheduling isn't guaranteed to have flushed before the next Supabase
+  // event arrives).
+  const sessionIdRef = useRef<string | null>(null);
+  // A ref (not an effect-local `let`) so `retryAuth` below can share the
+  // exact same "am I still mounted" guard as the initial mount effect.
+  const cancelledRef = useRef(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadSessionUser = useCallback(async (userId: string) => {
+    // Fired in parallel rather than sequential fallback: a paired device
+    // (Phase 3) has no `staff` row, so trying that lookup first always
+    // wasted one full round-trip before ever reaching loadDeviceProfile.
+    const [profile, device] = await Promise.all([loadStaffProfile(userId), loadDeviceProfile(userId)]);
+    if (cancelledRef.current) return;
 
-    async function loadSessionUser(userId: string) {
-      const profile = await loadStaffProfile(userId);
-      if (cancelled) return;
-      userIdRef.current = profile?.id ?? null;
+    if (profile) {
+      sessionIdRef.current = profile.id;
       setUser(profile);
-      setStore(profile ? await loadStore(profile.storeId) : null);
+      setDeviceSession(null);
+      setStore(await loadStore(profile.storeId));
+      return;
     }
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    if (device) {
+      sessionIdRef.current = device.id;
+      setUser(null);
+      setDeviceSession(device);
+      setStore(await loadStore(device.storeId));
+      return;
+    }
+
+    // Neither a staff nor a device row — a stale JWT for a
+    // deleted/unpaired identity. Nothing valid to show; sign out.
+    sessionIdRef.current = null;
+    setUser(null);
+    setDeviceSession(null);
+    setStore(null);
+    await supabase.auth.signOut();
+  }, []);
+
+  // Shared by the initial mount resolution and `retryAuth` — a thrown
+  // error here (a genuine network failure, not a normal "no row found"
+  // case, which loadStaffProfile/loadDeviceProfile already swallow) used
+  // to leave `loading` stuck `true` forever (an infinite spinner) or
+  // surface as an unhandled promise rejection with no UI feedback at all.
+  // try/finally guarantees `loading` always resolves; the catch turns a
+  // thrown error into a real, retryable error state instead.
+  const resolveSession = useCallback(async () => {
+    setLoading(true);
+    setAuthError(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session?.user) await loadSessionUser(session.user.id);
-      if (!cancelled) setLoading(false);
-    });
+    } catch {
+      if (!cancelledRef.current) setAuthError(ERROR_COULD_NOT_START_SESSION);
+    } finally {
+      if (!cancelledRef.current) setLoading(false);
+    }
+  }, [loadSessionUser]);
+
+  const retryAuth = useCallback(() => {
+    resolveSession();
+  }, [resolveSession]);
+
+  useEffect(() => {
+    cancelledRef.current = false;
+    resolveSession();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user && event === "SIGNED_IN") {
-        if (session.user.id === userIdRef.current) {
+        if (session.user.id === sessionIdRef.current) {
           // Supabase's own GoTrueClient fires SIGNED_IN — not just
           // TOKEN_REFRESHED — every time the tab regains focus after being
           // backgrounded, as part of its visibilitychange-driven session
           // recovery (_recoverAndRefresh), even when nothing actually
-          // changed. If we already have this exact user loaded, there's
+          // changed. If we already have this exact session loaded, there's
           // nothing to re-fetch — re-running the loading cycle here would
           // swap ProtectedRoute's whole authenticated shell out for its
           // loading branch and back, unmounting/remounting the app (cart
           // and all) on every tab switch with no real sign-in involved.
           return;
         }
-        // A genuinely fresh sign-in fires this before the staff profile
-        // (and its role) has loaded — without this, a consumer reading
-        // `loading` right after login sees `false` + `user: null`
-        // simultaneously and concludes "signed out", bouncing straight
-        // back to /login.
-        if (!cancelled) setLoading(true);
-        await loadSessionUser(session.user.id);
-        if (!cancelled) setLoading(false);
-      } else if (!session?.user && !cancelled) {
-        userIdRef.current = null;
+        // A genuinely fresh sign-in fires this before the profile (and its
+        // role) has loaded — without this, a consumer reading `loading`
+        // right after login sees `false` + `user: null` simultaneously and
+        // concludes "signed out", bouncing straight back to /login.
+        if (!cancelledRef.current) {
+          setLoading(true);
+          setAuthError(null);
+        }
+        try {
+          await loadSessionUser(session.user.id);
+        } catch {
+          if (!cancelledRef.current) setAuthError(ERROR_COULD_NOT_START_SESSION);
+        } finally {
+          if (!cancelledRef.current) setLoading(false);
+        }
+      } else if (!session?.user && !cancelledRef.current) {
+        sessionIdRef.current = null;
         setUser(null);
+        setDeviceSession(null);
         setStore(null);
         setLoading(false);
       }
     });
 
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [resolveSession, loadSessionUser]);
 
   async function login(email: string, password: string, keepSignedIn = true): Promise<AuthResult> {
     togglablePersistenceStorage.setPersistenceEnabled(keepSignedIn);
@@ -166,6 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     togglablePersistenceStorage.setPersistenceEnabled(true);
     setUser(null);
+    setDeviceSession(null);
     setStore(null);
   }
 
@@ -203,10 +282,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
+  async function setOwnPin(pin: string): Promise<AuthResult> {
+    if (!user) return { ok: false, error: "Not signed in." };
+    const { error } = await supabase.rpc("set_own_pin", { p_pin: pin });
+    if (error) return { ok: false, error: error.message };
+    const profile = await loadStaffProfile(user.id);
+    setUser(profile);
+    return { ok: true };
+  }
+
   async function updateStore(patch: {
     name?: string;
     address?: string | null;
     photoUrl?: string | null;
+    feeConfig?: StoreFeeConfig | null;
   }): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
     const { error } = await supabase
@@ -215,6 +304,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...(patch.name !== undefined && { name: patch.name }),
         ...(patch.address !== undefined && { address: patch.address }),
         ...(patch.photoUrl !== undefined && { photo_url: patch.photoUrl }),
+        ...(patch.feeConfig !== undefined && { fee_config: patch.feeConfig }),
       })
       .eq("id", user.storeId);
     if (error) return { ok: false, error: error.message };
@@ -256,14 +346,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        deviceSession,
         store,
         loading,
+        authError,
+        retryAuth,
         login,
         register,
         logout,
         requestPasswordReset,
         updateProfile,
         updateStore,
+        setOwnPin,
         completeOnboarding,
         deleteAccount,
       }}

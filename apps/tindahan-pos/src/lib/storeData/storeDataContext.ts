@@ -28,6 +28,8 @@ export interface CheckoutPayment {
   customerId?: string | null;
   /** Required when type is "qr" — the GCash/Maya transaction number the cashier read off their phone. */
   referenceNo?: string;
+  /** An admin's PIN, supplied only when a credit sale would exceed the customer's limit and an owner has approved it. */
+  overridePin?: string;
 }
 
 export interface StoreDataContextValue {
@@ -46,7 +48,9 @@ export interface StoreDataContextValue {
     cart: CartLine[],
     services: ServiceLine[],
     cashierName: string,
-    payment?: CheckoutPayment
+    payment?: CheckoutPayment,
+    /** The quick-switched cashier's session token (see useCashierSession) — attributes the sale to them, not the signed-in admin. */
+    cashierToken?: string | null
   ) => Promise<SaleRecord>;
   refresh: () => Promise<void>;
   addCategory: (name: string) => Promise<Category>;

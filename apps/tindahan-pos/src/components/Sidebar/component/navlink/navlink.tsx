@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 const Navlinkscreen = (props: { user: any }) => {
     const { user } = props
   return (
-    <NavLink to="/profile" className="tpl-ub">
+    <NavLink to="/settings/profile" className="tpl-ub">
       {user?.avatarUrl ? (
         <img src={user.avatarUrl} alt="" className="tpl-av-s" />
       ) : (

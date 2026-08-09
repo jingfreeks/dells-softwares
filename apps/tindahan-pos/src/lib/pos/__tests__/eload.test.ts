@@ -49,6 +49,20 @@ describe("eloadFee", () => {
   it("uses the top bracket's fee for amounts above it", () => {
     expect(eloadFee(1000)).toBe(10);
   });
+
+  it("uses a store's custom brackets when given", () => {
+    const customBrackets = [
+      { max: 50, fee: 1 },
+      { max: 200, fee: 4 },
+    ];
+    expect(eloadFee(20, customBrackets)).toBe(1);
+    expect(eloadFee(100, customBrackets)).toBe(4);
+    expect(eloadFee(500, customBrackets)).toBe(4);
+  });
+
+  it("falls back to the default brackets when given an empty list", () => {
+    expect(eloadFee(10, [])).toBe(2);
+  });
 });
 
 describe("suggestedCashAmounts", () => {

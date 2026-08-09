@@ -3,8 +3,10 @@ import { MemoryRouter } from "react-router-dom";
 import { render } from "@testing-library/react";
 import { vi } from "vitest";
 import type {
+  CashierProfile,
   CreditPayment,
   Customer,
+  DeviceSession,
   Product,
   Role,
   SaleRecord,
@@ -24,6 +26,8 @@ export function makeStaffAccount(overrides: Partial<StaffAccount> = {}): StaffAc
     phone: null,
     address: null,
     onboardedAt: "2026-07-27T10:00:00Z",
+    hasPin: false,
+    active: true,
     ...overrides,
   };
 }
@@ -34,6 +38,7 @@ export function makeStore(overrides: Partial<Store> = {}): Store {
     name: "Dell's Sari-Sari Store",
     address: null,
     photoUrl: null,
+    feeConfig: null,
     ...overrides,
   };
 }
@@ -121,16 +126,36 @@ export function makeAuthValue(overrides: Partial<ReturnType<typeof baseAuthValue
 function baseAuthValue() {
   return {
     user: makeStaffAccount() as StaffAccount | null,
+    deviceSession: null as DeviceSession | null,
     store: makeStore() as Store | null,
     loading: false,
+    authError: null as string | null,
+    retryAuth: vi.fn(),
     login: vi.fn().mockResolvedValue({ ok: true }),
     register: vi.fn().mockResolvedValue({ ok: true, needsEmailConfirmation: false }),
     logout: vi.fn().mockResolvedValue(undefined),
     requestPasswordReset: vi.fn().mockResolvedValue({ ok: true }),
     updateProfile: vi.fn().mockResolvedValue({ ok: true }),
     updateStore: vi.fn().mockResolvedValue({ ok: true }),
+    setOwnPin: vi.fn().mockResolvedValue({ ok: true }),
     completeOnboarding: vi.fn().mockResolvedValue({ ok: true }),
     deleteAccount: vi.fn().mockResolvedValue({ ok: true }),
+  };
+}
+
+/** Full default CashierSessionContext value — override just what a test cares about. */
+export function makeCashierSessionValue(overrides: Partial<ReturnType<typeof baseCashierSessionValue>> = {}) {
+  return { ...baseCashierSessionValue(), ...overrides };
+}
+
+function baseCashierSessionValue() {
+  return {
+    activeCashier: makeStaffAccount() as CashierProfile | null,
+    loading: false,
+    startCashierSession: vi.fn().mockResolvedValue({ ok: true }),
+    endCashierSession: vi.fn().mockResolvedValue(undefined),
+    cashierToken: null as string | null,
+    reportExpiredSession: vi.fn(),
   };
 }
 

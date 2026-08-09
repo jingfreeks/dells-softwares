@@ -1,0 +1,183 @@
+import {
+  PAGE_HEADING_YOUR_PROFILE,
+  TEXT_YOUR_PROFILE_DESCRIPTION,
+  LABEL_UNSAVED_CHANGES_CHIP,
+  BUTTON_SAVE_CHANGES,
+  BUTTON_SAVING,
+  BUTTON_DISCARD,
+  TEXT_PROFILE_UPDATED,
+} from "@/lib";
+import { SetPinModal } from "@/components";
+import {
+  SettingsLayout,
+  IdentityCard,
+  SigningInCard,
+  ChangePasswordModal,
+  NotificationsCard,
+  SignOutEverywhereNote,
+  DangerZoneCard,
+  DeleteAccountModal,
+} from "./component";
+import { useSettingsProfilePage } from "./hooks";
+
+export function ProfileSettings() {
+  const {
+    user,
+    name,
+    setName,
+    phone,
+    setPhone,
+    displayName,
+    setDisplayName,
+    displayedAvatar,
+    imageError,
+    processingImage,
+    formError,
+    saved,
+    submitting,
+    isDirty,
+    handleImageSelect,
+    handleRemoveAvatar,
+    handleSubmit,
+    handleDiscard,
+
+    hasPin,
+    showSetPinModal,
+    onSetPinClick,
+    closeSetPinModal,
+    setPinSubmitting,
+    setPinError,
+    onSetPinSubmit,
+    twoStepSignIn,
+    setTwoStepSignIn,
+    notifications,
+    toggleNotification,
+
+    showChangePassword,
+    openChangePassword,
+    closeChangePassword,
+    newPassword,
+    setNewPassword,
+    confirmNewPassword,
+    setConfirmNewPassword,
+    passwordError,
+    passwordSaved,
+    updatingPassword,
+    onChangePasswordSubmit,
+
+    signOutError,
+    signingOutEverywhere,
+    onSignOutEverywhere,
+
+    showDeleteModal,
+    openDeleteModal,
+    closeDeleteModal,
+    deleteError,
+    deleting,
+    handleDeleteAccount,
+  } = useSettingsProfilePage();
+
+  return (
+    <SettingsLayout>
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="tpl-hd">
+          <div>
+            <p className="tpl-h1" style={{ fontSize: 21 }}>
+              {PAGE_HEADING_YOUR_PROFILE}
+            </p>
+            <p className="tpl-sub">{TEXT_YOUR_PROFILE_DESCRIPTION}</p>
+          </div>
+          {isDirty && <span className="tpl-chip tpl-w">{LABEL_UNSAVED_CHANGES_CHIP}</span>}
+        </div>
+
+        <IdentityCard
+          displayedAvatar={displayedAvatar}
+          processingImage={processingImage}
+          imageError={imageError}
+          onImageSelect={handleImageSelect}
+          onRemoveAvatar={handleRemoveAvatar}
+          name={name}
+          onNameChange={setName}
+          displayName={displayName}
+          onDisplayNameChange={setDisplayName}
+          email={user?.email}
+          phone={phone}
+          onPhoneChange={setPhone}
+        />
+
+        <SigningInCard
+          hasPin={hasPin}
+          onSetPinClick={onSetPinClick}
+          twoStepSignIn={twoStepSignIn}
+          onTwoStepSignInChange={setTwoStepSignIn}
+          onChangePasswordClick={openChangePassword}
+        />
+
+        <NotificationsCard notifications={notifications} onToggle={toggleNotification} />
+
+        <SignOutEverywhereNote
+          signOutError={signOutError}
+          signingOutEverywhere={signingOutEverywhere}
+          onSignOutEverywhere={onSignOutEverywhere}
+        />
+
+        {formError && (
+          <p role="alert" className="tpl-emsg" style={{ marginBottom: 14 }}>
+            <i className="ti ti-alert-circle" aria-hidden />
+            {formError}
+          </p>
+        )}
+        {saved && (
+          <p role="status" className="tpl-ok" style={{ marginBottom: 14, fontSize: 13 }}>
+            {TEXT_PROFILE_UPDATED}
+          </p>
+        )}
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3" style={{ marginBottom: 18 }}>
+          <button
+            type="submit"
+            className="tpl-btnp w-full! sm:w-auto!"
+            style={{ marginBottom: 0, whiteSpace: "nowrap" }}
+            disabled={submitting || processingImage}
+          >
+            {submitting ? BUTTON_SAVING : BUTTON_SAVE_CHANGES}
+          </button>
+          <button type="button" className="tpl-txt text-center sm:text-left" onClick={handleDiscard}>
+            {BUTTON_DISCARD}
+          </button>
+        </div>
+      </form>
+
+      <DangerZoneCard onDeleteClick={openDeleteModal} />
+
+      <ChangePasswordModal
+        open={showChangePassword}
+        newPassword={newPassword}
+        onNewPasswordChange={setNewPassword}
+        confirmNewPassword={confirmNewPassword}
+        onConfirmNewPasswordChange={setConfirmNewPassword}
+        passwordError={passwordError}
+        passwordSaved={passwordSaved}
+        updatingPassword={updatingPassword}
+        onCancel={closeChangePassword}
+        onSubmit={onChangePasswordSubmit}
+      />
+
+      <DeleteAccountModal
+        open={showDeleteModal}
+        deleteError={deleteError}
+        deleting={deleting}
+        onCancel={closeDeleteModal}
+        onConfirm={handleDeleteAccount}
+      />
+
+      <SetPinModal
+        open={showSetPinModal}
+        submitting={setPinSubmitting}
+        error={setPinError}
+        onCancel={closeSetPinModal}
+        onSubmit={onSetPinSubmit}
+      />
+    </SettingsLayout>
+  );
+}

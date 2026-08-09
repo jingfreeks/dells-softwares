@@ -1,3 +1,5 @@
+import { feeFromBrackets, type FeeBracket } from "./cashService";
+
 export const NETWORKS = ["Globe", "Smart", "TNT", "TM", "DITO"] as const;
 export type Network = (typeof NETWORKS)[number];
 
@@ -98,9 +100,11 @@ export const ELOAD_DENOMINATIONS = [10, 20, 50, 100, 300] as const;
 /**
  * Placeholder fee brackets from the "Tindahan POS interface redesign"
  * review (1 Aug 2026) — plausible numbers, not researched market rates.
- * Replace with the owner's real rates before launch.
+ * A store can override these from Settings → Fees and limits
+ * (persisted on `stores.fee_config`); these remain the fallback when a
+ * store hasn't set its own.
  */
-const ELOAD_FEE_BRACKETS: { max: number; fee: number }[] = [
+export const DEFAULT_ELOAD_FEE_BRACKETS: FeeBracket[] = [
   { max: 20, fee: 2 },
   { max: 50, fee: 3 },
   { max: 100, fee: 5 },
@@ -108,11 +112,8 @@ const ELOAD_FEE_BRACKETS: { max: number; fee: number }[] = [
 ];
 
 /** Service fee for a given load amount, resolved from the bracket table (amounts above the top bracket use its fee). */
-export function eloadFee(amount: number): number {
-  for (const bracket of ELOAD_FEE_BRACKETS) {
-    if (amount <= bracket.max) return bracket.fee;
-  }
-  return ELOAD_FEE_BRACKETS[ELOAD_FEE_BRACKETS.length - 1].fee;
+export function eloadFee(amount: number, brackets: FeeBracket[] = DEFAULT_ELOAD_FEE_BRACKETS): number {
+  return feeFromBrackets(amount, brackets.length > 0 ? brackets : DEFAULT_ELOAD_FEE_BRACKETS);
 }
 
 /** Quick-cash tender tiles for a given sale total: the exact amount, the next round ₱50 and ₱100, and a round ₱500 (or ₱500 above the total, once the total itself exceeds ₱500). */

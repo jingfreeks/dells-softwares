@@ -16,6 +16,7 @@ import {
   LABEL_CASH_TO_COLLECT,
   TEXT_DRAWER_AFTER_SALE_PREFIX,
   BUTTON_ADD_TO_SALE,
+  useAuth,
 } from "@/lib";
 
 export function CashInServicePanel({
@@ -25,6 +26,7 @@ export function CashInServicePanel({
   drawerBalance: number;
   onAdd: (label: string, amount: number, fee: number) => void;
 }) {
+  const { store } = useAuth();
   const [provider, setProvider] = useState<CashProvider>(CASH_PROVIDERS[0]);
   const [recipientNumber, setRecipientNumber] = useState("");
   const [selectedDenomination, setSelectedDenomination] = useState<number | null>(null);
@@ -33,8 +35,9 @@ export function CashInServicePanel({
   const [referenceNo, setReferenceNo] = useState("");
 
   const numberIsValid = isValidMobileNumber(recipientNumber);
+  const cashInBrackets = store?.feeConfig?.cashIn;
   const amount = showCustom ? Number(customAmount) || 0 : (selectedDenomination ?? 0);
-  const fee = amount > 0 ? cashInFee(amount) : 0;
+  const fee = amount > 0 ? cashInFee(amount, cashInBrackets) : 0;
   const cashToCollect = amount + fee;
   const canAdd = amount > 0 && numberIsValid && referenceNo.trim() !== "";
 
@@ -92,7 +95,7 @@ export function CashInServicePanel({
             className={`tpl-denom${!showCustom && selectedDenomination === d ? " tpl-on" : ""}`}
           >
             <span>{PESO.format(d).replace(".00", "")}</span>
-            <span>+{cashInFee(d)}</span>
+            <span>+{cashInFee(d, cashInBrackets)}</span>
           </button>
         ))}
         {showCustom ? (
