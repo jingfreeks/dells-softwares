@@ -15,6 +15,12 @@ export interface AuthContextValue {
   /** True until the initial session check completes — avoids a false
    * redirect-to-login flash while Supabase restores a persisted session. */
   loading: boolean;
+  /** Set when resolving the session itself fails (a real network/connection
+   * error, not a normal "not signed in" case) — lets a route guard show a
+   * retryable error screen instead of an infinite spinner or blank page. */
+  authError: string | null;
+  /** Re-runs session resolution from scratch — clears `authError` first. */
+  retryAuth: () => void;
   /** keepSignedIn (default true) controls whether the session survives
    * closing the browser — see togglablePersistenceStorage. */
   login: (email: string, password: string, keepSignedIn?: boolean) => Promise<AuthResult>;

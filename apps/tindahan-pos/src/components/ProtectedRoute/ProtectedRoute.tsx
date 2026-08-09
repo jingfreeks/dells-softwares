@@ -1,9 +1,10 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "@/lib";
+import { useAuth, TITLE_UNABLE_TO_CONNECT } from "@/lib";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileHeader } from "@/components/MobileHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { PageLoadingOverlay } from "@/components/PageLoadingOverlay";
+import { PageErrorOverlay } from "@/components/PageErrorOverlay";
 import "@/pages/authTheme.css";
 
 // A layout route (rendered once via <Route element={<ProtectedRoute />}>
@@ -13,11 +14,17 @@ import "@/pages/authTheme.css";
 // <Outlet /> swaps — so switching pages no longer unmounts and remounts
 // the whole shell (which showed up as a white flash between pages).
 export function ProtectedRoute() {
-  const { user, deviceSession, loading } = useAuth();
+  const { user, deviceSession, loading, authError, retryAuth } = useAuth();
   const location = useLocation();
 
   if (loading) {
     return <PageLoadingOverlay variant="dark" />;
+  }
+
+  // A real connection/initialization failure (not just "not signed in")
+  // must never render as a blank screen — give the user a way to retry.
+  if (authError) {
+    return <PageErrorOverlay variant="dark" title={TITLE_UNABLE_TO_CONNECT} message={authError} onRetry={retryAuth} />;
   }
 
   // A paired device (Phase 3) has a real session but no human staff member

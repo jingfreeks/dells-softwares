@@ -104,6 +104,36 @@ describe("StoreDataProvider", () => {
     expect(screen.getByTestId("products")).toHaveTextContent("");
   });
 
+  it("still fetches products for a paired device session (no staff `user`)", async () => {
+    // Phase 3 device sessions have user === null and only deviceSession set —
+    // the fetch-gating effect used to key purely off `user`, so a device's
+    // POS screen always showed an empty catalog even though RLS would have
+    // returned real rows.
+    tableResults.products.list = {
+      data: [
+        {
+          id: "p1",
+          barcode: "111",
+          name: "Sardines",
+          price: 25,
+          stock: 20,
+          low_stock_threshold: 5,
+          category_id: "cat1",
+          pack_quantity: null,
+          pack_price: null,
+          categories: { name: "Canned" },
+        },
+      ],
+      error: null,
+    };
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: null, deviceSession: { id: "d1", storeId: "store-1", name: "Counter tablet" } })
+    );
+    renderProvider(<Probe />);
+    await waitFor(() => expect(screen.getByTestId("loading")).toHaveTextContent("false"));
+    expect(screen.getByTestId("products")).toHaveTextContent("Sardines");
+  });
+
   it("loads products, categories, sales, customers, and suppliers on mount", async () => {
     tableResults.products.list = {
       data: [

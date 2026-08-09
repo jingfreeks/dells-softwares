@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { useState } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CashierSessionProvider } from "../cashierSession";
@@ -12,13 +13,16 @@ vi.mock("@/lib/supabaseClient", () => ({ supabase: { rpc: vi.fn() } }));
 const mockedSupabase = supabase as unknown as { rpc: ReturnType<typeof vi.fn> };
 
 function Probe() {
-  const { activeCashier, cashierToken, startCashierSession, endCashierSession, reportExpiredSession } =
+  const { activeCashier, cashierToken, loading, startCashierSession, endCashierSession, reportExpiredSession } =
     useCashierSession();
+  const [result, setResult] = useState<{ ok: boolean; error?: string } | null>(null);
   return (
     <div>
       <p data-testid="active-cashier">{activeCashier ? activeCashier.name : "none"}</p>
       <p data-testid="token">{cashierToken ?? "none"}</p>
-      <button onClick={() => startCashierSession("staff-2", "1234")}>start</button>
+      <p data-testid="loading">{String(loading)}</p>
+      <p data-testid="result">{result ? JSON.stringify(result) : "none"}</p>
+      <button onClick={async () => setResult(await startCashierSession("staff-2", "1234"))}>start</button>
       <button onClick={() => endCashierSession()}>end</button>
       <button onClick={() => reportExpiredSession()}>expire</button>
     </div>
@@ -81,6 +85,21 @@ describe("CashierSessionProvider", () => {
 
     await user.click(screen.getByText("start"));
 
+    expect(screen.getByTestId("active-cashier")).toHaveTextContent("none");
+  });
+
+  it("returns a friendly error instead of hanging when the RPC call throws", async () => {
+    // A genuine network failure (thrown, not a normal {data,error} response)
+    // — without a try/catch around it, `loading` stayed stuck `true` and
+    // the PIN keypad looked permanently frozen with no feedback at all.
+    const user = userEvent.setup();
+    mockedSupabase.rpc.mockRejectedValue(new Error("network down"));
+    renderProbe();
+
+    await user.click(screen.getByText("start"));
+
+    await waitFor(() => expect(screen.getByTestId("loading")).toHaveTextContent("false"));
+    expect(screen.getByTestId("result")).toHaveTextContent('"ok":false');
     expect(screen.getByTestId("active-cashier")).toHaveTextContent("none");
   });
 

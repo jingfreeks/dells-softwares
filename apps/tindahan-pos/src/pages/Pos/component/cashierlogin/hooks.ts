@@ -31,15 +31,23 @@ export function useCashierLoginScreen() {
   const fetchStaffList = useCallback(async () => {
     setLoadingStaff(true);
     setLoadError(null);
-    const { data, error } = await supabase.rpc("list_pickable_cashiers");
-    if (error) {
+    try {
+      const { data, error } = await supabase.rpc("list_pickable_cashiers");
+      if (error) {
+        setLoadError(ERROR_COULD_NOT_LOAD_STAFF);
+      } else {
+        setStaffList(
+          (data ?? []).map((row) => ({ id: row.id, name: row.name, avatarUrl: row.avatar_url }))
+        );
+      }
+    } catch {
+      // A thrown network failure, not a normal RPC error response — without
+      // this catch, `loadingStaff` would stay stuck `true` forever (an
+      // indefinite "Loading staff…" message with no way to retry).
       setLoadError(ERROR_COULD_NOT_LOAD_STAFF);
-    } else {
-      setStaffList(
-        (data ?? []).map((row) => ({ id: row.id, name: row.name, avatarUrl: row.avatar_url }))
-      );
+    } finally {
+      setLoadingStaff(false);
     }
-    setLoadingStaff(false);
   }, []);
 
   useEffect(() => {
@@ -92,6 +100,7 @@ export function useCashierLoginScreen() {
     staffList,
     loadingStaff,
     loadError,
+    retryLoadStaff: fetchStaffList,
     selectedStaff,
     selectStaff,
     backToPicker,

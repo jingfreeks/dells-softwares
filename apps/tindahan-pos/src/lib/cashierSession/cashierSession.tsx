@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/auth";
 import type { CashierProfile } from "@/lib/types";
+import { ERROR_COULD_NOT_START_SESSION } from "@/lib/textLabels";
 import { CashierSessionContext, type StartCashierSessionResult } from "./cashierSessionContext";
 
 const STORAGE_KEY = "tindahan-pos:cashier-session";
@@ -65,23 +66,31 @@ export function CashierSessionProvider({ children }: { children: ReactNode }) {
 
   async function startCashierSession(staffId: string, pin: string): Promise<StartCashierSessionResult> {
     setLoading(true);
-    const { data, error } = await supabase.rpc("start_cashier_session", { p_staff_id: staffId, p_pin: pin });
-    setLoading(false);
-    if (error) return { ok: false, error: error.message };
-    const row = data?.[0];
-    if (!row) return { ok: false, error: "Something went wrong. Please try again." };
-    if (!row.ok || !row.token || !row.staff_id || !row.name || !row.role || !row.expires_at) {
-      return { ok: false, error: row.error_code ?? "Something went wrong. Please try again." };
-    }
+    try {
+      const { data, error } = await supabase.rpc("start_cashier_session", { p_staff_id: staffId, p_pin: pin });
+      if (error) return { ok: false, error: error.message };
+      const row = data?.[0];
+      if (!row) return { ok: false, error: "Something went wrong. Please try again." };
+      if (!row.ok || !row.token || !row.staff_id || !row.name || !row.role || !row.expires_at) {
+        return { ok: false, error: row.error_code ?? "Something went wrong. Please try again." };
+      }
 
-    const next: StoredSession = {
-      token: row.token,
-      expiresAt: row.expires_at,
-      cashier: { id: row.staff_id, name: row.name, role: row.role, avatarUrl: row.avatar_url },
-    };
-    setSession(next);
-    writeStoredSession(next);
-    return { ok: true };
+      const next: StoredSession = {
+        token: row.token,
+        expiresAt: row.expires_at,
+        cashier: { id: row.staff_id, name: row.name, role: row.role, avatarUrl: row.avatar_url },
+      };
+      setSession(next);
+      writeStoredSession(next);
+      return { ok: true };
+    } catch {
+      // A genuine network failure (fetch throwing), not a normal RPC error
+      // response — without this catch, `loading` would stay stuck `true`
+      // and the PIN keypad would look permanently frozen with no feedback.
+      return { ok: false, error: ERROR_COULD_NOT_START_SESSION };
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function endCashierSession(): Promise<void> {

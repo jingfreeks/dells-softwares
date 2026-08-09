@@ -54,7 +54,10 @@ export function DeviceListCard({
 
       {generatedCode && (
         <div className="tpl-note tpl-b" style={{ marginBottom: 14, flexDirection: "column", alignItems: "center" }}>
-          <p className="tpl-mono" style={{ fontSize: 28, letterSpacing: "0.3em", marginBottom: 6 }}>
+          <p
+            className="tpl-mono"
+            style={{ fontSize: 28, fontWeight: 700, letterSpacing: "0.3em", marginBottom: 6, color: "var(--tpl-t1)" }}
+          >
             {generatedCode}
           </p>
           {codeExpiresAt && (

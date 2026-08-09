@@ -10,6 +10,7 @@ export * from "./CategoryManager";
 export * from "./HomeRedirect";
 export * from "./MobileHeader";
 export * from "./OnboardingRoute";
+export * from "./PageErrorOverlay";
 export * from "./PageLoadingOverlay";
 export * from "./PinKeypad";
 export * from "./ProtectedRoute";

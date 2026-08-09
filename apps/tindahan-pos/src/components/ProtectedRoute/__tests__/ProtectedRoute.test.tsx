@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useAuth, EloadWalletProvider } from "@/lib";
 import { makeAuthValue, makeStaffAccount } from "../../../test/testUtils";
@@ -29,6 +30,19 @@ describe("ProtectedRoute", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ loading: true, user: null }));
     renderProtected();
     expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument();
+  });
+
+  it("shows a retryable error screen instead of a blank page when session resolution fails", async () => {
+    const user = userEvent.setup();
+    const retryAuth = vi.fn();
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ loading: false, user: null, authError: "We couldn't connect. Please try again.", retryAuth })
+    );
+    renderProtected();
+    expect(screen.getByText("Unable to connect")).toBeInTheDocument();
+    expect(screen.getByText("We couldn't connect. Please try again.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    expect(retryAuth).toHaveBeenCalled();
   });
 
   it("redirects to /login when there is no user", () => {
