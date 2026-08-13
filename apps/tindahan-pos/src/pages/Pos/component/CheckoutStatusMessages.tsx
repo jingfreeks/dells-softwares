@@ -3,10 +3,16 @@ import { PESO, TEXT_SALE_RECORDED_PREFIX, TEXT_SALE_RECORDED_SUFFIX, TEXT_SERVIC
 interface CheckoutStatusMessagesProps {
   lastReceiptTotal: number | null;
   checkoutError: string | null;
+  holdError?: string | null;
   hasServiceLines: boolean;
 }
 
-export function CheckoutStatusMessages({ lastReceiptTotal, checkoutError, hasServiceLines }: CheckoutStatusMessagesProps) {
+export function CheckoutStatusMessages({
+  lastReceiptTotal,
+  checkoutError,
+  holdError,
+  hasServiceLines,
+}: CheckoutStatusMessagesProps) {
   return (
     <>
       {lastReceiptTotal !== null && (
@@ -19,6 +25,12 @@ export function CheckoutStatusMessages({ lastReceiptTotal, checkoutError, hasSer
       {checkoutError && (
         <p role="alert" className="tpl-alert" style={{ marginTop: 14, marginBottom: 0 }}>
           {checkoutError}
+        </p>
+      )}
+
+      {holdError && (
+        <p role="alert" className="tpl-alert" style={{ marginTop: 14, marginBottom: 0 }}>
+          {holdError}
         </p>
       )}
 

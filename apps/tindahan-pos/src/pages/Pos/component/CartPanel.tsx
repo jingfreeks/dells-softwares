@@ -36,9 +36,12 @@ interface CartPanelProps {
   customerError: string | null;
   lastReceiptTotal: number | null;
   checkoutError: string | null;
+  holdError: string | null;
   checkingOut: boolean;
+  holdingSale: boolean;
   onCancelSale: () => void;
   onCompleteSale: () => void;
+  onHold: () => void;
 }
 
 export function CartPanel({
@@ -69,9 +72,12 @@ export function CartPanel({
   customerError,
   lastReceiptTotal,
   checkoutError,
+  holdError,
   checkingOut,
+  holdingSale,
   onCancelSale,
   onCompleteSale,
+  onHold,
 }: CartPanelProps) {
   const cartEmpty = cart.length === 0 && serviceLines.length === 0;
   const needsOwnerPin =
@@ -147,6 +153,7 @@ export function CartPanel({
         <CheckoutStatusMessages
           lastReceiptTotal={lastReceiptTotal}
           checkoutError={checkoutError}
+          holdError={holdError}
           hasServiceLines={serviceLines.length > 0}
         />
 
@@ -155,8 +162,10 @@ export function CartPanel({
           checkingOut={checkingOut}
           disableComplete={disableComplete}
           needsOwnerPin={needsOwnerPin}
+          holdingSale={holdingSale}
           onCancel={onCancelSale}
           onComplete={onCompleteSale}
+          onHold={onHold}
         />
       </div>
     </div>
