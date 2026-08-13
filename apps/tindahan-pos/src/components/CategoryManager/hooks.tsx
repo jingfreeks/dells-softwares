@@ -4,11 +4,12 @@ import {
   ERROR_COULD_NOT_ADD_CATEGORY,
   ERROR_COULD_NOT_RENAME_CATEGORY,
   ERROR_COULD_NOT_DELETE_CATEGORY,
+  ERROR_COULD_NOT_MERGE_CATEGORY,
   type Category,
 } from "@/lib";
 
 export const useCategoryManager = () => {
-  const { categories, products, addCategory, renameCategory, removeCategory } =
+  const { categories, products, addCategory, renameCategory, removeCategory, mergeCategory } =
     useStoreData();
   const [newName, setNewName] = useState("");
   const [adding, setAdding] = useState(false);
@@ -16,6 +17,8 @@ export const useCategoryManager = () => {
   const [editName, setEditName] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<Category | null>(null);
+  const [mergeIntoId, setMergeIntoId] = useState("");
 
   function usageCount(categoryId: string) {
     return products.filter((p) => p.categoryId === categoryId).length;
@@ -59,14 +62,40 @@ export const useCategoryManager = () => {
     }
   }
 
-  async function handleDelete(id: string) {
+  function requestDelete(category: Category) {
+    setError(null);
+    const otherCategories = categories.filter((c) => c.id !== category.id);
+    setMergeIntoId(otherCategories[0]?.id ?? "");
+    setConfirmTarget(category);
+  }
+
+  function cancelDelete() {
+    setConfirmTarget(null);
+    setMergeIntoId("");
+  }
+
+  async function confirmDelete() {
+    if (!confirmTarget) return;
+    const id = confirmTarget.id;
+    const count = usageCount(id);
     setBusyId(id);
     setError(null);
     try {
-      await removeCategory(id);
+      if (count > 0) {
+        if (!mergeIntoId) return;
+        await mergeCategory(id, mergeIntoId);
+      } else {
+        await removeCategory(id);
+      }
+      setConfirmTarget(null);
+      setMergeIntoId("");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : ERROR_COULD_NOT_DELETE_CATEGORY,
+        err instanceof Error
+          ? err.message
+          : count > 0
+            ? ERROR_COULD_NOT_MERGE_CATEGORY
+            : ERROR_COULD_NOT_DELETE_CATEGORY,
       );
     } finally {
       setBusyId(null);
@@ -96,6 +125,11 @@ export const useCategoryManager = () => {
     handleAdd,
     startEdit,
     handleRename,
-    handleDelete,
+    confirmTarget,
+    mergeIntoId,
+    setMergeIntoId,
+    requestDelete,
+    cancelDelete,
+    confirmDelete,
   };
 };

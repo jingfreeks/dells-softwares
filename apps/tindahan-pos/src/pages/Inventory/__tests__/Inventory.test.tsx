@@ -236,7 +236,6 @@ describe("Inventory", () => {
 
   it("warns about a duplicate barcode and can switch to the existing product", async () => {
     const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     vi.mocked(useFeatureFlag).mockReturnValue(true);
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, categories }));
     renderPage();
@@ -245,26 +244,8 @@ describe("Inventory", () => {
     await user.type(screen.getByLabelText(/Barcode/), "111");
 
     expect(await screen.findByText(/already used by/)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Open existing product" }));
-    expect(confirmSpy).toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Open it" }));
     expect(screen.getByText("Edit product")).toBeInTheDocument();
-    confirmSpy.mockRestore();
-  });
-
-  it("does not switch when the duplicate-barcode confirm is declined", async () => {
-    const user = userEvent.setup();
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
-    vi.mocked(useFeatureFlag).mockReturnValue(true);
-    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, categories }));
-    renderPage();
-
-    await user.click(screen.getByRole("button", { name: "Add product" }));
-    await user.type(screen.getByLabelText(/Barcode/), "111");
-    await screen.findByText(/already used by/);
-    await user.click(screen.getByRole("button", { name: "Open existing product" }));
-
-    expect(screen.getByText("Add product", { selector: "h2" })).toBeInTheDocument();
-    confirmSpy.mockRestore();
   });
 
   it("adds an inline category from the product form", async () => {

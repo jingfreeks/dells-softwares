@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useStoreData } from "@/lib";
 import { makeProduct, makeStoreDataValue } from "../../../test/testUtils";
@@ -19,8 +19,8 @@ describe("CategoryManager", () => {
     );
     render(<CategoryManager onClose={vi.fn()} />);
     expect(screen.getByText("Canned goods")).toBeInTheDocument();
-    expect(screen.getByText("1 product")).toBeInTheDocument();
-    expect(screen.getByText("0 products")).toBeInTheDocument();
+    expect(screen.getByText("1 product(s)")).toBeInTheDocument();
+    expect(screen.getByText("0 product(s)")).toBeInTheDocument();
   });
 
   it("calls onClose when Close is clicked", async () => {
@@ -89,15 +89,24 @@ describe("CategoryManager", () => {
     render(<CategoryManager onClose={vi.fn()} />);
 
     await user.click(screen.getAllByRole("button", { name: "Delete" })[0]);
+    const dialog = screen.getByRole("dialog", { name: "Delete category?" });
+    expect(within(dialog).getByText("Delete category?")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Delete" }));
     expect(removeCategory).toHaveBeenCalledWith("cat-1");
   });
 
-  it("disables delete for a category still in use", () => {
+  it("offers a merge picker instead of delete for a category still in use", async () => {
+    const user = userEvent.setup();
+    const mergeCategory = vi.fn().mockResolvedValue(undefined);
     vi.mocked(useStoreData).mockReturnValue(
-      makeStoreDataValue({ categories, products: [makeProduct({ categoryId: "cat-1" })] })
+      makeStoreDataValue({ categories, products: [makeProduct({ categoryId: "cat-1" })], mergeCategory })
     );
     render(<CategoryManager onClose={vi.fn()} />);
-    expect(screen.getAllByRole("button", { name: "Delete" })[0]).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "Merge…" }));
+    expect(screen.getByText("Merge category?")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Merge categories" }));
+    expect(mergeCategory).toHaveBeenCalledWith("cat-1", "cat-2");
   });
 
   it("shows an empty state when there are no categories", () => {
@@ -113,6 +122,7 @@ describe("CategoryManager", () => {
     render(<CategoryManager onClose={vi.fn()} />);
 
     await user.click(screen.getAllByRole("button", { name: "Delete" })[0]);
+    await user.click(within(screen.getByRole("dialog", { name: "Delete category?" })).getByRole("button", { name: "Delete" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Still in use");
   });
 
@@ -178,6 +188,7 @@ describe("CategoryManager", () => {
     render(<CategoryManager onClose={vi.fn()} />);
 
     await user.click(screen.getAllByRole("button", { name: "Delete" })[0]);
+    await user.click(within(screen.getByRole("dialog", { name: "Delete category?" })).getByRole("button", { name: "Delete" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not delete category.");
   });
 

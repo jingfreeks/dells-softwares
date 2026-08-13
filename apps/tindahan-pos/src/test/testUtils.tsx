@@ -56,6 +56,7 @@ export function makeProduct(overrides: Partial<Product> = {}): Product {
     packQuantity: null,
     packPrice: null,
     imageUrl: null,
+    cost: null,
     ...overrides,
   };
 }
@@ -183,11 +184,13 @@ function baseStoreDataValue() {
     addCategory: vi.fn().mockResolvedValue({ id: "cat-new", name: "New" }),
     renameCategory: vi.fn().mockResolvedValue(undefined),
     removeCategory: vi.fn().mockResolvedValue(undefined),
+    mergeCategory: vi.fn().mockResolvedValue(undefined),
     receivingHistory: [] as {
       id: string;
       date: string;
       supplier: string;
       supplierId: string | null;
+      drNumber: string | null;
       lines: { productId: string; productName: string; quantity: number; costEach: number }[];
     }[],
     receiveStock: vi.fn().mockResolvedValue(undefined),

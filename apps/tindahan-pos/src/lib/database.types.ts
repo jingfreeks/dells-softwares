@@ -124,6 +124,7 @@ export interface Database {
           pack_quantity: number | null;
           pack_price: number | null;
           image_url: string | null;
+          cost: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -140,6 +141,7 @@ export interface Database {
           pack_quantity?: number | null;
           pack_price?: number | null;
           image_url?: string | null;
+          cost?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -156,6 +158,7 @@ export interface Database {
           pack_quantity?: number | null;
           pack_price?: number | null;
           image_url?: string | null;
+          cost?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -407,6 +410,7 @@ export interface Database {
           store_id: string;
           supplier: string;
           supplier_id: string | null;
+          dr_number: string | null;
           received_on: string;
           created_by: string;
           created_at: string;
@@ -416,6 +420,7 @@ export interface Database {
           store_id: string;
           supplier: string;
           supplier_id?: string | null;
+          dr_number?: string | null;
           received_on: string;
           created_by: string;
           created_at?: string;
@@ -425,6 +430,7 @@ export interface Database {
           store_id?: string;
           supplier?: string;
           supplier_id?: string | null;
+          dr_number?: string | null;
           received_on?: string;
           created_by?: string;
           created_at?: string;

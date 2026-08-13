@@ -26,6 +26,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     packQuantity: null,
     packPrice: null,
     imageUrl: null,
+    cost: null,
     ...overrides,
   };
 }
