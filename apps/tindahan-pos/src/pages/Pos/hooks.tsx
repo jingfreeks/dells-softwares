@@ -12,16 +12,23 @@ import {
   ERROR_COULD_NOT_ADD_CUSTOMER,
   ERROR_COULD_NOT_COMPLETE_SALE,
   ERROR_INVALID_OVERRIDE_PIN,
+  ERROR_COULD_NOT_HOLD_SALE,
+  ERROR_RESUME_BLOCKED_CART_NOT_EMPTY,
   TEXT_CASHIER_SESSION_EXPIRED,
   SERVICE_LABEL_ELOAD,
   SERVICE_LABEL_CASHIN,
   SERVICE_LABEL_CASHOUT,
   SERVICE_LABEL_PRINT,
+  holdSale,
+  listHeldSales,
+  removeHeldSale,
+  heldSaleHasIrreversibleService,
   type CartLine,
   type PaymentType,
   type ServiceLine,
   type Product,
   type SaleRecord,
+  type HeldSale,
 } from "@/lib";
 import {
   addToCart,
@@ -95,6 +102,11 @@ export function usePosPage() {
   const [customItemName, setCustomItemName] = useState("");
   const [customItemPrice, setCustomItemPrice] = useState("");
   const [serviceLines, setServiceLines] = useState<ServiceLine[]>([]);
+  const [heldSales, setHeldSales] = useState<HeldSale[]>([]);
+  const [heldSalesOpen, setHeldSalesOpen] = useState(false);
+  const [holdingSale, setHoldingSale] = useState(false);
+  const [holdError, setHoldError] = useState<string | null>(null);
+  const [resumeError, setResumeError] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<(typeof SERVICE_TYPES)[number]["key"]>(
     SERVICE_TYPES[0].key
   );
@@ -169,6 +181,13 @@ export function usePosPage() {
       selectedCustomerId,
     });
   }, [cart, serviceLines, selectedCustomerId, user]);
+
+  // Held sales are store-wide (any cashier at the store can resume any of
+  // them), so this loads on mount/store-change rather than per-cashier.
+  useEffect(() => {
+    if (!store) return;
+    void listHeldSales(store.id).then(setHeldSales);
+  }, [store]);
 
   const total = useMemo(
     () => cartTotal(cart, packPricingEnabled) + serviceLines.reduce((sum, l) => sum + l.amount + l.fee, 0),
@@ -474,6 +493,78 @@ export function usePosPage() {
     resetSaleState();
   }
 
+  function openHeldSales() {
+    setHeldSalesOpen(true);
+  }
+
+  function closeHeldSales() {
+    setHeldSalesOpen(false);
+  }
+
+  async function holdCurrentSale() {
+    if (cart.length === 0 && serviceLines.length === 0) return;
+    if (!store) return;
+    setHoldingSale(true);
+    setHoldError(null);
+    try {
+      const saved = await holdSale(store.id, {
+        cartLines: cart.map((line) => ({ productId: line.product.id, quantity: line.quantity })),
+        serviceLines,
+        paymentType,
+        tendered,
+        referenceNo,
+        selectedCustomerId,
+        note: null,
+        heldByCashierId: activeCashier?.id ?? null,
+        heldByName: activeCashier?.name ?? user?.name ?? "Cashier",
+      });
+      setHeldSales((prev) => [...prev, saved]);
+      resetSaleState();
+    } catch {
+      // A failed hold must not clear the cart — the customer's order would
+      // otherwise vanish with nothing recorded anywhere.
+      setHoldError(ERROR_COULD_NOT_HOLD_SALE);
+    } finally {
+      setHoldingSale(false);
+    }
+  }
+
+  async function resumeHeldSale(id: string) {
+    if (cart.length > 0 || serviceLines.length > 0) {
+      setResumeError(ERROR_RESUME_BLOCKED_CART_NOT_EMPTY);
+      return;
+    }
+    const held = heldSales.find((h) => h.id === id);
+    if (!held || !store) return;
+
+    const restoredCart = held.cartLines
+      .map((line) => {
+        const product = products.find((p) => p.id === line.productId);
+        return product ? { product, quantity: line.quantity } : null;
+      })
+      .filter((line): line is CartLine => line !== null);
+
+    setCart(restoredCart);
+    setServiceLines(held.serviceLines);
+    setPaymentType(held.paymentType);
+    setTendered(held.tendered);
+    setReferenceNo(held.referenceNo);
+    if (held.selectedCustomerId && customers.some((c) => c.id === held.selectedCustomerId)) {
+      setSelectedCustomerId(held.selectedCustomerId);
+    }
+
+    await removeHeldSale(store.id, id);
+    setHeldSales((prev) => prev.filter((h) => h.id !== id));
+    setHeldSalesOpen(false);
+    setResumeError(null);
+  }
+
+  async function discardHeldSale(id: string) {
+    if (!store) return;
+    await removeHeldSale(store.id, id);
+    setHeldSales((prev) => prev.filter((h) => h.id !== id));
+  }
+
   const effectiveTab: PosTab = posServicesEnabled ? activeTab : "products";
 
   function focusProductInput() {
@@ -518,6 +609,7 @@ export function usePosPage() {
     productInputRef,
     total,
     categories,
+    products,
     visibleProducts,
     cartQuantityByProductId,
     priceLabel,
@@ -542,6 +634,17 @@ export function usePosPage() {
     quickCashAmounts,
     handleCompleteSale,
     handleCancelSale,
+    heldSales,
+    heldSalesOpen,
+    openHeldSales,
+    closeHeldSales,
+    holdCurrentSale,
+    holdingSale,
+    holdError,
+    resumeHeldSale,
+    resumeError,
+    discardHeldSale,
+    heldSaleHasIrreversibleService,
     ownerApprovalOpen,
     overridePin,
     setOverridePin,

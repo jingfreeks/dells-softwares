@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { PAGE_HEADING_POS, TEXT_POS_DESCRIPTION, BUTTON_SWITCH_CASHIER } from "@/lib";
+import { PAGE_HEADING_POS, TEXT_POS_DESCRIPTION, BUTTON_SWITCH_CASHIER, LABEL_HELD_SALES } from "@/lib";
 import { ScannerLoadingOverlay } from "@/components";
 import {
   PosTabs,
@@ -9,6 +9,7 @@ import {
   OwnerApprovalModal,
   CashierLoginScreen,
   ReceiptModal,
+  HeldSalesModal,
 } from "./component";
 import { usePosPage } from "./hooks";
 import "../authTheme.css";
@@ -56,6 +57,7 @@ export function Pos() {
     productInputRef,
     total,
     categories,
+    products,
     visibleProducts,
     cartQuantityByProductId,
     priceLabel,
@@ -80,6 +82,16 @@ export function Pos() {
     quickCashAmounts,
     handleCompleteSale,
     handleCancelSale,
+    heldSales,
+    heldSalesOpen,
+    openHeldSales,
+    closeHeldSales,
+    holdCurrentSale,
+    holdingSale,
+    holdError,
+    resumeHeldSale,
+    resumeError,
+    discardHeldSale,
     ownerApprovalOpen,
     overridePin,
     setOverridePin,
@@ -122,6 +134,9 @@ export function Pos() {
           </div>
           <div className="flex flex-col items-end gap-1">
             <span className="tpl-ts">{activeCashier.name}</span>
+            <button type="button" className="tpl-lnk" onClick={openHeldSales}>
+              {LABEL_HELD_SALES} ({heldSales.length})
+            </button>
             <button type="button" className="tpl-lnk" onClick={switchCashier}>
               {BUTTON_SWITCH_CASHIER}
             </button>
@@ -199,9 +214,12 @@ export function Pos() {
         customerError={customerError}
         lastReceiptTotal={lastReceiptTotal}
         checkoutError={checkoutError}
+        holdError={holdError}
         checkingOut={checkingOut}
+        holdingSale={holdingSale}
         onCancelSale={handleCancelSale}
         onCompleteSale={handleCompleteSale}
+        onHold={holdCurrentSale}
       />
 
       {showScanner && (
@@ -221,6 +239,16 @@ export function Pos() {
         submitting={overrideSubmitting}
         onCancel={closeOwnerApproval}
         onPayCashInstead={payCashInstead}
+      />
+
+      <HeldSalesModal
+        open={heldSalesOpen}
+        heldSales={heldSales}
+        products={products}
+        resumeError={resumeError}
+        onResume={resumeHeldSale}
+        onDiscard={discardHeldSale}
+        onClose={closeHeldSales}
       />
 
       <ReceiptModal

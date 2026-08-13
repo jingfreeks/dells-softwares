@@ -644,6 +644,18 @@ export const BUTTON_CANCEL_SALE = "Cancel sale";
 export const BUTTON_COMPLETE_SALE = "Complete sale";
 export const ERROR_PRODUCT_NOT_FOUND_BARCODE_PREFIX = "Product not found for barcode";
 export const ERROR_COULD_NOT_COMPLETE_SALE = "Could not complete sale.";
+export const BUTTON_HOLD_SALE = "Hold sale";
+export const BUTTON_HOLDING = "Holding…";
+export const LABEL_HELD_SALES = "Held sales";
+export const LABEL_HELD_SALES_EMPTY = "No held sales right now.";
+export const TEXT_HELD_BY = "Held by";
+export const BUTTON_RESUME_SALE = "Resume";
+export const BUTTON_DISCARD_SALE = "Discard";
+export const ERROR_RESUME_BLOCKED_CART_NOT_EMPTY =
+  "Finish, hold, or cancel your current sale before resuming another one.";
+export const ERROR_COULD_NOT_HOLD_SALE = "Could not hold sale. Please try again.";
+export const TEXT_DISCARD_CONFIRM_HAS_SERVICE =
+  "This held sale includes an e-load or cash service that already happened and won't be reversed. Discard anyway?";
 export const SERVICE_LABEL_ELOAD = "E-Load";
 export const SERVICE_LABEL_CASHIN = "Cash-in";
 export const SERVICE_LABEL_CASHOUT = "Cash-out";
