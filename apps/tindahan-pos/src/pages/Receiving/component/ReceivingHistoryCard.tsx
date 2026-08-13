@@ -7,26 +7,30 @@ interface ReceivingHistoryCardProps {
 
 export function ReceivingHistoryCard({ receivingHistory }: ReceivingHistoryCardProps) {
   return (
-    <div className="mt-6 card">
-      <div className="border-b border-slate-200 p-4">
-        <h2 className="text-sm font-semibold text-slate-900">{LABEL_RECENT_RECEIVING_HISTORY}</h2>
-      </div>
-      <ul className="divide-y divide-slate-100">
-        {receivingHistory.map((entry) => (
-          <li key={entry.id} className="px-4 py-3 text-sm text-slate-700">
-            {new Date(entry.date).toLocaleDateString("en-PH", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}{" "}
-            — {entry.supplier} — {entry.lines.length} product
-            {entry.lines.length === 1 ? "" : "s"}, {entry.lines.reduce((s, l) => s + l.quantity, 0)} units
-          </li>
-        ))}
-        {receivingHistory.length === 0 && (
-          <li className="px-4 py-8 text-center text-sm text-slate-400">{EMPTY_STATE_NO_RECEIVING_ENTRIES}</li>
-        )}
-      </ul>
+    <div className="tpl-card" style={{ marginTop: 18 }}>
+      <p className="tpl-h3" style={{ marginBottom: 10 }}>
+        {LABEL_RECENT_RECEIVING_HISTORY}
+      </p>
+      {receivingHistory.map((entry) => (
+        <div key={entry.id} className="tpl-lr">
+          <div className="tpl-flex1">
+            <p className="tpl-sub">
+              {entry.supplier}
+              {entry.drNumber ? ` · ${entry.drNumber}` : ""}
+            </p>
+            <p className="tpl-ts">
+              {new Date(entry.date).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })} ·{" "}
+              {entry.lines.length} product{entry.lines.length === 1 ? "" : "s"},{" "}
+              {entry.lines.reduce((s, l) => s + l.quantity, 0)} units
+            </p>
+          </div>
+        </div>
+      ))}
+      {receivingHistory.length === 0 && (
+        <p className="tpl-ts" style={{ textAlign: "center", padding: "24px 0" }}>
+          {EMPTY_STATE_NO_RECEIVING_ENTRIES}
+        </p>
+      )}
     </div>
   );
 }

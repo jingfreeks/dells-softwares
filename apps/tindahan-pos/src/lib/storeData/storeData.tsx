@@ -28,6 +28,7 @@ function mapProductRow(row: {
   pack_quantity: number | null;
   pack_price: number | null;
   image_url: string | null;
+  cost: number | null;
   categories: { name: string } | { name: string }[] | null;
 }): Product {
   const cat = Array.isArray(row.categories) ? row.categories[0] : row.categories;
@@ -43,6 +44,7 @@ function mapProductRow(row: {
     packQuantity: row.pack_quantity,
     packPrice: row.pack_price,
     imageUrl: row.image_url,
+    cost: row.cost,
   };
 }
 
@@ -118,7 +120,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     const { data, error: err } = await supabase
       .from("products")
       .select(
-        "id, barcode, name, price, stock, low_stock_threshold, category_id, pack_quantity, pack_price, image_url, categories(name)"
+        "id, barcode, name, price, stock, low_stock_threshold, category_id, pack_quantity, pack_price, image_url, cost, categories(name)"
       )
       .order("name");
     if (err) throw err;
@@ -206,7 +208,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     const { data, error: err } = await supabase
       .from("receiving_entries")
       .select(
-        "id, supplier, supplier_id, received_on, receiving_lines(product_id, product_name, quantity, cost_each)"
+        "id, supplier, supplier_id, dr_number, received_on, receiving_lines(product_id, product_name, quantity, cost_each)"
       )
       .order("received_on", { ascending: false })
       .limit(50);
@@ -217,6 +219,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         date: row.received_on,
         supplier: row.supplier,
         supplierId: row.supplier_id,
+        drNumber: row.dr_number,
         lines: (row.receiving_lines ?? []).map((line) => ({
           productId: line.product_id ?? "",
           productName: line.product_name,
@@ -300,8 +303,9 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         pack_quantity: product.packQuantity,
         pack_price: product.packPrice,
         image_url: product.imageUrl,
+        cost: product.cost,
       })
-      .select("id, barcode, name, price, stock, low_stock_threshold, category_id, pack_quantity, pack_price, image_url, categories(name)")
+      .select("id, barcode, name, price, stock, low_stock_threshold, category_id, pack_quantity, pack_price, image_url, cost, categories(name)")
       .single();
     if (err) throw friendlyProductError(err);
     await fetchProducts();
@@ -323,6 +327,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         ...(patch.packQuantity !== undefined && { pack_quantity: patch.packQuantity }),
         ...(patch.packPrice !== undefined && { pack_price: patch.packPrice }),
         ...(patch.imageUrl !== undefined && { image_url: patch.imageUrl }),
+        ...(patch.cost !== undefined && { cost: patch.cost }),
       })
       .eq("id", id);
     if (err) throw friendlyProductError(err);
@@ -539,11 +544,26 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     await fetchCategories();
   }
 
+  async function mergeCategory(fromId: string, toId: string) {
+    const { error: reassignErr } = await supabase
+      .from("products")
+      .update({ category_id: toId })
+      .eq("category_id", fromId);
+    if (reassignErr) throw reassignErr;
+    // fromId is guaranteed empty now, so the FK-violation guard in
+    // removeCategory can't fire — but still route through it rather than
+    // duplicating the delete call, in case a policy rejects it for another
+    // reason.
+    await removeCategory(fromId);
+    await fetchProducts();
+  }
+
   async function receiveStock(
     supplier: string,
     date: string,
     lines: ReceivingLine[],
-    supplierId: string | null = null
+    supplierId: string | null = null,
+    drNumber: string | null = null
   ) {
     if (!user) throw new Error("Not signed in.");
     const storeId = user.storeId;
@@ -558,6 +578,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         store_id: storeId,
         supplier: supplier.trim() || "Unspecified supplier",
         supplier_id: supplierId,
+        dr_number: drNumber?.trim() || null,
         received_on: date,
         created_by: user.id,
       })
@@ -713,6 +734,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         addCategory,
         renameCategory,
         removeCategory,
+        mergeCategory,
         receivingHistory,
         receiveStock,
         addCustomer,

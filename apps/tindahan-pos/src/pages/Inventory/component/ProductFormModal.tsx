@@ -1,17 +1,16 @@
 import type { ChangeEvent, FormEvent } from "react";
+import { PESO } from "@/lib";
 import type { Category, Product } from "@/lib";
 import {
   selectOnFocus,
+  ARIA_CLOSE_MODAL,
   LABEL_EDIT_PRODUCT,
   BUTTON_ADD_PRODUCT,
   LABEL_NAME,
   LABEL_BARCODE_OPTIONAL,
   ARIA_SCAN_WITH_CAMERA,
   TEXT_BARCODE_USED_BY_PREFIX,
-  LINK_OPEN_EXISTING_PRODUCT,
-  TEXT_INSTEAD_SUFFIX,
-  TEXT_SWITCH_TO_EDITING_PREFIX,
-  TEXT_SWITCH_TO_EDITING_SUFFIX,
+  LINK_OPEN_IT,
   LABEL_CATEGORY,
   PLACEHOLDER_NEW_CATEGORY_NAME,
   BUTTON_ADD,
@@ -20,10 +19,11 @@ import {
   LABEL_NEW_CATEGORY_OPTION,
   TABLE_HEADER_STOCK,
   LABEL_LOW_STOCK_AT,
+  LABEL_COST_OPTIONAL,
+  HINT_LEAVE_COST_BLANK,
   BUTTON_SAVING,
   BUTTON_SAVE_CHANGES,
 } from "@/lib";
-import { CameraIcon } from "@/components";
 import { ProductPhotoField } from "./ProductPhotoField";
 import { ProductPricingFields } from "./ProductPricingFields";
 import { NEW_CATEGORY_VALUE } from "../hooks";
@@ -38,6 +38,7 @@ export interface ProductFormValues {
   packEnabled: boolean;
   packQuantity: string;
   packPrice: string;
+  cost: string;
 }
 
 interface ProductFormModalProps {
@@ -47,6 +48,7 @@ interface ProductFormModalProps {
   categories: Category[];
   packPricingEnabled: boolean;
   packPreview: number | null;
+  costMarginPreview: { amount: number; percent: number } | null;
   duplicateProduct: Product | null;
   addingCategory: boolean;
   newCategoryName: string;
@@ -70,6 +72,56 @@ interface ProductFormModalProps {
   onSubmit: (e: FormEvent) => void;
 }
 
+function Stepper({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const numeric = Number(value) || 0;
+  return (
+    <div>
+      <label htmlFor={id} className="tpl-lbl">
+        {label}
+      </label>
+      <div className="tpl-sp" style={{ gap: 6 }}>
+        <button
+          type="button"
+          className="tpl-btn"
+          style={{ width: 30, height: 30, padding: 0, marginBottom: 0 }}
+          onClick={() => onChange(String(Math.max(0, numeric - 1)))}
+        >
+          −
+        </button>
+        <div className="tpl-fld" style={{ flex: 1 }}>
+          <input
+            id={id}
+            type="number"
+            min="0"
+            value={value}
+            onFocus={selectOnFocus}
+            onChange={(e) => onChange(e.target.value)}
+            style={{ textAlign: "center" }}
+          />
+        </div>
+        <button
+          type="button"
+          className="tpl-btn"
+          style={{ width: 30, height: 30, padding: 0, marginBottom: 0 }}
+          onClick={() => onChange(String(numeric + 1))}
+        >
+          <i className="ti ti-plus" aria-hidden />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ProductFormModal({
   editingId,
   form,
@@ -77,6 +129,7 @@ export function ProductFormModal({
   categories,
   packPricingEnabled,
   packPreview,
+  costMarginPreview,
   duplicateProduct,
   addingCategory,
   newCategoryName,
@@ -100,12 +153,29 @@ export function ProductFormModal({
   onSubmit,
 }: ProductFormModalProps) {
   return (
-    <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h2 className="text-base font-semibold text-slate-900">
-          {editingId ? LABEL_EDIT_PRODUCT : BUTTON_ADD_PRODUCT}
-        </h2>
-        <form className="mt-4 flex flex-col gap-3" onSubmit={onSubmit} noValidate>
+    <div className="tpl-modal-overlay" onClick={onCancel}>
+      <div
+        className="tpl-modal-panel tpl-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="productFormHeading"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="tpl-sp" style={{ marginBottom: 18, alignItems: "flex-start" }}>
+          <p id="productFormHeading" className="tpl-h3">
+            {editingId ? LABEL_EDIT_PRODUCT : BUTTON_ADD_PRODUCT}
+          </p>
+          <button
+            type="button"
+            onClick={onCancel}
+            aria-label={ARIA_CLOSE_MODAL}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--tpl-t7)", fontSize: 18, padding: 4 }}
+          >
+            <i className="ti ti-x" aria-hidden />
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit} noValidate>
           <ProductPhotoField
             imagePreview={imagePreview}
             existingImageUrl={existingImageUrl}
@@ -116,69 +186,71 @@ export function ProductFormModal({
             onRemoveImage={onRemoveImage}
           />
 
-          <div>
-            <label htmlFor="pname" className="text-xs font-medium text-slate-700">
-              {LABEL_NAME}
-            </label>
+          <label htmlFor="pname" className="tpl-lbl">
+            {LABEL_NAME}
+          </label>
+          <div className="tpl-fld" style={{ marginBottom: 14 }}>
             <input
               id="pname"
               type="text"
               value={form.name}
               onChange={(e) => onFormChange({ ...form, name: e.target.value })}
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
             />
           </div>
 
-          <div>
-            <label htmlFor="pbarcode" className="text-xs font-medium text-slate-700">
-              {LABEL_BARCODE_OPTIONAL}
-            </label>
-            <div className="mt-1 flex gap-2">
+          <label htmlFor="pbarcode" className="tpl-lbl">
+            {LABEL_BARCODE_OPTIONAL}
+          </label>
+          <div className="tpl-sp" style={{ gap: 8, marginBottom: duplicateProduct ? 8 : 14 }}>
+            <div className="tpl-fld" style={{ flex: 1 }}>
               <input
                 id="pbarcode"
                 type="text"
+                className="tpl-mono"
                 value={form.barcode}
                 onChange={(e) => onBarcodeChange(e.target.value)}
-                className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm font-mono focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
               />
-              <button
-                type="button"
-                onClick={onScanBarcode}
-                aria-label={ARIA_SCAN_WITH_CAMERA}
-                className="flex h-[38px] w-10 cursor-pointer items-center justify-center rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100"
-              >
-                <CameraIcon className="h-4 w-4" />
-              </button>
             </div>
-            {duplicateProduct && (
-              <div role="alert" className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                {TEXT_BARCODE_USED_BY_PREFIX} <strong>{duplicateProduct.name}</strong>.{" "}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        `${TEXT_SWITCH_TO_EDITING_PREFIX} "${duplicateProduct.name}"${TEXT_SWITCH_TO_EDITING_SUFFIX}`
-                      )
-                    ) {
-                      onOpenExistingProduct(duplicateProduct);
-                    }
-                  }}
-                  className="cursor-pointer font-semibold underline"
-                >
-                  {LINK_OPEN_EXISTING_PRODUCT}
-                </button>{" "}
-                {TEXT_INSTEAD_SUFFIX}
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={onScanBarcode}
+              aria-label={ARIA_SCAN_WITH_CAMERA}
+              className="tpl-btn"
+              style={{ width: 38, height: 38, padding: 0, marginBottom: 0 }}
+            >
+              <i className="ti ti-camera" aria-hidden />
+            </button>
           </div>
+          {duplicateProduct && (
+            <div className="tpl-note tpl-w" style={{ marginBottom: 14 }}>
+              <i className="ti ti-info-circle tpl-warn" aria-hidden />
+              <div className="tpl-flex1">
+                <p className="tpl-nt tpl-warn">
+                  {TEXT_BARCODE_USED_BY_PREFIX} "{duplicateProduct.name}"
+                </p>
+                <p className="tpl-ns" style={{ color: "var(--tpl-warnd)" }}>
+                  {duplicateProduct.category} · {PESO.format(duplicateProduct.price)} · {duplicateProduct.stock}
+                </p>
+              </div>
+              <span
+                role="button"
+                tabIndex={0}
+                className="tpl-chip tpl-on"
+                style={{ alignSelf: "center", cursor: "pointer" }}
+                onClick={() => onOpenExistingProduct(duplicateProduct)}
+                onKeyDown={(e) => e.key === "Enter" && onOpenExistingProduct(duplicateProduct)}
+              >
+                {LINK_OPEN_IT}
+              </span>
+            </div>
+          )}
 
-          <div>
-            <label htmlFor="pcategory" className="text-xs font-medium text-slate-700">
-              {LABEL_CATEGORY}
-            </label>
-            {addingCategory ? (
-              <div className="mt-1 flex gap-2">
+          <label htmlFor="pcategory" className="tpl-lbl">
+            {LABEL_CATEGORY}
+          </label>
+          {addingCategory ? (
+            <div className="tpl-sp" style={{ gap: 8, marginBottom: 14 }}>
+              <div className="tpl-fld" style={{ flex: 1 }}>
                 <input
                   type="text"
                   autoFocus
@@ -186,30 +258,28 @@ export function ProductFormModal({
                   value={newCategoryName}
                   onChange={(e) => onNewCategoryNameChange(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), onCreateCategory())}
-                  className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
                 />
-                <button
-                  type="button"
-                  onClick={onCreateCategory}
-                  className="cursor-pointer rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
-                >
-                  {BUTTON_ADD}
-                </button>
-                <button
-                  type="button"
-                  onClick={onCancelAddingCategory}
-                  className="cursor-pointer rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
-                >
-                  {BUTTON_CANCEL}
-                </button>
               </div>
-            ) : (
-              <select
-                id="pcategory"
-                value={form.categoryId}
-                onChange={(e) => onCategorySelect(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+              <button
+                type="button"
+                onClick={onCreateCategory}
+                className="tpl-btnp"
+                style={{ width: "auto", height: 40, padding: "0 14px", marginBottom: 0 }}
               >
+                {BUTTON_ADD}
+              </button>
+              <button
+                type="button"
+                onClick={onCancelAddingCategory}
+                className="tpl-btn"
+                style={{ width: "auto", height: 40, padding: "0 14px", marginBottom: 0 }}
+              >
+                {BUTTON_CANCEL}
+              </button>
+            </div>
+          ) : (
+            <div className="tpl-fld" style={{ marginBottom: 14 }}>
+              <select id="pcategory" value={form.categoryId} onChange={(e) => onCategorySelect(e.target.value)}>
                 <option value="" disabled>
                   {LABEL_CHOOSE_CATEGORY}
                 </option>
@@ -220,8 +290,8 @@ export function ProductFormModal({
                 ))}
                 <option value={NEW_CATEGORY_VALUE}>{LABEL_NEW_CATEGORY_OPTION}</option>
               </select>
-            )}
-          </div>
+            </div>
+          )}
 
           <ProductPricingFields
             packPricingEnabled={packPricingEnabled}
@@ -236,55 +306,78 @@ export function ProductFormModal({
             onPriceChange={(value) => onFormChange({ ...form, price: value })}
           />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="tpl-g2" style={{ marginBottom: 6 }}>
             <div>
-              <label htmlFor="pstock" className="text-xs font-medium text-slate-700">
-                {TABLE_HEADER_STOCK}
+              <label htmlFor="pcost" className="tpl-lbl">
+                {LABEL_COST_OPTIONAL}
               </label>
-              <input
-                id="pstock"
-                type="number"
-                min="0"
-                value={form.stock}
-                onFocus={selectOnFocus}
-                onChange={(e) => onFormChange({ ...form, stock: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-              />
+              <div className="tpl-fld">
+                <input
+                  id="pcost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.cost}
+                  onFocus={selectOnFocus}
+                  onChange={(e) => onFormChange({ ...form, cost: e.target.value })}
+                />
+              </div>
             </div>
             <div>
-              <label htmlFor="pthreshold" className="text-xs font-medium text-slate-700">
-                {LABEL_LOW_STOCK_AT}
-              </label>
-              <input
-                id="pthreshold"
-                type="number"
-                min="0"
-                value={form.lowStockThreshold}
-                onFocus={selectOnFocus}
-                onChange={(e) => onFormChange({ ...form, lowStockThreshold: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-              />
+              <span className="tpl-lbl">&nbsp;</span>
+              <div
+                className="tpl-fld"
+                style={costMarginPreview ? { color: costMarginPreview.amount >= 0 ? "var(--tpl-ok)" : "var(--tpl-bad)" } : undefined}
+              >
+                <input
+                  type="text"
+                  readOnly
+                  tabIndex={-1}
+                  value={
+                    costMarginPreview
+                      ? `+${PESO.format(costMarginPreview.amount)} · ${costMarginPreview.percent}%`
+                      : "—"
+                  }
+                  style={{ color: "inherit" }}
+                />
+              </div>
             </div>
+          </div>
+          <p className="tpl-hint" style={{ marginBottom: 14 }}>
+            {HINT_LEAVE_COST_BLANK}
+          </p>
+
+          <div className="tpl-g2">
+            <Stepper
+              id="pstock"
+              label={TABLE_HEADER_STOCK}
+              value={form.stock}
+              onChange={(value) => onFormChange({ ...form, stock: value })}
+            />
+            <Stepper
+              id="pthreshold"
+              label={LABEL_LOW_STOCK_AT}
+              value={form.lowStockThreshold}
+              onChange={(value) => onFormChange({ ...form, lowStockThreshold: value })}
+            />
           </div>
 
           {formError && (
-            <p role="alert" className="text-sm text-red-600">
+            <p role="alert" className="tpl-emsg" style={{ marginTop: 12 }}>
+              <i className="ti ti-alert-circle" aria-hidden />
               {formError}
             </p>
           )}
 
-          <div className="mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="cursor-pointer rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
+          <div className="tpl-row" style={{ marginTop: 18 }}>
+            <button type="button" onClick={onCancel} className="tpl-btn" style={{ flex: 1, marginBottom: 0 }}>
               {BUTTON_CANCEL}
             </button>
             <button
               type="submit"
               disabled={submitting || processingImage || !!duplicateProduct}
-              className="cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="tpl-btnp"
+              style={{ flex: 2, marginBottom: 0 }}
             >
               {submitting ? BUTTON_SAVING : editingId ? BUTTON_SAVE_CHANGES : BUTTON_ADD_PRODUCT}
             </button>

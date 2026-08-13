@@ -24,20 +24,39 @@ export function ProductPhotoField({
   const hasImage = imagePreview || (existingImageUrl && !removeImage);
 
   return (
-    <div>
-      <span className="text-xs font-medium text-slate-700">{LABEL_PHOTO}</span>
-      <div className="mt-1 flex items-center gap-3">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+    <div style={{ marginBottom: 14 }}>
+      <span className="tpl-lbl">{LABEL_PHOTO}</span>
+      <div className="tpl-sp" style={{ justifyContent: "flex-start", gap: 12, marginTop: 6 }}>
+        <div
+          style={{
+            width: 64,
+            height: 64,
+            flexShrink: 0,
+            borderRadius: 12,
+            border: "1px solid var(--tpl-bd)",
+            background: "var(--tpl-gl3)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+            color: "var(--tpl-t7)",
+          }}
+        >
           {hasImage ? (
-            <img src={imagePreview ?? existingImageUrl ?? undefined} alt="" className="h-full w-full object-cover" />
+            <img
+              src={imagePreview ?? existingImageUrl ?? undefined}
+              alt=""
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
           ) : (
-            <ImagePlaceholderIcon className="h-6 w-6 text-slate-300" />
+            <ImagePlaceholderIcon className="h-6 w-6" />
           )}
         </div>
-        <div className="flex flex-col gap-1">
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <label
             htmlFor="pimage"
-            className="cursor-pointer rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            className="tpl-btn"
+            style={{ cursor: "pointer", marginBottom: 0, width: "auto", height: 34, padding: "0 12px", fontSize: 12 }}
           >
             {processingImage ? BUTTON_PROCESSING : BUTTON_CHOOSE_PHOTO}
           </label>
@@ -53,7 +72,8 @@ export function ProductPhotoField({
             <button
               type="button"
               onClick={onRemoveImage}
-              className="cursor-pointer text-left text-xs text-red-600 hover:underline"
+              className="tpl-lnk"
+              style={{ background: "none", border: "none", cursor: "pointer", textAlign: "left", color: "var(--tpl-bad)" }}
             >
               {BUTTON_REMOVE_PHOTO}
             </button>
@@ -61,7 +81,8 @@ export function ProductPhotoField({
         </div>
       </div>
       {imageError && (
-        <p role="alert" className="mt-1 text-xs text-red-600">
+        <p role="alert" className="tpl-emsg">
+          <i className="ti ti-alert-circle" aria-hidden />
           {imageError}
         </p>
       )}

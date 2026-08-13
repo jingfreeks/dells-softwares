@@ -427,6 +427,22 @@ export const ERROR_NO_PRODUCT_FOR_BARCODE_PREFIX = "No product found for barcode
 export const ERROR_QUANTITY_AT_LEAST_ONE_SUFFIX = "needs a quantity of at least 1.";
 export const TEXT_SAVED_RECEIVING_PREFIX = "Saved —";
 export const ERROR_COULD_NOT_SAVE_RECEIVING_ENTRY = "Could not save receiving entry.";
+export const LABEL_DR_NUMBER_OPTIONAL = "DR number (optional)";
+export const PLACEHOLDER_DR_NUMBER = "e.g. DR-10234";
+export const TEXT_WAS_PREFIX = "was";
+export const TEXT_SAME_AS_LAST_DELIVERY = "same as last delivery";
+export const CHIP_COST_UP = "cost up";
+export const CHIP_COST_DOWN = "cost down";
+export const CHIP_NO_CHANGE = "no change";
+export const TITLE_COST_PRICES_CHANGED = "Cost prices changed";
+export const TITLE_COST_PRICE_CHANGED = "A cost price changed";
+export const BUTTON_RAISE_SELLING_PRICE = "Raise selling price";
+export const BUTTON_KEEP_PRICE_PREFIX = "Keep ₱";
+export const TEXT_LOW_OR_OUT_SUFFIX = "products are low or out right now";
+export const TEXT_PRODUCT_LOW_OR_OUT_SUFFIX = "product is low or out right now";
+export const TEXT_ADD_ALL_SUGGESTED_HINT = "Add them all with the suggested quantities instead of searching one by one.";
+export const BUTTON_ADD_ALL_PREFIX = "Add all";
+export const ERROR_COULD_NOT_UPDATE_PRICE = "Could not update the selling price.";
 
 // Onboarding page
 export const LABEL_YOUR_ADDRESS_OPTIONAL = "Your address (optional)";
@@ -741,6 +757,12 @@ export const LABEL_PACK_PRICE = "Pack price (₱)";
 export const TEXT_PACK_PREVIEW_PREFIX = "≈";
 export const TEXT_PER_PC_SUFFIX = "per pc";
 export const LABEL_LOW_STOCK_AT = "Low-stock at";
+export const LABEL_COST_OPTIONAL = "Cost (optional)";
+export const HINT_LEAVE_COST_BLANK =
+  "Leave cost blank if you don't track it — you'll just see no margin for this item.";
+export const LABEL_MARGIN = "Margin";
+export const LINK_OPEN_IT = "Open it";
+export const ERROR_COST_INVALID = "Cost must be a valid number.";
 export const ERROR_COULD_NOT_ADD_CATEGORY = "Could not add category.";
 export const ERROR_PRODUCT_NAME_REQUIRED = "Product name is required.";
 export const ERROR_STOCK_INVALID = "Stock must be a valid number.";
@@ -787,9 +809,19 @@ export const LABEL_MANAGE_CATEGORIES = "Manage categories";
 export const BUTTON_CLOSE = "Close";
 export const ERROR_COULD_NOT_RENAME_CATEGORY = "Could not rename category.";
 export const ERROR_COULD_NOT_DELETE_CATEGORY = "Could not delete category.";
+export const ERROR_COULD_NOT_MERGE_CATEGORY = "Could not merge category.";
 export const BUTTON_RENAME = "Rename";
 export const TITLE_REASSIGN_PRODUCTS_FIRST = "Reassign or remove its products first";
 export const EMPTY_STATE_NO_CATEGORIES = "No categories yet.";
+export const BUTTON_MERGE = "Merge…";
+export const LABEL_MERGE_INTO = "Merge into";
+export const TITLE_MERGE_CATEGORY = "Merge category?";
+export const TEXT_MERGE_CATEGORY_CONFIRM_PREFIX = "All";
+export const TEXT_MERGE_CATEGORY_CONFIRM_SUFFIX = "products will be moved and nothing is lost.";
+export const TITLE_DELETE_CATEGORY = "Delete category?";
+export const TEXT_DELETE_CATEGORY_CONFIRM = "This can't be undone.";
+export const BUTTON_CONFIRM_MERGE = "Merge categories";
+export const TEXT_PRODUCT_COUNT_SUFFIX = "product(s)";
 
 // ScannerLoadingOverlay
 export const TEXT_LOADING_CAMERA = "Loading camera…";

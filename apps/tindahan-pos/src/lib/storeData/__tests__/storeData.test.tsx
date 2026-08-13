@@ -433,6 +433,7 @@ describe("StoreDataProvider", () => {
       packQuantity: null,
       packPrice: null,
       imageUrl: null,
+      cost: null,
     });
     expect(created.id).toBe("p-new");
     expect(mockedSupabase.from).toHaveBeenCalledWith("products");
@@ -463,6 +464,7 @@ describe("StoreDataProvider", () => {
         packQuantity: null,
         packPrice: null,
         imageUrl: null,
+        cost: null,
       })
     ).rejects.toThrow("That barcode is already used by another product.");
   });
@@ -548,7 +550,7 @@ describe("StoreDataProvider", () => {
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
 
-    const product = { id: "p1", barcode: null, name: "Sardines", price: 25, stock: 20, lowStockThreshold: 5, categoryId: "cat1", category: "Canned", packQuantity: null, packPrice: null, imageUrl: null };
+    const product = { id: "p1", barcode: null, name: "Sardines", price: 25, stock: 20, lowStockThreshold: 5, categoryId: "cat1", category: "Canned", packQuantity: null, packPrice: null, imageUrl: null, cost: null };
     const sale = await captured!.checkout([{ product, quantity: 2 }], [], "Aling Nena");
     expect(sale.total).toBe(50);
     expect(sale.paymentType).toBe("cash");

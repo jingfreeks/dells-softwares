@@ -1,7 +1,4 @@
-import {
-  PLACEHOLDER_NEW_CATEGORY_NAME,
-  BUTTON_ADD,
-} from "@/lib";
+import { PLACEHOLDER_NEW_CATEGORY_NAME, BUTTON_ADD } from "@/lib";
 
 const Inputinfoscreen = (props: {
   newName: string;
@@ -11,20 +8,22 @@ const Inputinfoscreen = (props: {
 }) => {
   const { newName, setNewName, handleAdd, adding } = props;
   return (
-    <div className="mt-4 flex gap-2">
-      <input
-        type="text"
-        placeholder={PLACEHOLDER_NEW_CATEGORY_NAME}
-        value={newName}
-        onChange={(e) => setNewName(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-        className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-      />
+    <div className="tpl-sp" style={{ gap: 8, marginBottom: 14 }}>
+      <div className="tpl-fld" style={{ flex: 1 }}>
+        <input
+          type="text"
+          placeholder={PLACEHOLDER_NEW_CATEGORY_NAME}
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+        />
+      </div>
       <button
         type="button"
         onClick={handleAdd}
         disabled={!newName.trim() || adding}
-        className="cursor-pointer rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+        className="tpl-btnp"
+        style={{ width: "auto", height: 40, padding: "0 16px", marginBottom: 0 }}
       >
         {BUTTON_ADD}
       </button>

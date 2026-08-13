@@ -64,6 +64,8 @@ export interface Product {
   packQuantity: number | null;
   packPrice: number | null;
   imageUrl: string | null;
+  /** Optional cost estimate entered at add-time, for the Add Product margin preview only — never used for margin reporting elsewhere (see productAverageCost). */
+  cost: number | null;
 }
 
 export interface CartLine {

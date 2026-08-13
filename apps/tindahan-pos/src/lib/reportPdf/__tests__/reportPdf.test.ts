@@ -9,8 +9,8 @@ const baseReport: DailyReport = {
   salesChangePercent: 12,
   utangOutstanding: 1240,
   lowStock: [
-    { id: "p1", barcode: null, name: "Sardines", price: 25, stock: 2, lowStockThreshold: 5, categoryId: "c1", category: "Canned", packQuantity: null, packPrice: null, imageUrl: null },
-    { id: "p2", barcode: null, name: "Bread", price: 10, stock: 0, lowStockThreshold: 5, categoryId: "c1", category: "Baked", packQuantity: null, packPrice: null, imageUrl: null },
+    { id: "p1", barcode: null, name: "Sardines", price: 25, stock: 2, lowStockThreshold: 5, categoryId: "c1", category: "Canned", packQuantity: null, packPrice: null, imageUrl: null, cost: null },
+    { id: "p2", barcode: null, name: "Bread", price: 10, stock: 0, lowStockThreshold: 5, categoryId: "c1", category: "Baked", packQuantity: null, packPrice: null, imageUrl: null, cost: null },
   ],
   bestSellers: [{ name: "Sardines", quantity: 10 }],
   recentSales: [

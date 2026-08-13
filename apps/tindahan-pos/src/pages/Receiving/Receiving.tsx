@@ -9,6 +9,8 @@ import {
   ReceivingErrorMessage,
   ReceivingSavedMessage,
   ReceivingHistoryCard,
+  ReceivingCostChangeNote,
+  ReceivingLowStockNote,
 } from "./component";
 import { useReceivingPage } from "./hooks";
 
@@ -23,6 +25,8 @@ export function Receiving() {
     receivingHistory,
     supplier,
     supplierId,
+    drNumber,
+    setDrNumber,
     date,
     setDate,
     lines,
@@ -41,21 +45,29 @@ export function Receiving() {
     updateLine,
     removeLine,
     handleSave,
+    previousCostFor,
+    lowStockSuggestions,
+    addAllLowStock,
+    raisePriceToProduct,
   } = useReceivingPage();
 
   return (
-    <div className="p-6">
+    <div className="tpl-root p-6">
       <ReceivingPageHeader />
 
-      <div className="mt-6 card p-4">
+      <ReceivingLowStockNote suggestions={lowStockSuggestions} onAddAll={addAllLowStock} />
+
+      <div className="tpl-card">
         <SupplierAndDateFields
           suppliers={suppliers}
           supplier={supplier}
           supplierId={supplierId}
+          drNumber={drNumber}
           date={date}
           onSupplierNameChange={handleSupplierNameChange}
           onSupplierPick={handleSupplierPick}
           onScanSupplier={() => setScanMode("supplier")}
+          onDrNumberChange={setDrNumber}
           onDateChange={setDate}
         />
 
@@ -69,7 +81,20 @@ export function Receiving() {
 
         <ReceivingErrorMessage error={error} />
 
-        <ReceivingLinesTable products={products} lines={lines} onUpdateLine={updateLine} onRemoveLine={removeLine} />
+        <ReceivingLinesTable
+          products={products}
+          lines={lines}
+          previousCostFor={previousCostFor}
+          onUpdateLine={updateLine}
+          onRemoveLine={removeLine}
+        />
+
+        <ReceivingCostChangeNote
+          products={products}
+          lines={lines}
+          previousCostFor={previousCostFor}
+          onRaisePrice={raisePriceToProduct}
+        />
 
         <ReceivingSavedMessage message={savedMessage} />
 
@@ -77,7 +102,8 @@ export function Receiving() {
           type="button"
           onClick={handleSave}
           disabled={lines.length === 0 || saving}
-          className="mt-4 cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-40"
+          className="tpl-btnp"
+          style={{ width: "auto", height: 40, padding: "0 18px", marginTop: 14, marginBottom: 0 }}
         >
           {saving ? BUTTON_SAVING : BUTTON_SAVE_RECEIVING_ENTRY}
         </button>

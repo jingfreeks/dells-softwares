@@ -19,6 +19,8 @@ export interface ReceivingEntry {
   date: string;
   supplier: string;
   supplierId: string | null;
+  /** Optional delivery-receipt/reference number the supplier gave, e.g. a DR slip. */
+  drNumber: string | null;
   lines: ReceivingLine[];
 }
 
@@ -56,12 +58,15 @@ export interface StoreDataContextValue {
   addCategory: (name: string) => Promise<Category>;
   renameCategory: (id: string, name: string) => Promise<void>;
   removeCategory: (id: string) => Promise<void>;
+  /** Moves every product in `fromId` into `toId`, then deletes the now-empty `fromId` category. */
+  mergeCategory: (fromId: string, toId: string) => Promise<void>;
   receivingHistory: ReceivingEntry[];
   receiveStock: (
     supplier: string,
     date: string,
     lines: ReceivingLine[],
-    supplierId?: string | null
+    supplierId?: string | null,
+    drNumber?: string | null
   ) => Promise<void>;
   addCustomer: (name: string, phone?: string | null, creditLimit?: number | null) => Promise<Customer>;
   recordCreditPayment: (customerId: string, amount: number, note?: string) => Promise<void>;
