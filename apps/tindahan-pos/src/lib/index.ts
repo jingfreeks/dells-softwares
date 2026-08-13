@@ -6,6 +6,7 @@ export * from "./drawerFloat";
 export * from "./eloadWallet";
 export * from "./dom";
 export * from "./featureFlags";
+export * from "./heldSales";
 export * from "./imageUpload";
 export * from "./inventory";
 export * from "./mockData";
