@@ -124,6 +124,7 @@ export interface Database {
           pack_quantity: number | null;
           pack_price: number | null;
           image_url: string | null;
+          cost: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -140,6 +141,7 @@ export interface Database {
           pack_quantity?: number | null;
           pack_price?: number | null;
           image_url?: string | null;
+          cost?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -156,6 +158,7 @@ export interface Database {
           pack_quantity?: number | null;
           pack_price?: number | null;
           image_url?: string | null;
+          cost?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -315,32 +318,78 @@ export interface Database {
           },
         ];
       };
-      suppliers: {
+      warehouses: {
         Row: {
           id: string;
           store_id: string;
           name: string;
-          phone: string | null;
           address: string | null;
-          scan_code: string;
+          is_default: boolean;
           created_at: string;
         };
         Insert: {
           id?: string;
           store_id: string;
           name: string;
-          phone?: string | null;
           address?: string | null;
-          scan_code?: string;
+          is_default?: boolean;
           created_at?: string;
         };
         Update: {
           id?: string;
           store_id?: string;
           name?: string;
+          address?: string | null;
+          is_default?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "warehouses_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      suppliers: {
+        Row: {
+          id: string;
+          store_id: string;
+          name: string;
+          contact_person: string | null;
+          phone: string | null;
+          address: string | null;
+          scan_code: string;
+          payment_terms: string;
+          active: boolean;
+          usual_delivery_days: number[];
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          name: string;
+          contact_person?: string | null;
           phone?: string | null;
           address?: string | null;
           scan_code?: string;
+          payment_terms?: string;
+          active?: boolean;
+          usual_delivery_days?: number[];
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          name?: string;
+          contact_person?: string | null;
+          phone?: string | null;
+          address?: string | null;
+          scan_code?: string;
+          payment_terms?: string;
+          active?: boolean;
+          usual_delivery_days?: number[];
           created_at?: string;
         };
         Relationships: [
@@ -348,6 +397,34 @@ export interface Database {
             foreignKeyName: "suppliers_store_id_fkey";
             columns: ["store_id"];
             referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      supplier_categories: {
+        Row: {
+          supplier_id: string;
+          category_id: string;
+        };
+        Insert: {
+          supplier_id: string;
+          category_id: string;
+        };
+        Update: {
+          supplier_id?: string;
+          category_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "supplier_categories_supplier_id_fkey";
+            columns: ["supplier_id"];
+            referencedRelation: "suppliers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "supplier_categories_category_id_fkey";
+            columns: ["category_id"];
+            referencedRelation: "categories";
             referencedColumns: ["id"];
           },
         ];
@@ -407,6 +484,10 @@ export interface Database {
           store_id: string;
           supplier: string;
           supplier_id: string | null;
+          warehouse_id: string;
+          dr_number: string | null;
+          paid: boolean;
+          paid_at: string | null;
           received_on: string;
           created_by: string;
           created_at: string;
@@ -416,6 +497,10 @@ export interface Database {
           store_id: string;
           supplier: string;
           supplier_id?: string | null;
+          warehouse_id: string;
+          dr_number?: string | null;
+          paid?: boolean;
+          paid_at?: string | null;
           received_on: string;
           created_by: string;
           created_at?: string;
@@ -425,6 +510,10 @@ export interface Database {
           store_id?: string;
           supplier?: string;
           supplier_id?: string | null;
+          warehouse_id?: string;
+          dr_number?: string | null;
+          paid?: boolean;
+          paid_at?: string | null;
           received_on?: string;
           created_by?: string;
           created_at?: string;
@@ -440,6 +529,12 @@ export interface Database {
             foreignKeyName: "receiving_entries_supplier_id_fkey";
             columns: ["supplier_id"];
             referencedRelation: "suppliers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "receiving_entries_warehouse_id_fkey";
+            columns: ["warehouse_id"];
+            referencedRelation: "warehouses";
             referencedColumns: ["id"];
           },
         ];

@@ -62,7 +62,7 @@ describe("Receiving", () => {
 
     expect(receiveStock).toHaveBeenCalledWith("Unspecified supplier", expect.any(String), [
       { productId: "p1", productName: "Sardines", quantity: 1, costEach: 0 },
-    ], null);
+    ], null, "");
     expect(await screen.findByText(/Saved — 1 product/)).toBeInTheDocument();
   });
 
@@ -267,6 +267,9 @@ describe("Receiving", () => {
             date: "2026-07-20",
             supplier: "Mega Distribution",
             supplierId: "sup1",
+            drNumber: null,
+            paid: true,
+            paidAt: "2026-07-20T10:00:00Z",
             lines: [{ productId: "p1", productName: "Sardines", quantity: 10, costEach: 20 }],
           },
         ],

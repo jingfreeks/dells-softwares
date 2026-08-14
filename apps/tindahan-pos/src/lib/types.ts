@@ -64,6 +64,8 @@ export interface Product {
   packQuantity: number | null;
   packPrice: number | null;
   imageUrl: string | null;
+  /** Optional cost estimate entered at add-time, for the Add Product margin preview only — never used for margin reporting elsewhere (see productAverageCost). */
+  cost: number | null;
 }
 
 export interface CartLine {
@@ -125,11 +127,20 @@ export interface CreditPayment {
   timestamp: string;
 }
 
+export type SupplierPaymentTerms = "cash" | "7_days" | "15_days";
+
 export interface Supplier {
   id: string;
   name: string;
+  contactPerson: string | null;
   phone: string | null;
   address: string | null;
   /** Encoded into the printable QR code; scanned back to select this supplier during receiving. */
   scanCode: string;
+  paymentTerms: SupplierPaymentTerms;
+  /** False when deactivated — hidden from active lists but never deleted, so receiving history stays intact. */
+  active: boolean;
+  /** ISO-8601 weekday numbers, 1=Monday..7=Sunday. */
+  usualDeliveryDays: number[];
+  categoryIds: string[];
 }

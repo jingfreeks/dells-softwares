@@ -5,3 +5,5 @@ export * from "./ReceivingLinesTable";
 export * from "./ReceivingErrorMessage";
 export * from "./ReceivingSavedMessage";
 export * from "./ReceivingHistoryCard";
+export * from "./ReceivingCostChangeNote";
+export * from "./ReceivingLowStockNote";

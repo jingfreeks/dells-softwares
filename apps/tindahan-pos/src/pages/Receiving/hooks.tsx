@@ -10,8 +10,10 @@ import {
   ERROR_QUANTITY_AT_LEAST_ONE_SUFFIX,
   TEXT_SAVED_RECEIVING_PREFIX,
   ERROR_COULD_NOT_SAVE_RECEIVING_ENTRY,
+  ERROR_COULD_NOT_UPDATE_PRICE,
   type ReceivingLine,
 } from "@/lib";
+import { productAverageCost } from "@/pages/Inventory/lib";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -42,11 +44,17 @@ interface PrefillProductState {
   quantity: number;
 }
 
+interface PrefillSupplierState {
+  supplierId: string;
+  supplierName: string;
+}
+
 export function useReceivingPage() {
-  const { products, suppliers, receivingHistory, receiveStock, findSupplierByScanCode } = useStoreData();
+  const { products, suppliers, receivingHistory, receiveStock, findSupplierByScanCode, updateProduct } = useStoreData();
   const location = useLocation();
   const [supplier, setSupplier] = useState("");
   const [supplierId, setSupplierId] = useState<string | null>(null);
+  const [drNumber, setDrNumber] = useState("");
   const [date, setDate] = useState(today());
   const [lines, setLines] = useState<DraftLine[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -117,6 +125,23 @@ export function useReceivingPage() {
     }
   }
 
+  // Same navigation-state prefill pattern as prefillProduct above (Suppliers
+  // page's "Receive" action), guarded by its own ref so the two prefill
+  // kinds can arrive together or separately without either one re-firing on
+  // a StrictMode double-invoke.
+  const prefillSupplierHandledKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prefillSupplierHandledKeyRef.current === location.key) return;
+    const state = location.state as { prefillSupplier?: PrefillSupplierState } | null;
+    const prefill = state?.prefillSupplier;
+    if (prefill) {
+      prefillSupplierHandledKeyRef.current = location.key;
+      setSupplier(prefill.supplierName);
+      setSupplierId(prefill.supplierId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+
   async function handleScanDetected(code: string) {
     const mode = scanMode;
     setScanMode(null);
@@ -153,6 +178,32 @@ export function useReceivingPage() {
     setLines((prev) => prev.filter((l) => l.productId !== productId));
   }
 
+  // Previous average cost paid for a product, per its saved receiving
+  // history — never includes the current unsaved draft line, so this is
+  // always "what changed since last time", not a comparison against itself.
+  function previousCostFor(productId: string): number | null {
+    return productAverageCost(receivingHistory, productId);
+  }
+
+  const lowStockSuggestions = useMemo(
+    () => products.filter((p) => p.stock <= p.lowStockThreshold && !lines.some((l) => l.productId === p.id)),
+    [products, lines]
+  );
+
+  function addAllLowStock() {
+    for (const p of lowStockSuggestions) {
+      addLine(p.id, p.name, Math.max(1, p.lowStockThreshold - p.stock));
+    }
+  }
+
+  async function raisePriceToProduct(productId: string, newPrice: number) {
+    try {
+      await updateProduct(productId, { price: newPrice });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : ERROR_COULD_NOT_UPDATE_PRICE);
+    }
+  }
+
   async function handleSave() {
     if (lines.length === 0) return;
     const receivingLines = lines.map(toReceivingLine);
@@ -165,13 +216,14 @@ export function useReceivingPage() {
     setSaving(true);
     setError(null);
     try {
-      await receiveStock(supplier.trim() || "Unspecified supplier", date, receivingLines, supplierId);
+      await receiveStock(supplier.trim() || "Unspecified supplier", date, receivingLines, supplierId, drNumber);
       setSavedMessage(
         `${TEXT_SAVED_RECEIVING_PREFIX} ${lines.length} product${lines.length === 1 ? "" : "s"}, ${receivingLines.reduce((s, l) => s + l.quantity, 0)} units.`
       );
       setLines([]);
       setSupplier("");
       setSupplierId(null);
+      setDrNumber("");
       setTimeout(() => setSavedMessage(null), 4000);
     } catch (err) {
       setError(err instanceof Error ? err.message : ERROR_COULD_NOT_SAVE_RECEIVING_ENTRY);
@@ -186,6 +238,8 @@ export function useReceivingPage() {
     receivingHistory,
     supplier,
     supplierId,
+    drNumber,
+    setDrNumber,
     date,
     setDate,
     lines,
@@ -204,5 +258,9 @@ export function useReceivingPage() {
     updateLine,
     removeLine,
     handleSave,
+    previousCostFor,
+    lowStockSuggestions,
+    addAllLowStock,
+    raisePriceToProduct,
   };
 }

@@ -26,6 +26,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     packQuantity: null,
     packPrice: null,
     imageUrl: null,
+    cost: null,
     ...overrides,
   };
 }
@@ -216,31 +217,40 @@ describe("isToday", () => {
 });
 
 describe("bestSellers (admin daily report)", () => {
-  it("sums quantities per product across sales and sorts highest first", () => {
+  it("sums quantities and revenue per product across sales, and counts distinct transactions", () => {
+    const products = [makeProduct({ id: "a", barcode: "1234", category: "Snacks" }), makeProduct({ id: "b", barcode: "5678", category: "Drinks" })];
     const sales = [
-      makeSale({ items: [makeSaleItem({ productId: "a", name: "A", quantity: 2 })] }),
-      makeSale({ items: [makeSaleItem({ productId: "b", name: "B", quantity: 5 })] }),
-      makeSale({ items: [makeSaleItem({ productId: "a", name: "A", quantity: 1 })] }),
+      makeSale({ id: "s1", items: [makeSaleItem({ productId: "a", name: "A", quantity: 2, lineTotal: 20 })] }),
+      makeSale({ id: "s2", items: [makeSaleItem({ productId: "b", name: "B", quantity: 5, lineTotal: 50 })] }),
+      makeSale({ id: "s3", items: [makeSaleItem({ productId: "a", name: "A", quantity: 1, lineTotal: 10 })] }),
     ];
-    expect(bestSellers(sales)).toEqual([
-      { name: "B", quantity: 5 },
-      { name: "A", quantity: 3 },
+    expect(bestSellers(sales, products)).toEqual([
+      { productId: "b", name: "B", barcode: "5678", category: "Drinks", quantity: 5, revenue: 50, transactionCount: 1 },
+      { productId: "a", name: "A", barcode: "1234", category: "Snacks", quantity: 3, revenue: 30, transactionCount: 2 },
     ]);
   });
 
   it("excludes service line items, which have no product to rank", () => {
+    const products = [makeProduct({ id: "a", category: "Snacks" })];
     const sales = [
       makeSale({
         items: [
-          makeSaleItem({ productId: "a", name: "A", quantity: 1 }),
+          makeSaleItem({ productId: "a", name: "A", quantity: 1, lineTotal: 10 }),
           makeSaleItem({ productId: "", name: "E-Load ₱100", quantity: 1, itemType: "service", fee: 5 }),
         ],
       }),
     ];
-    expect(bestSellers(sales)).toEqual([{ name: "A", quantity: 1 }]);
+    expect(bestSellers(sales, products).map((b) => b.name)).toEqual(["A"]);
+  });
+
+  it("falls back to 'Other' and no barcode for a product that no longer exists", () => {
+    const sales = [makeSale({ items: [makeSaleItem({ productId: "gone", name: "Gone", quantity: 1 })] })];
+    const [entry] = bestSellers(sales, []);
+    expect(entry).toMatchObject({ category: "Other", barcode: null });
   });
 
   it("caps results at the given limit", () => {
+    const products = [makeProduct({ id: "a" }), makeProduct({ id: "b" }), makeProduct({ id: "c" })];
     const sales = [
       makeSale({
         items: [
@@ -250,59 +260,56 @@ describe("bestSellers (admin daily report)", () => {
         ],
       }),
     ];
-    expect(bestSellers(sales, 2)).toEqual([
-      { name: "A", quantity: 3 },
-      { name: "B", quantity: 2 },
-    ]);
+    expect(bestSellers(sales, products, 2).map((b) => b.name)).toEqual(["A", "B"]);
   });
 
   it("returns an empty list for no sales", () => {
-    expect(bestSellers([])).toEqual([]);
+    expect(bestSellers([], [])).toEqual([]);
   });
 });
 
-describe("buildDailyReport (admin PDF/dashboard source of truth)", () => {
+describe("buildDailyReport (admin dashboard source of truth)", () => {
   const now = new Date("2026-07-27T15:00:00Z");
 
-  it("aggregates today's sales, low stock, totals, best sellers, and recent sales", () => {
+  it("aggregates the given day's sales, low stock, totals, best sellers, and recent sales", () => {
     const products = [
       makeProduct({ id: "low", name: "Low item", stock: 1, lowStockThreshold: 5 }),
-      makeProduct({ id: "ok", name: "OK item", stock: 50, lowStockThreshold: 5 }),
+      makeProduct({ id: "ok", name: "OK item", stock: 50, lowStockThreshold: 5, category: "Misc" }),
     ];
-    const sales = [
+    const daySales = [
       makeSale({
         id: "today",
         timestamp: "2026-07-27T10:00:00Z",
         total: 100,
         items: [makeSaleItem({ productId: "ok", name: "OK item", quantity: 2, lineTotal: 100 })],
       }),
-      makeSale({ id: "yesterday", timestamp: "2026-07-26T10:00:00Z", total: 50 }),
     ];
+    const previousDaySales = [makeSale({ id: "yesterday", timestamp: "2026-07-26T10:00:00Z", total: 50 })];
     const customers = [makeCustomer({ balance: 300 }), makeCustomer({ id: "c2", balance: 200 })];
 
-    const report = buildDailyReport(products, sales, customers, now);
+    const report = buildDailyReport(products, daySales, previousDaySales, daySales, customers, now);
 
     expect(report.todaysSalesTotal).toBe(100);
     expect(report.todaysTransactionCount).toBe(1);
-    expect(report.salesChangePercent).toBe(100); // 100 vs 50 yesterday = +100%
+    expect(report.salesChangePercent).toBe(100); // 100 vs 50 previous day = +100%
     expect(report.utangOutstanding).toBe(500);
     expect(report.lowStock.map((p) => p.id)).toEqual(["low"]);
-    expect(report.bestSellers).toEqual([{ name: "OK item", quantity: 2 }]);
-    expect(report.recentSales.map((s) => s.id)).toEqual(["today", "yesterday"]);
+    expect(report.bestSellers.map((b) => b.name)).toEqual(["OK item"]);
+    expect(report.recentSales.map((s) => s.id)).toEqual(["today"]);
     expect(report.generatedAt).toBe(now.toISOString());
   });
 
-  it("has no sales change percent when yesterday had no sales", () => {
-    const sales = [makeSale({ id: "today", timestamp: "2026-07-27T10:00:00Z", total: 100 })];
-    const report = buildDailyReport([], sales, [], now);
+  it("has no sales change percent when the previous day had no sales", () => {
+    const daySales = [makeSale({ id: "today", timestamp: "2026-07-27T10:00:00Z", total: 100 })];
+    const report = buildDailyReport([], daySales, [], daySales, [], now);
     expect(report.salesChangePercent).toBeNull();
   });
 
   it("caps recent sales at 10 even when there are more", () => {
-    const sales = Array.from({ length: 15 }, (_, i) =>
+    const daySales = Array.from({ length: 15 }, (_, i) =>
       makeSale({ id: `s${i}`, timestamp: "2026-07-27T10:00:00Z" })
     );
-    const report = buildDailyReport([], sales, [], now);
+    const report = buildDailyReport([], daySales, [], daySales, [], now);
     expect(report.recentSales).toHaveLength(10);
   });
 });
@@ -368,7 +375,7 @@ describe("buildRangeReport", () => {
     expect(report.byCashier).toEqual([
       { cashierId: "c1", cashierName: "Aling Nena", total: 20, transactionCount: 1 },
     ]);
-    expect(report.bestSellers).toEqual([{ name: "Chips", quantity: 2 }]);
+    expect(report.bestSellers.map((b) => b.name)).toEqual(["Chips"]);
     expect(report.categoryTotals.rows).toEqual([{ category: "Snacks", total: 20 }]);
   });
 });

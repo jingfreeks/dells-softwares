@@ -3,12 +3,12 @@ import { PAGE_HEADING_RECEIVING, TEXT_RECEIVING_DESCRIPTION_PREFIX, LINK_BACK_TO
 
 export function ReceivingPageHeader() {
   return (
-    <div className="flex items-start justify-between gap-4">
+    <div className="tpl-sp" style={{ alignItems: "flex-start", marginBottom: 18 }}>
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-slate-900">{PAGE_HEADING_RECEIVING}</h1>
-        <p className="text-sm text-slate-500">
+        <p className="tpl-h1">{PAGE_HEADING_RECEIVING}</p>
+        <p className="tpl-sub">
           {TEXT_RECEIVING_DESCRIPTION_PREFIX}{" "}
-          <Link to="/inventory" className="underline">
+          <Link to="/inventory" className="tpl-lnk">
             {LINK_BACK_TO_INVENTORY}
           </Link>
           .
@@ -16,7 +16,8 @@ export function ReceivingPageHeader() {
       </div>
       <Link
         to="/suppliers"
-        className="shrink-0 rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        className="tpl-btn"
+        style={{ width: "auto", height: 38, padding: "0 14px", marginBottom: 0, textDecoration: "none" }}
       >
         {LINK_MANAGE_SUPPLIERS}
       </Link>

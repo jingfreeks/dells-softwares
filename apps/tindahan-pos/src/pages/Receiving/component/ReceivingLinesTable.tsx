@@ -10,78 +10,117 @@ import {
   TABLE_HEADER_NEW_STOCK,
   BUTTON_REMOVE,
   LABEL_TOTAL_COST,
+  TEXT_WAS_PREFIX,
+  TEXT_SAME_AS_LAST_DELIVERY,
+  CHIP_COST_UP,
+  CHIP_COST_DOWN,
+  CHIP_NO_CHANGE,
 } from "@/lib";
 import { toReceivingLine, type DraftLine } from "../hooks";
+
+const ROW_COLUMNS = "2fr 1fr 1fr 1fr auto";
+
+function marginPercent(price: number, cost: number): number | null {
+  return price > 0 ? Math.round(((price - cost) / price) * 100) : null;
+}
 
 interface ReceivingLinesTableProps {
   products: Product[];
   lines: DraftLine[];
+  previousCostFor: (productId: string) => number | null;
   onUpdateLine: (productId: string, patch: Partial<DraftLine>) => void;
   onRemoveLine: (productId: string) => void;
 }
 
-export function ReceivingLinesTable({ products, lines, onUpdateLine, onRemoveLine }: ReceivingLinesTableProps) {
+export function ReceivingLinesTable({
+  products,
+  lines,
+  previousCostFor,
+  onUpdateLine,
+  onRemoveLine,
+}: ReceivingLinesTableProps) {
   if (lines.length === 0) return null;
 
   return (
-    <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
-      <table className="w-full text-sm">
-        <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
-          <tr>
-            <th className="px-3 py-2">{TABLE_HEADER_PRODUCT}</th>
-            <th className="px-3 py-2">{TABLE_HEADER_QTY_RECEIVED}</th>
-            <th className="px-3 py-2">{TABLE_HEADER_COST_EACH}</th>
-            <th className="px-3 py-2">{TABLE_HEADER_NEW_STOCK}</th>
-            <th className="px-3 py-2" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {lines.map((line) => {
-            const preview = stockPreview(products, line.productId, Number(line.quantity) || 0);
-            return (
-              <tr key={line.productId}>
-                <td className="px-3 py-2 font-medium text-slate-800">{line.productName}</td>
-                <td className="px-3 py-2">
-                  <input
-                    type="number"
-                    min="1"
-                    value={line.quantity}
-                    onFocus={selectOnFocus}
-                    onChange={(e) => onUpdateLine(line.productId, { quantity: e.target.value })}
-                    className="w-20 rounded-xl border border-slate-300 px-2 py-1 text-sm"
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={line.costEach}
-                    onFocus={selectOnFocus}
-                    onChange={(e) => onUpdateLine(line.productId, { costEach: e.target.value })}
-                    className="w-24 rounded-xl border border-slate-300 px-2 py-1 text-sm"
-                  />
-                </td>
-                <td className="tabular-nums px-3 py-2 font-medium text-[var(--color-brand)]">
-                  {preview ? `${preview.old} → ${preview.next}` : "—"}
-                </td>
-                <td className="px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={() => onRemoveLine(line.productId)}
-                    className="cursor-pointer text-xs text-red-600 hover:underline"
-                  >
-                    {BUTTON_REMOVE}
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      <div className="flex items-center justify-between border-t border-slate-200 px-3 py-2 text-sm">
-        <span className="text-slate-500">{LABEL_TOTAL_COST}</span>
-        <span className="tabular-nums font-semibold text-slate-900">
+    <div className="tpl-card" style={{ padding: 0, marginTop: 14 }}>
+      <div className="tpl-thead" style={{ gridTemplateColumns: ROW_COLUMNS }}>
+        <span>{TABLE_HEADER_PRODUCT}</span>
+        <span>{TABLE_HEADER_QTY_RECEIVED}</span>
+        <span>{TABLE_HEADER_COST_EACH}</span>
+        <span>{TABLE_HEADER_NEW_STOCK}</span>
+        <span />
+      </div>
+      {lines.map((line) => {
+        const product = products.find((p) => p.id === line.productId);
+        const preview = stockPreview(products, line.productId, Number(line.quantity) || 0);
+        const costEach = Number(line.costEach) || 0;
+        const previousCost = previousCostFor(line.productId);
+        const changed = previousCost !== null && costEach !== previousCost;
+        const direction = changed ? (costEach > previousCost! ? "up" : "down") : null;
+        const marginBefore = previousCost !== null && product ? marginPercent(product.price, previousCost) : null;
+        const marginAfter = product ? marginPercent(product.price, costEach) : null;
+
+        return (
+          <div key={line.productId} className="tpl-trow" style={{ gridTemplateColumns: ROW_COLUMNS, cursor: "default" }}>
+            <div>
+              <p className="tpl-sub" style={{ marginBottom: 2 }}>
+                {line.productName}
+              </p>
+              {previousCost === null ? null : changed ? (
+                <p className="tpl-hint">
+                  {TEXT_WAS_PREFIX} {PESO.format(previousCost)}
+                  {marginBefore !== null && marginAfter !== null ? ` · margin ${marginBefore}% → ${marginAfter}%` : ""}
+                </p>
+              ) : (
+                <p className="tpl-hint">{TEXT_SAME_AS_LAST_DELIVERY}</p>
+              )}
+            </div>
+            <div className="tpl-fld" style={{ marginBottom: 0 }}>
+              <input
+                type="number"
+                min="1"
+                value={line.quantity}
+                onFocus={selectOnFocus}
+                onChange={(e) => onUpdateLine(line.productId, { quantity: e.target.value })}
+              />
+            </div>
+            <div>
+              <div className="tpl-fld" style={{ marginBottom: 4 }}>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={line.costEach}
+                  onFocus={selectOnFocus}
+                  onChange={(e) => onUpdateLine(line.productId, { costEach: e.target.value })}
+                />
+              </div>
+              {direction && (
+                <span className={`tpl-chip${direction === "up" ? " tpl-w" : " tpl-g"}`} style={{ fontSize: 11 }}>
+                  {direction === "up" ? CHIP_COST_UP : CHIP_COST_DOWN}
+                </span>
+              )}
+              {previousCost !== null && !changed && (
+                <span className="tpl-chip" style={{ fontSize: 11 }}>
+                  {CHIP_NO_CHANGE}
+                </span>
+              )}
+            </div>
+            <span className="tpl-tp tpl-mono">{preview ? `${preview.old} → ${preview.next}` : "—"}</span>
+            <button
+              type="button"
+              onClick={() => onRemoveLine(line.productId)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--tpl-bad)" }}
+            >
+              <i className="ti ti-trash" aria-hidden />
+              <span className="sr-only">{BUTTON_REMOVE}</span>
+            </button>
+          </div>
+        );
+      })}
+      <div className="tpl-sp" style={{ padding: "12px 15px", borderTop: "0.5px solid var(--tpl-bd3)" }}>
+        <span className="tpl-ts">{LABEL_TOTAL_COST}</span>
+        <span className="tpl-tp tpl-mono" style={{ fontWeight: 600 }}>
           {PESO.format(receivingTotalCost(lines.map(toReceivingLine)))}
         </span>
       </div>
