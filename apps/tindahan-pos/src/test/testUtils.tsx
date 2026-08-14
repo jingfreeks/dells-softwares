@@ -39,6 +39,13 @@ export function makeStore(overrides: Partial<Store> = {}): Store {
     address: null,
     photoUrl: null,
     feeConfig: null,
+    contactNumber: null,
+    city: null,
+    tin: null,
+    businessPermitNo: null,
+    birRegistered: false,
+    vatStatus: "non_vat",
+    invoiceType: "Sales Invoice",
     ...overrides,
   };
 }

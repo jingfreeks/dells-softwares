@@ -1025,6 +1025,20 @@ export const LABEL_TIN = "TIN";
 export const LABEL_BUSINESS_PERMIT_NO = "Business permit no.";
 export const TEXT_BIR_HINT =
   "Printed on receipts. Check the current BIR requirements for your registration type — this app doesn't verify them.";
+export const LABEL_VAT_STATUS = "VAT status";
+export const TEXT_VAT_STATUS_HINT =
+  "Your registered tax status with BIR. This app doesn't compute or break down VAT amounts yet.";
+export const LABEL_VAT_REGISTERED = "VAT Registered";
+export const LABEL_NON_VAT = "Non-VAT";
+export const LABEL_VAT_EXEMPT = "VAT-Exempt";
+export const LABEL_ZERO_RATED = "Zero-Rated";
+export const LABEL_INVOICE_TYPE = "Invoice type";
+export const TEXT_INVOICE_TYPE_HINT = "Printed as the heading on every receipt.";
+export const LABEL_INVOICE_TYPE_SALES = "Sales Invoice";
+export const LABEL_INVOICE_TYPE_SERVICE = "Service Invoice";
+export const LABEL_INVOICE_TYPE_CASH = "Cash Invoice";
+export const LABEL_INVOICE_TYPE_CHARGE = "Charge Invoice";
+export const LABEL_INVOICE_TYPE_CREDIT = "Credit Invoice";
 export const ERROR_COULD_NOT_SAVE_STORE_DETAILS = "Could not save store details.";
 export const TEXT_STORE_DETAILS_UPDATED = "Store details updated.";
 
@@ -1236,7 +1250,6 @@ export const TEXT_LOADING_MORE_PRODUCTS = "Loading more products…";
 export const ERROR_COULD_NOT_LOAD_PRODUCTS = "Unable to load products.";
 
 // Printable receipt
-export const LABEL_RECEIPT_HEADING = "Official Receipt";
 export const LABEL_RECEIPT_NUMBER_PREFIX = "Receipt No.";
 export const TEXT_RECEIPT_NUMBER_PENDING = "Pending — assigned once synced";
 export const LABEL_CASHIER_ON_RECEIPT_PREFIX = "Cashier:";

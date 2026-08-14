@@ -35,6 +35,22 @@ describe("Receipt", () => {
     expect(screen.getAllByText("₱50.00").length).toBeGreaterThan(0);
     expect(screen.getByText("₱100.00")).toBeInTheDocument();
     expect(screen.getByText("Salamat po! Balik kayo ulit.")).toBeInTheDocument();
+    expect(screen.getByText("Sales Invoice")).toBeInTheDocument();
+  });
+
+  it("renders the store's configured invoice type as the heading, not a hardcoded label", () => {
+    render(
+      <Receipt
+        sale={makeSaleRecord()}
+        store={makeStore({ invoiceType: "Service Invoice" })}
+        settings={baseSettings}
+        tendered={100}
+        change={50}
+      />
+    );
+
+    expect(screen.getByText("Service Invoice")).toBeInTheDocument();
+    expect(screen.queryByText("Official Receipt")).not.toBeInTheDocument();
   });
 
   it("hides TIN/permit, cashier name, and footer when their settings are off", () => {

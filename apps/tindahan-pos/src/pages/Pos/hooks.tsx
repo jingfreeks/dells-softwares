@@ -48,7 +48,6 @@ import {
   loadReceiptSettingsMock,
   DEFAULT_RECEIPT_SETTINGS_MOCK,
 } from "@/pages/Settings/receiptSettingsMock";
-import { loadStoreDetailsMock } from "@/pages/Settings/storeDetailsMock";
 
 export const SERVICE_TYPES = [
   { key: "eload", label: SERVICE_LABEL_ELOAD, badge: "L", badgeClass: "bg-violet-100 text-violet-700" },
@@ -216,7 +215,6 @@ export function usePosPage() {
     () => (store ? loadReceiptSettingsMock(store.id) : DEFAULT_RECEIPT_SETTINGS_MOCK),
     [store]
   );
-  const storeDetails = useMemo(() => (store ? loadStoreDetailsMock(store.id) : null), [store]);
 
   const tenderedNumber = Number(tendered);
   const change =
@@ -667,8 +665,8 @@ export function usePosPage() {
     lastSaleTendered,
     lastSaleChange,
     receiptSettings,
-    receiptTin: storeDetails?.tin,
-    receiptBusinessPermitNo: storeDetails?.businessPermitNo,
+    receiptTin: store?.tin ?? undefined,
+    receiptBusinessPermitNo: store?.businessPermitNo ?? undefined,
     closeReceipt,
   };
 }

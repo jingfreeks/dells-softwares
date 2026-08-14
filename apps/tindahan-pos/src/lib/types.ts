@@ -38,12 +38,23 @@ export interface StoreFeeConfig {
   cashOut?: { max: number; fee: number }[];
 }
 
+export type VatStatus = "vat_registered" | "non_vat" | "vat_exempt" | "zero_rated";
+
 export interface Store {
   id: string;
   name: string;
   address: string | null;
   photoUrl: string | null;
   feeConfig: StoreFeeConfig | null;
+  contactNumber: string | null;
+  city: string | null;
+  /** BIR compliance §48 — these were localStorage mocks until now; real, admin-editable columns on `stores`. */
+  tin: string | null;
+  businessPermitNo: string | null;
+  birRegistered: boolean;
+  vatStatus: VatStatus;
+  /** The document type printed as the receipt heading — e.g. "Sales Invoice", "Service Invoice". */
+  invoiceType: string;
 }
 
 export interface Category {

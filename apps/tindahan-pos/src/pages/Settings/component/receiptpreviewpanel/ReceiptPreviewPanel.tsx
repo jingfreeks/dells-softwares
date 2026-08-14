@@ -33,6 +33,8 @@ interface ReceiptPreviewPanelProps {
   footerMessage: string;
   /** The real next invoice number for this store, or null while it's loading. */
   nextReceiptNumber: string | null;
+  /** The store's configured document type — e.g. "Sales Invoice", "Service Invoice". */
+  invoiceType: string;
 }
 
 export function ReceiptPreviewPanel({
@@ -46,6 +48,7 @@ export function ReceiptPreviewPanel({
   includeCashierName,
   footerMessage,
   nextReceiptNumber,
+  invoiceType,
 }: ReceiptPreviewPanelProps) {
   const addressLine = storeAddress ?? TEXT_PREVIEW_STORE_ADDRESS_FALLBACK;
   const cityAndPhone = [city, contactNumber].filter(Boolean).join(" · ");
@@ -81,6 +84,9 @@ export function ReceiptPreviewPanel({
         {includeTinAndPermit && tin && (
           <p style={{ color: "#5F5E5A", fontSize: 9.5, textAlign: "center", marginTop: 4 }}>TIN {tin}</p>
         )}
+        <p style={{ color: "#1A1A18", fontSize: 11, textAlign: "center", fontWeight: 500, marginTop: 4 }}>
+          {invoiceType}
+        </p>
         <p style={{ margin: "8px 0", color: "#B4B2A9", fontSize: 10, textAlign: "center" }}>
           - - - - - - - - - - - - - - - - -
         </p>
