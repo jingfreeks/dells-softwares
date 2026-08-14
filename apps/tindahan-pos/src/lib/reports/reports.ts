@@ -21,33 +21,6 @@ const OTHER_CATEGORY = "Other";
  * deleted (categoryByProductId has no entry) falls back to "Other"
  * rather than vanishing from the total.
  */
-// export function salesByCategory(sales: SaleRecord[], products: Product[]): SalesByCategory {
-//   const categoryByProductId = new Map(products.map((p) => [p.id, p.category]));
-//   const totals = new Map<string, number>();
-
-//   for (const sale of sales) {
-//     for (const item of sale.items) {
-//       const category =
-//         item.itemType === "service"
-//           ? SERVICES_CATEGORY
-//           : (categoryByProductId.get(item.productId) ?? OTHER_CATEGORY);
-//       // Falls back to the pre-line_total formula if a row somehow arrives
-//       // without it (e.g. a client build running ahead of migration 0005),
-//       // so a schema/deploy-order mismatch degrades to a slightly-imprecise
-//       // total instead of NaN-ing the whole category.
-//       const amount = item.lineTotal ?? item.quantity * item.price + item.fee;
-//       totals.set(category, (totals.get(category) ?? 0) + amount);
-//     }
-//   }
-
-//   const rows = Array.from(totals.entries())
-//     .map(([category, total]) => ({ category, total }))
-//     .sort((a, b) => b.total - a.total);
-//   const grandTotal = rows.reduce((sum, r) => sum + r.total, 0);
-
-//   return { rows, grandTotal };
-// }
-
 export function salesByCategory(
   sales: SaleRecord[],
   products: Product[]
@@ -76,6 +49,17 @@ export function salesByCategory(
   return { rows, grandTotal: rows.reduce((sum, row) => sum + row.total, 0) };
 }
 
+export interface CategoryTotalWithPercent extends CategoryTotal {
+  /** Share of grandTotal, 0-1. 0 when grandTotal is 0 (nothing to divide). */
+  percent: number;
+}
+
+/** Adds each row's share of the grand total — used by the Sales by Category export sheet and detail views. */
+export function withCategoryPercentages(categoryTotals: SalesByCategory): CategoryTotalWithPercent[] {
+  const { rows, grandTotal } = categoryTotals;
+  return rows.map((row) => ({ ...row, percent: grandTotal > 0 ? row.total / grandTotal : 0 }));
+}
+
 /** True if the given ISO timestamp falls on the same calendar day as `now` (local time). */
 export function isToday(isoString: string, now: Date = new Date()): boolean {
   const d = new Date(isoString);
@@ -87,60 +71,68 @@ export function isToday(isoString: string, now: Date = new Date()): boolean {
 }
 
 export interface BestSeller {
+  productId: string;
   name: string;
+  barcode: string | null;
+  category: string;
   quantity: number;
+  /** Sum of lineTotal across every line selling this product. */
+  revenue: number;
+  /** Number of distinct sales containing this product at least once. */
+  transactionCount: number;
 }
 
-/** Top-selling products by units sold across the given sales, highest first. */
+/**
+ * Top-selling products by units sold across the given sales, highest
+ * first. `products` resolves each item's barcode/category — a product
+ * item whose product has since been deleted falls back to "Other"
+ * (matching salesByCategory's convention) with no barcode.
+ */
+export function bestSellers(sales: SaleRecord[], products: Product[], limit = 5): BestSeller[] {
+  const productById = new Map(products.map((p) => [p.id, p]));
+  const counts = new Map<string, BestSeller>();
+  const salesCountedByProduct = new Map<string, Set<string>>();
 
-export function bestSellers(
-  sales: SaleRecord[],
-  limit = 5
-): BestSeller[] {
-  const counts = sales
-    .flatMap(({ items }) => items)
-    .filter((item) => item.itemType === "product")
-    .reduce((map, item) => {
-      const current = map.get(item.productId);
-
+  for (const sale of sales) {
+    for (const item of sale.items) {
+      if (item.itemType !== "product") continue;
+      const product = productById.get(item.productId);
+      const current = counts.get(item.productId);
       if (current) {
         current.quantity += item.quantity;
+        current.revenue += item.lineTotal ?? item.quantity * item.price + item.fee;
       } else {
-        map.set(item.productId, {
+        counts.set(item.productId, {
+          productId: item.productId,
           name: item.name,
+          barcode: product?.barcode ?? null,
+          category: product?.category ?? OTHER_CATEGORY,
           quantity: item.quantity,
+          revenue: item.lineTotal ?? item.quantity * item.price + item.fee,
+          transactionCount: 0,
         });
       }
+      const seenSales = salesCountedByProduct.get(item.productId) ?? new Set<string>();
+      seenSales.add(sale.id);
+      salesCountedByProduct.set(item.productId, seenSales);
+    }
+  }
 
-      return map;
-    }, new Map<string, BestSeller>());
+  for (const [productId, seenSales] of salesCountedByProduct) {
+    const entry = counts.get(productId);
+    if (entry) entry.transactionCount = seenSales.size;
+  }
 
-  return [...counts.values()]
-    .sort((a, b) => b.quantity - a.quantity)
-    .slice(0, limit);
+  return [...counts.values()].sort((a, b) => b.quantity - a.quantity).slice(0, limit);
 }
-// export function bestSellers(sales: SaleRecord[], limit = 5): BestSeller[] {
-//   const counts = new Map<string, BestSeller>();
-//   for (const sale of sales) {
-//     for (const item of sale.items) {
-//       if (item.itemType !== "product") continue;
-//       const entry = counts.get(item.productId) ?? { name: item.name, quantity: 0 };
-//       entry.quantity += item.quantity;
-//       counts.set(item.productId, entry);
-//     }
-//   }
-//   return Array.from(counts.values())
-//     .sort((a, b) => b.quantity - a.quantity)
-//     .slice(0, limit);
-// }
 
 export interface DailyReport {
   generatedAt: string;
   todaysSalesTotal: number;
   todaysTransactionCount: number;
-  /** Percent change in today's sales vs. the same time yesterday. Null
-   * when yesterday had no sales at all — a percentage against zero is
-   * undefined, not "infinite growth". */
+  /** Percent change vs. the previous day's total. Null when the previous
+   * day had no sales at all — a percentage against zero is undefined,
+   * not "infinite growth". */
   salesChangePercent: number | null;
   utangOutstanding: number;
   lowStock: Product[];
@@ -148,13 +140,6 @@ export interface DailyReport {
   recentSales: SaleRecord[];
   restockSuggestions: RestockSuggestion[];
   categoryTotals: SalesByCategory;
-}
-
-/** Yesterday's date at the same moment as `now` (local time), for the isToday-style comparison. */
-function yesterday(now: Date): Date {
-  const d = new Date(now);
-  d.setDate(d.getDate() - 1);
-  return d;
 }
 
 export interface CashierTotal {
@@ -212,42 +197,48 @@ export function buildRangeReport(sales: SaleRecord[], products: Product[]): Rang
     transactionCount,
     averageSale: transactionCount > 0 ? totalSales / transactionCount : 0,
     byCashier: salesByCashier(sales),
-    bestSellers: bestSellers(sales),
+    bestSellers: bestSellers(sales, products),
     categoryTotals: salesByCategory(sales, products),
     sales,
   };
 }
 
 /**
- * Single source of truth for the admin "Daily report" — both the
- * dashboard cards and the PDF export are built from this, so the two
- * can never drift apart.
+ * Single source of truth for the admin "Daily report" — the dashboard
+ * cards, its detail modals, and the Excel export are all built from
+ * this, so none of them can drift apart.
+ *
+ * `daySales`/`previousDaySales` must already be scoped to the selected
+ * reporting day and the day before it (e.g. via `fetchSalesInRange`) —
+ * this function no longer filters by date itself. `recentSales` is a
+ * separately-scoped, broader window (unrelated to the selected day)
+ * used only to project restock suggestions, since "what to restock" is
+ * about current inventory planning, not a historical day's report.
  */
 export function buildDailyReport(
   products: Product[],
-  sales: SaleRecord[],
+  daySales: SaleRecord[],
+  previousDaySales: SaleRecord[],
+  recentSales: SaleRecord[],
   customers: Customer[],
-  now: Date = new Date()
+  reportDate: Date = new Date()
 ): DailyReport {
-  const todaysSales = sales.filter((s) => isToday(s.timestamp, now));
-  const todaysSalesTotal = todaysSales.reduce((sum, s) => sum + s.total, 0);
-  const yesterdaysSalesTotal = sales
-    .filter((s) => isToday(s.timestamp, yesterday(now)))
-    .reduce((sum, s) => sum + s.total, 0);
+  const todaysSalesTotal = daySales.reduce((sum, s) => sum + s.total, 0);
+  const previousDaySalesTotal = previousDaySales.reduce((sum, s) => sum + s.total, 0);
 
   return {
-    generatedAt: now.toISOString(),
+    generatedAt: reportDate.toISOString(),
     todaysSalesTotal,
-    todaysTransactionCount: todaysSales.length,
+    todaysTransactionCount: daySales.length,
     salesChangePercent:
-      yesterdaysSalesTotal > 0
-        ? Math.round(((todaysSalesTotal - yesterdaysSalesTotal) / yesterdaysSalesTotal) * 100)
+      previousDaySalesTotal > 0
+        ? Math.round(((todaysSalesTotal - previousDaySalesTotal) / previousDaySalesTotal) * 100)
         : null,
     utangOutstanding: customers.reduce((sum, c) => sum + c.balance, 0),
     lowStock: lowStockProducts(products),
-    bestSellers: bestSellers(sales),
-    recentSales: sales.slice(0, 10),
-    restockSuggestions: computeRestockSuggestions(products, sales, { now }),
-    categoryTotals: salesByCategory(sales, products),
+    bestSellers: bestSellers(daySales, products),
+    recentSales: daySales.slice(0, 10),
+    restockSuggestions: computeRestockSuggestions(products, recentSales, { now: reportDate }),
+    categoryTotals: salesByCategory(daySales, products),
   };
 }

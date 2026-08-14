@@ -1,11 +1,18 @@
-import { Headerscreen,Salesperitem,Salesperitems,Totalsalescreen } from "./component"
-import type { DailyTransactionDetailsCardProps } from "./types";
-import { transactionNumber } from "./lib";
+import { PESO, EMPTY_STATE_NO_SALES_FOR_DATE } from "@/lib";
+import type { SaleRecord } from "@/lib";
 
+interface DailyTransactionDetailsCardProps {
+  sales: SaleRecord[];
+}
 
-/** Detailed, read-only transaction ledger for the dashboard's selected day. */
-export function DailyTransactionDetailsCard({ sales, customers }: DailyTransactionDetailsCardProps) {
-  const customerNameById = new Map(customers.map((customer) => [customer.id, customer.name]));
+/**
+ * Compact summary strip for the selected day's transactions — the full
+ * itemized ledger lives in the "Today's Sales"/"Transactions Today"/
+ * "Recent Sales" report modal (see ../salesreportmodal), which reuses
+ * this folder's header/saleitem/salesitems/totalsales subcomponents for
+ * its rows.
+ */
+export function DailyTransactionDetailsCard({ sales }: DailyTransactionDetailsCardProps) {
   const subtotal = sales.reduce((sum, sale) => sum + sale.total, 0);
   const totalItemsSold = sales.reduce(
     (sum, sale) => sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
@@ -13,25 +20,24 @@ export function DailyTransactionDetailsCard({ sales, customers }: DailyTransacti
   );
 
   return (
-    <section className="tpl-card" aria-label="Daily sales transaction details">
-      <Headerscreen sales={sales} />
-
-      {sales.length === 0 ? (
-        <p className="tpl-ts" style={{ padding: "12px 0", textAlign: "center" }}>No transactions today.</p>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {sales.map((sale) => {
-            const number = transactionNumber(sale.id);
-            return (
-              <article key={sale.id} className="tpl-lr" style={{ display: "block", padding: 12 }}>
-                <Salesperitem number={number} sale={sale} />
-                <Salesperitems sale={sale} customerNameById={customerNameById} />
-              </article>
-            );
-          })}
-        </div>
+    <section className="tpl-card" aria-label="Daily sales transactions summary">
+      <div className="tpl-sp" style={{ marginBottom: sales.length === 0 ? 11 : 0 }}>
+        <p className="tpl-h3">Daily sales transactions</p>
+        <span className="tpl-ts">
+          {sales.length} transaction{sales.length === 1 ? "" : "s"}
+        </span>
+      </div>
+      {sales.length === 0 && (
+        <p className="tpl-ts" style={{ padding: "16px 0", textAlign: "center" }}>
+          {EMPTY_STATE_NO_SALES_FOR_DATE}
+        </p>
       )}
-      <Totalsalescreen subtotal={subtotal} totalItemsSold={totalItemsSold} />
+      <p
+        className="tpl-hint"
+        style={{ borderTop: "0.5px solid var(--tpl-bd3)", paddingTop: 10, marginTop: sales.length === 0 ? 0 : 12 }}
+      >
+        Transaction subtotal {PESO.format(subtotal)} · total items sold {totalItemsSold}
+      </p>
     </section>
   );
 }
