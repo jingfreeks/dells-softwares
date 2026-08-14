@@ -13,6 +13,7 @@ import {
   LABEL_UTANG_BALANCE_NOTE,
   LABEL_TOTAL_POS,
   TEXT_SAVED_OFFLINE_BADGE,
+  TEXT_RECEIPT_NUMBER_PENDING,
 } from "@/lib/textLabels";
 
 const PAYMENT_LABEL: Record<SaleRecord["paymentType"], string> = {
@@ -29,7 +30,6 @@ export interface ReceiptDisplaySettings {
   includeCashierName: boolean;
   includeUtangBalance: boolean;
   footerMessage: string;
-  nextReceiptNumber: string;
 }
 
 interface ReceiptProps {
@@ -61,7 +61,7 @@ export function Receipt({ sale, store, settings, tin, businessPermitNo, tendered
       <div className="tpl-receipt-hr" />
 
       <p className="tpl-receipt-line">
-        {LABEL_RECEIPT_NUMBER_PREFIX} {settings.nextReceiptNumber}
+        {LABEL_RECEIPT_NUMBER_PREFIX} {sale.receiptNumber ?? TEXT_RECEIPT_NUMBER_PENDING}
       </p>
       <p className="tpl-receipt-line">
         {timestamp.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })}{" "}

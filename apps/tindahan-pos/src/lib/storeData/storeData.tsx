@@ -118,7 +118,7 @@ function friendlyProductError(err: { code?: string; message: string }): Error {
 }
 
 const SALE_SELECT =
-  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, staff:cashier_id(id, name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)";
+  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, receipt_number, staff:cashier_id(id, name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)";
 
 function mapSaleRow(row: {
   id: string;
@@ -128,6 +128,7 @@ function mapSaleRow(row: {
   customer_id: string | null;
   payment_type: SaleRecord["paymentType"];
   reference_no: string | null;
+  receipt_number: string | null;
   staff: { id: string; name: string } | { id: string; name: string }[] | null;
   sale_items:
     | {
@@ -154,6 +155,7 @@ function mapSaleRow(row: {
     paymentType: row.payment_type,
     customerId: row.customer_id,
     referenceNo: row.reference_no,
+    receiptNumber: row.receipt_number,
     items: (row.sale_items ?? []).map((item) => ({
       productId: item.product_id ?? "",
       name: item.name,
@@ -447,9 +449,10 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
 
     let total: number;
     let saleId: string;
+    let receiptNumber: string | null;
     let queued = false;
     let rpcError: unknown = null;
-    let rpcResult: { sale_id: string; total: number } | undefined;
+    let rpcResult: { sale_id: string; total: number; receipt_number: string | null } | undefined;
     try {
       const { data, error: err } = await supabase.rpc("checkout_sale", rpcParams);
       if (err) {
@@ -475,6 +478,11 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       // the cashier's side.
       total = cartTotal(cart) + services.reduce((sum, line) => sum + line.amount + line.fee, 0);
       saleId = clientRequestId;
+      // No server round trip happened yet, so there's genuinely no
+      // receipt/OR number yet — checkout_sale() assigns one atomically only
+      // once this sale actually lands in the database, whether that's now
+      // (the branch below) or later when the sync engine replays it.
+      receiptNumber = null;
       queued = true;
       const storeId = user?.storeId ?? deviceSession?.storeId ?? null;
       if (storeId) {
@@ -501,6 +509,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       if (!rpcResult) throw new Error("Checkout did not return a result.");
       total = rpcResult.total;
       saleId = rpcResult.sale_id;
+      receiptNumber = rpcResult.receipt_number;
     }
 
     const saleRecord: SaleRecord = {
@@ -537,6 +546,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       paymentType: payment.type,
       customerId: payment.type === "credit" ? (payment.customerId ?? null) : null,
       referenceNo: payment.type === "qr" ? (payment.referenceNo?.trim() ?? null) : null,
+      receiptNumber,
       ...(queued ? { syncStatus: "pending" as const } : {}),
     };
 

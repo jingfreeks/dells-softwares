@@ -71,6 +71,7 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     paymentType: "credit",
     customerId: "c1",
     referenceNo: null,
+    receiptNumber: null,
     ...overrides,
   };
 }

@@ -8,14 +8,13 @@ const baseSettings: ReceiptDisplaySettings = {
   includeCashierName: true,
   includeUtangBalance: true,
   footerMessage: "Salamat po! Balik kayo ulit.",
-  nextReceiptNumber: "OR-2026-0038",
 };
 
 describe("Receipt", () => {
   it("renders store, receipt number, cashier, items, total, and footer for a cash sale", () => {
     render(
       <Receipt
-        sale={makeSaleRecord()}
+        sale={makeSaleRecord({ receiptNumber: "000042" })}
         store={makeStore({ address: "123 Rizal St." })}
         settings={baseSettings}
         tin="123-456-789-000"
@@ -29,7 +28,7 @@ describe("Receipt", () => {
     expect(screen.getByText("123 Rizal St.")).toBeInTheDocument();
     expect(screen.getByText("TIN: 123-456-789-000")).toBeInTheDocument();
     expect(screen.getByText("Permit: BP-2026-001")).toBeInTheDocument();
-    expect(screen.getByText(/OR-2026-0038/)).toBeInTheDocument();
+    expect(screen.getByText(/000042/)).toBeInTheDocument();
     expect(screen.getByText(/Aling Nena/)).toBeInTheDocument();
     expect(screen.getByText("Sardines")).toBeInTheDocument();
     expect(screen.getByText("2 x ₱25.00")).toBeInTheDocument();
@@ -95,6 +94,19 @@ describe("Receipt", () => {
       />
     );
     expect(screen.getByText(/Saved offline/)).toBeInTheDocument();
+  });
+
+  it("shows a pending placeholder instead of a receipt number for a sale queued offline", () => {
+    render(
+      <Receipt
+        sale={makeSaleRecord({ syncStatus: "pending", receiptNumber: null })}
+        store={makeStore()}
+        settings={baseSettings}
+        tendered={100}
+        change={50}
+      />
+    );
+    expect(screen.getByText(/Pending/)).toBeInTheDocument();
   });
 
   it("shows no 'saved offline' badge for a normal, live sale", () => {

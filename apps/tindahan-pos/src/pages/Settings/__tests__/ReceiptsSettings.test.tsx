@@ -9,6 +9,17 @@ import { ComingSoonSettingsPage } from "../ComingSoonSettingsPage";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 
+// useReceiptsSettingsPage reads the store's live next-invoice-number from
+// document_series (server-controlled — see checkout_sale()) on mount.
+vi.mock("@/lib/supabaseClient", () => {
+  const maybeSingle = vi.fn().mockResolvedValue({ data: { prefix: "", next_number: 42 } });
+  const eqSeriesKey = vi.fn(() => ({ maybeSingle }));
+  const eqStoreId = vi.fn(() => ({ eq: eqSeriesKey }));
+  const select = vi.fn(() => ({ eq: eqStoreId }));
+  const from = vi.fn(() => ({ select }));
+  return { supabase: { from, __mocks: { maybeSingle, from, select } } };
+});
+
 function renderPage() {
   return render(
     <MemoryRouter initialEntries={["/settings/receipts"]}>
@@ -99,22 +110,14 @@ describe("ReceiptsSettings", () => {
     expect(screen.getByText(/characters left/)).toHaveTextContent("58 characters left");
   });
 
-  it("edits the next receipt number", async () => {
-    const user = userEvent.setup();
+  it("shows the live next invoice number from document_series, with no edit control", async () => {
     vi.mocked(useAuth).mockReturnValue(
       makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }) })
     );
     renderPage();
 
-    expect(screen.getByText(/Next: OR-2026-0038/)).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Edit" }));
-    const input = screen.getByLabelText("Receipt numbering") as HTMLInputElement;
-    await user.clear(input);
-    await user.type(input, "OR-2026-0100");
-    await user.click(screen.getByRole("button", { name: "Save" }));
-
-    expect(screen.getByText(/Next: OR-2026-0100/)).toBeInTheDocument();
+    expect(await screen.findByText(/Next: 000042/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
   });
 
   it("renders the receipt preview using real store data and mock TIN", () => {

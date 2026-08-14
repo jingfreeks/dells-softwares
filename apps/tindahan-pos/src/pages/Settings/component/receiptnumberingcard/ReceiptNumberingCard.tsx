@@ -1,66 +1,27 @@
-import { useState } from "react";
-import { LABEL_RECEIPT_NUMBERING, TEXT_NEXT_RECEIPT_NUMBER_PREFIX, BUTTON_EDIT, BUTTON_SAVE } from "@/lib";
+import {
+  LABEL_RECEIPT_NUMBERING,
+  TEXT_NEXT_RECEIPT_NUMBER_PREFIX,
+  TEXT_RECEIPT_NUMBERING_MANAGED_AUTOMATICALLY,
+} from "@/lib";
 
 interface ReceiptNumberingCardProps {
-  nextReceiptNumber: string;
-  onNextReceiptNumberChange: (value: string) => void;
+  /** Null while loading, or before this store's first-ever sale (its numbering starts on that sale). */
+  nextReceiptNumber: string | null;
 }
 
-export function ReceiptNumberingCard({ nextReceiptNumber, onNextReceiptNumberChange }: ReceiptNumberingCardProps) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(nextReceiptNumber);
-
-  if (editing) {
-    return (
-      <div className="tpl-card">
-        <div className="tpl-sp">
-          <div className="tpl-flex1">
-            <p className="tpl-tp">{LABEL_RECEIPT_NUMBERING}</p>
-            <div className="tpl-fld" style={{ marginTop: 5 }}>
-              <input
-                type="text"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                aria-label={LABEL_RECEIPT_NUMBERING}
-              />
-            </div>
-          </div>
-          <button
-            type="button"
-            className="tpl-btn"
-            style={{ width: "auto", height: 32, padding: "0 14px", marginBottom: 0 }}
-            onClick={() => {
-              onNextReceiptNumberChange(draft);
-              setEditing(false);
-            }}
-          >
-            {BUTTON_SAVE}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+export function ReceiptNumberingCard({ nextReceiptNumber }: ReceiptNumberingCardProps) {
   return (
     <div className="tpl-card">
       <div className="tpl-sp">
         <div className="tpl-flex1">
           <p className="tpl-tp">{LABEL_RECEIPT_NUMBERING}</p>
           <p className="tpl-ts">
-            {TEXT_NEXT_RECEIPT_NUMBER_PREFIX} {nextReceiptNumber}
+            {TEXT_NEXT_RECEIPT_NUMBER_PREFIX} {nextReceiptNumber ?? "…"}
+          </p>
+          <p className="tpl-ts" style={{ marginTop: 4, color: "var(--tpl-t6)" }}>
+            {TEXT_RECEIPT_NUMBERING_MANAGED_AUTOMATICALLY}
           </p>
         </div>
-        <button
-          type="button"
-          className="tpl-btn"
-          style={{ width: "auto", height: 32, padding: "0 14px", marginBottom: 0 }}
-          onClick={() => {
-            setDraft(nextReceiptNumber);
-            setEditing(true);
-          }}
-        >
-          {BUTTON_EDIT}
-        </button>
       </div>
     </div>
   );
