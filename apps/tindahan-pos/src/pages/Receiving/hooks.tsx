@@ -44,6 +44,11 @@ interface PrefillProductState {
   quantity: number;
 }
 
+interface PrefillSupplierState {
+  supplierId: string;
+  supplierName: string;
+}
+
 export function useReceivingPage() {
   const { products, suppliers, receivingHistory, receiveStock, findSupplierByScanCode, updateProduct } = useStoreData();
   const location = useLocation();
@@ -119,6 +124,23 @@ export function useReceivingPage() {
       setSupplierId(null);
     }
   }
+
+  // Same navigation-state prefill pattern as prefillProduct above (Suppliers
+  // page's "Receive" action), guarded by its own ref so the two prefill
+  // kinds can arrive together or separately without either one re-firing on
+  // a StrictMode double-invoke.
+  const prefillSupplierHandledKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prefillSupplierHandledKeyRef.current === location.key) return;
+    const state = location.state as { prefillSupplier?: PrefillSupplierState } | null;
+    const prefill = state?.prefillSupplier;
+    if (prefill) {
+      prefillSupplierHandledKeyRef.current = location.key;
+      setSupplier(prefill.supplierName);
+      setSupplierId(prefill.supplierId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
 
   async function handleScanDetected(code: string) {
     const mode = scanMode;

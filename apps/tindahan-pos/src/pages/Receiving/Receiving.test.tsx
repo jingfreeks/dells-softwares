@@ -268,6 +268,8 @@ describe("Receiving", () => {
             supplier: "Mega Distribution",
             supplierId: "sup1",
             drNumber: null,
+            paid: true,
+            paidAt: "2026-07-20T10:00:00Z",
             lines: [{ productId: "p1", productName: "Sardines", quantity: 10, costEach: 20 }],
           },
         ],

@@ -10,6 +10,7 @@ import type {
   SaleRecord,
   ServiceLine,
   Supplier,
+  SupplierPaymentTerms,
 } from "@/lib/types";
 
 export type { ReceivingLine } from "@/lib/inventory";
@@ -21,7 +22,20 @@ export interface ReceivingEntry {
   supplierId: string | null;
   /** Optional delivery-receipt/reference number the supplier gave, e.g. a DR slip. */
   drNumber: string | null;
+  /** False when a term-based delivery hasn't been paid yet — cash/ad-hoc deliveries are always true. */
+  paid: boolean;
+  paidAt: string | null;
   lines: ReceivingLine[];
+}
+
+export interface AddSupplierInput {
+  name: string;
+  contactPerson?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  paymentTerms?: SupplierPaymentTerms;
+  categoryIds?: string[];
+  usualDeliveryDays?: number[];
 }
 
 export interface CheckoutPayment {
@@ -71,17 +85,21 @@ export interface StoreDataContextValue {
   addCustomer: (name: string, phone?: string | null, creditLimit?: number | null) => Promise<Customer>;
   recordCreditPayment: (customerId: string, amount: number, note?: string) => Promise<void>;
   fetchCreditPayments: (customerId: string) => Promise<CreditPayment[]>;
-  addSupplier: (name: string, phone?: string | null, address?: string | null) => Promise<Supplier>;
+  addSupplier: (input: AddSupplierInput) => Promise<Supplier>;
   updateSupplier: (
     id: string,
-    patch: Partial<{ name: string; phone: string | null; address: string | null }>
+    patch: Partial<Omit<Supplier, "id" | "scanCode">>
   ) => Promise<void>;
+  deactivateSupplier: (id: string) => Promise<void>;
+  /** Marks every currently-unpaid receiving entry for this supplier as paid. */
+  markSupplierPaid: (supplierId: string) => Promise<void>;
   findSupplierByScanCode: (scanCode: string) => Promise<Supplier | null>;
   fetchSalesInRange: (params: {
     startDate: string;
     endDate: string;
     cashierId?: string | null;
   }) => Promise<SaleRecord[]>;
+  fetchReceivingHistoryInRange: (params: { startDate: string; endDate: string }) => Promise<ReceivingEntry[]>;
 }
 
 export const StoreDataContext = createContext<StoreDataContextValue | null>(null);
