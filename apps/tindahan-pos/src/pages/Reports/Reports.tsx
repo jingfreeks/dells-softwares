@@ -28,6 +28,8 @@ export function Reports() {
     onRetry,
     debtAging,
     thresholdDays,
+    onVoidSale,
+    voidError,
   } = useReportsPage();
 
   return (
@@ -75,7 +77,7 @@ export function Reports() {
             <DebtAgeCard aging={debtAging} thresholdDays={thresholdDays} />
           </div>
           <CashierBreakdownTable rows={report.byCashier} grandTotal={report.totalSales} />
-          <SalesTable sales={report.sales} />
+          <SalesTable sales={report.sales} onVoidSale={onVoidSale} voidError={voidError} />
         </>
       )}
     </div>

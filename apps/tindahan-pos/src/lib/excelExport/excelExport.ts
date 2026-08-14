@@ -55,6 +55,7 @@ function addRecentSalesSheet(workbook: ExcelJS.Workbook, sales: SaleRecord[], cu
     { header: "Subtotal", key: "subtotal", width: 12, style: { numFmt: CURRENCY_FORMAT } },
     { header: "Payment Method", key: "paymentMethod", width: 15 },
     { header: "Total", key: "total", width: 12, style: { numFmt: CURRENCY_FORMAT } },
+    { header: "Status", key: "status", width: 12 },
   ];
 
   for (const sale of sales) {
@@ -71,6 +72,7 @@ function addRecentSalesSheet(workbook: ExcelJS.Workbook, sales: SaleRecord[], cu
         subtotal: "",
         paymentMethod: sale.paymentType,
         total: sale.total,
+        status: sale.status,
       });
       continue;
     }
@@ -86,6 +88,7 @@ function addRecentSalesSheet(workbook: ExcelJS.Workbook, sales: SaleRecord[], cu
         subtotal: item.lineTotal ?? item.quantity * item.price + item.fee,
         paymentMethod: sale.paymentType,
         total: sale.total,
+        status: sale.status,
       });
     }
   }

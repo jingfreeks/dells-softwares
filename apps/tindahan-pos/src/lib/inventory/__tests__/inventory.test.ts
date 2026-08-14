@@ -205,6 +205,10 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     customerId: null,
     referenceNo: null,
     receiptNumber: null,
+    status: "completed",
+    voidedAt: null,
+    voidedByName: null,
+    voidReason: null,
     items: [],
     ...overrides,
   };

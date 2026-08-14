@@ -7,6 +7,7 @@ import {
   downloadTextFile,
   computeOldestDebtDays,
   buildDebtAgingSummary,
+  ERROR_COULD_NOT_VOID_SALE,
   type SaleRecord,
 } from "@/lib";
 import { buildRangeReport } from "@/lib/reports";
@@ -19,7 +20,7 @@ interface CashierOption {
 }
 
 export function useReportsPage() {
-  const { products, customers, sales: allSales, fetchSalesInRange } = useStoreData();
+  const { products, customers, sales: allSales, fetchSalesInRange, voidSale } = useStoreData();
   const { store } = useAuth();
   const thresholdDays = useMemo(
     () => (store ? loadAlertsMock(store.id).utangAgingThresholdDays : DEFAULT_ALERTS_MOCK.utangAgingThresholdDays),
@@ -34,6 +35,7 @@ export function useReportsPage() {
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [voidError, setVoidError] = useState<string | null>(null);
 
   const { startDate, endDate } = useMemo(
     () => dateRangeForPreset(preset, customStart, customEnd),
@@ -86,6 +88,28 @@ export function useReportsPage() {
     downloadTextFile(filename, salesToCsv(sales), "text/csv");
   }
 
+  // Reports' `sales` is its own range-scoped fetch, separate from the
+  // capped 100-row cache StoreDataContext keeps for the Dashboard — so
+  // once void_sale() succeeds (and voidSale() above has already patched
+  // that shared cache/products/customers), this page also marks its own
+  // copy of the row voided rather than re-fetching the whole range.
+  async function handleVoidSale(sale: SaleRecord, reason: string) {
+    setVoidError(null);
+    try {
+      await voidSale(sale, reason);
+      setSales((prev) =>
+        prev.map((s) =>
+          s.id === sale.id
+            ? { ...s, status: "voided", voidedAt: new Date().toISOString(), voidReason: reason }
+            : s
+        )
+      );
+    } catch (err) {
+      setVoidError(err instanceof Error ? err.message : ERROR_COULD_NOT_VOID_SALE);
+      throw err;
+    }
+  }
+
   return {
     preset,
     setPreset,
@@ -103,5 +127,7 @@ export function useReportsPage() {
     onRetry: load,
     debtAging,
     thresholdDays,
+    onVoidSale: handleVoidSale,
+    voidError,
   };
 }

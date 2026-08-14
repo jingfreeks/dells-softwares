@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { bestSellers, buildDailyReport, buildRangeReport, isToday, salesByCategory, salesByCashier } from "../reports";
+import {
+  bestSellers,
+  buildDailyReport,
+  buildRangeReport,
+  completedSales,
+  isToday,
+  salesByCategory,
+  salesByCashier,
+} from "../reports";
 import type { Customer, Product, SaleRecord } from "../../types";
 
 function makeCustomer(overrides: Partial<Customer> = {}): Customer {
@@ -43,6 +51,10 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     customerId: null,
     referenceNo: null,
     receiptNumber: null,
+    status: "completed",
+    voidedAt: null,
+    voidedByName: null,
+    voidReason: null,
     ...overrides,
   };
 }
@@ -378,5 +390,52 @@ describe("buildRangeReport", () => {
     ]);
     expect(report.bestSellers.map((b) => b.name)).toEqual(["Chips"]);
     expect(report.categoryTotals.rows).toEqual([{ category: "Snacks", total: 20 }]);
+  });
+});
+
+describe("void support (BIR compliance §39) — a voided sale is never counted, but stays visible", () => {
+  const products = [makeProduct({ id: "p1", category: "Snacks" })];
+  const completed = makeSale({ id: "s1", total: 20, status: "completed" });
+  const voided = makeSale({
+    id: "s2",
+    total: 30,
+    status: "voided",
+    items: [
+      { productId: "p1", name: "Chips", quantity: 3, price: 10, itemType: "product", fee: 0, lineTotal: 30 },
+    ],
+  });
+
+  it("completedSales() drops voided rows only", () => {
+    expect(completedSales([completed, voided])).toEqual([completed]);
+  });
+
+  it("salesByCategory excludes a voided sale's items from the total", () => {
+    const result = salesByCategory([completed, voided], products);
+    expect(result.grandTotal).toBe(0);
+  });
+
+  it("bestSellers excludes a voided sale's quantity/revenue", () => {
+    const result = bestSellers([voided], products);
+    expect(result).toEqual([]);
+  });
+
+  it("salesByCashier excludes a voided sale from the cashier's total", () => {
+    const result = salesByCashier([{ ...voided, cashierId: "c1", cashierName: "Aling Nena" }]);
+    expect(result).toEqual([]);
+  });
+
+  it("buildRangeReport excludes voided from every aggregate but keeps it in `sales`", () => {
+    const report = buildRangeReport([completed, voided], products);
+    expect(report.totalSales).toBe(20);
+    expect(report.transactionCount).toBe(1);
+    expect(report.sales).toEqual([completed, voided]);
+  });
+
+  it("buildDailyReport excludes voided from totals/transactionCount but keeps recentSales completed-only", () => {
+    const now = new Date("2026-07-30T12:00:00Z");
+    const report = buildDailyReport([...products], [completed, voided], [], [], [], now);
+    expect(report.todaysSalesTotal).toBe(20);
+    expect(report.todaysTransactionCount).toBe(1);
+    expect(report.recentSales).toEqual([completed]);
   });
 });
