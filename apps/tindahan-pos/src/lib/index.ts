@@ -22,6 +22,7 @@ export * from "./qr";
 // code-split. Import it directly from "@/lib/reportPdf" instead.
 export * from "./reports";
 export * from "./storeData";
+export * from "./suppliers";
 export * from "./supabaseClient";
 export * from "./textLabels";
 export * from "./types";

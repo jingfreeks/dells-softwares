@@ -13,8 +13,9 @@ import type {
   SaleRecord,
   ServiceLine,
   Supplier,
+  SupplierPaymentTerms,
 } from "@/lib/types";
-import { StoreDataContext, type CheckoutPayment, type ReceivingEntry } from "./storeDataContext";
+import { StoreDataContext, type AddSupplierInput, type CheckoutPayment, type ReceivingEntry } from "./storeDataContext";
 import { loadCachedStoreData, saveCachedStoreData } from "./storeDataCache";
 
 function mapProductRow(row: {
@@ -45,6 +46,67 @@ function mapProductRow(row: {
     packPrice: row.pack_price,
     imageUrl: row.image_url,
     cost: row.cost,
+  };
+}
+
+const SUPPLIER_SELECT =
+  "id, name, contact_person, phone, address, scan_code, payment_terms, active, usual_delivery_days, supplier_categories(category_id)";
+
+function mapSupplierRow(row: {
+  id: string;
+  name: string;
+  contact_person: string | null;
+  phone: string | null;
+  address: string | null;
+  scan_code: string;
+  payment_terms: string;
+  active: boolean;
+  usual_delivery_days: number[];
+  supplier_categories: { category_id: string }[] | null;
+}): Supplier {
+  return {
+    id: row.id,
+    name: row.name,
+    contactPerson: row.contact_person,
+    phone: row.phone,
+    address: row.address,
+    scanCode: row.scan_code,
+    paymentTerms: row.payment_terms as SupplierPaymentTerms,
+    active: row.active,
+    usualDeliveryDays: row.usual_delivery_days,
+    categoryIds: (row.supplier_categories ?? []).map((c) => c.category_id),
+  };
+}
+
+const RECEIVING_ENTRY_SELECT =
+  "id, supplier, supplier_id, dr_number, paid, paid_at, received_on, receiving_lines(product_id, product_name, quantity, cost_each)";
+
+function mapReceivingEntryRow(row: {
+  id: string;
+  supplier: string;
+  supplier_id: string | null;
+  dr_number: string | null;
+  paid: boolean;
+  paid_at: string | null;
+  received_on: string;
+  receiving_lines:
+    | { product_id: string | null; product_name: string; quantity: number; cost_each: number }[]
+    | null;
+}): ReceivingEntry {
+  return {
+    id: row.id,
+    date: row.received_on,
+    supplier: row.supplier,
+    supplierId: row.supplier_id,
+    drNumber: row.dr_number,
+    paid: row.paid,
+    paidAt: row.paid_at,
+    lines: (row.receiving_lines ?? []).map((line) => ({
+      productId: line.product_id ?? "",
+      productName: line.product_name,
+      quantity: line.quantity,
+      costEach: line.cost_each,
+    })),
   };
 }
 
@@ -185,21 +247,18 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  // Deactivated suppliers are filtered out here (not client-side) so no
+  // consumer of `suppliers` state has to remember to check `.active` —
+  // their receiving history stays intact via receiving_entries.supplier_id
+  // even though the record no longer surfaces in any list.
   const fetchSuppliers = useCallback(async () => {
     const { data, error: err } = await supabase
       .from("suppliers")
-      .select("id, name, phone, address, scan_code")
+      .select(SUPPLIER_SELECT)
+      .eq("active", true)
       .order("name");
     if (err) throw err;
-    setSuppliers(
-      (data ?? []).map((row) => ({
-        id: row.id,
-        name: row.name,
-        phone: row.phone,
-        address: row.address,
-        scanCode: row.scan_code,
-      }))
-    );
+    setSuppliers((data ?? []).map(mapSupplierRow));
   }, []);
 
   // Receiving history is admin-only at the RLS level for insert, but any
@@ -207,28 +266,31 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   const fetchReceivingHistory = useCallback(async () => {
     const { data, error: err } = await supabase
       .from("receiving_entries")
-      .select(
-        "id, supplier, supplier_id, dr_number, received_on, receiving_lines(product_id, product_name, quantity, cost_each)"
-      )
+      .select(RECEIVING_ENTRY_SELECT)
       .order("received_on", { ascending: false })
       .limit(50);
     if (err) throw err;
-    setReceivingHistory(
-      (data ?? []).map((row) => ({
-        id: row.id,
-        date: row.received_on,
-        supplier: row.supplier,
-        supplierId: row.supplier_id,
-        drNumber: row.dr_number,
-        lines: (row.receiving_lines ?? []).map((line) => ({
-          productId: line.product_id ?? "",
-          productName: line.product_name,
-          quantity: line.quantity,
-          costEach: line.cost_each,
-        })),
-      }))
-    );
+    setReceivingHistory((data ?? []).map(mapReceivingEntryRow));
   }, []);
+
+  // Unlimited, date-ranged fetch for supplier metrics (spend this month,
+  // 30-day spend, unpaid total) — the capped `receivingHistory` above is
+  // fine for the Receiving page's own history card but would silently
+  // under-count a busy month. Mirrors fetchSalesInRange's shape.
+  const fetchReceivingHistoryInRange = useCallback(
+    async (params: { startDate: string; endDate: string }): Promise<ReceivingEntry[]> => {
+      const { data, error: err } = await supabase
+        .from("receiving_entries")
+        .select(RECEIVING_ENTRY_SELECT)
+        .gte("received_on", params.startDate)
+        .lte("received_on", params.endDate)
+        .order("received_on", { ascending: false })
+        .limit(1000);
+      if (err) throw err;
+      return (data ?? []).map(mapReceivingEntryRow);
+    },
+    []
+  );
 
   const refresh = useCallback(async () => {
     setError(null);
@@ -572,13 +634,35 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       await restock(line.productId, line.quantity);
     }
 
+    // receiving_entries.warehouse_id is not-null (0017_inventory_management.sql)
+    // — tindahan-pos only ever writes to the store's single default
+    // warehouse (products.stock is the source of truth it reads/writes;
+    // see 0017's note), so resolve that warehouse's id rather than asking
+    // the admin to pick one they don't otherwise interact with.
+    const { data: warehouse, error: warehouseErr } = await supabase
+      .from("warehouses")
+      .select("id")
+      .eq("store_id", storeId)
+      .eq("is_default", true)
+      .single();
+    if (warehouseErr) throw warehouseErr;
+
+    // Cash (or an ad-hoc supplier with no saved record) is paid on
+    // delivery by definition; a term-based supplier starts unpaid until
+    // explicitly marked paid.
+    const resolvedSupplier = supplierId ? suppliers.find((s) => s.id === supplierId) : null;
+    const paidOnDelivery = !resolvedSupplier || resolvedSupplier.paymentTerms === "cash";
+
     const { data: entry, error: entryErr } = await supabase
       .from("receiving_entries")
       .insert({
         store_id: storeId,
         supplier: supplier.trim() || "Unspecified supplier",
         supplier_id: supplierId,
+        warehouse_id: warehouse.id,
         dr_number: drNumber?.trim() || null,
+        paid: paidOnDelivery,
+        paid_at: paidOnDelivery ? new Date().toISOString() : null,
         received_on: date,
         created_by: user.id,
       })
@@ -654,43 +738,79 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  async function addSupplier(
-    name: string,
-    phone: string | null = null,
-    address: string | null = null
-  ): Promise<Supplier> {
+  async function addSupplier(input: AddSupplierInput): Promise<Supplier> {
     if (!user) throw new Error("Not signed in.");
     const storeId = user.storeId;
     const { data, error: err } = await supabase
       .from("suppliers")
-      .insert({ store_id: storeId, name: name.trim(), phone, address })
-      .select("id, name, phone, address, scan_code")
+      .insert({
+        store_id: storeId,
+        name: input.name.trim(),
+        contact_person: input.contactPerson ?? null,
+        phone: input.phone ?? null,
+        address: input.address ?? null,
+        payment_terms: input.paymentTerms ?? "cash",
+        usual_delivery_days: input.usualDeliveryDays ?? [],
+      })
+      .select(SUPPLIER_SELECT)
       .single();
     if (err) throw err;
+    if (input.categoryIds?.length) {
+      const { error: catErr } = await supabase
+        .from("supplier_categories")
+        .insert(input.categoryIds.map((categoryId) => ({ supplier_id: data.id, category_id: categoryId })));
+      if (catErr) throw catErr;
+    }
     await fetchSuppliers();
-    return {
-      id: data.id,
-      name: data.name,
-      phone: data.phone,
-      address: data.address,
-      scanCode: data.scan_code,
-    };
+    return mapSupplierRow({ ...data, supplier_categories: (input.categoryIds ?? []).map((category_id) => ({ category_id })) });
   }
 
-  async function updateSupplier(
-    id: string,
-    patch: Partial<{ name: string; phone: string | null; address: string | null }>
-  ) {
+  async function updateSupplier(id: string, patch: Partial<Omit<Supplier, "id" | "scanCode">>) {
     const { error: err } = await supabase
       .from("suppliers")
       .update({
         ...(patch.name !== undefined && { name: patch.name }),
+        ...(patch.contactPerson !== undefined && { contact_person: patch.contactPerson }),
         ...(patch.phone !== undefined && { phone: patch.phone }),
         ...(patch.address !== undefined && { address: patch.address }),
+        ...(patch.paymentTerms !== undefined && { payment_terms: patch.paymentTerms }),
+        ...(patch.active !== undefined && { active: patch.active }),
+        ...(patch.usualDeliveryDays !== undefined && { usual_delivery_days: patch.usualDeliveryDays }),
       })
       .eq("id", id);
     if (err) throw err;
+    if (patch.categoryIds !== undefined) {
+      // Simplest correct diff: replace the full set rather than computing
+      // an add/remove delta — this table only ever holds a handful of rows
+      // per supplier.
+      const { error: delErr } = await supabase.from("supplier_categories").delete().eq("supplier_id", id);
+      if (delErr) throw delErr;
+      if (patch.categoryIds.length) {
+        const { error: insErr } = await supabase
+          .from("supplier_categories")
+          .insert(patch.categoryIds.map((categoryId) => ({ supplier_id: id, category_id: categoryId })));
+        if (insErr) throw insErr;
+      }
+    }
     await fetchSuppliers();
+  }
+
+  // No hard delete — a supplier's receiving history must stay intact even
+  // after the store stops buying from them.
+  async function deactivateSupplier(id: string) {
+    const { error: err } = await supabase.from("suppliers").update({ active: false }).eq("id", id);
+    if (err) throw err;
+    await fetchSuppliers();
+  }
+
+  async function markSupplierPaid(supplierId: string) {
+    const { error: err } = await supabase
+      .from("receiving_entries")
+      .update({ paid: true, paid_at: new Date().toISOString() })
+      .eq("supplier_id", supplierId)
+      .eq("paid", false);
+    if (err) throw err;
+    await fetchReceivingHistory();
   }
 
   // Looks up a supplier by their scan_code — used by the "scan supplier"
@@ -701,18 +821,12 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   async function findSupplierByScanCode(scanCode: string): Promise<Supplier | null> {
     const { data, error: err } = await supabase
       .from("suppliers")
-      .select("id, name, phone, address, scan_code")
+      .select(SUPPLIER_SELECT)
       .eq("scan_code", scanCode)
       .maybeSingle();
     if (err) throw err;
     if (!data) return null;
-    return {
-      id: data.id,
-      name: data.name,
-      phone: data.phone,
-      address: data.address,
-      scanCode: data.scan_code,
-    };
+    return mapSupplierRow(data);
   }
 
   return (
@@ -742,8 +856,11 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         fetchCreditPayments,
         addSupplier,
         updateSupplier,
+        deactivateSupplier,
+        markSupplierPaid,
         findSupplierByScanCode,
         fetchSalesInRange,
+        fetchReceivingHistoryInRange,
       }}
     >
       {children}

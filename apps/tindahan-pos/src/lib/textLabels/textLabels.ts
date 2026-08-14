@@ -256,10 +256,11 @@ export const ERROR_COULD_NOT_SAVE_PROFILE = "Could not save profile.";
 export const EMPTY_STATE_NO_PHONE = "No phone on file";
 
 // Suppliers page
-export const TEXT_SUPPLIERS_DESCRIPTION =
-  "Manage suppliers and print a scannable code for quick selection during receiving.";
+export const TEXT_SUPPLIERS_DESCRIPTION = "Who you buy from, what they bring, and what you owe them";
 export const BUTTON_ADD_SUPPLIER = "Add supplier";
-export const EMPTY_STATE_NO_SUPPLIERS = "No suppliers yet.";
+export const EMPTY_STATE_NO_SUPPLIERS = "No suppliers yet";
+export const TEXT_EMPTY_SUPPLIERS_HINT =
+  "Add your first supplier so you can track deliveries, costs, and what you owe.";
 export const LABEL_EDIT_SUPPLIER = "Edit supplier";
 export const LABEL_ADDRESS_OPTIONAL = "Address (optional)";
 export const BUTTON_EDIT = "Edit";
@@ -270,6 +271,82 @@ export const TEXT_SUPPLIER_SCAN_HINT_SUFFIX = "instantly.";
 export const TEXT_SELECT_SUPPLIER_PROMPT = "Select a supplier to view and print their scan code.";
 export const TEXT_SUPPLIER_PRINT_HINT = "Scan this at Receiving to select this supplier.";
 export const ERROR_COULD_NOT_SAVE_SUPPLIER = "Could not save supplier.";
+
+// Suppliers page — header actions
+export const BUTTON_PRINT_SCAN_SHEET = "Print scan sheet";
+
+// Suppliers page — metrics
+export const LABEL_SPENT_THIS_MONTH = "SPENT THIS MONTH";
+export const TEXT_ACROSS_SUPPLIERS_SUFFIX = "suppliers";
+export const LABEL_DELIVERIES = "DELIVERIES";
+export const TEXT_AVERAGE_SUFFIX = "average";
+export const LABEL_UNPAID_ON_TERMS = "UNPAID ON TERMS";
+export const TEXT_DUE_PREFIX = "due";
+export const LABEL_NEXT_EXPECTED = "NEXT EXPECTED";
+export const TEXT_NO_UPCOMING_DELIVERY = "No upcoming delivery";
+export const TEXT_NOTHING_OWED = "Nothing owed";
+
+// Suppliers page — search/filter/sort
+export const PLACEHOLDER_SEARCH_SUPPLIER = "Search supplier or contact";
+export const FILTER_OWING_PREFIX = "Owing";
+export const SORT_MOST_SPENT = "Most spent";
+export const SORT_RECENTLY_DELIVERED = "Recently delivered";
+export const SORT_NAME = "Supplier name";
+
+// Suppliers page — table
+export const TABLE_HEADER_SUPPLIER = "SUPPLIER";
+export const TABLE_HEADER_WHAT_THEY_BRING = "WHAT THEY BRING";
+export const TABLE_HEADER_LAST_DELIVERY = "LAST DELIVERY";
+export const TABLE_HEADER_SPEND_30D = "SPEND 30D";
+export const TABLE_HEADER_TERMS = "TERMS";
+export const CHIP_TERMS_CASH = "Cash";
+export const CHIP_TERMS_7_DAYS = "7 days";
+export const CHIP_TERMS_15_DAYS = "15 days";
+export const BUTTON_RECEIVE = "Receive";
+export const MENUITEM_MARK_AS_PAID = "Mark as paid";
+export const MENUITEM_DEACTIVATE = "Deactivate";
+export const TEXT_NEVER_DELIVERED = "No deliveries yet";
+export const ERROR_COULD_NOT_MARK_PAID = "Could not mark this supplier's deliveries as paid.";
+export const ERROR_COULD_NOT_DEACTIVATE_SUPPLIER = "Could not deactivate supplier.";
+
+// Suppliers page — print scan sheet card
+export const TITLE_PRINT_SCAN_SHEET = "Print one sheet, tape it by the door";
+export const TEXT_PRINT_SCAN_SHEET_BODY =
+  "Every supplier gets a scannable code. When a delivery arrives, scan the code instead of picking from a dropdown — the receiving form opens with that supplier already filled in.";
+export const BUTTON_PRINT_ALL_CODES_PREFIX = "Print all";
+export const BUTTON_PREVIEW = "Preview";
+
+// Suppliers page — cost changes worth knowing
+export const TITLE_COST_CHANGES_WORTH_KNOWING = "Cost changes worth knowing";
+export const LINK_SEE_ALL = "See all";
+export const TEXT_YESTERDAY_SUFFIX = "yesterday";
+export const TEXT_MARGIN_PREFIX = "margin";
+export const TEXT_NO_RECENT_COST_CHANGES = "No cost changes worth flagging in the last 30 days.";
+
+// Add Supplier modal
+export const LABEL_BUSINESS_NAME = "Business name";
+export const LABEL_CONTACT_PERSON_OPTIONAL = "Who you deal with · optional";
+export const HINT_MOBILE_LOW_STOCK_SHORTCUT = "Used for the \"order more\" shortcut on low-stock items.";
+export const PLACEHOLDER_ADDRESS_SUPPLIER = "Warehouse or market stall";
+export const LABEL_WHAT_DO_THEY_BRING = "What do they bring?";
+export const HINT_CATEGORIES_SUPPLIED =
+  "Tick the categories. Receiving then shows their products first, so you are not scrolling past a long list to find a few.";
+export const LABEL_USUAL_DELIVERY_DAYS = "Usual delivery days";
+export const HINT_DELIVERY_DAYS = "Drives the \"next expected delivery\" reminder.";
+export const LABEL_HOW_YOU_PAY_THEM = "How you pay them";
+export const HINT_PAYMENT_TERMS = "Cash means paid on delivery. Terms show up as money you owe.";
+export const TITLE_SCAN_CODE_AUTO = "A scan code is created automatically";
+export const TEXT_SCAN_CODE_HINT =
+  "Print it and stick it where deliveries arrive. Scanning opens the receiving form with this supplier already selected.";
+export const BUTTON_SAVE_AND_ADD_ANOTHER = "Save and add another";
+export const TEXT_SUPPLIER_ALREADY_EXISTS_PREFIX = "Looks like you already have";
+export const DAY_MON = "Mon";
+export const DAY_TUE = "Tue";
+export const DAY_WED = "Wed";
+export const DAY_THU = "Thu";
+export const DAY_FRI = "Fri";
+export const DAY_SAT = "Sat";
+export const DAY_SUN = "Sun";
 
 // Customers page
 export const TEXT_CUSTOMERS_DESCRIPTION = "Track utang (credit) balances and payments.";

@@ -7,6 +7,7 @@ export * from "./navIcons";
 // directly from "@/components/BarcodeScanner" instead.
 export * from "./BottomNav";
 export * from "./CategoryManager";
+export * from "./ChipMultiSelect";
 export * from "./ConfirmDialog";
 export * from "./DebtAgeCard";
 export * from "./HomeRedirect";

@@ -113,9 +113,14 @@ export function makeSupplier(overrides: Partial<Supplier> = {}): Supplier {
   return {
     id: "sup-1",
     name: "Mega Distribution",
+    contactPerson: "Ronnie Cruz",
     phone: "09171234567",
     address: "Quezon City",
     scanCode: "abc123",
+    paymentTerms: "cash",
+    active: true,
+    usualDeliveryDays: [],
+    categoryIds: [],
     ...overrides,
   };
 }
@@ -191,6 +196,8 @@ function baseStoreDataValue() {
       supplier: string;
       supplierId: string | null;
       drNumber: string | null;
+      paid: boolean;
+      paidAt: string | null;
       lines: { productId: string; productName: string; quantity: number; costEach: number }[];
     }[],
     receiveStock: vi.fn().mockResolvedValue(undefined),
@@ -199,8 +206,11 @@ function baseStoreDataValue() {
     fetchCreditPayments: vi.fn().mockResolvedValue([] as CreditPayment[]),
     addSupplier: vi.fn().mockResolvedValue(makeSupplier()),
     updateSupplier: vi.fn().mockResolvedValue(undefined),
+    deactivateSupplier: vi.fn().mockResolvedValue(undefined),
+    markSupplierPaid: vi.fn().mockResolvedValue(undefined),
     findSupplierByScanCode: vi.fn().mockResolvedValue(null as Supplier | null),
     fetchSalesInRange: vi.fn().mockResolvedValue([] as SaleRecord[]),
+    fetchReceivingHistoryInRange: vi.fn().mockResolvedValue([]),
   };
 }
 
