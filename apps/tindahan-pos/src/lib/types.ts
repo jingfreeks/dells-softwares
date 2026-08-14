@@ -100,6 +100,8 @@ export interface SaleRecord {
   referenceNo: string | null;
   /** Set when checkout() queued this sale offline instead of confirming it live — undefined/omitted for a normal live sale. */
   syncStatus?: "pending";
+  /** Server-assigned OR/invoice number, unique per store. Null only for a sale still queued offline — checkout_sale() assigns it once the sale actually lands in the database, so a not-yet-synced sale genuinely has none yet. */
+  receiptNumber: string | null;
 }
 
 export interface ServiceLine {

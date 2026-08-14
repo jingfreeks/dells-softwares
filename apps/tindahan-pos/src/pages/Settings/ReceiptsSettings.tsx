@@ -20,7 +20,7 @@ import { loadStoreDetailsMock } from "./storeDetailsMock";
 
 export function ReceiptsSettings() {
   const { user } = useAuth();
-  const { settings, toggle, setFooterMessage, footerCharactersLeft, setNextReceiptNumber, isDirty, justSaved, onSubmit, onDiscard, store, tin } =
+  const { settings, toggle, setFooterMessage, footerCharactersLeft, nextInvoiceNumberPreview, isDirty, justSaved, onSubmit, onDiscard, store, tin } =
     useReceiptsSettingsPage();
 
   const storeDetails = user ? loadStoreDetailsMock(user.storeId) : null;
@@ -65,10 +65,7 @@ export function ReceiptsSettings() {
               onFooterMessageChange={setFooterMessage}
               charactersLeft={footerCharactersLeft}
             />
-            <ReceiptNumberingCard
-              nextReceiptNumber={settings.nextReceiptNumber}
-              onNextReceiptNumberChange={setNextReceiptNumber}
-            />
+            <ReceiptNumberingCard nextReceiptNumber={nextInvoiceNumberPreview} />
           </div>
 
           <ReceiptPreviewPanel
@@ -81,7 +78,7 @@ export function ReceiptsSettings() {
             tin={tin}
             includeCashierName={settings.includeCashierName}
             footerMessage={settings.footerMessage}
-            nextReceiptNumber={settings.nextReceiptNumber}
+            nextReceiptNumber={nextInvoiceNumberPreview}
           />
         </div>
 

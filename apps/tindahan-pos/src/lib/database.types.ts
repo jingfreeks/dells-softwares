@@ -190,6 +190,7 @@ export interface Database {
           client_request_id: string | null;
           occurred_at: string | null;
           is_offline_replay: boolean;
+          receipt_number: string | null;
         };
         Insert: {
           id?: string;
@@ -203,6 +204,7 @@ export interface Database {
           client_request_id?: string | null;
           occurred_at?: string | null;
           is_offline_replay?: boolean;
+          receipt_number?: string | null;
         };
         Update: {
           id?: string;
@@ -216,6 +218,7 @@ export interface Database {
           client_request_id?: string | null;
           occurred_at?: string | null;
           is_offline_replay?: boolean;
+          receipt_number?: string | null;
         };
         Relationships: [
           {
@@ -674,6 +677,40 @@ export interface Database {
           },
         ];
       };
+      document_series: {
+        Row: {
+          id: string;
+          store_id: string;
+          series_key: string;
+          prefix: string;
+          next_number: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          series_key?: string;
+          prefix?: string;
+          next_number?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          series_key?: string;
+          prefix?: string;
+          next_number?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "document_series_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -690,7 +727,7 @@ export interface Database {
           p_occurred_at?: string | null;
           p_is_offline_replay?: boolean;
         };
-        Returns: { sale_id: string; total: number }[];
+        Returns: { sale_id: string; total: number; receipt_number: string | null }[];
       };
       record_credit_payment: {
         Args: {

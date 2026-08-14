@@ -42,6 +42,7 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     paymentType: "cash",
     customerId: null,
     referenceNo: null,
+    receiptNumber: null,
     ...overrides,
   };
 }

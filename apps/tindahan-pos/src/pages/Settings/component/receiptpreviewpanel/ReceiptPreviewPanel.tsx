@@ -15,7 +15,7 @@ const SAMPLE_ITEMS = [
   { name: "Globe load 100", amount: "100.00" },
   { name: "Service fee", amount: "5.00" },
 ];
-const SAMPLE_RECEIPT_NUMBER_LINE = "01 Aug 9:14 AM";
+const SAMPLE_TIMESTAMP_LINE = "01 Aug 9:14 AM";
 const SAMPLE_CASHIER_NAME = "Maricel";
 const SAMPLE_TOTAL = "177.00";
 const SAMPLE_CASH = "200.00";
@@ -31,7 +31,8 @@ interface ReceiptPreviewPanelProps {
   tin: string;
   includeCashierName: boolean;
   footerMessage: string;
-  nextReceiptNumber: string;
+  /** The real next invoice number for this store, or null while it's loading. */
+  nextReceiptNumber: string | null;
 }
 
 export function ReceiptPreviewPanel({
@@ -84,7 +85,7 @@ export function ReceiptPreviewPanel({
           - - - - - - - - - - - - - - - - -
         </p>
         <p style={{ color: "#5F5E5A", fontSize: 10 }}>
-          {nextReceiptNumber} · {SAMPLE_RECEIPT_NUMBER_LINE}
+          {nextReceiptNumber ?? "…"} · {SAMPLE_TIMESTAMP_LINE}
           {includeCashierName && (
             <>
               <br />

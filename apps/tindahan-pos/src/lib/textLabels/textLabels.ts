@@ -1036,6 +1036,8 @@ export const LABEL_FOOTER_MESSAGE = "Footer message";
 export const TEXT_CHARACTERS_LEFT = "characters left";
 export const LABEL_RECEIPT_NUMBERING = "Receipt numbering";
 export const TEXT_NEXT_RECEIPT_NUMBER_PREFIX = "Next:";
+export const TEXT_RECEIPT_NUMBERING_MANAGED_AUTOMATICALLY =
+  "Assigned automatically on each sale to guarantee it's unique — not editable.";
 export const LABEL_PREVIEW = "Preview";
 export const BUTTON_TEST_PRINT = "Test print";
 export const BUTTON_58MM = "58mm";
@@ -1220,11 +1222,13 @@ export const BUTTON_TRY_AGAIN = "Try again";
 export const TITLE_UNABLE_TO_CONNECT = "Unable to connect";
 export const ERROR_COULD_NOT_START_SESSION = "We couldn't connect to the cashier system. Please check your connection and try again.";
 export const TEXT_LOADING_PRODUCTS = "Loading products…";
+export const TEXT_LOADING_MORE_PRODUCTS = "Loading more products…";
 export const ERROR_COULD_NOT_LOAD_PRODUCTS = "Unable to load products.";
 
 // Printable receipt
 export const LABEL_RECEIPT_HEADING = "Official Receipt";
 export const LABEL_RECEIPT_NUMBER_PREFIX = "Receipt No.";
+export const TEXT_RECEIPT_NUMBER_PENDING = "Pending — assigned once synced";
 export const LABEL_CASHIER_ON_RECEIPT_PREFIX = "Cashier:";
 export const LABEL_CASH_TENDERED = "Cash tendered";
 export const LABEL_REFERENCE_NO_PREFIX = "Reference no.";
