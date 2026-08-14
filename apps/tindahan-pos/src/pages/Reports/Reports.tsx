@@ -9,6 +9,7 @@ import { DebtAgeCard } from "@/components";
 import {
   DateRangeFilter,
   CashierFilter,
+  DeviceFilter,
   SummaryCards,
   CashierBreakdownTable,
   SalesTable,
@@ -28,6 +29,9 @@ export function Reports() {
     cashierId,
     setCashierId,
     cashiers,
+    deviceId,
+    setDeviceId,
+    devices,
     report,
     loading,
     error,
@@ -61,6 +65,7 @@ export function Reports() {
           onCustomEndChange={setCustomEnd}
         />
         <CashierFilter cashiers={cashiers} cashierId={cashierId} onChange={setCashierId} />
+        <DeviceFilter devices={devices} deviceId={deviceId} onChange={setDeviceId} />
       </div>
 
       {error && (

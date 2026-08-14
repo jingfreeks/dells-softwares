@@ -226,6 +226,7 @@ export interface Database {
           vat_amount: number;
           vat_exempt_sales: number;
           zero_rated_sales: number;
+          device_id: string | null;
         };
         Insert: {
           id?: string;
@@ -250,6 +251,7 @@ export interface Database {
           vat_amount?: number;
           vat_exempt_sales?: number;
           zero_rated_sales?: number;
+          device_id?: string | null;
         };
         Update: {
           id?: string;
@@ -274,6 +276,7 @@ export interface Database {
           vat_amount?: number;
           vat_exempt_sales?: number;
           zero_rated_sales?: number;
+          device_id?: string | null;
         };
         Relationships: [
           {
@@ -292,6 +295,12 @@ export interface Database {
             foreignKeyName: "sales_customer_id_fkey";
             columns: ["customer_id"];
             referencedRelation: "customers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "sales_device_id_fkey";
+            columns: ["device_id"];
+            referencedRelation: "devices";
             referencedColumns: ["id"];
           },
         ];

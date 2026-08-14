@@ -73,6 +73,26 @@ describe("Reports", () => {
     );
   });
 
+  it("re-queries with the selected device's id when the device filter changes", async () => {
+    const user = userEvent.setup();
+    const fetchSalesInRange = vi.fn().mockResolvedValue([]);
+    vi.mocked(useStoreData).mockReturnValue(
+      makeStoreDataValue({ products: [], fetchSalesInRange })
+    );
+
+    renderPage();
+    await waitFor(() => expect(fetchSalesInRange).toHaveBeenCalled());
+    fetchSalesInRange.mockClear();
+
+    await user.selectOptions(await screen.findByRole("combobox", { name: "All devices" }), "Aling Nena");
+
+    await waitFor(() =>
+      expect(fetchSalesInRange).toHaveBeenCalledWith(
+        expect.objectContaining({ deviceId: "c1" })
+      )
+    );
+  });
+
   it("re-queries with a wider date range when switching from Today to This month", async () => {
     const user = userEvent.setup();
     const fetchSalesInRange = vi.fn().mockResolvedValue([]);
@@ -135,6 +155,37 @@ describe("Reports", () => {
 
     expect(screen.getByText("How old the utang is")).toBeInTheDocument();
     expect(screen.getByText("0–15 days")).toBeInTheDocument();
+  });
+
+  describe("device traceability (BIR compliance §49)", () => {
+    it("shows the device name under the cashier for a device-originated sale", async () => {
+      const fetchSalesInRange = vi.fn().mockResolvedValue([
+        makeSaleRecord({ id: "s1", cashierName: "Aling Nena", deviceName: "Tablet 1" }),
+      ]);
+      vi.mocked(useStoreData).mockReturnValue(
+        makeStoreDataValue({ products: [], fetchSalesInRange })
+      );
+
+      renderPage();
+      await waitFor(() => expect(fetchSalesInRange).toHaveBeenCalled());
+
+      expect(screen.getByText("Tablet 1")).toBeInTheDocument();
+    });
+
+    it("shows nothing extra for a sale with no device", async () => {
+      const fetchSalesInRange = vi.fn().mockResolvedValue([
+        makeSaleRecord({ id: "s1", cashierName: "Aling Nena", deviceName: null }),
+      ]);
+      vi.mocked(useStoreData).mockReturnValue(
+        makeStoreDataValue({ products: [], fetchSalesInRange })
+      );
+
+      renderPage();
+      await waitFor(() => expect(fetchSalesInRange).toHaveBeenCalled());
+
+      expect(screen.getAllByText("Aling Nena").length).toBeGreaterThan(0);
+      expect(screen.queryByText("Tablet 1")).not.toBeInTheDocument();
+    });
   });
 
   describe("voiding a sale (BIR compliance §39)", () => {
