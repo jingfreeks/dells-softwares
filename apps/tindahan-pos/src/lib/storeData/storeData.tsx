@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/auth";
 import { cartTotal, lineTotal } from "@/lib/pos";
 import { supabase } from "@/lib/supabaseClient";
 import { enqueueSale, isConnectivityFailure } from "@/lib/offlineQueue";
+import { computeVatBreakdown } from "@/lib/vat";
 import type { ReceivingLine } from "@/lib/inventory";
 import type {
   CartLine,
@@ -14,6 +15,7 @@ import type {
   ServiceLine,
   Supplier,
   SupplierPaymentTerms,
+  VatStatus,
 } from "@/lib/types";
 import { StoreDataContext, type AddSupplierInput, type CheckoutPayment, type ReceivingEntry } from "./storeDataContext";
 import { loadCachedStoreData, saveCachedStoreData } from "./storeDataCache";
@@ -118,7 +120,7 @@ function friendlyProductError(err: { code?: string; message: string }): Error {
 }
 
 const SALE_SELECT =
-  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, receipt_number, status, voided_at, void_reason, staff:cashier_id(id, name), voided_by_staff:voided_by(id, name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)";
+  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, receipt_number, status, voided_at, void_reason, vat_status, vat_rate, vatable_sales, vat_amount, vat_exempt_sales, zero_rated_sales, staff:cashier_id(id, name), voided_by_staff:voided_by(id, name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)";
 
 function mapSaleRow(row: {
   id: string;
@@ -132,6 +134,12 @@ function mapSaleRow(row: {
   status: SaleRecord["status"];
   voided_at: string | null;
   void_reason: string | null;
+  vat_status: VatStatus | null;
+  vat_rate: number | null;
+  vatable_sales: number;
+  vat_amount: number;
+  vat_exempt_sales: number;
+  zero_rated_sales: number;
   staff: { id: string; name: string } | { id: string; name: string }[] | null;
   voided_by_staff: { id: string; name: string } | { id: string; name: string }[] | null;
   sale_items:
@@ -165,6 +173,12 @@ function mapSaleRow(row: {
     voidedAt: row.voided_at,
     voidedByName: voidedByStaff?.name ?? null,
     voidReason: row.void_reason,
+    vatStatus: row.vat_status,
+    vatRate: row.vat_rate,
+    vatableSales: row.vatable_sales,
+    vatAmount: row.vat_amount,
+    vatExemptSales: row.vat_exempt_sales,
+    zeroRatedSales: row.zero_rated_sales,
     items: (row.sale_items ?? []).map((item) => ({
       productId: item.product_id ?? "",
       name: item.name,
@@ -178,7 +192,7 @@ function mapSaleRow(row: {
 }
 
 export function StoreDataProvider({ children }: { children: ReactNode }) {
-  const { user, deviceSession } = useAuth();
+  const { user, deviceSession, store } = useAuth();
   const sessionId = user?.id ?? deviceSession?.id ?? null;
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
@@ -560,6 +574,13 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       voidedAt: null,
       voidedByName: null,
       voidReason: null,
+      // Mirrors checkout_sale()'s own VAT snapshot (see 0040_vat_computation.sql)
+      // so the receipt shown immediately after checkout is correct without
+      // waiting on a refetch — the RPC computes the authoritative figures
+      // server-side from the same store config.
+      vatStatus: store?.vatStatus ?? null,
+      vatRate: store?.vatRate ?? null,
+      ...computeVatBreakdown(total, store?.vatStatus ?? null, store?.vatRate ?? 0.12),
       ...(queued ? { syncStatus: "pending" as const } : {}),
     };
 

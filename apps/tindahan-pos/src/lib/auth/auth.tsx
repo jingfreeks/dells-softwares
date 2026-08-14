@@ -47,7 +47,7 @@ async function loadStore(storeId: string): Promise<Store | null> {
   const { data, error } = await supabase
     .from("stores")
     .select(
-      "id, name, address, photo_url, fee_config, contact_number, city, tin, business_permit_no, bir_registered, vat_status, invoice_type"
+      "id, name, address, photo_url, fee_config, contact_number, city, tin, business_permit_no, bir_registered, vat_status, vat_rate, invoice_type"
     )
     .eq("id", storeId)
     .single();
@@ -66,6 +66,7 @@ async function loadStore(storeId: string): Promise<Store | null> {
     businessPermitNo: data.business_permit_no,
     birRegistered: data.bir_registered,
     vatStatus: data.vat_status,
+    vatRate: data.vat_rate,
     invoiceType: data.invoice_type,
   };
 }
@@ -311,6 +312,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     businessPermitNo?: string | null;
     birRegistered?: boolean;
     vatStatus?: VatStatus;
+    vatRate?: number;
     invoiceType?: string;
   }): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
@@ -327,6 +329,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...(patch.businessPermitNo !== undefined && { business_permit_no: patch.businessPermitNo }),
         ...(patch.birRegistered !== undefined && { bir_registered: patch.birRegistered }),
         ...(patch.vatStatus !== undefined && { vat_status: patch.vatStatus }),
+        ...(patch.vatRate !== undefined && { vat_rate: patch.vatRate }),
         ...(patch.invoiceType !== undefined && { invoice_type: patch.invoiceType }),
       })
       .eq("id", user.storeId);

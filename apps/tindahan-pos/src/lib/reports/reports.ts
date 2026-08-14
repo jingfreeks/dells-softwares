@@ -13,6 +13,32 @@ export function completedSales(sales: SaleRecord[]): SaleRecord[] {
   return sales.filter((sale) => sale.status !== "voided");
 }
 
+export interface VatSummary {
+  vatableSales: number;
+  vatAmount: number;
+  vatExemptSales: number;
+  zeroRatedSales: number;
+}
+
+/**
+ * BIR compliance §50: "VAT sales, VAT-exempt sales, Zero-rated sales" as
+ * separate report categories. Sums the per-sale VAT snapshot fields
+ * (see 0040_vat_computation.sql / checkout_sale()) across completed
+ * sales only — a voided sale's VAT amounts must not be counted either,
+ * same reasoning as its `total`.
+ */
+export function vatSummary(sales: SaleRecord[]): VatSummary {
+  return completedSales(sales).reduce(
+    (acc, sale) => ({
+      vatableSales: acc.vatableSales + sale.vatableSales,
+      vatAmount: acc.vatAmount + sale.vatAmount,
+      vatExemptSales: acc.vatExemptSales + sale.vatExemptSales,
+      zeroRatedSales: acc.zeroRatedSales + sale.zeroRatedSales,
+    }),
+    { vatableSales: 0, vatAmount: 0, vatExemptSales: 0, zeroRatedSales: 0 }
+  );
+}
+
 export interface CategoryTotal {
   category: string;
   total: number;
@@ -152,6 +178,7 @@ export interface DailyReport {
   recentSales: SaleRecord[];
   restockSuggestions: RestockSuggestion[];
   categoryTotals: SalesByCategory;
+  vatSummary: VatSummary;
 }
 
 export interface CashierTotal {
@@ -168,6 +195,7 @@ export interface RangeReport {
   byCashier: CashierTotal[];
   bestSellers: BestSeller[];
   categoryTotals: SalesByCategory;
+  vatSummary: VatSummary;
   sales: SaleRecord[];
 }
 
@@ -212,6 +240,7 @@ export function buildRangeReport(sales: SaleRecord[], products: Product[]): Rang
     byCashier: salesByCashier(completed),
     bestSellers: bestSellers(completed, products),
     categoryTotals: salesByCategory(completed, products),
+    vatSummary: vatSummary(completed),
     // Unfiltered — the Reports Sales table and CSV export show every row,
     // voided included (with a status badge), only the numbers above exclude it.
     sales,
@@ -257,5 +286,6 @@ export function buildDailyReport(
     recentSales: completedDaySales.slice(0, 10),
     restockSuggestions: computeRestockSuggestions(products, completedSales(recentSales), { now: reportDate }),
     categoryTotals: salesByCategory(completedDaySales, products),
+    vatSummary: vatSummary(completedDaySales),
   };
 }

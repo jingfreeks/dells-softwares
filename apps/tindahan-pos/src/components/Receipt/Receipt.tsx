@@ -13,6 +13,11 @@ import {
   LABEL_TOTAL_POS,
   TEXT_SAVED_OFFLINE_BADGE,
   TEXT_RECEIPT_NUMBER_PENDING,
+  LABEL_VATABLE_SALES,
+  LABEL_VAT_AMOUNT,
+  LABEL_VAT_EXEMPT_SALES,
+  LABEL_ZERO_RATED_SALES,
+  TEXT_NOT_VAT_REGISTERED,
 } from "@/lib/textLabels";
 
 const PAYMENT_LABEL: Record<SaleRecord["paymentType"], string> = {
@@ -87,6 +92,34 @@ export function Receipt({ sale, store, settings, tin, businessPermitNo, tendered
       ))}
 
       <div className="tpl-receipt-hr" />
+
+      {sale.vatStatus === "vat_registered" && (
+        <>
+          <div className="tpl-receipt-row">
+            <span>{LABEL_VATABLE_SALES}</span>
+            <span>{PESO.format(sale.vatableSales)}</span>
+          </div>
+          <div className="tpl-receipt-row">
+            <span>{LABEL_VAT_AMOUNT}</span>
+            <span>{PESO.format(sale.vatAmount)}</span>
+          </div>
+        </>
+      )}
+      {sale.vatStatus === "zero_rated" && (
+        <div className="tpl-receipt-row">
+          <span>{LABEL_ZERO_RATED_SALES}</span>
+          <span>{PESO.format(sale.zeroRatedSales)}</span>
+        </div>
+      )}
+      {sale.vatStatus === "vat_exempt" && (
+        <div className="tpl-receipt-row">
+          <span>{LABEL_VAT_EXEMPT_SALES}</span>
+          <span>{PESO.format(sale.vatExemptSales)}</span>
+        </div>
+      )}
+      {(sale.vatStatus === "non_vat" || sale.vatStatus === null) && (
+        <p className="tpl-receipt-line">{TEXT_NOT_VAT_REGISTERED}</p>
+      )}
 
       <div className="tpl-receipt-row tpl-receipt-total">
         <span>{LABEL_TOTAL_POS}</span>

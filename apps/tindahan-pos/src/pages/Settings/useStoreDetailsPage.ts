@@ -29,6 +29,7 @@ export function useStoreDetailsPage() {
   const [businessPermitNo, setBusinessPermitNo] = useState(store?.businessPermitNo ?? "");
   const [birRegistered, setBirRegistered] = useState(store?.birRegistered ?? false);
   const [vatStatus, setVatStatus] = useState<VatStatus>(store?.vatStatus ?? "non_vat");
+  const [vatRate, setVatRate] = useState(store?.vatRate ?? 0.12);
   const [invoiceType, setInvoiceType] = useState(store?.invoiceType ?? "Sales Invoice");
 
   const [openTime, setOpenTime] = useState(DEFAULT_OPENING_HOURS.openTime);
@@ -47,6 +48,7 @@ export function useStoreDetailsPage() {
     setBusinessPermitNo(store?.businessPermitNo ?? "");
     setBirRegistered(store?.birRegistered ?? false);
     setVatStatus(store?.vatStatus ?? "non_vat");
+    setVatRate(store?.vatRate ?? 0.12);
     setInvoiceType(store?.invoiceType ?? "Sales Invoice");
   }, [
     store?.id,
@@ -58,6 +60,7 @@ export function useStoreDetailsPage() {
     store?.businessPermitNo,
     store?.birRegistered,
     store?.vatStatus,
+    store?.vatRate,
     store?.invoiceType,
   ]);
 
@@ -90,6 +93,7 @@ export function useStoreDetailsPage() {
     businessPermitNo !== (store?.businessPermitNo ?? "") ||
     birRegistered !== (store?.birRegistered ?? false) ||
     vatStatus !== (store?.vatStatus ?? "non_vat") ||
+    vatRate !== (store?.vatRate ?? 0.12) ||
     invoiceType !== (store?.invoiceType ?? "Sales Invoice");
 
   async function handlePhotoSelect(e: ChangeEvent<HTMLInputElement>) {
@@ -135,6 +139,7 @@ export function useStoreDetailsPage() {
         businessPermitNo: businessPermitNo.trim() || null,
         birRegistered,
         vatStatus,
+        vatRate,
         invoiceType,
       });
       if (!result.ok) {
@@ -163,6 +168,7 @@ export function useStoreDetailsPage() {
     setBusinessPermitNo(store?.businessPermitNo ?? "");
     setBirRegistered(store?.birRegistered ?? false);
     setVatStatus(store?.vatStatus ?? "non_vat");
+    setVatRate(store?.vatRate ?? 0.12);
     setInvoiceType(store?.invoiceType ?? "Sales Invoice");
   }
 
@@ -190,6 +196,8 @@ export function useStoreDetailsPage() {
     setBirRegistered,
     vatStatus,
     setVatStatus,
+    vatRate,
+    setVatRate,
     invoiceType,
     setInvoiceType,
 

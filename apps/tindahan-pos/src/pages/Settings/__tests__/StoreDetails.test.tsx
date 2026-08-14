@@ -212,6 +212,39 @@ describe("StoreDetails", () => {
         expect.objectContaining({ vatStatus: "vat_registered", invoiceType: "Service Invoice" })
       );
     });
+
+    it("only shows the VAT rate field when VAT status is VAT Registered", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }) })
+      );
+      renderPage();
+
+      expect(screen.queryByLabelText("VAT rate (%)")).not.toBeInTheDocument();
+
+      await user.selectOptions(screen.getByLabelText("VAT status"), "VAT Registered");
+      expect(screen.getByLabelText("VAT rate (%)")).toBeInTheDocument();
+
+      await user.selectOptions(screen.getByLabelText("VAT status"), "Non-VAT");
+      expect(screen.queryByLabelText("VAT rate (%)")).not.toBeInTheDocument();
+    });
+
+    it("saves a changed VAT rate", async () => {
+      const user = userEvent.setup();
+      const updateStore = vi.fn().mockResolvedValue({ ok: true });
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }), updateStore })
+      );
+      renderPage();
+
+      await user.selectOptions(screen.getByLabelText("VAT status"), "VAT Registered");
+      const rateInput = screen.getByLabelText("VAT rate (%)");
+      await user.clear(rateInput);
+      await user.type(rateInput, "10");
+      await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+      expect(updateStore).toHaveBeenCalledWith(expect.objectContaining({ vatRate: 0.1 }));
+    });
   });
 
   describe("settings sidebar", () => {

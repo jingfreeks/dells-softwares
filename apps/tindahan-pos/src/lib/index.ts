@@ -24,3 +24,4 @@ export * from "./suppliers";
 export * from "./supabaseClient";
 export * from "./textLabels";
 export * from "./types";
+export * from "./vat";

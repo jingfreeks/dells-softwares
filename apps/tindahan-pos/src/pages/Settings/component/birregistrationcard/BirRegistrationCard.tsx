@@ -11,6 +11,8 @@ import {
   LABEL_NON_VAT,
   LABEL_VAT_EXEMPT,
   LABEL_ZERO_RATED,
+  LABEL_VAT_RATE,
+  TEXT_VAT_RATE_HINT,
   LABEL_INVOICE_TYPE,
   TEXT_INVOICE_TYPE_HINT,
   LABEL_INVOICE_TYPE_SALES,
@@ -44,6 +46,8 @@ interface BirRegistrationCardProps {
   onBusinessPermitNoChange: (value: string) => void;
   vatStatus: VatStatus;
   onVatStatusChange: (value: VatStatus) => void;
+  vatRate: number;
+  onVatRateChange: (value: number) => void;
   invoiceType: string;
   onInvoiceTypeChange: (value: string) => void;
 }
@@ -57,6 +61,8 @@ export function BirRegistrationCard({
   onBusinessPermitNoChange,
   vatStatus,
   onVatStatusChange,
+  vatRate,
+  onVatRateChange,
   invoiceType,
   onInvoiceTypeChange,
 }: BirRegistrationCardProps) {
@@ -144,6 +150,26 @@ export function BirRegistrationCard({
       </div>
       <p className="tpl-hint">{TEXT_VAT_STATUS_HINT}</p>
       <p className="tpl-hint">{TEXT_INVOICE_TYPE_HINT}</p>
+
+      {vatStatus === "vat_registered" && (
+        <div style={{ marginTop: 11 }}>
+          <label htmlFor="storeVatRate" className="tpl-lbl">
+            {LABEL_VAT_RATE}
+          </label>
+          <div className="tpl-fld" style={{ maxWidth: 140 }}>
+            <input
+              id="storeVatRate"
+              type="number"
+              min="0"
+              max="99"
+              step="0.01"
+              value={Math.round(vatRate * 10000) / 100}
+              onChange={(e) => onVatRateChange((Number(e.target.value) || 0) / 100)}
+            />
+          </div>
+          <p className="tpl-hint">{TEXT_VAT_RATE_HINT}</p>
+        </div>
+      )}
     </div>
   );
 }

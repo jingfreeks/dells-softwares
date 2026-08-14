@@ -494,6 +494,12 @@ export const PLACEHOLDER_VOID_REASON = "e.g. Incorrect quantity entered";
 export const TEXT_VOID_REASON_PREFIX = "Reason:";
 export const TEXT_VOIDED_BY_PREFIX = "Voided by";
 export const ERROR_COULD_NOT_VOID_SALE = "Could not void this sale.";
+export const LABEL_VAT_SUMMARY = "VAT summary";
+export const LABEL_VATABLE_SALES = "VATable sales";
+export const LABEL_VAT_AMOUNT = "VAT amount";
+export const LABEL_VAT_EXEMPT_SALES = "VAT-exempt sales";
+export const LABEL_ZERO_RATED_SALES = "Zero-rated sales";
+export const TEXT_NOT_VAT_REGISTERED = "This invoice is NOT VAT Registered.";
 export const LABEL_TRANSACTIONS_TODAY = "Transactions today";
 export const TEXT_AVERAGE_BASKET_SUFFIX = "average basket";
 export const LABEL_LOW_STOCK = "Low stock";
@@ -1026,6 +1032,8 @@ export const LABEL_BUSINESS_PERMIT_NO = "Business permit no.";
 export const TEXT_BIR_HINT =
   "Printed on receipts. Check the current BIR requirements for your registration type — this app doesn't verify them.";
 export const LABEL_VAT_STATUS = "VAT status";
+export const LABEL_VAT_RATE = "VAT rate (%)";
+export const TEXT_VAT_RATE_HINT = "The statutory rate is 12% — adjust only if the applicable BIR rate changes.";
 export const TEXT_VAT_STATUS_HINT =
   "Your registered tax status with BIR. This app doesn't compute or break down VAT amounts yet.";
 export const LABEL_VAT_REGISTERED = "VAT Registered";
