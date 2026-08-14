@@ -54,6 +54,16 @@ html {
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-size: 12.5px;
   color: #0f172a;
+  background: #fff;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+@media print {
+  .tpl-receipt {
+    padding: 0;
+    border-radius: 0;
+  }
 }
 .tpl-receipt-center {
   text-align: center;
