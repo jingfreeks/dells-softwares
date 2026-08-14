@@ -1,6 +1,5 @@
 import type { Product } from "@/lib";
 import { LABEL_ADD_A_PRODUCT, PLACEHOLDER_SEARCH_BY_NAME, LABEL_SCAN_ITEM, LABEL_STOCK_PREFIX } from "@/lib";
-import { CameraIcon } from "@/components";
 
 interface ProductSearchFieldProps {
   searchQuery: string;
@@ -18,46 +17,50 @@ export function ProductSearchField({
   onAddLine,
 }: ProductSearchFieldProps) {
   return (
-    <div className="mt-4">
-      <label htmlFor="recvSearch" className="text-xs font-medium text-slate-700">
+    <div style={{ marginTop: 14 }}>
+      <label htmlFor="recvSearch" className="tpl-lbl">
         {LABEL_ADD_A_PRODUCT}
       </label>
-      <div className="mt-1 flex gap-2">
-        <input
-          id="recvSearch"
-          type="text"
-          placeholder={PLACEHOLDER_SEARCH_BY_NAME}
-          value={searchQuery}
-          onChange={(e) => onSearchQueryChange(e.target.value)}
-          className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-        />
+      <div className="tpl-sp" style={{ gap: 8 }}>
+        <div className="tpl-fld" style={{ flex: 1 }}>
+          <input
+            id="recvSearch"
+            type="text"
+            placeholder={PLACEHOLDER_SEARCH_BY_NAME}
+            value={searchQuery}
+            onChange={(e) => onSearchQueryChange(e.target.value)}
+          />
+        </div>
         <button
           type="button"
           onClick={onScanProduct}
           aria-label={LABEL_SCAN_ITEM}
-          className="flex items-center gap-1.5 rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
+          className="tpl-btnp"
+          style={{ width: "auto", height: 38, padding: "0 14px", marginBottom: 0, flexShrink: 0, gap: 6 }}
         >
-          <CameraIcon className="h-4 w-4" />
+          <i className="ti ti-camera" aria-hidden />
           {LABEL_SCAN_ITEM}
         </button>
       </div>
       {searchResults.length > 0 && (
-        <ul className="mt-2 divide-y divide-slate-100 rounded-xl border border-slate-100">
+        <div className="tpl-card" style={{ padding: 0, marginTop: 6 }}>
           {searchResults.map((product) => (
-            <li key={product.id}>
-              <button
-                type="button"
-                onClick={() => onAddLine(product.id, product.name)}
-                className="flex w-full cursor-pointer items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
-              >
-                <span>{product.name}</span>
-                <span className="text-slate-500">
-                  {LABEL_STOCK_PREFIX} {product.stock}
-                </span>
-              </button>
-            </li>
+            <div
+              key={product.id}
+              role="button"
+              tabIndex={0}
+              className="tpl-trow"
+              style={{ gridTemplateColumns: "1fr auto" }}
+              onClick={() => onAddLine(product.id, product.name)}
+              onKeyDown={(e) => e.key === "Enter" && onAddLine(product.id, product.name)}
+            >
+              <span className="tpl-sub">{product.name}</span>
+              <span className="tpl-ts">
+                {LABEL_STOCK_PREFIX} {product.stock}
+              </span>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

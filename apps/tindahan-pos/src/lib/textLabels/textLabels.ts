@@ -256,20 +256,98 @@ export const ERROR_COULD_NOT_SAVE_PROFILE = "Could not save profile.";
 export const EMPTY_STATE_NO_PHONE = "No phone on file";
 
 // Suppliers page
-export const TEXT_SUPPLIERS_DESCRIPTION =
-  "Manage suppliers and print a scannable code for quick selection during receiving.";
+export const TEXT_SUPPLIERS_DESCRIPTION = "Who you buy from, what they bring, and what you owe them";
 export const BUTTON_ADD_SUPPLIER = "Add supplier";
-export const EMPTY_STATE_NO_SUPPLIERS = "No suppliers yet.";
+export const EMPTY_STATE_NO_SUPPLIERS = "No suppliers yet";
+export const TEXT_EMPTY_SUPPLIERS_HINT =
+  "Add your first supplier so you can track deliveries, costs, and what you owe.";
 export const LABEL_EDIT_SUPPLIER = "Edit supplier";
 export const LABEL_ADDRESS_OPTIONAL = "Address (optional)";
 export const BUTTON_EDIT = "Edit";
 export const BUTTON_PRINT_CODE = "Print code";
+export const BUTTON_PRINT = "Print";
 export const TEXT_SUPPLIER_SCAN_HINT_PREFIX =
   "Print and keep on hand — scan it at Receiving to select";
 export const TEXT_SUPPLIER_SCAN_HINT_SUFFIX = "instantly.";
 export const TEXT_SELECT_SUPPLIER_PROMPT = "Select a supplier to view and print their scan code.";
 export const TEXT_SUPPLIER_PRINT_HINT = "Scan this at Receiving to select this supplier.";
 export const ERROR_COULD_NOT_SAVE_SUPPLIER = "Could not save supplier.";
+
+// Suppliers page — header actions
+export const BUTTON_PRINT_SCAN_SHEET = "Print scan sheet";
+
+// Suppliers page — metrics
+export const LABEL_SPENT_THIS_MONTH = "SPENT THIS MONTH";
+export const TEXT_ACROSS_SUPPLIERS_SUFFIX = "suppliers";
+export const LABEL_DELIVERIES = "DELIVERIES";
+export const TEXT_AVERAGE_SUFFIX = "average";
+export const LABEL_UNPAID_ON_TERMS = "UNPAID ON TERMS";
+export const TEXT_DUE_PREFIX = "due";
+export const LABEL_NEXT_EXPECTED = "NEXT EXPECTED";
+export const TEXT_NO_UPCOMING_DELIVERY = "No upcoming delivery";
+export const TEXT_NOTHING_OWED = "Nothing owed";
+
+// Suppliers page — search/filter/sort
+export const PLACEHOLDER_SEARCH_SUPPLIER = "Search supplier or contact";
+export const FILTER_OWING_PREFIX = "Owing";
+export const SORT_MOST_SPENT = "Most spent";
+export const SORT_RECENTLY_DELIVERED = "Recently delivered";
+export const SORT_NAME = "Supplier name";
+
+// Suppliers page — table
+export const TABLE_HEADER_SUPPLIER = "SUPPLIER";
+export const TABLE_HEADER_WHAT_THEY_BRING = "WHAT THEY BRING";
+export const TABLE_HEADER_LAST_DELIVERY = "LAST DELIVERY";
+export const TABLE_HEADER_SPEND_30D = "SPEND 30D";
+export const TABLE_HEADER_TERMS = "TERMS";
+export const CHIP_TERMS_CASH = "Cash";
+export const CHIP_TERMS_7_DAYS = "7 days";
+export const CHIP_TERMS_15_DAYS = "15 days";
+export const BUTTON_RECEIVE = "Receive";
+export const MENUITEM_MARK_AS_PAID = "Mark as paid";
+export const MENUITEM_DEACTIVATE = "Deactivate";
+export const TEXT_NEVER_DELIVERED = "No deliveries yet";
+export const ERROR_COULD_NOT_MARK_PAID = "Could not mark this supplier's deliveries as paid.";
+export const ERROR_COULD_NOT_DEACTIVATE_SUPPLIER = "Could not deactivate supplier.";
+
+// Suppliers page — print scan sheet card
+export const TITLE_PRINT_SCAN_SHEET = "Print one sheet, tape it by the door";
+export const TEXT_PRINT_SCAN_SHEET_BODY =
+  "Every supplier gets a scannable code. When a delivery arrives, scan the code instead of picking from a dropdown — the receiving form opens with that supplier already filled in.";
+export const BUTTON_PRINT_ALL_CODES_PREFIX = "Print all";
+export const BUTTON_PREVIEW = "Preview";
+
+// Suppliers page — cost changes worth knowing
+export const TITLE_COST_CHANGES_WORTH_KNOWING = "Cost changes worth knowing";
+export const LINK_SEE_ALL = "See all";
+export const TEXT_YESTERDAY_SUFFIX = "yesterday";
+export const TEXT_MARGIN_PREFIX = "margin";
+export const TEXT_NO_RECENT_COST_CHANGES = "No cost changes worth flagging in the last 30 days.";
+
+// Add Supplier modal
+export const LABEL_BUSINESS_NAME = "Business name";
+export const LABEL_CONTACT_PERSON_OPTIONAL = "Who you deal with · optional";
+export const HINT_MOBILE_LOW_STOCK_SHORTCUT = "Used for the \"order more\" shortcut on low-stock items.";
+export const PLACEHOLDER_ADDRESS_SUPPLIER = "Warehouse or market stall";
+export const LABEL_WHAT_DO_THEY_BRING = "What do they bring?";
+export const HINT_CATEGORIES_SUPPLIED =
+  "Tick the categories. Receiving then shows their products first, so you are not scrolling past a long list to find a few.";
+export const LABEL_USUAL_DELIVERY_DAYS = "Usual delivery days";
+export const HINT_DELIVERY_DAYS = "Drives the \"next expected delivery\" reminder.";
+export const LABEL_HOW_YOU_PAY_THEM = "How you pay them";
+export const HINT_PAYMENT_TERMS = "Cash means paid on delivery. Terms show up as money you owe.";
+export const TITLE_SCAN_CODE_AUTO = "A scan code is created automatically";
+export const TEXT_SCAN_CODE_HINT =
+  "Print it and stick it where deliveries arrive. Scanning opens the receiving form with this supplier already selected.";
+export const BUTTON_SAVE_AND_ADD_ANOTHER = "Save and add another";
+export const TEXT_SUPPLIER_ALREADY_EXISTS_PREFIX = "Looks like you already have";
+export const DAY_MON = "Mon";
+export const DAY_TUE = "Tue";
+export const DAY_WED = "Wed";
+export const DAY_THU = "Thu";
+export const DAY_FRI = "Fri";
+export const DAY_SAT = "Sat";
+export const DAY_SUN = "Sun";
 
 // Customers page
 export const TEXT_CUSTOMERS_DESCRIPTION = "Track utang (credit) balances and payments.";
@@ -353,10 +431,40 @@ export const TEXT_GREETING_AFTERNOON = "Good afternoon,";
 export const TEXT_GREETING_EVENING = "Good evening,";
 export const TEXT_SALES_SO_FAR_SUFFIX = "sales so far";
 export const LABEL_PERIOD_TODAY = "Today";
-export const BUTTON_EXPORT_REPORT = "Export report";
-export const ARIA_EXPORT_REPORT = "Export report as PDF";
+export const BUTTON_EXPORT_EXCEL = "Export to Excel";
+export const ARIA_EXPORT_EXCEL = "Export dashboard report as Excel";
+export const ARIA_DASHBOARD_DATE = "Reporting date";
 export const LABEL_TODAYS_SALES = "Today's sales";
 export const TEXT_VS_YESTERDAY_SUFFIX = "vs yesterday";
+
+// Dashboard — clickable report modals
+export const LABEL_ITEMS_SOLD = "Items sold";
+export const LABEL_AVERAGE_BASKET = "Average basket";
+export const LABEL_OUT_OF_STOCK = "Out of stock";
+export const LABEL_EST_COST_TO_REFILL = "Est. cost to refill";
+export const LABEL_CUSTOMERS_OWING = "Customers owing";
+export const TABLE_HEADER_REFERENCE = "Reference";
+export const TABLE_HEADER_DATE_TIME = "Date & time";
+export const TABLE_HEADER_CASHIER = "Cashier";
+export const TABLE_HEADER_CUSTOMER = "Customer";
+export const TABLE_HEADER_ITEM = "Item";
+export const TABLE_HEADER_QTY = "Qty";
+export const TABLE_HEADER_PRICE = "Price";
+export const TABLE_HEADER_SUBTOTAL = "Subtotal";
+export const TABLE_HEADER_CATEGORY = "Category";
+export const TABLE_HEADER_MIN_STOCK = "Min";
+export const TABLE_HEADER_SUGGESTED_QTY = "Suggested qty";
+export const TABLE_HEADER_RANK = "Rank";
+export const TABLE_HEADER_REVENUE = "Revenue";
+export const TABLE_HEADER_PHONE = "Phone";
+export const TABLE_HEADER_BALANCE = "Balance";
+export const TABLE_HEADER_LATEST_TRANSACTION = "Latest transaction";
+export const EMPTY_STATE_NO_SALES_FOR_DATE = "No sales recorded for this date.";
+export const EMPTY_STATE_NO_LOW_STOCK = "No low-stock products found.";
+export const EMPTY_STATE_NO_OUTSTANDING_UTANG = "No outstanding utang.";
+export const EMPTY_STATE_NO_RECENT_SALES = "No recent sales found.";
+export const EMPTY_STATE_NO_RESTOCKING_NEEDED = "No products require restocking.";
+export const LABEL_STATUS_CURRENT = "Current";
 
 // Reports page
 export const PAGE_HEADING_REPORTS = "Reports";
@@ -427,6 +535,22 @@ export const ERROR_NO_PRODUCT_FOR_BARCODE_PREFIX = "No product found for barcode
 export const ERROR_QUANTITY_AT_LEAST_ONE_SUFFIX = "needs a quantity of at least 1.";
 export const TEXT_SAVED_RECEIVING_PREFIX = "Saved —";
 export const ERROR_COULD_NOT_SAVE_RECEIVING_ENTRY = "Could not save receiving entry.";
+export const LABEL_DR_NUMBER_OPTIONAL = "DR number (optional)";
+export const PLACEHOLDER_DR_NUMBER = "e.g. DR-10234";
+export const TEXT_WAS_PREFIX = "was";
+export const TEXT_SAME_AS_LAST_DELIVERY = "same as last delivery";
+export const CHIP_COST_UP = "cost up";
+export const CHIP_COST_DOWN = "cost down";
+export const CHIP_NO_CHANGE = "no change";
+export const TITLE_COST_PRICES_CHANGED = "Cost prices changed";
+export const TITLE_COST_PRICE_CHANGED = "A cost price changed";
+export const BUTTON_RAISE_SELLING_PRICE = "Raise selling price";
+export const BUTTON_KEEP_PRICE_PREFIX = "Keep ₱";
+export const TEXT_LOW_OR_OUT_SUFFIX = "products are low or out right now";
+export const TEXT_PRODUCT_LOW_OR_OUT_SUFFIX = "product is low or out right now";
+export const TEXT_ADD_ALL_SUGGESTED_HINT = "Add them all with the suggested quantities instead of searching one by one.";
+export const BUTTON_ADD_ALL_PREFIX = "Add all";
+export const ERROR_COULD_NOT_UPDATE_PRICE = "Could not update the selling price.";
 
 // Onboarding page
 export const LABEL_YOUR_ADDRESS_OPTIONAL = "Your address (optional)";
@@ -644,6 +768,18 @@ export const BUTTON_CANCEL_SALE = "Cancel sale";
 export const BUTTON_COMPLETE_SALE = "Complete sale";
 export const ERROR_PRODUCT_NOT_FOUND_BARCODE_PREFIX = "Product not found for barcode";
 export const ERROR_COULD_NOT_COMPLETE_SALE = "Could not complete sale.";
+export const BUTTON_HOLD_SALE = "Hold sale";
+export const BUTTON_HOLDING = "Holding…";
+export const LABEL_HELD_SALES = "Held sales";
+export const LABEL_HELD_SALES_EMPTY = "No held sales right now.";
+export const TEXT_HELD_BY = "Held by";
+export const BUTTON_RESUME_SALE = "Resume";
+export const BUTTON_DISCARD_SALE = "Discard";
+export const ERROR_RESUME_BLOCKED_CART_NOT_EMPTY =
+  "Finish, hold, or cancel your current sale before resuming another one.";
+export const ERROR_COULD_NOT_HOLD_SALE = "Could not hold sale. Please try again.";
+export const TEXT_DISCARD_CONFIRM_HAS_SERVICE =
+  "This held sale includes an e-load or cash service that already happened and won't be reversed. Discard anyway?";
 export const SERVICE_LABEL_ELOAD = "E-Load";
 export const SERVICE_LABEL_CASHIN = "Cash-in";
 export const SERVICE_LABEL_CASHOUT = "Cash-out";
@@ -729,6 +865,12 @@ export const LABEL_PACK_PRICE = "Pack price (₱)";
 export const TEXT_PACK_PREVIEW_PREFIX = "≈";
 export const TEXT_PER_PC_SUFFIX = "per pc";
 export const LABEL_LOW_STOCK_AT = "Low-stock at";
+export const LABEL_COST_OPTIONAL = "Cost (optional)";
+export const HINT_LEAVE_COST_BLANK =
+  "Leave cost blank if you don't track it — you'll just see no margin for this item.";
+export const LABEL_MARGIN = "Margin";
+export const LINK_OPEN_IT = "Open it";
+export const ERROR_COST_INVALID = "Cost must be a valid number.";
 export const ERROR_COULD_NOT_ADD_CATEGORY = "Could not add category.";
 export const ERROR_PRODUCT_NAME_REQUIRED = "Product name is required.";
 export const ERROR_STOCK_INVALID = "Stock must be a valid number.";
@@ -775,9 +917,19 @@ export const LABEL_MANAGE_CATEGORIES = "Manage categories";
 export const BUTTON_CLOSE = "Close";
 export const ERROR_COULD_NOT_RENAME_CATEGORY = "Could not rename category.";
 export const ERROR_COULD_NOT_DELETE_CATEGORY = "Could not delete category.";
+export const ERROR_COULD_NOT_MERGE_CATEGORY = "Could not merge category.";
 export const BUTTON_RENAME = "Rename";
 export const TITLE_REASSIGN_PRODUCTS_FIRST = "Reassign or remove its products first";
 export const EMPTY_STATE_NO_CATEGORIES = "No categories yet.";
+export const BUTTON_MERGE = "Merge…";
+export const LABEL_MERGE_INTO = "Merge into";
+export const TITLE_MERGE_CATEGORY = "Merge category?";
+export const TEXT_MERGE_CATEGORY_CONFIRM_PREFIX = "All";
+export const TEXT_MERGE_CATEGORY_CONFIRM_SUFFIX = "products will be moved and nothing is lost.";
+export const TITLE_DELETE_CATEGORY = "Delete category?";
+export const TEXT_DELETE_CATEGORY_CONFIRM = "This can't be undone.";
+export const BUTTON_CONFIRM_MERGE = "Merge categories";
+export const TEXT_PRODUCT_COUNT_SUFFIX = "product(s)";
 
 // ScannerLoadingOverlay
 export const TEXT_LOADING_CAMERA = "Loading camera…";

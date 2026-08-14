@@ -26,55 +26,61 @@ export function ProductPricingFields({
   onPriceChange,
 }: ProductPricingFieldsProps) {
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-slate-700">{LABEL_PRICING}</label>
+    <div style={{ marginBottom: 14 }}>
+      <div className="tpl-sp">
+        <span className="tpl-lbl">{LABEL_PRICING}</span>
         {packPricingEnabled && (
-          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
-            <input
-              type="checkbox"
-              checked={packEnabled}
-              onChange={(e) => onPackEnabledChange(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300"
-            />
+          <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 12, color: "var(--tpl-t5)" }}>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={packEnabled}
+              aria-label={LABEL_SELL_BY_PACK}
+              onClick={() => onPackEnabledChange(!packEnabled)}
+              className={`tpl-tog${packEnabled ? " tpl-on" : ""}`}
+            >
+              <span />
+            </button>
             {LABEL_SELL_BY_PACK}
           </label>
         )}
       </div>
       {packEnabled && packPricingEnabled ? (
-        <div className="mt-1 grid grid-cols-2 gap-3">
+        <div className="tpl-g2" style={{ marginTop: 6 }}>
           <div>
-            <label htmlFor="ppackqty" className="text-xs font-medium text-slate-700">
+            <label htmlFor="ppackqty" className="tpl-lbl">
               {LABEL_PACK_SIZE}
             </label>
-            <input
-              id="ppackqty"
-              type="number"
-              min="2"
-              step="1"
-              value={packQuantity}
-              onFocus={selectOnFocus}
-              onChange={(e) => onPackQuantityChange(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-            />
+            <div className="tpl-fld">
+              <input
+                id="ppackqty"
+                type="number"
+                min="2"
+                step="1"
+                value={packQuantity}
+                onFocus={selectOnFocus}
+                onChange={(e) => onPackQuantityChange(e.target.value)}
+              />
+            </div>
           </div>
           <div>
-            <label htmlFor="ppackprice" className="text-xs font-medium text-slate-700">
+            <label htmlFor="ppackprice" className="tpl-lbl">
               {LABEL_PACK_PRICE}
             </label>
-            <input
-              id="ppackprice"
-              type="number"
-              min="0"
-              step="0.01"
-              value={packPrice}
-              onFocus={selectOnFocus}
-              onChange={(e) => onPackPriceChange(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-            />
+            <div className="tpl-fld">
+              <input
+                id="ppackprice"
+                type="number"
+                min="0"
+                step="0.01"
+                value={packPrice}
+                onFocus={selectOnFocus}
+                onChange={(e) => onPackPriceChange(e.target.value)}
+              />
+            </div>
           </div>
           {packPreview !== null && (
-            <p className="col-span-2 text-xs text-slate-500">
+            <p className="tpl-hint" style={{ gridColumn: "1 / -1" }}>
               {TEXT_PACK_PREVIEW_PREFIX} {PESO.format(packPreview)} {TEXT_PER_PC_SUFFIX}
             </p>
           )}
@@ -84,15 +90,16 @@ export function ProductPricingFields({
           <label htmlFor="pprice" className="sr-only">
             {LABEL_PRICE}
           </label>
-          <input
-            id="pprice"
-            type="number"
-            min="0"
-            value={price}
-            onFocus={selectOnFocus}
-            onChange={(e) => onPriceChange(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-          />
+          <div className="tpl-fld" style={{ marginTop: 6 }}>
+            <input
+              id="pprice"
+              type="number"
+              min="0"
+              value={price}
+              onFocus={selectOnFocus}
+              onChange={(e) => onPriceChange(e.target.value)}
+            />
+          </div>
         </>
       )}
     </div>

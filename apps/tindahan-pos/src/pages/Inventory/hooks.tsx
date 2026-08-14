@@ -16,6 +16,7 @@ import {
   ERROR_PACK_SIZE_INVALID,
   ERROR_PACK_PRICE_INVALID,
   ERROR_PRICE_INVALID,
+  ERROR_COST_INVALID,
   ERROR_COULD_NOT_SAVE_PRODUCT,
   ERROR_COULD_NOT_RESTOCK_PRODUCT,
   ERROR_COULD_NOT_REMOVE_PRODUCT,
@@ -37,6 +38,7 @@ const emptyForm = {
   packEnabled: false,
   packQuantity: "0",
   packPrice: "0",
+  cost: "",
 };
 
 export const NEW_CATEGORY_VALUE = "__new__";
@@ -145,6 +147,16 @@ export function useInventoryPage() {
       ? packUnitPrice(packQuantityNum, packPriceNum)
       : null;
 
+  // Add Product's live margin preview only — never fed into
+  // productAverageCost/productMarginPercent, which stay driven by real
+  // receiving history. Blank cost means "not tracked", not zero.
+  const costNum = Number(form.cost);
+  const priceNum = Number(form.price);
+  const costMarginPreview =
+    form.cost.trim() !== "" && !Number.isNaN(costNum) && costNum >= 0 && !Number.isNaN(priceNum) && priceNum > 0
+      ? { amount: priceNum - costNum, percent: Math.round(((priceNum - costNum) / priceNum) * 100) }
+      : null;
+
   // Memoized so the barcode field's onChange (fires on every keystroke)
   // does an O(1) map lookup instead of an O(n) scan over all products.
   const barcodeIndex = useMemo(() => buildBarcodeIndex(products), [products]);
@@ -193,6 +205,7 @@ export function useInventoryPage() {
       packEnabled: product.packQuantity != null,
       packQuantity: product.packQuantity != null ? String(product.packQuantity) : "",
       packPrice: product.packPrice != null ? String(product.packPrice) : "",
+      cost: product.cost != null ? String(product.cost) : "",
     });
     setAddingCategory(false);
     setFormError(null);
@@ -268,6 +281,15 @@ export function useInventoryPage() {
       return;
     }
 
+    let cost: number | null = null;
+    if (form.cost.trim() !== "") {
+      cost = Number(form.cost);
+      if (Number.isNaN(cost) || cost < 0) {
+        setFormError(ERROR_COST_INVALID);
+        return;
+      }
+    }
+
     let price: number;
     let packQuantity: number | null = null;
     let packPrice: number | null = null;
@@ -301,6 +323,7 @@ export function useInventoryPage() {
       categoryId: form.categoryId,
       packQuantity,
       packPrice,
+      cost,
     };
 
     setSubmitting(true);
@@ -386,6 +409,7 @@ export function useInventoryPage() {
     currentPage,
     pageProducts,
     packPreview,
+    costMarginPreview,
     needsAttentionOnly,
     setNeedsAttentionOnly,
     sortByRunsOutSoonest,

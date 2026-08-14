@@ -7,6 +7,8 @@ export * from "./navIcons";
 // directly from "@/components/BarcodeScanner" instead.
 export * from "./BottomNav";
 export * from "./CategoryManager";
+export * from "./ChipMultiSelect";
+export * from "./ConfirmDialog";
 export * from "./DebtAgeCard";
 export * from "./HomeRedirect";
 export * from "./MobileHeader";
@@ -16,6 +18,7 @@ export * from "./PageLoadingOverlay";
 export * from "./PinKeypad";
 export * from "./ProtectedRoute";
 export * from "./Receipt";
+export * from "./ReportDetailModal";
 export * from "./ScannerLoadingOverlay";
 export * from "./SetPinModal";
 export * from "./Sidebar";

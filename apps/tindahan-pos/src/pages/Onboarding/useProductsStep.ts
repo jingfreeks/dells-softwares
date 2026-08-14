@@ -80,6 +80,7 @@ export function useProductsStep() {
             packQuantity: null,
             packPrice: null,
             imageUrl: null,
+            cost: null,
           });
         }
       }
@@ -125,6 +126,7 @@ export function useProductsStep() {
           packQuantity: null,
           packPrice: null,
           imageUrl: null,
+          cost: null,
         });
       }
     } catch {
@@ -159,6 +161,7 @@ export function useProductsStep() {
         packQuantity: null,
         packPrice: null,
         imageUrl: null,
+        cost: null,
       });
       setQuickAddForm(EMPTY_QUICK_ADD_FORM);
     } catch (err) {

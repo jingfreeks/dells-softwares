@@ -5,7 +5,9 @@ export * from "./customers";
 export * from "./drawerFloat";
 export * from "./eloadWallet";
 export * from "./dom";
+export * from "./excelExport";
 export * from "./featureFlags";
+export * from "./heldSales";
 export * from "./imageUpload";
 export * from "./inventory";
 export * from "./mockData";
@@ -14,13 +16,11 @@ export * from "./nav";
 export * from "./network";
 export * from "./offlineQueue";
 export * from "./pos";
+export * from "./printReport";
 export * from "./qr";
-// reportPdf is intentionally excluded — it's dynamically import()'d (see
-// Dashboard.tsx) to keep jsPDF out of the main bundle. Re-exporting it here
-// would make every "@/lib" consumer statically pull it in, undoing the
-// code-split. Import it directly from "@/lib/reportPdf" instead.
 export * from "./reports";
 export * from "./storeData";
+export * from "./suppliers";
 export * from "./supabaseClient";
 export * from "./textLabels";
 export * from "./types";

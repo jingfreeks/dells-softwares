@@ -1,14 +1,18 @@
+import type { Category } from "@/lib";
 import {
   BUTTON_SAVE,
   BUTTON_CANCEL,
   BUTTON_RENAME,
   BUTTON_DELETE,
-  TITLE_REASSIGN_PRODUCTS_FIRST,
+  BUTTON_MERGE,
   EMPTY_STATE_NO_CATEGORIES,
+  TEXT_PRODUCT_COUNT_SUFFIX,
 } from "@/lib";
 
+const ROW_COLUMNS = "1fr auto auto";
+
 const Categoryinfoscreen = (props: {
-  categories: any[];
+  categories: Category[];
   usageCount: (id: string) => number;
   editingId: string | null;
   setEditingId: (id: string | null) => void;
@@ -16,8 +20,8 @@ const Categoryinfoscreen = (props: {
   setEditName: (name: string) => void;
   busyId: string | null;
   handleRename: (id: string) => void;
-  startEdit: (category: any) => void;
-  handleDelete: (id: string) => void;
+  startEdit: (category: Category) => void;
+  requestDelete: (category: Category) => void;
 }) => {
   const {
     categories,
@@ -29,83 +33,97 @@ const Categoryinfoscreen = (props: {
     busyId,
     handleRename,
     startEdit,
-    handleDelete,
+    requestDelete,
   } = props;
+
+  const totalProducts = categories.reduce((sum, c) => sum + usageCount(c.id), 0);
+
   return (
-    <ul className="mt-4 max-h-80 divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-100">
+    <div className="tpl-card" style={{ maxHeight: 320, overflowY: "auto", padding: 0 }}>
       {categories.map((category) => {
         const count = usageCount(category.id);
+        const share = totalProducts > 0 ? Math.round((count / totalProducts) * 100) : 0;
         const isEditing = editingId === category.id;
         const isBusy = busyId === category.id;
         return (
-          <li key={category.id} className="flex items-center gap-2 px-3 py-2">
+          <div key={category.id} className="tpl-trow" style={{ gridTemplateColumns: ROW_COLUMNS, cursor: "default" }}>
             {isEditing ? (
-              <input
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                onKeyDown={(e) =>
-                  e.key === "Enter" && handleRename(category.id)
-                }
-                autoFocus
-                className="min-w-0 flex-1 rounded-xl border border-slate-300 px-2 py-1 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-              />
+              <div className="tpl-fld" style={{ marginBottom: 0 }}>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleRename(category.id)}
+                  autoFocus
+                />
+              </div>
             ) : (
-              <span className="min-w-0 flex-1 truncate text-sm text-slate-800">
-                {category.name}
-                <span className="ml-2 text-xs text-slate-400">
-                  {count} product{count === 1 ? "" : "s"}
-                </span>
-              </span>
+              <div>
+                <p className="tpl-sub" style={{ marginBottom: 2 }}>
+                  {category.name}
+                </p>
+                <p className="tpl-hint" style={{ marginBottom: 4 }}>
+                  {count} {TEXT_PRODUCT_COUNT_SUFFIX}
+                </p>
+                <div className="tpl-bar" style={{ width: 80 }}>
+                  <i style={{ width: `${share}%` }} />
+                </div>
+              </div>
             )}
 
             {isEditing ? (
-              <>
+              <div className="tpl-row" style={{ gap: 8, marginBottom: 0 }}>
                 <button
                   type="button"
                   onClick={() => handleRename(category.id)}
                   disabled={isBusy}
-                  className="cursor-pointer text-xs font-medium text-[var(--color-brand)] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                  className="tpl-btnp"
+                  style={{ width: "auto", height: 32, padding: "0 12px", fontSize: 12, marginBottom: 0 }}
                 >
                   {BUTTON_SAVE}
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditingId(null)}
-                  className="cursor-pointer text-xs text-slate-500 hover:underline"
+                  className="tpl-btn"
+                  style={{ width: "auto", height: 32, padding: "0 12px", fontSize: 12, marginBottom: 0 }}
                 >
                   {BUTTON_CANCEL}
                 </button>
-              </>
+              </div>
             ) : (
-              <>
-                <button
-                  type="button"
+              <div className="tpl-row" style={{ gap: 8, marginBottom: 0 }}>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className="tpl-chip"
+                  style={{ cursor: "pointer" }}
                   onClick={() => startEdit(category)}
-                  className="cursor-pointer text-xs font-medium text-slate-600 hover:underline"
+                  onKeyDown={(e) => e.key === "Enter" && startEdit(category)}
                 >
                   {BUTTON_RENAME}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(category.id)}
-                  disabled={count > 0 || isBusy}
-                  title={count > 0 ? TITLE_REASSIGN_PRODUCTS_FIRST : undefined}
-                  className="cursor-pointer text-xs font-medium text-red-600 hover:underline disabled:cursor-not-allowed disabled:text-slate-300 disabled:no-underline"
+                </span>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className={`tpl-chip${count > 0 ? " tpl-w" : " tpl-bad"}`}
+                  style={{ cursor: isBusy ? "not-allowed" : "pointer", opacity: isBusy ? 0.55 : 1 }}
+                  onClick={() => !isBusy && requestDelete(category)}
+                  onKeyDown={(e) => e.key === "Enter" && !isBusy && requestDelete(category)}
                 >
-                  {BUTTON_DELETE}
-                </button>
-              </>
+                  {count > 0 ? BUTTON_MERGE : BUTTON_DELETE}
+                </span>
+              </div>
             )}
-          </li>
+          </div>
         );
       })}
       {categories.length === 0 && (
-        <li className="px-3 py-8 text-center text-sm text-slate-400">
+        <p className="tpl-ts" style={{ textAlign: "center", padding: "32px 0" }}>
           {EMPTY_STATE_NO_CATEGORIES}
-        </li>
+        </p>
       )}
-    </ul>
+    </div>
   );
 };
 export default Categoryinfoscreen;

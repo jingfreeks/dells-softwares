@@ -1,21 +1,19 @@
-import {
-  LABEL_MANAGE_CATEGORIES,
-  BUTTON_CLOSE,
-} from "@/lib";
+import { ARIA_CLOSE_MODAL, LABEL_MANAGE_CATEGORIES } from "@/lib";
 
 const Headerscreen = (props: { onClose: () => void }) => {
   const { onClose } = props;
   return (
-    <div className="flex items-center justify-between">
-      <h2 className="text-base font-semibold text-slate-900">
+    <div className="tpl-sp" style={{ marginBottom: 18, alignItems: "flex-start" }}>
+      <p id="categoryManagerHeading" className="tpl-h3">
         {LABEL_MANAGE_CATEGORIES}
-      </h2>
+      </p>
       <button
         type="button"
         onClick={onClose}
-        className="cursor-pointer text-sm text-slate-500 hover:text-slate-700"
+        aria-label={ARIA_CLOSE_MODAL}
+        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--tpl-t7)", fontSize: 18, padding: 4 }}
       >
-        {BUTTON_CLOSE}
+        <i className="ti ti-x" aria-hidden />
       </button>
     </div>
   );

@@ -43,6 +43,7 @@ function defaultTableResults() {
     receiving_lines: { list: { data: [], error: null }, single: { data: null, error: null } },
     credit_payments: { list: { data: [], error: null }, single: { data: null, error: null } },
     staff: { list: { data: [], error: null }, single: { data: { store_id: "store-1" }, error: null } },
+    warehouses: { list: { data: [], error: null }, single: { data: { id: "warehouse-1" }, error: null } },
   };
 }
 
@@ -433,6 +434,7 @@ describe("StoreDataProvider", () => {
       packQuantity: null,
       packPrice: null,
       imageUrl: null,
+      cost: null,
     });
     expect(created.id).toBe("p-new");
     expect(mockedSupabase.from).toHaveBeenCalledWith("products");
@@ -463,6 +465,7 @@ describe("StoreDataProvider", () => {
         packQuantity: null,
         packPrice: null,
         imageUrl: null,
+        cost: null,
       })
     ).rejects.toThrow("That barcode is already used by another product.");
   });
@@ -548,7 +551,7 @@ describe("StoreDataProvider", () => {
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
 
-    const product = { id: "p1", barcode: null, name: "Sardines", price: 25, stock: 20, lowStockThreshold: 5, categoryId: "cat1", category: "Canned", packQuantity: null, packPrice: null, imageUrl: null };
+    const product = { id: "p1", barcode: null, name: "Sardines", price: 25, stock: 20, lowStockThreshold: 5, categoryId: "cat1", category: "Canned", packQuantity: null, packPrice: null, imageUrl: null, cost: null };
     const sale = await captured!.checkout([{ product, quantity: 2 }], [], "Aling Nena");
     expect(sale.total).toBe(50);
     expect(sale.paymentType).toBe("cash");
@@ -952,12 +955,22 @@ describe("StoreDataProvider", () => {
 
   it("adds a supplier", async () => {
     tableResults.suppliers.single = {
-      data: { id: "s1", name: "Mega", phone: null, address: null, scan_code: "abc" },
+      data: {
+        id: "s1",
+        name: "Mega",
+        contact_person: null,
+        phone: null,
+        address: null,
+        scan_code: "abc",
+        payment_terms: "cash",
+        active: true,
+        usual_delivery_days: [],
+      },
       error: null,
     };
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
-    const supplier = await captured!.addSupplier("Mega");
+    const supplier = await captured!.addSupplier({ name: "Mega" });
     expect(supplier.scanCode).toBe("abc");
   });
 
@@ -965,7 +978,7 @@ describe("StoreDataProvider", () => {
     tableResults.suppliers.single = { data: null, error: { message: "boom" } };
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
-    await expect(captured!.addSupplier("Mega")).rejects.toEqual({ message: "boom" });
+    await expect(captured!.addSupplier({ name: "Mega" })).rejects.toEqual({ message: "boom" });
   });
 
   it("updates a supplier", async () => {

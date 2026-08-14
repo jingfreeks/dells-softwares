@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import "fake-indexeddb/auto";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -10,6 +11,8 @@ import {
   supabase,
   EloadWalletProvider,
   DrawerFloatProvider,
+  listHeldSales,
+  removeHeldSale,
 } from "@/lib";
 import {
   makeAuthValue,
@@ -74,6 +77,11 @@ function renderPage() {
 const QUERY_FIELD_LABEL = "Scan barcode or search products";
 
 describe("Pos", () => {
+  beforeEach(async () => {
+    const existing = await listHeldSales("store-1");
+    await Promise.all(existing.map((h) => removeHeldSale("store-1", h.id)));
+  });
+
   it("adds a product to the cart by scanning a barcode", async () => {
     const user = userEvent.setup();
     setup();
@@ -707,6 +715,146 @@ describe("Pos", () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId("cart-total")).toHaveTextContent("₱25.00"));
+  });
+
+  it("holds a sale, clearing the cart and showing it in the held-sales badge", async () => {
+    const user = userEvent.setup();
+    setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱25.00");
+
+    await user.click(screen.getByRole("button", { name: "Hold sale" }));
+
+    await waitFor(() => expect(screen.getByTestId("cart-total")).toHaveTextContent("₱0.00"));
+    expect(await screen.findByRole("button", { name: "Held sales (1)" })).toBeInTheDocument();
+  });
+
+  it("held sales badge reflects the count across multiple holds", async () => {
+    const user = userEvent.setup();
+    setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "Hold sale" }));
+    await screen.findByRole("button", { name: "Held sales (1)" });
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "Hold sale" }));
+
+    expect(await screen.findByRole("button", { name: "Held sales (2)" })).toBeInTheDocument();
+  });
+
+  it("resumes a held sale, repopulating the cart and removing it from the held list", async () => {
+    const user = userEvent.setup();
+    setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "Hold sale" }));
+    await user.click(await screen.findByRole("button", { name: "Held sales (1)" }));
+
+    await user.click(await screen.findByRole("button", { name: "Resume" }));
+
+    await waitFor(() => expect(screen.getByTestId("cart-total")).toHaveTextContent("₱25.00"));
+    expect(await screen.findByRole("button", { name: "Held sales (0)" })).toBeInTheDocument();
+  });
+
+  it("blocks resuming a held sale when the current cart isn't empty", async () => {
+    const user = userEvent.setup();
+    setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "Hold sale" }));
+    await screen.findByRole("button", { name: "Held sales (1)" });
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "Rice{Enter}");
+    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱10.00");
+
+    await user.click(screen.getByRole("button", { name: "Held sales (1)" }));
+    await user.click(await screen.findByRole("button", { name: "Resume" }));
+
+    expect(
+      await screen.findByText("Finish, hold, or cancel your current sale before resuming another one.")
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱10.00");
+    expect(screen.getByRole("button", { name: "Held sales (1)" })).toBeInTheDocument();
+  });
+
+  it("discards a held sale without resuming it", async () => {
+    const user = userEvent.setup();
+    setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "Hold sale" }));
+    await user.click(await screen.findByRole("button", { name: "Held sales (1)" }));
+
+    await user.click(await screen.findByRole("button", { name: "Discard" }));
+
+    expect(await screen.findByRole("button", { name: "Held sales (0)" })).toBeInTheDocument();
+    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱0.00");
+  });
+
+  it("drops a line whose product was deleted while the sale was held", async () => {
+    const user = userEvent.setup();
+    setup();
+    const { rerender } = renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "Rice{Enter}");
+    expect(screen.getByTestId("cart-total")).toHaveTextContent("₱35.00");
+    await user.click(screen.getByRole("button", { name: "Hold sale" }));
+    await screen.findByRole("button", { name: "Held sales (1)" });
+
+    // Simulate the "Sardines" product being deleted while the sale sat held.
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products: [products[1]] }));
+    rerender(
+      <EloadWalletProvider>
+        <DrawerFloatProvider>
+          <MemoryRouter>
+            <Pos />
+          </MemoryRouter>
+        </DrawerFloatProvider>
+      </EloadWalletProvider>
+    );
+
+    await user.click(screen.getByRole("button", { name: "Held sales (1)" }));
+    await user.click(await screen.findByRole("button", { name: "Resume" }));
+
+    await waitFor(() => expect(screen.getByTestId("cart-total")).toHaveTextContent("₱10.00"));
+  });
+
+  it("warns distinctly when discarding a held sale that includes an e-load/cash service line", async () => {
+    const user = userEvent.setup();
+    setup();
+    const { holdSale } = await import("@/lib");
+    await holdSale("store-1", {
+      cartLines: [],
+      serviceLines: [{ id: "svc-1", label: "Globe load ₱100 · 09171234567", amount: 100, fee: 5 }],
+      paymentType: "cash",
+      tendered: "0",
+      referenceNo: "",
+      selectedCustomerId: null,
+      note: null,
+      heldByCashierId: "staff-1",
+      heldByName: "Aling Nena",
+    });
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Held sales (1)" }));
+    await user.click(await screen.findByRole("button", { name: "Discard" }));
+
+    expect(
+      await screen.findByText(
+        "This held sale includes an e-load or cash service that already happened and won't be reversed. Discard anyway?"
+      )
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Discard?" }));
+    expect(await screen.findByRole("button", { name: "Held sales (0)" })).toBeInTheDocument();
   });
 });
 

@@ -52,6 +52,7 @@ export function Inventory() {
     totalPages,
     pageProducts,
     packPreview,
+    costMarginPreview,
     needsAttentionOnly,
     setNeedsAttentionOnly,
     sortByRunsOutSoonest,
@@ -138,6 +139,7 @@ export function Inventory() {
           categories={categories}
           packPricingEnabled={packPricingEnabled}
           packPreview={packPreview}
+          costMarginPreview={costMarginPreview}
           duplicateProduct={duplicateProduct}
           addingCategory={addingCategory}
           newCategoryName={newCategoryName}

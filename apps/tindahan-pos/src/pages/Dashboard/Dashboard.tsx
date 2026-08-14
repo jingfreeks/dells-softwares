@@ -5,6 +5,7 @@ import {
   TEXT_GREETING_AFTERNOON,
   TEXT_GREETING_EVENING,
 } from "@/lib";
+import { toDateInputValue } from "@/pages/Reports/lib";
 import {
   DashboardError,
   ReportNotice,
@@ -15,7 +16,12 @@ import {
   SalesByCategoryCard,
   Dailyreport,
   DailyTransactionDetailsCard,
-  Dashboarddetails
+  Dashboarddetails,
+  SalesReportModal,
+  LowStockReportModal,
+  UtangReportModal,
+  BestSellersReportModal,
+  RestockingReportModal,
 } from "./component";
 import { useDashboardReport } from "./hooks";
 import "../authTheme.css";
@@ -28,12 +34,29 @@ function greetingForHour(hour: number): string {
 
 export function Dashboard() {
   const { user } = useAuth();
-  const { products, sales, customers, loading, error } = useStoreData();
-  const { report, restockRows, exporting, reportNotice, exportReport } =
-    useDashboardReport(products, sales, customers);
+  const { customers, loading, error } = useStoreData();
+  const {
+    selectedDate,
+    setSelectedDate,
+    report,
+    daySales,
+    allSales,
+    restockRows,
+    rankedBestSellers,
+    rangeLoading,
+    rangeError,
+    exporting,
+    exportError,
+    exportToExcel,
+    openReport,
+    setOpenReport,
+    storeName,
+    storeAddress,
+  } = useDashboardReport();
 
   const now = new Date();
-  const dateLabel = now.toLocaleDateString("en-PH", {
+  const selectedDateObj = new Date(`${selectedDate}T12:00:00`);
+  const dateLabel = selectedDateObj.toLocaleDateString("en-PH", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -53,31 +76,93 @@ export function Dashboard() {
         firstName={firstName}
         dateLabel={dateLabel}
         report={report}
-        exportReport={exportReport}
+        selectedDate={selectedDate}
+        onSelectedDateChange={setSelectedDate}
+        maxDate={toDateInputValue(now)}
+        onExport={exportToExcel}
         exporting={exporting}
       />
 
-      <DashboardError error={error} />
-      <ReportNotice notice={reportNotice} />
+      <DashboardError error={error ?? rangeError} />
+      <ReportNotice notice={exportError} />
 
-      {loading ? (
+      {loading || rangeLoading ? (
         <DashboardLoadingSkeleton />
       ) : (
-        <Dashboarddetails report={report} averageBasket={averageBasket} customersOwing={customersOwing} />
+        <Dashboarddetails
+          report={report}
+          averageBasket={averageBasket}
+          customersOwing={customersOwing}
+          onOpenReport={setOpenReport}
+        />
       )}
 
       <div className="tpl-dash-grid">
         <div className="tpl-dash-col">
-          <RecentSalesCard recentSales={report.recentSales.slice(0, 6)} />
-          <NeedsRestockingCard rows={restockRows} />
+          <RecentSalesCard recentSales={report.recentSales.slice(0, 6)} onOpenReport={() => setOpenReport("recentSales")} />
+          <NeedsRestockingCard rows={restockRows} onOpenReport={() => setOpenReport("restocking")} />
         </div>
         <div className="tpl-dash-col">
-          <BestSellersCard bestSellers={report.bestSellers} />
+          <BestSellersCard bestSellers={report.bestSellers} onOpenReport={() => setOpenReport("bestSellers")} />
           <SalesByCategoryCard categoryTotals={report.categoryTotals} />
         </div>
       </div>
 
-      {!loading && <DailyTransactionDetailsCard sales={sales.filter((sale) => new Date(sale.timestamp).toDateString() === now.toDateString())} customers={customers} />}
+      {!loading && !rangeLoading && <DailyTransactionDetailsCard sales={daySales} />}
+
+      {(openReport === "todaysSales" || openReport === "transactionsToday" || openReport === "recentSales") && (
+        <SalesReportModal
+          titleKind={openReport}
+          dateLabel={dateLabel}
+          storeName={storeName}
+          storeAddress={storeAddress}
+          printedByName={user?.name ?? ""}
+          sales={daySales}
+          customers={customers}
+          onClose={() => setOpenReport(null)}
+        />
+      )}
+      {openReport === "lowStock" && (
+        <LowStockReportModal
+          dateLabel={dateLabel}
+          storeName={storeName}
+          storeAddress={storeAddress}
+          printedByName={user?.name ?? ""}
+          restockRows={restockRows}
+          onClose={() => setOpenReport(null)}
+        />
+      )}
+      {openReport === "utang" && (
+        <UtangReportModal
+          dateLabel={dateLabel}
+          storeName={storeName}
+          storeAddress={storeAddress}
+          printedByName={user?.name ?? ""}
+          customers={customers}
+          allSales={allSales}
+          onClose={() => setOpenReport(null)}
+        />
+      )}
+      {openReport === "bestSellers" && (
+        <BestSellersReportModal
+          dateLabel={dateLabel}
+          storeName={storeName}
+          storeAddress={storeAddress}
+          printedByName={user?.name ?? ""}
+          bestSellers={rankedBestSellers}
+          onClose={() => setOpenReport(null)}
+        />
+      )}
+      {openReport === "restocking" && (
+        <RestockingReportModal
+          dateLabel={dateLabel}
+          storeName={storeName}
+          storeAddress={storeAddress}
+          printedByName={user?.name ?? ""}
+          restockRows={restockRows}
+          onClose={() => setOpenReport(null)}
+        />
+      )}
     </div>
   );
 }

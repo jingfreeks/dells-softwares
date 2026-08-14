@@ -12,3 +12,4 @@ export * from "./CartPanel";
 export * from "./ownerapprovalmodal";
 export * from "./receiptmodal";
 export * from "./cashierlogin";
+export * from "./heldsalesmodal";
