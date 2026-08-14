@@ -8,7 +8,6 @@ import {
   FOOTER_MESSAGE_MAX_LENGTH,
   type ReceiptSettingsMock,
 } from "./receiptSettingsMock";
-import { loadStoreDetailsMock } from "./storeDetailsMock";
 
 type ToggleKey = Exclude<keyof ReceiptSettingsMock, "footerMessage">;
 
@@ -77,7 +76,7 @@ export function useReceiptsSettingsPage() {
 
   const isDirty = JSON.stringify(settings) !== JSON.stringify(saved);
   const footerCharactersLeft = FOOTER_MESSAGE_MAX_LENGTH - settings.footerMessage.length;
-  const tin = user ? loadStoreDetailsMock(user.storeId).tin : "";
+  const tin = store?.tin ?? "";
 
   return {
     settings,

@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { DeviceSession, StaffAccount, Store, StoreFeeConfig } from "@/lib/types";
+import type { DeviceSession, StaffAccount, Store, StoreFeeConfig, VatStatus } from "@/lib/types";
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
 export type RegisterResult =
@@ -44,6 +44,13 @@ export interface AuthContextValue {
     address?: string | null;
     photoUrl?: string | null;
     feeConfig?: StoreFeeConfig | null;
+    contactNumber?: string | null;
+    city?: string | null;
+    tin?: string | null;
+    businessPermitNo?: string | null;
+    birRegistered?: boolean;
+    vatStatus?: VatStatus;
+    invoiceType?: string;
   }) => Promise<AuthResult>;
   /** Sets or changes the signed-in staff member's own 4-digit PIN (used to approve an over-limit Utang sale). */
   setOwnPin: (pin: string) => Promise<AuthResult>;

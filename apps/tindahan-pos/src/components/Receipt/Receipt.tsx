@@ -1,7 +1,6 @@
 import { PESO } from "@/lib/money";
 import type { SaleRecord, Store } from "@/lib/types";
 import {
-  LABEL_RECEIPT_HEADING,
   LABEL_RECEIPT_NUMBER_PREFIX,
   LABEL_CASHIER_ON_RECEIPT_PREFIX,
   LABEL_PAYMENT_CASH,
@@ -55,7 +54,7 @@ export function Receipt({ sale, store, settings, tin, businessPermitNo, tendered
         {settings.includeTinAndPermit && businessPermitNo && (
           <p className="tpl-receipt-line">Permit: {businessPermitNo}</p>
         )}
-        <p className="tpl-receipt-heading">{LABEL_RECEIPT_HEADING}</p>
+        <p className="tpl-receipt-heading">{store.invoiceType}</p>
       </div>
 
       <div className="tpl-receipt-hr" />

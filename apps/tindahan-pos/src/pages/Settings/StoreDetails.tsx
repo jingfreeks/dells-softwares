@@ -31,6 +31,10 @@ export function StoreDetails() {
     setBusinessPermitNo,
     birRegistered,
     setBirRegistered,
+    vatStatus,
+    setVatStatus,
+    invoiceType,
+    setInvoiceType,
 
     openTime,
     setOpenTime,
@@ -87,6 +91,10 @@ export function StoreDetails() {
           onTinChange={setTin}
           businessPermitNo={businessPermitNo}
           onBusinessPermitNoChange={setBusinessPermitNo}
+          vatStatus={vatStatus}
+          onVatStatusChange={setVatStatus}
+          invoiceType={invoiceType}
+          onInvoiceTypeChange={setInvoiceType}
         />
 
         {formError && (

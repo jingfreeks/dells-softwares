@@ -3,7 +3,7 @@
 // Once the project is live, prefer regenerating this from the real schema:
 //   npx supabase gen types typescript --project-id <ref> > src/lib/database.types.ts
 
-import type { PaymentType, StoreFeeConfig } from "./types";
+import type { PaymentType, StoreFeeConfig, VatStatus } from "./types";
 
 export type StaffRole = "admin" | "cashier";
 export type SaleItemType = "product" | "service";
@@ -21,6 +21,13 @@ export interface Database {
           photo_url: string | null;
           fee_config: StoreFeeConfigRow | null;
           created_at: string;
+          contact_number: string | null;
+          city: string | null;
+          tin: string | null;
+          business_permit_no: string | null;
+          bir_registered: boolean;
+          vat_status: VatStatus;
+          invoice_type: string;
         };
         Insert: {
           id?: string;
@@ -29,6 +36,13 @@ export interface Database {
           photo_url?: string | null;
           fee_config?: StoreFeeConfigRow | null;
           created_at?: string;
+          contact_number?: string | null;
+          city?: string | null;
+          tin?: string | null;
+          business_permit_no?: string | null;
+          bir_registered?: boolean;
+          vat_status?: VatStatus;
+          invoice_type?: string;
         };
         Update: {
           id?: string;
@@ -37,6 +51,13 @@ export interface Database {
           photo_url?: string | null;
           fee_config?: StoreFeeConfigRow | null;
           created_at?: string;
+          contact_number?: string | null;
+          city?: string | null;
+          tin?: string | null;
+          business_permit_no?: string | null;
+          bir_registered?: boolean;
+          vat_status?: VatStatus;
+          invoice_type?: string;
         };
         Relationships: [];
       };
