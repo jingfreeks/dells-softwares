@@ -108,7 +108,10 @@ export function SalesTable({ sales, onVoidSale, voidError }: SalesTableProps) {
       {sales.map((sale) => (
         <div key={sale.id} className="tpl-trow" style={{ gridTemplateColumns: COLUMNS }}>
           <span className="tpl-ts">{formatSaleDate(sale.timestamp)}</span>
-          <span className="tpl-tp">{sale.cashierName}</span>
+          <span>
+            <span className="tpl-tp">{sale.cashierName}</span>
+            {sale.deviceName && <p className="tpl-ts">{sale.deviceName}</p>}
+          </span>
           <span className="tpl-ts">{formatItems(sale)}</span>
           <span className="tpl-tp">{PAYMENT_LABEL[sale.paymentType]}</span>
           <span className="tpl-ts tpl-right">{PESO.format(sale.total)}</span>

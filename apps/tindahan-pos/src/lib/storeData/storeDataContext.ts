@@ -100,6 +100,7 @@ export interface StoreDataContextValue {
     startDate: string;
     endDate: string;
     cashierId?: string | null;
+    deviceId?: string | null;
   }) => Promise<SaleRecord[]>;
   fetchReceivingHistoryInRange: (params: { startDate: string; endDate: string }) => Promise<ReceivingEntry[]>;
 }

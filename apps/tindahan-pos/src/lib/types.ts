@@ -127,6 +127,9 @@ export interface SaleRecord {
   vatAmount: number;
   vatExemptSales: number;
   zeroRatedSales: number;
+  /** BIR compliance §49: which paired POS device rang this up, if any — null when a staff member checked out directly (not via a paired device). */
+  deviceId: string | null;
+  deviceName: string | null;
 }
 
 export interface ServiceLine {

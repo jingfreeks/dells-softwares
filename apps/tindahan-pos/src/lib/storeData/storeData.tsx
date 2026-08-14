@@ -120,7 +120,7 @@ function friendlyProductError(err: { code?: string; message: string }): Error {
 }
 
 const SALE_SELECT =
-  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, receipt_number, status, voided_at, void_reason, vat_status, vat_rate, vatable_sales, vat_amount, vat_exempt_sales, zero_rated_sales, staff:cashier_id(id, name), voided_by_staff:voided_by(id, name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)";
+  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, receipt_number, status, voided_at, void_reason, vat_status, vat_rate, vatable_sales, vat_amount, vat_exempt_sales, zero_rated_sales, device_id, staff:cashier_id(id, name), voided_by_staff:voided_by(id, name), device:device_id(id, name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)";
 
 function mapSaleRow(row: {
   id: string;
@@ -142,6 +142,7 @@ function mapSaleRow(row: {
   zero_rated_sales: number;
   staff: { id: string; name: string } | { id: string; name: string }[] | null;
   voided_by_staff: { id: string; name: string } | { id: string; name: string }[] | null;
+  device: { id: string; name: string } | { id: string; name: string }[] | null;
   sale_items:
     | {
         product_id: string | null;
@@ -156,6 +157,7 @@ function mapSaleRow(row: {
 }): SaleRecord {
   const staff = Array.isArray(row.staff) ? row.staff[0] : row.staff;
   const voidedByStaff = Array.isArray(row.voided_by_staff) ? row.voided_by_staff[0] : row.voided_by_staff;
+  const device = Array.isArray(row.device) ? row.device[0] : row.device;
   return {
     id: row.id,
     // occurred_at (set only for a sale that was queued offline and synced
@@ -179,6 +181,8 @@ function mapSaleRow(row: {
     vatAmount: row.vat_amount,
     vatExemptSales: row.vat_exempt_sales,
     zeroRatedSales: row.zero_rated_sales,
+    deviceId: device?.id ?? null,
+    deviceName: device?.name ?? null,
     items: (row.sale_items ?? []).map((item) => ({
       productId: item.product_id ?? "",
       name: item.name,
@@ -237,7 +241,12 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   // 100 rows for the Dashboard) so a report over a full month isn't silently
   // truncated.
   const fetchSalesInRange = useCallback(
-    async (params: { startDate: string; endDate: string; cashierId?: string | null }) => {
+    async (params: {
+      startDate: string;
+      endDate: string;
+      cashierId?: string | null;
+      deviceId?: string | null;
+    }) => {
       let query = supabase
         .from("sales")
         .select(SALE_SELECT)
@@ -247,6 +256,9 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         .limit(1000);
       if (params.cashierId) {
         query = query.eq("cashier_id", params.cashierId);
+      }
+      if (params.deviceId) {
+        query = query.eq("device_id", params.deviceId);
       }
       const { data, error: err } = await query;
       if (err) throw err;
@@ -581,6 +593,11 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       vatStatus: store?.vatStatus ?? null,
       vatRate: store?.vatRate ?? null,
       ...computeVatBreakdown(total, store?.vatStatus ?? null, store?.vatRate ?? 0.12),
+      // BIR compliance §49: mirrors checkout_sale()'s own device lookup —
+      // deviceSession is only set when this browser/tablet is itself a
+      // paired device (see AuthProvider), so this needs no RPC round trip.
+      deviceId: deviceSession?.id ?? null,
+      deviceName: deviceSession?.name ?? null,
       ...(queued ? { syncStatus: "pending" as const } : {}),
     };
 

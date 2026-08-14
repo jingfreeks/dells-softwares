@@ -19,6 +19,11 @@ interface CashierOption {
   name: string;
 }
 
+interface DeviceOption {
+  id: string;
+  name: string;
+}
+
 export function useReportsPage() {
   const { products, customers, sales: allSales, fetchSalesInRange, voidSale } = useStoreData();
   const { store } = useAuth();
@@ -32,6 +37,8 @@ export function useReportsPage() {
   const [customEnd, setCustomEnd] = useState(toDateInputValue(now));
   const [cashierId, setCashierId] = useState<string | null>(null);
   const [cashiers, setCashiers] = useState<CashierOption[]>([]);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [devices, setDevices] = useState<DeviceOption[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,18 +57,28 @@ export function useReportsPage() {
       .then(({ data }) => setCashiers(data ?? []));
   }, []);
 
+  useEffect(() => {
+    // No unpaired_at filter, unlike DevicesSettings — a report needs to
+    // show historical sales from a since-unpaired device too.
+    supabase
+      .from("devices")
+      .select("id, name")
+      .order("name")
+      .then(({ data }) => setDevices(data ?? []));
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const rows = await fetchSalesInRange({ startDate, endDate, cashierId });
+      const rows = await fetchSalesInRange({ startDate, endDate, cashierId, deviceId });
       setSales(rows);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load the report.");
     } finally {
       setLoading(false);
     }
-  }, [fetchSalesInRange, startDate, endDate, cashierId]);
+  }, [fetchSalesInRange, startDate, endDate, cashierId, deviceId]);
 
   useEffect(() => {
     load();
@@ -120,6 +137,9 @@ export function useReportsPage() {
     cashierId,
     setCashierId,
     cashiers,
+    deviceId,
+    setDeviceId,
+    devices,
     report,
     loading,
     error,

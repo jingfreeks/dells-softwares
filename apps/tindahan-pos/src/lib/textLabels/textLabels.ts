@@ -473,6 +473,7 @@ export const LABEL_PERIOD_WEEK = "This week";
 export const LABEL_PERIOD_MONTH = "This month";
 export const LABEL_PERIOD_CUSTOM = "Custom";
 export const LABEL_ALL_CASHIERS = "All cashiers";
+export const LABEL_ALL_DEVICES = "All devices";
 export const LABEL_TOTAL_SALES = "Total sales";
 export const LABEL_TRANSACTIONS = "Transactions";
 export const LABEL_AVERAGE_SALE = "Average sale";
