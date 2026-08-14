@@ -8,3 +8,8 @@ export * from "./SalesByCategoryCard";
 export * from "./dailyreport";
 export * from "./dailytransactiondetailscard";
 export * from "./dashboarddetails";
+export * from "./salesreportmodal";
+export * from "./lowstockreportmodal";
+export * from "./utangreportmodal";
+export * from "./bestsellersreportmodal";
+export * from "./restockingreportmodal";

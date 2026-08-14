@@ -1,11 +1,6 @@
 import { Link } from "react-router-dom";
 import type { RestockRow } from "../hooks";
-import {
-  LABEL_NEEDS_RESTOCKING,
-  TEXT_STOCK_LEFT_SUFFIX,
-  EMPTY_STATE_ALL_STOCKED,
-  LINK_RECEIVE,
-} from "@/lib";
+import { LABEL_NEEDS_RESTOCKING, TEXT_STOCK_LEFT_SUFFIX, EMPTY_STATE_ALL_STOCKED, LINK_RECEIVE, LINK_OPEN } from "@/lib";
 
 /** "12 hrs"/"1 day"/"3 days" — hours below a day, whole days otherwise. */
 function formatTimeToOut(daysOfStockLeft: number): string {
@@ -17,12 +12,24 @@ function formatTimeToOut(daysOfStockLeft: number): string {
   return `${days} day${days === 1 ? "" : "s"}`;
 }
 
-export function NeedsRestockingCard({ rows }: { rows: RestockRow[] }) {
+export function NeedsRestockingCard({ rows, onOpenReport }: { rows: RestockRow[]; onOpenReport: () => void }) {
   return (
     <div className="tpl-card">
       <div className="tpl-sp" style={{ marginBottom: 11 }}>
         <p className="tpl-h3">{LABEL_NEEDS_RESTOCKING}</p>
-        {rows.length > 0 && <span className="tpl-chip tpl-w">{rows.length} items</span>}
+        <div className="tpl-row" style={{ width: "auto", marginBottom: 0, gap: 8 }}>
+          {rows.length > 0 && <span className="tpl-chip tpl-w">{rows.length} items</span>}
+          <span
+            role="button"
+            tabIndex={0}
+            className="tpl-chip"
+            style={{ fontSize: 10.5, padding: "3px 9px", gap: 4, cursor: "pointer" }}
+            onClick={onOpenReport}
+            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onOpenReport()}
+          >
+            {LINK_OPEN} <i className="ti ti-arrow-right" aria-hidden style={{ fontSize: 11 }} />
+          </span>
+        </div>
       </div>
       {rows.slice(0, 8).map((row) => (
         <div className="tpl-lr" key={row.productId}>
@@ -34,25 +41,13 @@ export function NeedsRestockingCard({ rows }: { rows: RestockRow[] }) {
               {row.daysOfStockLeft !== null && ` · out in ~${formatTimeToOut(row.daysOfStockLeft)}`}
             </p>
           </div>
-          {row.suggestedQuantity !== null ? (
-            <Link
-              to="/inventory/receiving"
-              state={{
-                prefillProduct: {
-                  productId: row.productId,
-                  productName: row.productName,
-                  quantity: row.suggestedQuantity,
-                },
-              }}
-              className="tpl-chip tpl-on"
-            >
-              Order {row.suggestedQuantity}
-            </Link>
-          ) : (
-            <Link to="/inventory/receiving" className="tpl-chip">
-              {LINK_RECEIVE}
-            </Link>
-          )}
+          <Link
+            to="/inventory/receiving"
+            state={{ prefillProduct: { productId: row.productId, productName: row.productName, quantity: 1 } }}
+            className="tpl-chip tpl-on"
+          >
+            {LINK_RECEIVE}
+          </Link>
         </div>
       ))}
       {rows.length === 0 && (

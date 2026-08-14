@@ -47,6 +47,21 @@ export function computeOldestDebtDays(
   return Math.floor((now.getTime() - oldest) / MS_PER_DAY);
 }
 
+export interface LatestTransaction {
+  date: string;
+  amount: number;
+}
+
+/** This customer's most recent sale (any payment type), or null if they have none. */
+export function latestTransactionForCustomer(sales: SaleRecord[], customerId: string): LatestTransaction | null {
+  const customerSales = sales.filter((sale) => sale.customerId === customerId);
+  if (customerSales.length === 0) return null;
+  const latest = customerSales.reduce((mostRecent, sale) =>
+    new Date(sale.timestamp) > new Date(mostRecent.timestamp) ? sale : mostRecent
+  );
+  return { date: latest.timestamp, amount: latest.total };
+}
+
 /** Debt older than `thresholdDays` (from Settings → Alerts, default 30) counts as "overdue". */
 export function isOverdueDebt(oldestDebtDays: number | null, thresholdDays = 30): boolean {
   return oldestDebtDays !== null && oldestDebtDays > thresholdDays;

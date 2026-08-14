@@ -6,6 +6,7 @@ import {
   creditUsageVariant,
   buildDebtAgingSummary,
   computeOldestDebtDays,
+  latestTransactionForCustomer,
 } from "../customers";
 import type { Customer, SaleRecord } from "../../types";
 
@@ -90,6 +91,21 @@ describe("computeOldestDebtDays", () => {
       makeSale({ customerId: "other", timestamp: "2026-01-01T00:00:00Z" }),
     ];
     expect(computeOldestDebtDays(sales, customer, now)).toBe(31);
+  });
+});
+
+describe("latestTransactionForCustomer", () => {
+  it("is null when the customer has no sales", () => {
+    expect(latestTransactionForCustomer([], "c1")).toBeNull();
+  });
+
+  it("returns the most recent sale's date and amount", () => {
+    const sales = [
+      makeSale({ customerId: "c1", timestamp: "2026-07-01T00:00:00Z", total: 50 }),
+      makeSale({ customerId: "c1", timestamp: "2026-07-20T00:00:00Z", total: 75 }),
+      makeSale({ customerId: "other", timestamp: "2026-08-01T00:00:00Z", total: 999 }),
+    ];
+    expect(latestTransactionForCustomer(sales, "c1")).toEqual({ date: "2026-07-20T00:00:00Z", amount: 75 });
   });
 });
 

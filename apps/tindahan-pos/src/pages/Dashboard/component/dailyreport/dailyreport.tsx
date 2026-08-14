@@ -1,21 +1,37 @@
 import {
   TEXT_SALES_SO_FAR_SUFFIX,
-  LABEL_PERIOD_TODAY,
-  BUTTON_EXPORT_REPORT,
-  ARIA_EXPORT_REPORT,
+  BUTTON_EXPORT_EXCEL,
+  ARIA_EXPORT_EXCEL,
+  ARIA_DASHBOARD_DATE,
 } from "@/lib";
+import type { DailyReport } from "@/lib/reports";
 import "../../../authTheme.css";
 
-const Dailyreportscreen = (props:any) => {
-  const {
-    greetingForHour,
-    now,
-    firstName,
-    dateLabel,
-    report,
-    exportReport,
-    exporting,
-  } = props;
+interface DailyreportProps {
+  greetingForHour: (hour: number) => string;
+  now: Date;
+  firstName: string;
+  dateLabel: string;
+  report: DailyReport;
+  selectedDate: string;
+  onSelectedDateChange: (date: string) => void;
+  maxDate: string;
+  onExport: () => void;
+  exporting: boolean;
+}
+
+const Dailyreportscreen = ({
+  greetingForHour,
+  now,
+  firstName,
+  dateLabel,
+  report,
+  selectedDate,
+  onSelectedDateChange,
+  maxDate,
+  onExport,
+  exporting,
+}: DailyreportProps) => {
   return (
     <div className="tpl-hd">
       <div>
@@ -23,41 +39,30 @@ const Dailyreportscreen = (props:any) => {
           {greetingForHour(now.getHours())} {firstName}
         </p>
         <p className="tpl-sub">
-          {dateLabel} · {report.todaysTransactionCount}{" "}
-          {TEXT_SALES_SO_FAR_SUFFIX}
+          {dateLabel} · {report.todaysTransactionCount} {TEXT_SALES_SO_FAR_SUFFIX}
         </p>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
-        <button
-          type="button"
-          className="tpl-btn"
-          disabled
-          title="More periods coming soon"
-          style={{
-            width: "auto",
-            height: 34,
-            padding: "0 12px",
-            fontSize: 13,
-            marginBottom: 0,
-          }}
-        >
-          {LABEL_PERIOD_TODAY}
-          <i className="ti ti-chevron-down" aria-hidden />
-        </button>
+        <div className="tpl-fld" style={{ width: "auto", marginBottom: 0 }}>
+          <input
+            type="date"
+            aria-label={ARIA_DASHBOARD_DATE}
+            value={selectedDate}
+            max={maxDate}
+            onChange={(e) => onSelectedDateChange(e.target.value)}
+            style={{ height: 34, fontSize: 13, padding: "0 10px" }}
+          />
+        </div>
         <button
           type="button"
           className="tpl-btnp"
-          onClick={exportReport}
+          onClick={onExport}
           disabled={exporting}
-          aria-label={ARIA_EXPORT_REPORT}
+          aria-label={ARIA_EXPORT_EXCEL}
           style={{ width: "auto", height: 34, padding: "0 14px", fontSize: 13 }}
         >
-          {exporting ? (
-            <span aria-hidden className="tpl-spinner" />
-          ) : (
-            <i className="ti ti-database-export" aria-hidden />
-          )}
-          {BUTTON_EXPORT_REPORT}
+          {exporting ? <span aria-hidden className="tpl-spinner" /> : <i className="ti ti-file-spreadsheet" aria-hidden />}
+          {BUTTON_EXPORT_EXCEL}
         </button>
       </div>
     </div>

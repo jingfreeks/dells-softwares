@@ -265,6 +265,7 @@ export const LABEL_EDIT_SUPPLIER = "Edit supplier";
 export const LABEL_ADDRESS_OPTIONAL = "Address (optional)";
 export const BUTTON_EDIT = "Edit";
 export const BUTTON_PRINT_CODE = "Print code";
+export const BUTTON_PRINT = "Print";
 export const TEXT_SUPPLIER_SCAN_HINT_PREFIX =
   "Print and keep on hand — scan it at Receiving to select";
 export const TEXT_SUPPLIER_SCAN_HINT_SUFFIX = "instantly.";
@@ -430,10 +431,40 @@ export const TEXT_GREETING_AFTERNOON = "Good afternoon,";
 export const TEXT_GREETING_EVENING = "Good evening,";
 export const TEXT_SALES_SO_FAR_SUFFIX = "sales so far";
 export const LABEL_PERIOD_TODAY = "Today";
-export const BUTTON_EXPORT_REPORT = "Export report";
-export const ARIA_EXPORT_REPORT = "Export report as PDF";
+export const BUTTON_EXPORT_EXCEL = "Export to Excel";
+export const ARIA_EXPORT_EXCEL = "Export dashboard report as Excel";
+export const ARIA_DASHBOARD_DATE = "Reporting date";
 export const LABEL_TODAYS_SALES = "Today's sales";
 export const TEXT_VS_YESTERDAY_SUFFIX = "vs yesterday";
+
+// Dashboard — clickable report modals
+export const LABEL_ITEMS_SOLD = "Items sold";
+export const LABEL_AVERAGE_BASKET = "Average basket";
+export const LABEL_OUT_OF_STOCK = "Out of stock";
+export const LABEL_EST_COST_TO_REFILL = "Est. cost to refill";
+export const LABEL_CUSTOMERS_OWING = "Customers owing";
+export const TABLE_HEADER_REFERENCE = "Reference";
+export const TABLE_HEADER_DATE_TIME = "Date & time";
+export const TABLE_HEADER_CASHIER = "Cashier";
+export const TABLE_HEADER_CUSTOMER = "Customer";
+export const TABLE_HEADER_ITEM = "Item";
+export const TABLE_HEADER_QTY = "Qty";
+export const TABLE_HEADER_PRICE = "Price";
+export const TABLE_HEADER_SUBTOTAL = "Subtotal";
+export const TABLE_HEADER_CATEGORY = "Category";
+export const TABLE_HEADER_MIN_STOCK = "Min";
+export const TABLE_HEADER_SUGGESTED_QTY = "Suggested qty";
+export const TABLE_HEADER_RANK = "Rank";
+export const TABLE_HEADER_REVENUE = "Revenue";
+export const TABLE_HEADER_PHONE = "Phone";
+export const TABLE_HEADER_BALANCE = "Balance";
+export const TABLE_HEADER_LATEST_TRANSACTION = "Latest transaction";
+export const EMPTY_STATE_NO_SALES_FOR_DATE = "No sales recorded for this date.";
+export const EMPTY_STATE_NO_LOW_STOCK = "No low-stock products found.";
+export const EMPTY_STATE_NO_OUTSTANDING_UTANG = "No outstanding utang.";
+export const EMPTY_STATE_NO_RECENT_SALES = "No recent sales found.";
+export const EMPTY_STATE_NO_RESTOCKING_NEEDED = "No products require restocking.";
+export const LABEL_STATUS_CURRENT = "Current";
 
 // Reports page
 export const PAGE_HEADING_REPORTS = "Reports";
