@@ -7,6 +7,7 @@ import {
   isToday,
   salesByCategory,
   salesByCashier,
+  vatSummary,
 } from "../reports";
 import type { Customer, Product, SaleRecord } from "../../types";
 
@@ -55,6 +56,12 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     voidedAt: null,
     voidedByName: null,
     voidReason: null,
+    vatStatus: "non_vat",
+    vatRate: null,
+    vatableSales: 0,
+    vatAmount: 0,
+    vatExemptSales: 0,
+    zeroRatedSales: 0,
     ...overrides,
   };
 }
@@ -437,5 +444,32 @@ describe("void support (BIR compliance §39) — a voided sale is never counted,
     expect(report.todaysSalesTotal).toBe(20);
     expect(report.todaysTransactionCount).toBe(1);
     expect(report.recentSales).toEqual([completed]);
+  });
+});
+
+describe("vatSummary", () => {
+  it("sums VAT breakdown fields across mixed VAT statuses, excluding a voided sale", () => {
+    const sales = [
+      makeSale({ id: "s1", vatStatus: "vat_registered", vatableSales: 100, vatAmount: 12 }),
+      makeSale({ id: "s2", vatStatus: "zero_rated", zeroRatedSales: 250 }),
+      makeSale({ id: "s3", vatStatus: "vat_exempt", vatExemptSales: 75 }),
+      makeSale({
+        id: "s4",
+        status: "voided",
+        vatStatus: "vat_registered",
+        vatableSales: 1000,
+        vatAmount: 120,
+      }),
+    ];
+    expect(vatSummary(sales)).toEqual({
+      vatableSales: 100,
+      vatAmount: 12,
+      vatExemptSales: 75,
+      zeroRatedSales: 250,
+    });
+  });
+
+  it("is all zeroes when there are no sales", () => {
+    expect(vatSummary([])).toEqual({ vatableSales: 0, vatAmount: 0, vatExemptSales: 0, zeroRatedSales: 0 });
   });
 });

@@ -33,6 +33,8 @@ export function StoreDetails() {
     setBirRegistered,
     vatStatus,
     setVatStatus,
+    vatRate,
+    setVatRate,
     invoiceType,
     setInvoiceType,
 
@@ -93,6 +95,8 @@ export function StoreDetails() {
           onBusinessPermitNoChange={setBusinessPermitNo}
           vatStatus={vatStatus}
           onVatStatusChange={setVatStatus}
+          vatRate={vatRate}
+          onVatRateChange={setVatRate}
           invoiceType={invoiceType}
           onInvoiceTypeChange={setInvoiceType}
         />

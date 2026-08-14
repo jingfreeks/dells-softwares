@@ -27,6 +27,7 @@ export interface Database {
           business_permit_no: string | null;
           bir_registered: boolean;
           vat_status: VatStatus;
+          vat_rate: number;
           invoice_type: string;
         };
         Insert: {
@@ -42,6 +43,7 @@ export interface Database {
           business_permit_no?: string | null;
           bir_registered?: boolean;
           vat_status?: VatStatus;
+          vat_rate?: number;
           invoice_type?: string;
         };
         Update: {
@@ -57,6 +59,7 @@ export interface Database {
           business_permit_no?: string | null;
           bir_registered?: boolean;
           vat_status?: VatStatus;
+          vat_rate?: number;
           invoice_type?: string;
         };
         Relationships: [];
@@ -217,6 +220,12 @@ export interface Database {
           voided_at: string | null;
           voided_by: string | null;
           void_reason: string | null;
+          vat_status: VatStatus | null;
+          vat_rate: number | null;
+          vatable_sales: number;
+          vat_amount: number;
+          vat_exempt_sales: number;
+          zero_rated_sales: number;
         };
         Insert: {
           id?: string;
@@ -235,6 +244,12 @@ export interface Database {
           voided_at?: string | null;
           voided_by?: string | null;
           void_reason?: string | null;
+          vat_status?: VatStatus | null;
+          vat_rate?: number | null;
+          vatable_sales?: number;
+          vat_amount?: number;
+          vat_exempt_sales?: number;
+          zero_rated_sales?: number;
         };
         Update: {
           id?: string;
@@ -253,6 +268,12 @@ export interface Database {
           voided_at?: string | null;
           voided_by?: string | null;
           void_reason?: string | null;
+          vat_status?: VatStatus | null;
+          vat_rate?: number | null;
+          vatable_sales?: number;
+          vat_amount?: number;
+          vat_exempt_sales?: number;
+          zero_rated_sales?: number;
         };
         Relationships: [
           {

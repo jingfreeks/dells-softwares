@@ -53,6 +53,8 @@ export interface Store {
   businessPermitNo: string | null;
   birRegistered: boolean;
   vatStatus: VatStatus;
+  /** Only meaningful when vatStatus is "vat_registered" — e.g. 0.12 for 12%. Configurable, not hardcoded, per BIR §53. */
+  vatRate: number;
   /** The document type printed as the receipt heading — e.g. "Sales Invoice", "Service Invoice". */
   invoiceType: string;
 }
@@ -118,6 +120,13 @@ export interface SaleRecord {
   voidedAt: string | null;
   voidedByName: string | null;
   voidReason: string | null;
+  /** BIR compliance §35: the store's VAT registration/rate as it stood at checkout time — never rewritten by a later config change. Null only for a sale still queued offline. */
+  vatStatus: VatStatus | null;
+  vatRate: number | null;
+  vatableSales: number;
+  vatAmount: number;
+  vatExemptSales: number;
+  zeroRatedSales: number;
 }
 
 export interface ServiceLine {

@@ -209,6 +209,12 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     voidedAt: null,
     voidedByName: null,
     voidReason: null,
+    vatStatus: "non_vat",
+    vatRate: null,
+    vatableSales: 0,
+    vatAmount: 0,
+    vatExemptSales: 0,
+    zeroRatedSales: 0,
     items: [],
     ...overrides,
   };
