@@ -68,6 +68,8 @@ export interface StoreDataContextValue {
     /** The quick-switched cashier's session token (see useCashierSession) — attributes the sale to them, not the signed-in admin. */
     cashierToken?: string | null
   ) => Promise<SaleRecord>;
+  /** Admin-only — voids a completed sale via void_sale(), reversing its stock/utang-balance effects. Throws ADMIN_ONLY / VOID_REASON_REQUIRED / ALREADY_VOIDED as raised by the RPC. */
+  voidSale: (sale: SaleRecord, reason: string) => Promise<void>;
   refresh: () => Promise<void>;
   addCategory: (name: string) => Promise<Category>;
   renameCategory: (id: string, name: string) => Promise<void>;

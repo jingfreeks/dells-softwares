@@ -4,6 +4,7 @@ import {
   useStoreData,
   buildDailyReport,
   bestSellers,
+  completedSales,
   buildDashboardWorkbook,
   downloadWorkbook,
   STORE_NAME,
@@ -119,8 +120,13 @@ export function useDashboardReport() {
         fetchSalesInRange(dayRange),
         fetchSalesInRange(previousRange),
       ]);
-      setDaySales(day);
-      setPreviousDaySales(previous);
+      // The Dashboard is a live-performance snapshot, not the audit view
+      // (that's Reports/SalesTable, which shows voided rows with a badge
+      // and the void action itself) — so a voided sale is excluded here
+      // at the source, once, rather than every card/modal/export having
+      // to remember to filter it out of its own total.
+      setDaySales(completedSales(day));
+      setPreviousDaySales(completedSales(previous));
     } catch (err) {
       setRangeError(err instanceof Error ? err.message : ERROR_COULD_NOT_GENERATE_REPORT);
     } finally {

@@ -83,6 +83,10 @@ export function makeSaleRecord(overrides: Partial<SaleRecord> = {}): SaleRecord 
     customerId: null,
     referenceNo: null,
     receiptNumber: "000001",
+    status: "completed",
+    voidedAt: null,
+    voidedByName: null,
+    voidReason: null,
     ...overrides,
   };
 }
@@ -186,6 +190,7 @@ function baseStoreDataValue() {
     removeProduct: vi.fn().mockResolvedValue(undefined),
     restock: vi.fn().mockResolvedValue(undefined),
     checkout: vi.fn().mockResolvedValue(makeSaleRecord()),
+    voidSale: vi.fn().mockResolvedValue(undefined),
     refresh: vi.fn().mockResolvedValue(undefined),
     addCategory: vi.fn().mockResolvedValue({ id: "cat-new", name: "New" }),
     renameCategory: vi.fn().mockResolvedValue(undefined),

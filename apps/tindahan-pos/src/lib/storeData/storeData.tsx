@@ -118,7 +118,7 @@ function friendlyProductError(err: { code?: string; message: string }): Error {
 }
 
 const SALE_SELECT =
-  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, receipt_number, staff:cashier_id(id, name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)";
+  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, receipt_number, status, voided_at, void_reason, staff:cashier_id(id, name), voided_by_staff:voided_by(id, name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)";
 
 function mapSaleRow(row: {
   id: string;
@@ -129,7 +129,11 @@ function mapSaleRow(row: {
   payment_type: SaleRecord["paymentType"];
   reference_no: string | null;
   receipt_number: string | null;
+  status: SaleRecord["status"];
+  voided_at: string | null;
+  void_reason: string | null;
   staff: { id: string; name: string } | { id: string; name: string }[] | null;
+  voided_by_staff: { id: string; name: string } | { id: string; name: string }[] | null;
   sale_items:
     | {
         product_id: string | null;
@@ -143,6 +147,7 @@ function mapSaleRow(row: {
     | null;
 }): SaleRecord {
   const staff = Array.isArray(row.staff) ? row.staff[0] : row.staff;
+  const voidedByStaff = Array.isArray(row.voided_by_staff) ? row.voided_by_staff[0] : row.voided_by_staff;
   return {
     id: row.id,
     // occurred_at (set only for a sale that was queued offline and synced
@@ -156,6 +161,10 @@ function mapSaleRow(row: {
     customerId: row.customer_id,
     referenceNo: row.reference_no,
     receiptNumber: row.receipt_number,
+    status: row.status,
+    voidedAt: row.voided_at,
+    voidedByName: voidedByStaff?.name ?? null,
+    voidReason: row.void_reason,
     items: (row.sale_items ?? []).map((item) => ({
       productId: item.product_id ?? "",
       name: item.name,
@@ -547,6 +556,10 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       customerId: payment.type === "credit" ? (payment.customerId ?? null) : null,
       referenceNo: payment.type === "qr" ? (payment.referenceNo?.trim() ?? null) : null,
       receiptNumber,
+      status: "completed",
+      voidedAt: null,
+      voidedByName: null,
+      voidReason: null,
       ...(queued ? { syncStatus: "pending" as const } : {}),
     };
 
@@ -572,6 +585,38 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     }
 
     return saleRecord;
+  }
+
+  // BIR compliance §39: void_sale() is the only server-side path that can
+  // ever change sales.status — it reverses the original stock decrement
+  // and (for a credit sale) the customer balance bump atomically, and
+  // writes an audit_log entry. This mirrors those same reversals into
+  // local state instead of refetching, same rationale as checkout()
+  // above: the RPC is already the source of truth, this just keeps the
+  // already-loaded products/customers/sales in sync with it.
+  async function voidSale(sale: SaleRecord, reason: string) {
+    const { error: err } = await supabase.rpc("void_sale", { p_sale_id: sale.id, p_reason: reason });
+    if (err) throw err;
+
+    setProducts((prev) =>
+      prev.map((p) => {
+        const item = sale.items.find((i) => i.itemType === "product" && i.productId === p.id);
+        return item ? { ...p, stock: p.stock + item.quantity } : p;
+      })
+    );
+    if (sale.paymentType === "credit" && sale.customerId) {
+      const customerId = sale.customerId;
+      setCustomers((prev) =>
+        prev.map((c) => (c.id === customerId ? { ...c, balance: c.balance - sale.total } : c))
+      );
+    }
+    setSales((prev) =>
+      prev.map((s) =>
+        s.id === sale.id
+          ? { ...s, status: "voided", voidedAt: new Date().toISOString(), voidReason: reason }
+          : s
+      )
+    );
   }
 
   async function addCategory(name: string): Promise<Category> {
@@ -854,6 +899,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         removeProduct,
         restock,
         checkout,
+        voidSale,
         refresh,
         addCategory,
         renameCategory,

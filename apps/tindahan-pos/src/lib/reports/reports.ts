@@ -1,6 +1,18 @@
 import { lowStockProducts, computeRestockSuggestions, type RestockSuggestion } from "@/lib/inventory";
 import type { Customer, Product, SaleRecord } from "@/lib/types";
 
+/**
+ * A voided sale (BIR compliance §39) had its stock/utang effects reversed
+ * by void_sale() — it must never be counted in a revenue/quantity total
+ * again, even though the row itself is kept (and still shown, with a
+ * status badge) in list/table views like the Reports Sales table. Every
+ * aggregating function below filters through this first; callers that
+ * need the full list for display use the raw `sales` array unfiltered.
+ */
+export function completedSales(sales: SaleRecord[]): SaleRecord[] {
+  return sales.filter((sale) => sale.status !== "voided");
+}
+
 export interface CategoryTotal {
   category: string;
   total: number;
@@ -31,7 +43,7 @@ export function salesByCategory(
 
   const totals = new Map<string, number>();
 
-  for (const item of sales.flatMap(({ items }) => items)) {
+  for (const item of completedSales(sales).flatMap(({ items }) => items)) {
       const category =
         item.itemType === "service"
           ? SERVICES_CATEGORY
@@ -93,7 +105,7 @@ export function bestSellers(sales: SaleRecord[], products: Product[], limit = 5)
   const counts = new Map<string, BestSeller>();
   const salesCountedByProduct = new Map<string, Set<string>>();
 
-  for (const sale of sales) {
+  for (const sale of completedSales(sales)) {
     for (const item of sale.items) {
       if (item.itemType !== "product") continue;
       const product = productById.get(item.productId);
@@ -163,7 +175,7 @@ export interface RangeReport {
 export function salesByCashier(sales: SaleRecord[]): CashierTotal[] {
   const totals = new Map<string | null, CashierTotal>();
 
-  for (const sale of sales) {
+  for (const sale of completedSales(sales)) {
     const key = sale.cashierId;
     const current = totals.get(key);
     if (current) {
@@ -189,16 +201,19 @@ export function salesByCashier(sales: SaleRecord[]): CashierTotal[] {
  * the desired range before calling this).
  */
 export function buildRangeReport(sales: SaleRecord[], products: Product[]): RangeReport {
-  const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
-  const transactionCount = sales.length;
+  const completed = completedSales(sales);
+  const totalSales = completed.reduce((sum, s) => sum + s.total, 0);
+  const transactionCount = completed.length;
 
   return {
     totalSales,
     transactionCount,
     averageSale: transactionCount > 0 ? totalSales / transactionCount : 0,
-    byCashier: salesByCashier(sales),
-    bestSellers: bestSellers(sales, products),
-    categoryTotals: salesByCategory(sales, products),
+    byCashier: salesByCashier(completed),
+    bestSellers: bestSellers(completed, products),
+    categoryTotals: salesByCategory(completed, products),
+    // Unfiltered — the Reports Sales table and CSV export show every row,
+    // voided included (with a status badge), only the numbers above exclude it.
     sales,
   };
 }
@@ -223,22 +238,24 @@ export function buildDailyReport(
   customers: Customer[],
   reportDate: Date = new Date()
 ): DailyReport {
-  const todaysSalesTotal = daySales.reduce((sum, s) => sum + s.total, 0);
-  const previousDaySalesTotal = previousDaySales.reduce((sum, s) => sum + s.total, 0);
+  const completedDaySales = completedSales(daySales);
+  const completedPreviousDaySales = completedSales(previousDaySales);
+  const todaysSalesTotal = completedDaySales.reduce((sum, s) => sum + s.total, 0);
+  const previousDaySalesTotal = completedPreviousDaySales.reduce((sum, s) => sum + s.total, 0);
 
   return {
     generatedAt: reportDate.toISOString(),
     todaysSalesTotal,
-    todaysTransactionCount: daySales.length,
+    todaysTransactionCount: completedDaySales.length,
     salesChangePercent:
       previousDaySalesTotal > 0
         ? Math.round(((todaysSalesTotal - previousDaySalesTotal) / previousDaySalesTotal) * 100)
         : null,
     utangOutstanding: customers.reduce((sum, c) => sum + c.balance, 0),
     lowStock: lowStockProducts(products),
-    bestSellers: bestSellers(daySales, products),
-    recentSales: daySales.slice(0, 10),
-    restockSuggestions: computeRestockSuggestions(products, recentSales, { now: reportDate }),
-    categoryTotals: salesByCategory(daySales, products),
+    bestSellers: bestSellers(completedDaySales, products),
+    recentSales: completedDaySales.slice(0, 10),
+    restockSuggestions: computeRestockSuggestions(products, completedSales(recentSales), { now: reportDate }),
+    categoryTotals: salesByCategory(completedDaySales, products),
   };
 }

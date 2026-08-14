@@ -102,6 +102,11 @@ export interface SaleRecord {
   syncStatus?: "pending";
   /** Server-assigned OR/invoice number, unique per store. Null only for a sale still queued offline — checkout_sale() assigns it once the sale actually lands in the database, so a not-yet-synced sale genuinely has none yet. */
   receiptNumber: string | null;
+  /** BIR compliance §39: a voided sale is never deleted, only marked — these four fields are only set once status is "voided". */
+  status: "completed" | "voided";
+  voidedAt: string | null;
+  voidedByName: string | null;
+  voidReason: string | null;
 }
 
 export interface ServiceLine {

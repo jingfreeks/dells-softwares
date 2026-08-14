@@ -40,7 +40,9 @@ export function computeOldestDebtDays(
 ): number | null {
   if (customer.balance <= 0) return null;
   const creditSaleTimestamps = sales
-    .filter((sale) => sale.paymentType === "credit" && sale.customerId === customer.id)
+    .filter(
+      (sale) => sale.status !== "voided" && sale.paymentType === "credit" && sale.customerId === customer.id
+    )
     .map((sale) => new Date(sale.timestamp).getTime());
   if (creditSaleTimestamps.length === 0) return null;
   const oldest = Math.min(...creditSaleTimestamps);
@@ -54,7 +56,7 @@ export interface LatestTransaction {
 
 /** This customer's most recent sale (any payment type), or null if they have none. */
 export function latestTransactionForCustomer(sales: SaleRecord[], customerId: string): LatestTransaction | null {
-  const customerSales = sales.filter((sale) => sale.customerId === customerId);
+  const customerSales = sales.filter((sale) => sale.status !== "voided" && sale.customerId === customerId);
   if (customerSales.length === 0) return null;
   const latest = customerSales.reduce((mostRecent, sale) =>
     new Date(sale.timestamp) > new Date(mostRecent.timestamp) ? sale : mostRecent

@@ -136,4 +136,60 @@ describe("Reports", () => {
     expect(screen.getByText("How old the utang is")).toBeInTheDocument();
     expect(screen.getByText("0–15 days")).toBeInTheDocument();
   });
+
+  describe("voiding a sale (BIR compliance §39)", () => {
+    it("calls voidSale with the typed reason and shows a Voided badge afterward", async () => {
+      const user = userEvent.setup();
+      const sale = makeSaleRecord({ id: "s1" });
+      const fetchSalesInRange = vi.fn().mockResolvedValue([sale]);
+      const voidSale = vi.fn().mockResolvedValue(undefined);
+      vi.mocked(useStoreData).mockReturnValue(
+        makeStoreDataValue({ products: [], fetchSalesInRange, voidSale })
+      );
+
+      renderPage();
+      await waitFor(() => expect(fetchSalesInRange).toHaveBeenCalled());
+
+      await user.click(await screen.findByRole("button", { name: "Void" }));
+      await user.type(screen.getByLabelText("Reason for voiding"), "Wrong quantity entered");
+      await user.click(screen.getAllByRole("button", { name: "Void" }).at(-1)!);
+
+      await waitFor(() => expect(voidSale).toHaveBeenCalledWith(sale, "Wrong quantity entered"));
+      expect(await screen.findByText("Voided")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Void" })).not.toBeInTheDocument();
+    });
+
+    it("disables the confirm button until a reason is typed", async () => {
+      const user = userEvent.setup();
+      const fetchSalesInRange = vi.fn().mockResolvedValue([makeSaleRecord({ id: "s1" })]);
+      vi.mocked(useStoreData).mockReturnValue(
+        makeStoreDataValue({ products: [], fetchSalesInRange, voidSale: vi.fn() })
+      );
+
+      renderPage();
+      await user.click(await screen.findByRole("button", { name: "Void" }));
+
+      const confirmButton = screen.getAllByRole("button", { name: "Void" }).at(-1)!;
+      expect(confirmButton).toBeDisabled();
+      await user.type(screen.getByLabelText("Reason for voiding"), "x");
+      expect(confirmButton).toBeEnabled();
+    });
+
+    it("keeps the dialog open and shows an error when voiding fails", async () => {
+      const user = userEvent.setup();
+      const fetchSalesInRange = vi.fn().mockResolvedValue([makeSaleRecord({ id: "s1" })]);
+      const voidSale = vi.fn().mockRejectedValue(new Error("ADMIN_ONLY"));
+      vi.mocked(useStoreData).mockReturnValue(
+        makeStoreDataValue({ products: [], fetchSalesInRange, voidSale })
+      );
+
+      renderPage();
+      await user.click(await screen.findByRole("button", { name: "Void" }));
+      await user.type(screen.getByLabelText("Reason for voiding"), "test");
+      await user.click(screen.getAllByRole("button", { name: "Void" }).at(-1)!);
+
+      expect(await screen.findByText("ADMIN_ONLY")).toBeInTheDocument();
+      expect(screen.getByLabelText("Reason for voiding")).toBeInTheDocument();
+    });
+  });
 });

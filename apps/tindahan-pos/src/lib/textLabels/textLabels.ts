@@ -484,6 +484,16 @@ export const COLUMN_TOTAL = "Total";
 export const COLUMN_DATE = "Date";
 export const COLUMN_ITEMS = "Items";
 export const COLUMN_PAYMENT = "Payment";
+export const LABEL_STATUS_VOIDED = "Voided";
+export const BUTTON_VOID_SALE = "Void";
+export const TEXT_VOID_SALE_TITLE = "Void this sale?";
+export const TEXT_VOID_SALE_BODY_PREFIX =
+  "This restores the product stock and, for a credit sale, reverses the customer's utang balance. The receipt/invoice number is not reissued to another sale. This cannot be undone.";
+export const LABEL_VOID_REASON = "Reason for voiding";
+export const PLACEHOLDER_VOID_REASON = "e.g. Incorrect quantity entered";
+export const TEXT_VOID_REASON_PREFIX = "Reason:";
+export const TEXT_VOIDED_BY_PREFIX = "Voided by";
+export const ERROR_COULD_NOT_VOID_SALE = "Could not void this sale.";
 export const LABEL_TRANSACTIONS_TODAY = "Transactions today";
 export const TEXT_AVERAGE_BASKET_SUFFIX = "average basket";
 export const LABEL_LOW_STOCK = "Low stock";

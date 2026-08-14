@@ -8,6 +8,7 @@ import type { PaymentType, StoreFeeConfig } from "./types";
 export type StaffRole = "admin" | "cashier";
 export type SaleItemType = "product" | "service";
 export type StoreFeeConfigRow = StoreFeeConfig;
+export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
 export interface Database {
   public: {
@@ -191,6 +192,10 @@ export interface Database {
           occurred_at: string | null;
           is_offline_replay: boolean;
           receipt_number: string | null;
+          status: "completed" | "voided";
+          voided_at: string | null;
+          voided_by: string | null;
+          void_reason: string | null;
         };
         Insert: {
           id?: string;
@@ -205,6 +210,10 @@ export interface Database {
           occurred_at?: string | null;
           is_offline_replay?: boolean;
           receipt_number?: string | null;
+          status?: "completed" | "voided";
+          voided_at?: string | null;
+          voided_by?: string | null;
+          void_reason?: string | null;
         };
         Update: {
           id?: string;
@@ -219,6 +228,10 @@ export interface Database {
           occurred_at?: string | null;
           is_offline_replay?: boolean;
           receipt_number?: string | null;
+          status?: "completed" | "voided";
+          voided_at?: string | null;
+          voided_by?: string | null;
+          void_reason?: string | null;
         };
         Relationships: [
           {
@@ -711,6 +724,58 @@ export interface Database {
           },
         ];
       };
+      audit_log: {
+        Row: {
+          id: string;
+          store_id: string;
+          actor_id: string | null;
+          action: string;
+          entity_type: string;
+          entity_id: string;
+          previous_value: Json | null;
+          new_value: Json | null;
+          reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          actor_id?: string | null;
+          action: string;
+          entity_type: string;
+          entity_id: string;
+          previous_value?: Json | null;
+          new_value?: Json | null;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          actor_id?: string | null;
+          action?: string;
+          entity_type?: string;
+          entity_id?: string;
+          previous_value?: Json | null;
+          new_value?: Json | null;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "audit_log_actor_id_fkey";
+            columns: ["actor_id"];
+            referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -728,6 +793,13 @@ export interface Database {
           p_is_offline_replay?: boolean;
         };
         Returns: { sale_id: string; total: number; receipt_number: string | null }[];
+      };
+      void_sale: {
+        Args: {
+          p_sale_id: string;
+          p_reason: string;
+        };
+        Returns: undefined;
       };
       record_credit_payment: {
         Args: {
