@@ -5,4 +5,5 @@ export * from "./FeesLimits";
 export * from "./AlertsSettings";
 export * from "./BackupSettings";
 export * from "./DevicesSettings";
+export * from "./AuditLogSettings";
 export * from "./ComingSoonSettingsPage";

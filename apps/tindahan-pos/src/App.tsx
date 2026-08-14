@@ -29,6 +29,7 @@ import {
   AlertsSettings,
   BackupSettings,
   DevicesSettings,
+  AuditLogSettings,
   Onboarding,
   Reports,
 } from "@/pages";
@@ -65,6 +66,7 @@ function App() {
                           <Route path="/settings/alerts" element={<AlertsSettings />} />
                           <Route path="/settings/backup" element={<BackupSettings />} />
                           <Route path="/settings/devices" element={<DevicesSettings />} />
+                          <Route path="/settings/audit-log" element={<AuditLogSettings />} />
                         </Route>
                         <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
                         <Route path="/profile" element={<Navigate to="/settings/profile" replace />} />
