@@ -10,14 +10,27 @@ import {
   COLUMN_SALES,
   COLUMN_TRANSACTIONS,
   COLUMN_STATUS,
+  LABEL_LOADING,
+  EMPTY_STATE_NO_SHIFT_HISTORY,
+  TEXT_SHIFT_IN_PROGRESS,
+  TEXT_SHIFT_COMPLETED,
+  TEXT_SHIFT_NO_COUNT,
 } from "@/lib";
-import { MOCK_SHIFT_HISTORY } from "./mockShiftHistory";
+import { useShiftHistory, type ShiftHistoryRow } from "../../hooksShifts";
 
 interface ShiftHistoryModalProps {
   onClose: () => void;
 }
 
+function statusLabel(status: ShiftHistoryRow["status"]): string {
+  if (status === "in-progress") return TEXT_SHIFT_IN_PROGRESS;
+  if (status === "no-count") return TEXT_SHIFT_NO_COUNT;
+  return TEXT_SHIFT_COMPLETED;
+}
+
 export function ShiftHistoryModal({ onClose }: ShiftHistoryModalProps) {
+  const { shifts, loading, loadError } = useShiftHistory();
+
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>
       <div
@@ -40,41 +53,56 @@ export function ShiftHistoryModal({ onClose }: ShiftHistoryModalProps) {
           </button>
         </div>
 
-        <div style={{ minWidth: 640 }}>
-          <div
-            className="tpl-thead"
-            style={{ gridTemplateColumns: "72px minmax(0,1.3fr) 80px 80px 80px 90px 90px minmax(0,1fr)" }}
-          >
-            <span>{COLUMN_SHIFT_DATE}</span>
-            <span>{COLUMN_CASHIER}</span>
-            <span className="tpl-right">{COLUMN_OPENING_CASH}</span>
-            <span className="tpl-right">{COLUMN_CLOSING_CASH}</span>
-            <span className="tpl-right">{COLUMN_VARIANCE}</span>
-            <span className="tpl-right">{COLUMN_SALES}</span>
-            <span className="tpl-right">{COLUMN_TRANSACTIONS}</span>
-            <span>{COLUMN_STATUS}</span>
-          </div>
+        {loading && <p className="tpl-ts">{LABEL_LOADING}</p>}
 
-          {MOCK_SHIFT_HISTORY.map((shift) => (
+        {!loading && loadError && (
+          <p role="alert" className="tpl-emsg">
+            <i className="ti ti-alert-circle" aria-hidden />
+            {loadError}
+          </p>
+        )}
+
+        {!loading && !loadError && shifts.length === 0 && <p className="tpl-ts">{EMPTY_STATE_NO_SHIFT_HISTORY}</p>}
+
+        {!loading && !loadError && shifts.length > 0 && (
+          <div style={{ minWidth: 640 }}>
             <div
-              key={shift.id}
-              className="tpl-trow"
-              style={{
-                gridTemplateColumns: "72px minmax(0,1.3fr) 80px 80px 80px 90px 90px minmax(0,1fr)",
-                cursor: "default",
-              }}
+              className="tpl-thead"
+              style={{ gridTemplateColumns: "110px minmax(0,1.3fr) 80px 80px 80px 90px 90px minmax(0,1fr)" }}
             >
-              <span className="tpl-ts">{shift.date}</span>
-              <span className="tpl-tp">{shift.cashier}</span>
-              <span className="tpl-ts tpl-right">{PESO.format(shift.opening)}</span>
-              <span className="tpl-ts tpl-right">{PESO.format(shift.closing)}</span>
-              <span className={`tpl-ts tpl-right${shift.variance < 0 ? " tpl-warn" : ""}`}>{PESO.format(shift.variance)}</span>
-              <span className="tpl-ts tpl-right">{PESO.format(shift.sales)}</span>
-              <span className="tpl-ts tpl-right">{shift.transactions}</span>
-              <span className="tpl-ts">{shift.status}</span>
+              <span>{COLUMN_SHIFT_DATE}</span>
+              <span>{COLUMN_CASHIER}</span>
+              <span className="tpl-right">{COLUMN_OPENING_CASH}</span>
+              <span className="tpl-right">{COLUMN_CLOSING_CASH}</span>
+              <span className="tpl-right">{COLUMN_VARIANCE}</span>
+              <span className="tpl-right">{COLUMN_SALES}</span>
+              <span className="tpl-right">{COLUMN_TRANSACTIONS}</span>
+              <span>{COLUMN_STATUS}</span>
             </div>
-          ))}
-        </div>
+
+            {shifts.map((shift) => (
+              <div
+                key={shift.id}
+                className="tpl-trow"
+                style={{
+                  gridTemplateColumns: "110px minmax(0,1.3fr) 80px 80px 80px 90px 90px minmax(0,1fr)",
+                  cursor: "default",
+                }}
+              >
+                <span className="tpl-ts">{new Date(shift.createdAt).toLocaleDateString()}</span>
+                <span className="tpl-tp">{shift.staffName}</span>
+                <span className="tpl-ts tpl-right">{PESO.format(shift.openingFloat ?? 0)}</span>
+                <span className="tpl-ts tpl-right">{shift.closingFloat === null ? "—" : PESO.format(shift.closingFloat)}</span>
+                <span className={`tpl-ts tpl-right${(shift.variance ?? 0) < 0 ? " tpl-warn" : ""}`}>
+                  {shift.variance === null ? "—" : PESO.format(shift.variance)}
+                </span>
+                <span className="tpl-ts tpl-right">{PESO.format(shift.salesTotal)}</span>
+                <span className="tpl-ts tpl-right">{shift.transactionCount}</span>
+                <span className="tpl-ts">{statusLabel(shift.status)}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

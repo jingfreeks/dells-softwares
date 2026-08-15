@@ -62,6 +62,30 @@ export function voidsThisWeek(sales: SaleRecord[]): VoidsThisWeek {
   };
 }
 
+export interface ClosedShift {
+  id: string;
+  staffId: string;
+  staffName: string;
+  createdAt: string;
+  revokedAt: string;
+  openingFloat: number | null;
+  closingFloat: number | null;
+  expectedClosing: number | null;
+  variance: number;
+}
+
+export interface DrawerVarianceThisWeek {
+  shiftCount: number;
+  netVariance: number;
+}
+
+export function drawerVarianceThisWeek(closedShifts: ClosedShift[]): DrawerVarianceThisWeek {
+  return {
+    shiftCount: closedShifts.length,
+    netVariance: closedShifts.reduce((sum, shift) => sum + shift.variance, 0),
+  };
+}
+
 /**
  * Today's sales total attributed to this staff member — matched by the
  * cashier's name on the sale record, since SaleRecord only stores a

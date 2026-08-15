@@ -662,6 +662,10 @@ export interface Database {
           created_at: string;
           expires_at: string;
           revoked_at: string | null;
+          opening_float: number | null;
+          closing_float: number | null;
+          expected_closing: number | null;
+          variance: number | null;
         };
         Insert: {
           id?: string;
@@ -672,6 +676,10 @@ export interface Database {
           created_at?: string;
           expires_at: string;
           revoked_at?: string | null;
+          opening_float?: number | null;
+          closing_float?: number | null;
+          expected_closing?: number | null;
+          variance?: number | null;
         };
         Update: {
           id?: string;
@@ -682,6 +690,10 @@ export interface Database {
           created_at?: string;
           expires_at?: string;
           revoked_at?: string | null;
+          opening_float?: number | null;
+          closing_float?: number | null;
+          expected_closing?: number | null;
+          variance?: number | null;
         };
         Relationships: [
           {
@@ -877,6 +889,7 @@ export interface Database {
         Args: {
           p_staff_id: string;
           p_pin: string;
+          p_opening_float: number;
         };
         Returns: {
           ok: boolean;
@@ -892,6 +905,7 @@ export interface Database {
       end_cashier_session: {
         Args: {
           p_token: string;
+          p_closing_float?: number | null;
         };
         Returns: undefined;
       };

@@ -10,6 +10,7 @@ import {
   CashierLoginScreen,
   ReceiptModal,
   HeldSalesModal,
+  CloseShiftModal,
 } from "./component";
 import { usePosPage } from "./hooks";
 import "../authTheme.css";
@@ -105,6 +106,10 @@ export function Pos() {
     posServicesEnabled,
     activeCashier,
     switchCashier,
+    closeShiftOpen,
+    closeCloseShift,
+    confirmCloseShift,
+    skipCloseShift,
     productsLoading,
     productsError,
     onRetryProducts,
@@ -250,6 +255,10 @@ export function Pos() {
         onDiscard={discardHeldSale}
         onClose={closeHeldSales}
       />
+
+      {closeShiftOpen && (
+        <CloseShiftModal onConfirm={confirmCloseShift} onSkip={skipCloseShift} onCancel={closeCloseShift} />
+      )}
 
       <ReceiptModal
         open={!!lastSaleRecord}

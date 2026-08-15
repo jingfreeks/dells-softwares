@@ -17,6 +17,8 @@ import {
   AddStaffModal,
   ShiftHistoryModal,
   VoidsWeekModal,
+  OnShiftNowModal,
+  DrawerVarianceModal,
 } from "./component";
 import { useStaffPage } from "./hooks";
 import { staffAccountCounts } from "./lib";
@@ -54,6 +56,15 @@ export function Staff() {
     showVoidsWeek,
     openVoidsWeek,
     closeVoidsWeek,
+    openShifts,
+    showOpenShifts,
+    openOpenShifts,
+    closeOpenShifts,
+    variance,
+    closedShiftsThisWeek,
+    showVariance,
+    openVariance,
+    closeVariance,
   } = useStaffPage();
 
   const staffTableRef = useRef<HTMLDivElement>(null);
@@ -106,8 +117,12 @@ export function Staff() {
       <StaffMetrics
         counts={staffAccountCounts(staff)}
         voids={voids}
+        openShifts={openShifts}
+        variance={variance}
         onStaffAccountsClick={scrollToStaffTable}
         onVoidsClick={openVoidsWeek}
+        onOpenShiftsClick={openOpenShifts}
+        onVarianceClick={openVariance}
       />
 
       <div ref={staffTableRef}>
@@ -144,6 +159,10 @@ export function Staff() {
       {showShiftHistory && <ShiftHistoryModal onClose={() => setShowShiftHistory(false)} />}
 
       {showVoidsWeek && <VoidsWeekModal voidedSales={voidedThisWeek} onClose={closeVoidsWeek} />}
+
+      {showOpenShifts && <OnShiftNowModal openShifts={openShifts} onClose={closeOpenShifts} />}
+
+      {showVariance && <DrawerVarianceModal closedShifts={closedShiftsThisWeek} onClose={closeVariance} />}
 
       <SetPinModal
         open={setPinForId !== null}

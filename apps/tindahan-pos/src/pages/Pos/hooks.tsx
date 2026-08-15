@@ -103,6 +103,7 @@ export function usePosPage() {
   const [serviceLines, setServiceLines] = useState<ServiceLine[]>([]);
   const [heldSales, setHeldSales] = useState<HeldSale[]>([]);
   const [heldSalesOpen, setHeldSalesOpen] = useState(false);
+  const [closeShiftOpen, setCloseShiftOpen] = useState(false);
   const [holdingSale, setHoldingSale] = useState(false);
   const [holdError, setHoldError] = useState<string | null>(null);
   const [resumeError, setResumeError] = useState<string | null>(null);
@@ -419,6 +420,24 @@ export function usePosPage() {
     setLastSaleRecord(null);
   }
 
+  function openCloseShift() {
+    setCloseShiftOpen(true);
+  }
+
+  function closeCloseShift() {
+    setCloseShiftOpen(false);
+  }
+
+  async function confirmCloseShift(closingFloat: number) {
+    await endCashierSession(closingFloat);
+    setCloseShiftOpen(false);
+  }
+
+  async function skipCloseShift() {
+    await endCashierSession();
+    setCloseShiftOpen(false);
+  }
+
   async function handleCompleteSale() {
     if (cart.length === 0 && serviceLines.length === 0) return;
     if (paymentType === "credit" && !selectedCustomerId) return;
@@ -656,7 +675,11 @@ export function usePosPage() {
     packPricingEnabled,
     posServicesEnabled,
     activeCashier,
-    switchCashier: endCashierSession,
+    switchCashier: openCloseShift,
+    closeShiftOpen,
+    closeCloseShift,
+    confirmCloseShift,
+    skipCloseShift,
     productsLoading: storeDataLoading,
     productsError: storeDataError,
     onRetryProducts: refreshStoreData,
