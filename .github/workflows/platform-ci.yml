@@ -54,9 +54,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pinned deliberately. `version: latest` makes the action resolve the
+      # newest release through GitHub's API unauthenticated, which rate-limits
+      # and fails the job for reasons having nothing to do with the code --
+      # exactly what happened on the first run. A pinned version skips that
+      # lookup entirely. This is the version the suites were validated against.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.109.1
 
       # Applies all migrations from empty. A migration that cannot replay
       # cleanly fails here, which is the only place it is cheap to find out.
@@ -68,8 +73,12 @@ jobs:
         working-directory: apps/tindahan-pos
         run: bash supabase/tests/run.sh
 
+      # Best-effort teardown. If the CLI never installed, `supabase` is not on
+      # PATH and this would otherwise report a second, misleading failure on
+      # top of the real one.
       - name: Stop Supabase
         if: always()
+        continue-on-error: true
         working-directory: apps/tindahan-pos
         run: supabase stop --no-backup
 
@@ -110,3 +119,16 @@ jobs:
         env:
           VITE_SUPABASE_URL: http://localhost:54321
           VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+
+# ---------------------------------------------------------------------------
+# NOTE ON THIS FILE'S LOCATION
+#
+# This belongs at .github/workflows/platform-ci.yml. It is parked here only
+# because the token used to open this PR lacks GitHub's `workflow` scope, so
+# it cannot create or update files under .github/workflows/. Move it with:
+#
+#     git mv ci/platform-ci.yml .github/workflows/platform-ci.yml
+#
+# Nothing else needs to change -- the paths inside are already written
+# relative to the repository root.
+# ---------------------------------------------------------------------------
