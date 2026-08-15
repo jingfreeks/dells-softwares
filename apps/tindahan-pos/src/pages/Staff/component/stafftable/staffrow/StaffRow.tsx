@@ -5,6 +5,7 @@ import {
   LABEL_EMAIL_LOGIN,
   LABEL_ROLE_ADMIN,
   LABEL_ROLE_CASHIER,
+  LABEL_ROLE_SUPERVISOR_TITLE,
   LABEL_INACTIVE,
   TEXT_EDIT_STAFF_NAME_PROMPT,
 } from "@/lib";
@@ -20,6 +21,7 @@ interface StaffRowProps {
   sales: SaleRecord[];
   removingId: string | null;
   onEditName: (id: string, name: string) => void;
+  onChangeRole: (id: string, roleCode: "SUPERVISOR" | "CASHIER") => void;
   onResetPassword: (email: string) => void;
   onSetPin: (id: string) => void;
   onToggleActive: (id: string, currentlyActive: boolean) => void;
@@ -32,6 +34,7 @@ export function StaffRow({
   sales,
   removingId,
   onEditName,
+  onChangeRole,
   onResetPassword,
   onSetPin,
   onToggleActive,
@@ -66,7 +69,11 @@ export function StaffRow({
       </div>
 
       <span className={`tpl-chip${member.role === "admin" ? " tpl-on" : ""}`} style={{ justifyContent: "center", fontSize: 11, padding: "3px 0" }}>
-        {member.role === "admin" ? LABEL_ROLE_ADMIN : LABEL_ROLE_CASHIER}
+        {member.roleCode === "OWNER"
+          ? LABEL_ROLE_ADMIN
+          : member.roleCode === "SUPERVISOR"
+            ? LABEL_ROLE_SUPERVISOR_TITLE
+            : LABEL_ROLE_CASHIER}
       </span>
 
       <span className="tpl-tp tpl-right">{salesToday > 0 ? PESO.format(salesToday) : "—"}</span>
@@ -77,10 +84,13 @@ export function StaffRow({
 
       <StaffActionsMenu
         canRemove={member.role === "cashier"}
+        canChangeRole={member.role === "cashier"}
+        roleCode={member.roleCode}
         removing={removingId === member.id}
         hasPin={member.hasPin}
         active={member.active}
         onEditName={handleEditName}
+        onChangeRole={(roleCode) => onChangeRole(member.id, roleCode)}
         onResetPassword={() => onResetPassword(member.email)}
         onSetPin={() => onSetPin(member.id)}
         onToggleActive={() => onToggleActive(member.id, member.active)}

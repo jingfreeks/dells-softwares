@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { useCan } from "../lib/permissions";
 import { listWarehouses } from "../lib/warehouses";
 import { listSuppliers } from "../lib/suppliers";
 import { listProducts } from "../lib/products";
@@ -37,6 +38,7 @@ const STATUS_COLOR: Record<PurchaseOrder["status"], string> = {
 
 export function PurchaseOrders() {
   const { user } = useAuth();
+  const canManage = useCan("inventory.purchase_order.manage");
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -99,7 +101,7 @@ export function PurchaseOrders() {
     };
   }, [user]);
 
-  if (user && user.role !== "admin") {
+  if (user && !canManage) {
     return <Navigate to="/login" replace />;
   }
 

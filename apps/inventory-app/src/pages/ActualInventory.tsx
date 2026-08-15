@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { useCan } from "../lib/permissions";
 import { listWarehouses, getWarehouseStock } from "../lib/warehouses";
 import { listProducts } from "../lib/products";
 import {
@@ -14,6 +15,7 @@ import type { InventoryCount, InventoryCountLine, Product, Warehouse } from "../
 
 export function ActualInventory() {
   const { user } = useAuth();
+  const canManage = useCan("inventory.stock.count");
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [counts, setCounts] = useState<InventoryCount[]>([]);
@@ -95,7 +97,7 @@ export function ActualInventory() {
     };
   }, [selectedCount, selectedWarehouse, products]);
 
-  if (user && user.role !== "admin") {
+  if (user && !canManage) {
     return <Navigate to="/login" replace />;
   }
 

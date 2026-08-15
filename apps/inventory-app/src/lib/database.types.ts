@@ -679,6 +679,12 @@ export interface Database {
         };
         Returns: { transfer_id: string }[];
       };
+      // 0044_rbac_foundation.sql (tindahan-pos migrations -- this app shares
+      // the same Supabase project/schema and has no migrations of its own).
+      list_my_permissions: {
+        Args: Record<string, never>;
+        Returns: string[];
+      };
     };
     Enums: {
       staff_role: StaffRole;

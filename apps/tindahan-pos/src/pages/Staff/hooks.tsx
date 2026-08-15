@@ -10,6 +10,7 @@ import {
   ERROR_COULD_NOT_SEND_RESET,
   ERROR_COULD_NOT_SET_STAFF_PIN,
   ERROR_COULD_NOT_UPDATE_STAFF_STATUS,
+  ERROR_COULD_NOT_CHANGE_ROLE,
   type Role,
   type SaleRecord,
 } from "@/lib";
@@ -30,6 +31,11 @@ export interface StaffRow {
   name: string;
   email: string;
   role: Role;
+  /** Granular role from staff_roles (0044_rbac_foundation.sql). Admins are
+   * always "OWNER" regardless of any staff_roles row (has_permission()
+   * bridges admin directly off staff.role); a cashier-tier staff member is
+   * "SUPERVISOR" only if they hold that grant, "CASHIER" otherwise. */
+  roleCode: "OWNER" | "SUPERVISOR" | "CASHIER";
   active: boolean;
   hasPin: boolean;
 }
@@ -111,21 +117,27 @@ export function useStaffPage() {
 
   const fetchStaff = useCallback(async () => {
     setLoadError(null);
-    const { data, error } = await supabase
-      .from("staff")
-      .select("id, name, email, role, active, pin_hash")
-      .order("role")
-      .order("name");
-    if (error) {
-      setLoadError(error.message);
+    const [staffResult, rolesResult] = await Promise.all([
+      supabase.from("staff").select("id, name, email, role, active, pin_hash").order("role").order("name"),
+      // Separate query (rather than an embedded select) to keep this
+      // resilient to database.types.ts not perfectly inferring the
+      // staff -> staff_roles -> roles join shape.
+      supabase.from("staff_roles").select("staff_id, roles(code)"),
+    ]);
+    if (staffResult.error) {
+      setLoadError(staffResult.error.message);
       return;
     }
+    const supervisorStaffIds = new Set(
+      (rolesResult.data ?? []).filter((sr) => sr.roles?.code === "SUPERVISOR").map((sr) => sr.staff_id)
+    );
     setStaff(
-      (data ?? []).map((row) => ({
+      (staffResult.data ?? []).map((row) => ({
         id: row.id,
         name: row.name,
         email: row.email,
         role: row.role,
+        roleCode: row.role === "admin" ? "OWNER" : supervisorStaffIds.has(row.id) ? "SUPERVISOR" : "CASHIER",
         active: row.active,
         hasPin: row.pin_hash !== null,
       }))
@@ -158,6 +170,7 @@ export function useStaffPage() {
           // password auth account (no PIN-login system exists), so a
           // password is generated here and never surfaced anywhere.
           password: generatePassword(),
+          role_code: form.roleSelection === "supervisor" ? "SUPERVISOR" : "CASHIER",
         },
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
@@ -241,6 +254,16 @@ export function useStaffPage() {
     closeSetPinModal();
   }
 
+  async function handleChangeRole(id: string, roleCode: "SUPERVISOR" | "CASHIER") {
+    setLoadError(null);
+    const { error } = await supabase.rpc("assign_staff_role", { p_staff_id: id, p_role_code: roleCode });
+    if (error) {
+      setLoadError(error.message || ERROR_COULD_NOT_CHANGE_ROLE);
+      return;
+    }
+    await fetchStaff();
+  }
+
   async function handleToggleActive(id: string, currentlyActive: boolean) {
     setLoadError(null);
     try {
@@ -271,6 +294,7 @@ export function useStaffPage() {
     handleSubmit,
     handleRemove,
     handleEditName,
+    handleChangeRole,
     handleResetPassword,
     setPinForId,
     setPinSubmitting,

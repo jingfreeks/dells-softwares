@@ -4,6 +4,7 @@ import {
   BUTTON_EXPORT_CSV,
   LABEL_LOADING,
   BUTTON_TRY_AGAIN,
+  useCan,
 } from "@/lib";
 import { DebtAgeCard } from "@/components";
 import {
@@ -42,6 +43,12 @@ export function Reports() {
     onVoidSale,
     voidError,
   } = useReportsPage();
+
+  // void_sale() is now permission-gated (0045_rbac_enforce_checkpoints.sql)
+  // rather than unconditionally admin-only — hide the action entirely
+  // (SalesTable's existing convention) when the signed-in staff member
+  // doesn't hold it, instead of letting them hit a server rejection.
+  const canVoidSale = useCan("pos.sale.void");
 
   return (
     <div className="tpl-root">
@@ -93,7 +100,7 @@ export function Reports() {
             report.vatSummary.vatExemptSales > 0 ||
             report.vatSummary.zeroRatedSales > 0) && <VatSummaryCard summary={report.vatSummary} />}
           <CashierBreakdownTable rows={report.byCashier} grandTotal={report.totalSales} />
-          <SalesTable sales={report.sales} onVoidSale={onVoidSale} voidError={voidError} />
+          <SalesTable sales={report.sales} onVoidSale={canVoidSale ? onVoidSale : undefined} voidError={voidError} />
         </>
       )}
     </div>

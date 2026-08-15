@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { useCan } from "../lib/permissions";
 import { listWarehouses } from "../lib/warehouses";
 import { listProducts } from "../lib/products";
 import { listBeginningBalances, setBeginningBalance } from "../lib/beginningBalance";
@@ -10,6 +11,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export function BeginningBalance() {
   const { user } = useAuth();
+  const canManage = useCan("inventory.stock.adjust");
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [balances, setBalances] = useState<BeginningBalanceRow[]>([]);
@@ -66,7 +68,7 @@ export function BeginningBalance() {
     };
   }, [warehouseId]);
 
-  if (user && user.role !== "admin") {
+  if (user && !canManage) {
     return <Navigate to="/login" replace />;
   }
 

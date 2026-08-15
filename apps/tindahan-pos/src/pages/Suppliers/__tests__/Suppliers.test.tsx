@@ -2,12 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { useAuth, useStoreData } from "@/lib";
+import { useAuth, useStoreData, useCan } from "@/lib";
 import { makeAuthValue, makeStaffAccount, makeStoreDataValue, makeSupplier } from "../../../test/testUtils";
 import { Suppliers } from "../Suppliers";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/lib/storeData", () => ({ useStoreData: vi.fn() }));
+vi.mock("@/lib/permissions", () => ({ useCan: vi.fn(), usePermissions: () => ({ permissions: new Set(), loading: false }) }));
 vi.mock("@/lib/qr", () => ({ generateScanCodeQr: vi.fn().mockResolvedValue("data:image/png;base64,fake") }));
 
 const categories = [{ id: "cat1", name: "Canned goods" }];
@@ -40,12 +41,14 @@ function renderPage() {
 function setup(overrides: Parameters<typeof makeStoreDataValue>[0] = {}) {
   vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ role: "admin" }) }));
   vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ suppliers, categories, ...overrides }));
+  vi.mocked(useCan).mockReturnValue(true);
 }
 
 describe("Suppliers", () => {
   it("redirects a cashier away from the suppliers page", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ role: "cashier" }) }));
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ suppliers: [] }));
+    vi.mocked(useCan).mockReturnValue(false);
     render(
       <MemoryRouter initialEntries={["/suppliers"]}>
         <Routes>

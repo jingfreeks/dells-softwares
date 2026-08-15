@@ -12,7 +12,6 @@ import {
   LABEL_PERMISSION_VIEW_REPORTS,
   LABEL_PERMISSION_RING_UP,
   LABEL_PERMISSION_UTANG_WITHIN_LIMIT,
-  LABEL_PERMISSION_UTANG_UNCAPPED,
   LABEL_PERMISSION_ELOAD_CASHIN_SHORT,
   LABEL_PERMISSION_ADJUST_STOCK,
   LABEL_PERMISSION_VOID_YOUR_PIN,
@@ -20,12 +19,32 @@ import {
   LABEL_PERMISSION_NO_REPORTS,
   LABEL_PERMISSION_NO_PRICE_EDITS,
   LABEL_PERMISSION_PRICE_EDITS_OWNER_PIN,
-  LABEL_PERMISSION_PRICE_EDITS,
   LABEL_PERMISSION_VIEW_REPORTS_FULL,
 } from "@/lib";
 import type { StaffRow } from "./hooks";
 
 const MS_PER_MINUTE = 60 * 1000;
+
+// Mirrors the seed data in 0044_rbac_foundation.sql exactly (permissions,
+// system roles, role_permissions) — kept as a static map here rather than a
+// live query since these are fixed, migration-defined role bundles, the
+// same way @/lib/nav's route table is already static.
+const ALL_PERMISSIONS = [
+  "staff.manage",
+  "pos.sale.void",
+  "pos.report.view",
+  "inventory.product.manage",
+  "inventory.supplier.manage",
+  "inventory.warehouse.manage",
+  "inventory.transfer.manage",
+  "inventory.purchase_order.manage",
+  "inventory.stock.adjust",
+  "inventory.stock.receive",
+  "inventory.stock.count",
+] as const;
+
+const CASHIER_ROLE_PERMISSIONS = new Set<string>();
+const SUPERVISOR_ROLE_PERMISSIONS = new Set<string>(ALL_PERMISSIONS.filter((p) => p !== "staff.manage"));
 
 /** Two-letter initials for the row avatar, e.g. "Aling Nena" -> "AN". */
 export function staffInitials(name: string): string {
@@ -126,34 +145,41 @@ export interface CashierPermission {
 }
 
 /**
- * What a cashier account can actually do today. Most rows are derived from
- * the same role-based nav table that gates routes (@/lib/nav) rather than a
- * hardcoded copy — so this card can't drift out of sync with the real
- * access rules. "Change prices" is derived from the real, admin-editable
+ * What a plain CASHIER account (no staff_roles grant beyond the default —
+ * see 0044_rbac_foundation.sql) can actually do today. Most rows are
+ * derived from the same nav table that gates routes (@/lib/nav) rather than
+ * a hardcoded copy. "Change prices" is derived from the real, admin-editable
  * `store.cashierCanEditPrices` flag instead (enforced server-side by the
  * guard_cashier_product_update trigger — see 0043_cashier_price_edit_permission.sql),
- * not from route access. Cash-out and void aren't PIN-gated in the app yet
- * (no such mechanism was built for them); those two rows describe the
- * intended rule, not an enforced one, and are marked accordingly.
+ * not from route access. Void and reports are now real, server-enforced
+ * permission checks (0045_rbac_enforce_checkpoints.sql) rather than the old
+ * "needs-pin" placeholder — a plain cashier holds neither. Cash-out has no
+ * enforcement mechanism at all yet, so it still describes an intended rule.
  */
 export function cashierPermissions(store: Store): CashierPermission[] {
-  const cashierRoutes = new Set(navItemsForRole("cashier").map((item) => item.to));
-  const adminOnlyRoutes = navItemsForRole("admin").filter((item) => !cashierRoutes.has(item.to));
-
-  const canViewReports = !adminOnlyRoutes.some((item) => item.to === "/admin");
+  const cashierRoutes = new Set(navItemsForRole("cashier", CASHIER_ROLE_PERMISSIONS).map((item) => item.to));
 
   return [
     { label: LABEL_PERMISSION_RING_UP_SALES, state: cashierRoutes.has("/pos") ? "allowed" : "blocked" },
     { label: LABEL_PERMISSION_SELL_ON_UTANG, state: cashierRoutes.has("/customers") ? "allowed" : "blocked" },
     { label: LABEL_PERMISSION_ELOAD_CASHIN, state: cashierRoutes.has("/pos") ? "allowed" : "blocked" },
     { label: LABEL_PERMISSION_CASH_OUT, state: "needs-pin" },
-    { label: LABEL_PERMISSION_VOID_SALE, state: "needs-pin" },
+    {
+      label: LABEL_PERMISSION_VOID_SALE,
+      state: CASHIER_ROLE_PERMISSIONS.has("pos.sale.void") ? "allowed" : "blocked",
+    },
     { label: LABEL_PERMISSION_CHANGE_PRICES, state: store.cashierCanEditPrices ? "allowed" : "blocked" },
-    { label: LABEL_PERMISSION_VIEW_REPORTS, state: canViewReports ? "allowed" : "blocked" },
+    {
+      label: LABEL_PERMISSION_VIEW_REPORTS,
+      state: CASHIER_ROLE_PERMISSIONS.has("pos.report.view") ? "allowed" : "blocked",
+    },
   ];
 }
 
-export type StaffRoleSelection = "cashier" | "supervisor" | "owner";
+// "owner" was never a real create-cashier option (the create-cashier Edge
+// Function always creates a role: 'cashier' account) and stays that way —
+// an OWNER only ever comes from self-registration (handle_new_user()).
+export type StaffRoleSelection = "cashier" | "supervisor";
 export type SignInMethod = "pin" | "pin-email";
 export type ShiftSelection = "morning" | "afternoon" | "none";
 
@@ -175,33 +201,26 @@ export interface RolePermissionChip {
 }
 
 /**
- * Illustrative permission preview for the Add Staff modal's role picker.
- * Only "cashier" reflects real, enforced access (see cashierPermissions
- * above) — supervisor/owner roles don't exist in the schema yet (staff.role
- * is only "admin" | "cashier"), so selecting them here doesn't change what
- * account actually gets created. TODO: once those roles exist, replace this
- * with real per-role permission data instead of an illustrative preview.
+ * Real permission preview for the Add Staff modal's role picker, backed by
+ * the seeded role_permissions in 0044_rbac_foundation.sql (see
+ * SUPERVISOR_ROLE_PERMISSIONS / CASHIER_ROLE_PERMISSIONS above) instead of
+ * the illustrative placeholder this used to be — supervisor now really does
+ * unlock void, reports, and inventory management once assigned via
+ * assign_staff_role(). "Ring up sales" / "Utang" / "E-load" rows are
+ * baseline capabilities every staff account has and aren't part of the 11
+ * RBAC codes, so they stay a fixed description rather than a lookup.
  */
 export function rolePermissionChips(role: StaffRoleSelection): RolePermissionChip[] {
-  if (role === "owner") {
-    return [
-      { label: LABEL_PERMISSION_RING_UP, state: "allowed" },
-      { label: LABEL_PERMISSION_UTANG_UNCAPPED, state: "allowed" },
-      { label: LABEL_PERMISSION_ELOAD_CASHIN_SHORT, state: "allowed" },
-      { label: LABEL_PERMISSION_ADJUST_STOCK, state: "allowed" },
-      { label: LABEL_PERMISSION_VOID_SALES, state: "allowed" },
-      { label: LABEL_PERMISSION_VIEW_REPORTS_FULL, state: "allowed" },
-      { label: LABEL_PERMISSION_PRICE_EDITS, state: "allowed" },
-    ];
-  }
+  const perms = role === "supervisor" ? SUPERVISOR_ROLE_PERMISSIONS : CASHIER_ROLE_PERMISSIONS;
+
   if (role === "supervisor") {
     return [
       { label: LABEL_PERMISSION_RING_UP, state: "allowed" },
       { label: LABEL_PERMISSION_UTANG_WITHIN_LIMIT, state: "allowed" },
       { label: LABEL_PERMISSION_ELOAD_CASHIN_SHORT, state: "allowed" },
-      { label: LABEL_PERMISSION_ADJUST_STOCK, state: "allowed" },
-      { label: LABEL_PERMISSION_VOID_SALES, state: "allowed" },
-      { label: LABEL_PERMISSION_NO_REPORTS, state: "blocked" },
+      { label: LABEL_PERMISSION_ADJUST_STOCK, state: perms.has("inventory.stock.adjust") ? "allowed" : "blocked" },
+      { label: LABEL_PERMISSION_VOID_SALES, state: perms.has("pos.sale.void") ? "allowed" : "blocked" },
+      { label: LABEL_PERMISSION_VIEW_REPORTS_FULL, state: perms.has("pos.report.view") ? "allowed" : "blocked" },
       { label: LABEL_PERMISSION_PRICE_EDITS_OWNER_PIN, state: "needs-pin" },
     ];
   }
@@ -210,7 +229,7 @@ export function rolePermissionChips(role: StaffRoleSelection): RolePermissionChi
     { label: LABEL_PERMISSION_UTANG_WITHIN_LIMIT, state: "allowed" },
     { label: LABEL_PERMISSION_ELOAD_CASHIN_SHORT, state: "allowed" },
     { label: LABEL_PERMISSION_VOID_YOUR_PIN, state: "needs-pin" },
-    { label: LABEL_PERMISSION_NO_REPORTS, state: "blocked" },
+    { label: LABEL_PERMISSION_NO_REPORTS, state: perms.has("pos.report.view") ? "allowed" : "blocked" },
     { label: LABEL_PERMISSION_NO_PRICE_EDITS, state: "blocked" },
   ];
 }

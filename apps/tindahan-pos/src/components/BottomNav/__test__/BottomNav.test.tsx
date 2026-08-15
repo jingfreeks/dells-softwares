@@ -6,6 +6,7 @@ import { makeAuthValue, makeStaffAccount } from "../../../test/testUtils";
 import { BottomNav } from "../BottomNav";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
+vi.mock("@/lib/permissions", () => ({ usePermissions: () => ({ permissions: new Set(), loading: false }) }));
 
 describe("BottomNav", () => {
   it("shows admin nav items for an admin user", () => {

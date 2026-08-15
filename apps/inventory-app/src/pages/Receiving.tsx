@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { useCan } from "../lib/permissions";
 import { listWarehouses } from "../lib/warehouses";
 import { listSuppliers } from "../lib/suppliers";
 import { listProducts } from "../lib/products";
@@ -19,6 +20,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export function Receiving() {
   const { user } = useAuth();
+  const canReceive = useCan("inventory.stock.receive");
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -77,6 +79,10 @@ export function Receiving() {
       cancelled = true;
     };
   }, [user]);
+
+  if (user && !canReceive) {
+    return <Navigate to="/login" replace />;
+  }
 
   async function handlePickPurchaseOrder(id: string) {
     setPurchaseOrderId(id);
