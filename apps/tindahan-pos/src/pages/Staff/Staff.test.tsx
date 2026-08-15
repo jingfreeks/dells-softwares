@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useAuth, useStoreData, supabase } from "@/lib";
-import { makeAuthValue, makeStaffAccount, makeStoreDataValue } from "../../test/testUtils";
+import { makeAuthValue, makeStaffAccount, makeStoreDataValue, makeSaleRecord } from "../../test/testUtils";
 import { Staff } from "./Staff";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
@@ -12,12 +12,25 @@ vi.mock("@/lib/storeData", () => ({ useStoreData: vi.fn() }));
 vi.mock("@/lib/supabaseClient", () => {
   const order2 = vi.fn();
   const order1 = vi.fn(() => ({ order: order2 }));
-  const select = vi.fn(() => ({ order: order1 }));
+  // Staff select is used two ways: the roster fetch chains `.order().order()`,
+  // while useAuditLog's actor-name lookup awaits the select() result directly
+  // — so the returned value needs to be both thenable and `.order`-chainable.
+  const select = vi.fn(() => Object.assign(Promise.resolve({ data: [], error: null }), { order: order1 }));
   const deleteEqFn = vi.fn();
   const deleteFn = vi.fn(() => ({ eq: deleteEqFn }));
   const updateEqFn = vi.fn().mockResolvedValue({ error: null });
   const updateFn = vi.fn(() => ({ eq: updateEqFn }));
-  const from = vi.fn(() => ({ select, delete: deleteFn, update: updateFn }));
+
+  const auditLogSelect = vi.fn(() => ({
+    order: vi.fn(() => ({ limit: vi.fn(() => Promise.resolve({ data: [], error: null })) })),
+  }));
+  const salesSelect = vi.fn(() => ({ in: vi.fn(() => Promise.resolve({ data: [], error: null })) }));
+
+  const from = vi.fn((table: string) => {
+    if (table === "audit_log") return { select: auditLogSelect };
+    if (table === "sales") return { select: salesSelect };
+    return { select, delete: deleteFn, update: updateFn };
+  });
   const rpc = vi.fn();
   return {
     supabase: {
@@ -25,7 +38,7 @@ vi.mock("@/lib/supabaseClient", () => {
       rpc,
       auth: { getSession: vi.fn() },
       functions: { invoke: vi.fn() },
-      __mocks: { order1, order2, select, from, deleteFn, deleteEqFn, updateFn, updateEqFn, rpc },
+      __mocks: { order1, order2, select, from, deleteFn, deleteEqFn, updateFn, updateEqFn, rpc, auditLogSelect, salesSelect },
     },
   };
 });
@@ -41,6 +54,8 @@ type MockedSupabase = typeof supabase & {
     updateFn: ReturnType<typeof vi.fn>;
     updateEqFn: ReturnType<typeof vi.fn>;
     rpc: ReturnType<typeof vi.fn>;
+    auditLogSelect: ReturnType<typeof vi.fn>;
+    salesSelect: ReturnType<typeof vi.fn>;
   };
 };
 
@@ -291,5 +306,61 @@ describe("Staff", () => {
 
     await waitFor(() => expect(mockedSupabase.__mocks.updateFn).toHaveBeenCalledWith({ active: false }));
     expect(mockedSupabase.__mocks.updateEqFn).toHaveBeenCalledWith("id", "staff-2");
+  });
+
+  it("shows the real voided-sales count and total for this week", async () => {
+    const voided = makeSaleRecord({
+      id: "sale-voided-1",
+      status: "voided",
+      total: 132,
+      receiptNumber: "000009",
+      cashierName: "Cashier Joy",
+      voidReason: "Wrong item",
+      voidedAt: "2026-08-14T10:00:00Z",
+    });
+    vi.mocked(useStoreData).mockReturnValue(
+      makeStoreDataValue({ fetchSalesInRange: vi.fn().mockResolvedValue([voided]) })
+    );
+    renderStaff();
+
+    expect(await screen.findByText("1")).toBeInTheDocument();
+    expect(screen.getByText("₱132.00 total")).toBeInTheDocument();
+  });
+
+  it("opens the voids-this-week modal listing the real voided sales", async () => {
+    const user = userEvent.setup();
+    const voided = makeSaleRecord({
+      id: "sale-voided-1",
+      status: "voided",
+      total: 132,
+      receiptNumber: "000009",
+      cashierName: "Cashier Joy",
+      voidReason: "Wrong item",
+      voidedAt: "2026-08-14T10:00:00Z",
+    });
+    vi.mocked(useStoreData).mockReturnValue(
+      makeStoreDataValue({ fetchSalesInRange: vi.fn().mockResolvedValue([voided]) })
+    );
+    renderStaff();
+    await screen.findByText("Aling Nena");
+
+    await waitFor(() => expect(screen.getByText("₱132.00 total")).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: /voids this week/i }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Cashier Joy")).toBeInTheDocument();
+    expect(within(dialog).getByText("000009")).toBeInTheDocument();
+    expect(within(dialog).getByText("Wrong item")).toBeInTheDocument();
+  });
+
+  it("scrolls to the staff table when Staff Accounts is clicked", async () => {
+    const user = userEvent.setup();
+    const scrollIntoView = vi.fn();
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    renderStaff();
+    await screen.findByText("Aling Nena");
+
+    await user.click(screen.getByRole("button", { name: /staff accounts/i }));
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
   });
 });

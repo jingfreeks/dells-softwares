@@ -1,9 +1,8 @@
-import { PAGE_HEADING_AUDIT_LOG, TEXT_AUDIT_LOG_DESCRIPTION } from "@/lib";
+import { PAGE_HEADING_AUDIT_LOG, TEXT_AUDIT_LOG_DESCRIPTION, useAuditLog } from "@/lib";
 import { SettingsLayout, AuditLogCard } from "./component";
-import { useAuditLogPage } from "./hooksAuditLog";
 
 export function AuditLogSettings() {
-  const { entries, loading, loadError } = useAuditLogPage();
+  const { entries, loading, loadError } = useAuditLog();
 
   return (
     <SettingsLayout>

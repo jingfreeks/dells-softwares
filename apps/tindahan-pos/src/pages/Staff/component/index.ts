@@ -4,3 +4,4 @@ export * from "./cashierpermissioncard";
 export * from "./activitylogcard";
 export * from "./addstaffmodal";
 export * from "./shifthistorymodal";
+export * from "./voidsweekmodal";

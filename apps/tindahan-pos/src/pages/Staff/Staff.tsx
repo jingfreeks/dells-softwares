@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Navigate } from "react-router-dom";
 import {
   NAV_LABEL_STAFF,
@@ -15,6 +16,7 @@ import {
   ActivityLogCard,
   AddStaffModal,
   ShiftHistoryModal,
+  VoidsWeekModal,
 } from "./component";
 import { useStaffPage } from "./hooks";
 import { staffAccountCounts } from "./lib";
@@ -47,13 +49,24 @@ export function Staff() {
     closeSetPinModal,
     handleSetPin,
     handleToggleActive,
+    voids,
+    voidedThisWeek,
+    showVoidsWeek,
+    openVoidsWeek,
+    closeVoidsWeek,
   } = useStaffPage();
+
+  const staffTableRef = useRef<HTMLDivElement>(null);
 
   if (user && user.role !== "admin") {
     return <Navigate to="/pos" replace />;
   }
 
   const setPinTarget = staff.find((member) => member.id === setPinForId) ?? null;
+
+  function scrollToStaffTable() {
+    staffTableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   return (
     <div className="tpl-root p-6">
@@ -90,20 +103,27 @@ export function Staff() {
         </p>
       )}
 
-      <StaffMetrics counts={staffAccountCounts(staff)} />
-
-      <StaffTable
-        staff={staff}
-        loading={loading}
-        sales={sales}
-        currentUserId={user?.id}
-        removingId={removingId}
-        onEditName={handleEditName}
-        onResetPassword={handleResetPassword}
-        onSetPin={openSetPinModal}
-        onToggleActive={handleToggleActive}
-        onRemove={handleRemove}
+      <StaffMetrics
+        counts={staffAccountCounts(staff)}
+        voids={voids}
+        onStaffAccountsClick={scrollToStaffTable}
+        onVoidsClick={openVoidsWeek}
       />
+
+      <div ref={staffTableRef}>
+        <StaffTable
+          staff={staff}
+          loading={loading}
+          sales={sales}
+          currentUserId={user?.id}
+          removingId={removingId}
+          onEditName={handleEditName}
+          onResetPassword={handleResetPassword}
+          onSetPin={openSetPinModal}
+          onToggleActive={handleToggleActive}
+          onRemove={handleRemove}
+        />
+      </div>
 
       <div className="tpl-g2">
         <CashierPermissionCard />
@@ -122,6 +142,8 @@ export function Staff() {
       )}
 
       {showShiftHistory && <ShiftHistoryModal onClose={() => setShowShiftHistory(false)} />}
+
+      {showVoidsWeek && <VoidsWeekModal voidedSales={voidedThisWeek} onClose={closeVoidsWeek} />}
 
       <SetPinModal
         open={setPinForId !== null}

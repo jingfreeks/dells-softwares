@@ -5,6 +5,7 @@ export * from "./customers";
 export * from "./drawerFloat";
 export * from "./eloadWallet";
 export * from "./dom";
+export * from "./auditLog";
 export * from "./excelExport";
 export * from "./featureFlags";
 export * from "./heldSales";
