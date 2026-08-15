@@ -92,7 +92,10 @@ export function CartPanel({
     checkingOut;
 
   return (
-    <div className="tpl-root flex flex-col tpl-card" style={{ padding: 0 }}>
+    <div
+      className="tpl-root flex flex-col tpl-card md:h-full md:min-h-0 md:w-[360px] md:flex-none"
+      style={{ padding: 0 }}
+    >
       <div className="tpl-sp" style={{ padding: 14 }}>
         <p className="tpl-h3">{LABEL_CURRENT_SALE}</p>
         {cart.length + serviceLines.length > 0 && (
@@ -100,7 +103,7 @@ export function CartPanel({
         )}
       </div>
 
-      <div className="lg:flex-1 lg:overflow-y-auto" style={{ padding: "0 14px" }}>
+      <div className="md:min-h-0 md:flex-1 md:overflow-y-auto" style={{ padding: "0 14px" }}>
         <CartItemsList
           cart={cart}
           serviceLines={serviceLines}
