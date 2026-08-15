@@ -7,16 +7,22 @@ import {
   BUTTON_CHANGE_PIN,
   BUTTON_DEACTIVATE,
   BUTTON_ACTIVATE,
+  BUTTON_MAKE_SUPERVISOR,
+  BUTTON_MAKE_CASHIER,
   BUTTON_REMOVE,
   BUTTON_REMOVING,
 } from "@/lib";
 
 interface StaffActionsMenuProps {
   canRemove: boolean;
+  /** Only an OWNER's own row (staff.role = 'admin') is excluded — see assign_staff_role() in 0044_rbac_foundation.sql. */
+  canChangeRole: boolean;
+  roleCode: "OWNER" | "SUPERVISOR" | "CASHIER";
   removing: boolean;
   hasPin: boolean;
   active: boolean;
   onEditName: () => void;
+  onChangeRole: (roleCode: "SUPERVISOR" | "CASHIER") => void;
   onResetPassword: () => void;
   onSetPin: () => void;
   onToggleActive: () => void;
@@ -25,10 +31,13 @@ interface StaffActionsMenuProps {
 
 export function StaffActionsMenu({
   canRemove,
+  canChangeRole,
+  roleCode,
   removing,
   hasPin,
   active,
   onEditName,
+  onChangeRole,
   onResetPassword,
   onSetPin,
   onToggleActive,
@@ -89,6 +98,16 @@ export function StaffActionsMenu({
           >
             {active ? BUTTON_DEACTIVATE : BUTTON_ACTIVATE}
           </button>
+          {canChangeRole && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => runAndClose(() => onChangeRole(roleCode === "SUPERVISOR" ? "CASHIER" : "SUPERVISOR"))}
+              className="tpl-menu-item"
+            >
+              {roleCode === "SUPERVISOR" ? BUTTON_MAKE_CASHIER : BUTTON_MAKE_SUPERVISOR}
+            </button>
+          )}
           {canRemove && (
             <button
               type="button"

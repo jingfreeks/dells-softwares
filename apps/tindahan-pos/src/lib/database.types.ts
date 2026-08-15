@@ -842,6 +842,85 @@ export interface Database {
           },
         ];
       };
+      // 0044_rbac_foundation.sql
+      permissions: {
+        Row: { code: string; module_code: string; description: string };
+        Insert: { code: string; module_code: string; description: string };
+        Update: { code?: string; module_code?: string; description?: string };
+        Relationships: [];
+      };
+      roles: {
+        Row: {
+          id: string;
+          store_id: string | null;
+          code: string;
+          name: string;
+          is_system: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id?: string | null;
+          code: string;
+          name: string;
+          is_system?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string | null;
+          code?: string;
+          name?: string;
+          is_system?: boolean;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "roles_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      role_permissions: {
+        Row: { role_id: string; permission_code: string };
+        Insert: { role_id: string; permission_code: string };
+        Update: { role_id?: string; permission_code?: string };
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_role_id_fkey";
+            columns: ["role_id"];
+            referencedRelation: "roles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "role_permissions_permission_code_fkey";
+            columns: ["permission_code"];
+            referencedRelation: "permissions";
+            referencedColumns: ["code"];
+          },
+        ];
+      };
+      staff_roles: {
+        Row: { id: string; staff_id: string; role_id: string; created_at: string };
+        Insert: { id?: string; staff_id: string; role_id: string; created_at?: string };
+        Update: { id?: string; staff_id?: string; role_id?: string; created_at?: string };
+        Relationships: [
+          {
+            foreignKeyName: "staff_roles_staff_id_fkey";
+            columns: ["staff_id"];
+            referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "staff_roles_role_id_fkey";
+            columns: ["role_id"];
+            referencedRelation: "roles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -925,6 +1004,19 @@ export interface Database {
           p_device_id: string;
           p_owner_pin: string;
         };
+        Returns: undefined;
+      };
+      // 0044_rbac_foundation.sql
+      has_permission: {
+        Args: { p_code: string; p_staff_id?: string };
+        Returns: boolean;
+      };
+      list_my_permissions: {
+        Args: Record<string, never>;
+        Returns: string[];
+      };
+      assign_staff_role: {
+        Args: { p_staff_id: string; p_role_code: string };
         Returns: undefined;
       };
     };

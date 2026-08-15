@@ -3,6 +3,7 @@ import {
   AuthProvider,
   CashierSessionProvider,
   FeatureFlagsProvider,
+  PermissionsProvider,
   StoreDataProvider,
   EloadWalletProvider,
   DrawerFloatProvider,
@@ -39,6 +40,7 @@ function App() {
     <NetworkProvider>
       <FeatureFlagsProvider>
         <AuthProvider>
+          <PermissionsProvider>
           <CashierSessionProvider>
             <StoreDataProvider>
               <OfflineQueueProvider>
@@ -87,6 +89,7 @@ function App() {
               </OfflineQueueProvider>
             </StoreDataProvider>
           </CashierSessionProvider>
+          </PermissionsProvider>
         </AuthProvider>
       </FeatureFlagsProvider>
     </NetworkProvider>

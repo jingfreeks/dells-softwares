@@ -2,12 +2,13 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { useAuth, useStoreData, supabase } from "@/lib";
+import { useAuth, useStoreData, useCan, supabase } from "@/lib";
 import { makeAuthValue, makeStaffAccount, makeStoreDataValue, makeSaleRecord } from "../../test/testUtils";
 import { Staff } from "./Staff";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/lib/storeData", () => ({ useStoreData: vi.fn() }));
+vi.mock("@/lib/permissions", () => ({ useCan: vi.fn(), usePermissions: () => ({ permissions: new Set(), loading: false }) }));
 
 vi.mock("@/lib/supabaseClient", () => {
   const order2 = vi.fn();
@@ -115,6 +116,7 @@ describe("Staff", () => {
   beforeEach(() => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ role: "admin" }) }));
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue());
+    vi.mocked(useCan).mockReturnValue(true);
     mockedSupabase.__mocks.order2.mockResolvedValue({ data: staffRows, error: null });
   });
 
@@ -132,6 +134,7 @@ describe("Staff", () => {
 
   it("redirects a cashier away from the staff page", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ role: "cashier" }) }));
+    vi.mocked(useCan).mockReturnValue(false);
     renderStaff();
     expect(screen.getByText("POS page")).toBeInTheDocument();
   });
@@ -211,11 +214,12 @@ describe("Staff", () => {
     await screen.findByText("Aling Nena");
     await openAddStaffModal(user);
 
+    // "Owner" was removed from this picker — create-cashier never creates an
+    // owner account (see StaffRoleSelection in lib.ts), so only the two real,
+    // assignable roles remain: cashier and supervisor.
     expect(screen.getByText("A CASHIER CAN")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Supervisor + stock, voids" }));
     expect(screen.getByText("A SUPERVISOR CAN")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Owner Everything" }));
-    expect(screen.getByText("AN OWNER CAN")).toBeInTheDocument();
   });
 
   it("selects a sign-in method", async () => {

@@ -4,15 +4,15 @@ import {
   TEXT_ROLE_CASHIER_DESC,
   LABEL_ROLE_SUPERVISOR_TITLE,
   TEXT_ROLE_SUPERVISOR_DESC,
-  LABEL_ROLE_OWNER_TITLE,
-  TEXT_ROLE_OWNER_DESC,
 } from "@/lib";
 import type { StaffRoleSelection } from "../../../lib";
 
+// "owner" was removed from here — the create-cashier Edge Function never
+// creates an owner account (see StaffRoleSelection in lib.ts), so offering
+// it in this picker was always cosmetic.
 const ROLES: { value: StaffRoleSelection; icon: string; title: string; desc: string }[] = [
   { value: "cashier", icon: "ti-shopping-cart", title: LABEL_ROLE_CASHIER_TITLE, desc: TEXT_ROLE_CASHIER_DESC },
   { value: "supervisor", icon: "ti-clipboard-check", title: LABEL_ROLE_SUPERVISOR_TITLE, desc: TEXT_ROLE_SUPERVISOR_DESC },
-  { value: "owner", icon: "ti-crown", title: LABEL_ROLE_OWNER_TITLE, desc: TEXT_ROLE_OWNER_DESC },
 ];
 
 interface RoleSelectorProps {
@@ -24,7 +24,7 @@ export function RoleSelector({ value, onChange }: RoleSelectorProps) {
   return (
     <div style={{ marginBottom: 14 }}>
       <label className="tpl-lbl">{LABEL_ROLE}</label>
-      <div className="tpl-g3" style={{ gap: 7, margin: 0 }}>
+      <div className="tpl-g2" style={{ gap: 7, margin: 0 }}>
         {ROLES.map((role) => (
           <button
             key={role.value}

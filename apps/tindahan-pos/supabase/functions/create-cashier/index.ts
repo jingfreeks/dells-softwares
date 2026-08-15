@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
       return json({ error: "Missing Authorization header" }, 401);
     }
 
-    let body: { name?: string; email?: string; password?: string };
+    let body: { name?: string; email?: string; password?: string; role_code?: string };
     try {
       body = await req.json();
     } catch {
@@ -77,6 +77,11 @@ Deno.serve(async (req) => {
         400
       );
     }
+
+    // Granular role on top of the always-'cashier' account below (see
+    // assign_staff_role() in 0044_rbac_foundation.sql). Defaults to plain
+    // CASHIER, preserving today's behavior when the caller doesn't send one.
+    const roleCode = body.role_code === "SUPERVISOR" ? "SUPERVISOR" : "CASHIER";
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -155,7 +160,29 @@ Deno.serve(async (req) => {
       return json({ error: insertError.message }, 400);
     }
 
-    return json({ id: newUserId, name, email, role: "cashier" }, 201);
+    // Not assign_staff_role() — that RPC requires the CALLER to hold
+    // staff.manage via auth.uid(), which is unset under the service_role
+    // client. The admin-only check above already establishes the real
+    // caller is an admin of this store, so insert the grant directly, the
+    // same way this function already writes `staff` past RLS. Every staff
+    // row gets exactly one of these (CASHIER by default) so staff_roles
+    // stays a complete record for the Staff page's role display.
+    const { data: newRole } = await adminClient
+      .from("roles")
+      .select("id")
+      .eq("code", roleCode)
+      .is("store_id", null)
+      .single();
+    if (newRole) {
+      const { error: roleError } = await adminClient
+        .from("staff_roles")
+        .insert({ staff_id: newUserId, role_id: newRole.id });
+      if (roleError) {
+        console.error("create-cashier: staff_roles insert failed:", roleError.message);
+      }
+    }
+
+    return json({ id: newUserId, name, email, role: "cashier", role_code: roleCode }, 201);
   } catch (err) {
     return json({ error: err instanceof Error ? err.message : "Unexpected error" }, 500);
   }
