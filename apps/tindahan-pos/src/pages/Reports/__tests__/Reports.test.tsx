@@ -7,6 +7,10 @@ import { Reports } from "../Reports";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/lib/storeData", () => ({ useStoreData: vi.fn() }));
+vi.mock("@/lib/permissions", () => ({
+  useCan: () => true,
+  usePermissions: () => ({ permissions: new Set(), loading: false }),
+}));
 
 const order = vi.fn().mockResolvedValue({
   data: [

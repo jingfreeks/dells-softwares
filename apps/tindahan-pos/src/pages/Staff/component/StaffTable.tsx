@@ -10,6 +10,7 @@ interface StaffTableProps {
   currentUserId: string | undefined;
   removingId: string | null;
   onEditName: (id: string, name: string) => void;
+  onChangeRole: (id: string, roleCode: "SUPERVISOR" | "CASHIER") => void;
   onResetPassword: (email: string) => void;
   onSetPin: (id: string) => void;
   onToggleActive: (id: string, currentlyActive: boolean) => void;
@@ -23,6 +24,7 @@ export function StaffTable({
   currentUserId,
   removingId,
   onEditName,
+  onChangeRole,
   onResetPassword,
   onSetPin,
   onToggleActive,
@@ -53,6 +55,7 @@ export function StaffTable({
             sales={sales}
             removingId={removingId}
             onEditName={onEditName}
+            onChangeRole={onChangeRole}
             onResetPassword={onResetPassword}
             onSetPin={onSetPin}
             onToggleActive={onToggleActive}

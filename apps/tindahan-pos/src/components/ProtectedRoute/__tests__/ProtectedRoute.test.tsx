@@ -7,6 +7,7 @@ import { makeAuthValue, makeStaffAccount } from "../../../test/testUtils";
 import { ProtectedRoute } from "../ProtectedRoute";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
+vi.mock("@/lib/permissions", () => ({ usePermissions: () => ({ permissions: new Set(), loading: false }) }));
 
 function renderProtected(initialEntry = "/pos") {
   return render(

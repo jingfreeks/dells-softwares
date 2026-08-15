@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
-import { useAuth, PAGE_HEADING_SUPPLIERS, TEXT_SUPPLIERS_DESCRIPTION, BUTTON_ADD_SUPPLIER, BUTTON_PRINT_SCAN_SHEET } from "@/lib";
+import { useAuth, useCan, PAGE_HEADING_SUPPLIERS, TEXT_SUPPLIERS_DESCRIPTION, BUTTON_ADD_SUPPLIER, BUTTON_PRINT_SCAN_SHEET } from "@/lib";
 import {
   AddSupplierModal,
   SuppliersMetricsRow,
@@ -12,6 +12,7 @@ import { useSuppliersPage } from "./hooks";
 
 export function Suppliers() {
   const { user } = useAuth();
+  const canManageSuppliers = useCan("inventory.supplier.manage");
   const {
     suppliers,
     categories,
@@ -51,7 +52,7 @@ export function Suppliers() {
     handlePrintSupplierCode,
   } = useSuppliersPage();
 
-  if (user && user.role !== "admin") {
+  if (user && !canManageSuppliers) {
     return <Navigate to="/pos" replace />;
   }
 

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { useCan } from "../lib/permissions";
 import { createProduct, deleteProduct, listProducts } from "../lib/products";
 import { listCategories, type Category } from "../lib/categories";
 import type { Product } from "../lib/types";
@@ -9,6 +10,7 @@ const emptyForm = { name: "", barcode: "", price: "", stock: "", lowStockThresho
 
 export function Products() {
   const { user } = useAuth();
+  const canManage = useCan("inventory.product.manage");
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +41,7 @@ export function Products() {
     };
   }, [user]);
 
-  if (user && user.role !== "admin") {
+  if (user && !canManage) {
     return <Navigate to="/login" replace />;
   }
 

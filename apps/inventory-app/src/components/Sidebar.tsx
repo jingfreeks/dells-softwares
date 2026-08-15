@@ -1,11 +1,13 @@
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { navItemsForRole } from "../lib/nav";
+import { usePermissions } from "../lib/permissions";
+import { navItemsFor } from "../lib/nav";
 import { NAV_ICONS, LogoutIcon } from "./icons";
 
 export function Sidebar() {
   const { user, store, logout } = useAuth();
-  const navItems = navItemsForRole(user?.role);
+  const { permissions } = usePermissions();
+  const navItems = navItemsFor(user?.role, permissions);
   const storeName = store?.name ?? "Inventory";
 
   return (

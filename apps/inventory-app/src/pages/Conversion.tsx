@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { useCan } from "../lib/permissions";
 import { listProducts } from "../lib/products";
 import { addConversion, listConversions, removeConversion } from "../lib/conversions";
 import type { Product, UnitConversion } from "../lib/types";
 
 export function Conversion() {
   const { user } = useAuth();
+  const canManage = useCan("inventory.product.manage");
   const [products, setProducts] = useState<Product[]>([]);
   const [conversions, setConversions] = useState<UnitConversion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +47,7 @@ export function Conversion() {
     };
   }, [user]);
 
-  if (user && user.role !== "admin") {
+  if (user && !canManage) {
     return <Navigate to="/login" replace />;
   }
 

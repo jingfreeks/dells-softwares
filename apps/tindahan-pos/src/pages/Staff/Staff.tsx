@@ -7,6 +7,7 @@ import {
   BUTTON_ADD_STAFF,
   BUTTON_SET_PIN,
   BUTTON_CHANGE_PIN,
+  useCan,
 } from "@/lib";
 import { SetPinModal } from "@/components";
 import {
@@ -44,6 +45,7 @@ export function Staff() {
     handleSubmit,
     handleRemove,
     handleEditName,
+    handleChangeRole,
     handleResetPassword,
     setPinForId,
     setPinSubmitting,
@@ -74,8 +76,9 @@ export function Staff() {
   } = useStaffPage();
 
   const staffTableRef = useRef<HTMLDivElement>(null);
+  const canManageStaff = useCan("staff.manage");
 
-  if (user && user.role !== "admin") {
+  if (user && !canManageStaff) {
     return <Navigate to="/pos" replace />;
   }
 
@@ -139,6 +142,7 @@ export function Staff() {
           currentUserId={user?.id}
           removingId={removingId}
           onEditName={handleEditName}
+          onChangeRole={handleChangeRole}
           onResetPassword={handleResetPassword}
           onSetPin={openSetPinModal}
           onToggleActive={handleToggleActive}

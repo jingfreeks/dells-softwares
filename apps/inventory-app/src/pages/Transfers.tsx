@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { useCan } from "../lib/permissions";
 import { listWarehouses } from "../lib/warehouses";
 import { listProducts } from "../lib/products";
 import { listTransfers, transferStock } from "../lib/transfers";
@@ -10,6 +11,7 @@ const emptyForm = { fromWarehouseId: "", toWarehouseId: "", productId: "", quant
 
 export function Transfers() {
   const { user } = useAuth();
+  const canManage = useCan("inventory.transfer.manage");
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [transfers, setTransfers] = useState<WarehouseTransfer[]>([]);
@@ -55,7 +57,7 @@ export function Transfers() {
     };
   }, [user]);
 
-  if (user && user.role !== "admin") {
+  if (user && !canManage) {
     return <Navigate to="/login" replace />;
   }
 

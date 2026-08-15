@@ -1,10 +1,9 @@
-import { LABEL_ROLE_CASHIER_TITLE, LABEL_ROLE_SUPERVISOR_TITLE, LABEL_ROLE_OWNER_TITLE, TEXT_A_ROLE_CAN_SUFFIX } from "@/lib";
+import { LABEL_ROLE_CASHIER_TITLE, LABEL_ROLE_SUPERVISOR_TITLE, TEXT_A_ROLE_CAN_SUFFIX } from "@/lib";
 import { rolePermissionChips, type StaffRoleSelection, type PermissionState } from "../../../lib";
 
 const ROLE_TITLE: Record<StaffRoleSelection, string> = {
   cashier: `A ${LABEL_ROLE_CASHIER_TITLE.toUpperCase()}`,
   supervisor: `A ${LABEL_ROLE_SUPERVISOR_TITLE.toUpperCase()}`,
-  owner: `AN ${LABEL_ROLE_OWNER_TITLE.toUpperCase()}`,
 };
 
 const CHIP_CLASS: Record<PermissionState, string> = {
