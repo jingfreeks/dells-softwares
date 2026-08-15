@@ -1,3 +1,12 @@
+> **Historical record — read `PLATFORM.md` for the current state.**
+>
+> This is the Step 1 survey, taken *before* any of the integration was built.
+> Several of its statements were true then and are false now: the core schema
+> is installed and backfilled, module entitlement exists, and
+> `core.platform_admins` is no longer unfillable. It is kept unedited because
+> it is the evidence the archetype decision was based on, and rewriting it
+> would destroy that record.
+
 # DISCOVERY.md — Core platform integration, Step 1
 
 Produced per `INTEGRATION-PROMPT.md` §2. No code changes made. This is the
