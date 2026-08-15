@@ -6,7 +6,15 @@ import {
   BUTTON_TRY_AGAIN,
 } from "@/lib";
 import { DebtAgeCard } from "@/components";
-import { DateRangeFilter, CashierFilter, SummaryCards, CashierBreakdownTable, SalesTable } from "./component";
+import {
+  DateRangeFilter,
+  CashierFilter,
+  DeviceFilter,
+  SummaryCards,
+  CashierBreakdownTable,
+  SalesTable,
+  VatSummaryCard,
+} from "./component";
 import { useReportsPage } from "./hooks";
 import "../authTheme.css";
 
@@ -21,6 +29,9 @@ export function Reports() {
     cashierId,
     setCashierId,
     cashiers,
+    deviceId,
+    setDeviceId,
+    devices,
     report,
     loading,
     error,
@@ -28,6 +39,8 @@ export function Reports() {
     onRetry,
     debtAging,
     thresholdDays,
+    onVoidSale,
+    voidError,
   } = useReportsPage();
 
   return (
@@ -52,6 +65,7 @@ export function Reports() {
           onCustomEndChange={setCustomEnd}
         />
         <CashierFilter cashiers={cashiers} cashierId={cashierId} onChange={setCashierId} />
+        <DeviceFilter devices={devices} deviceId={deviceId} onChange={setDeviceId} />
       </div>
 
       {error && (
@@ -74,8 +88,12 @@ export function Reports() {
           <div style={{ marginBottom: 14 }}>
             <DebtAgeCard aging={debtAging} thresholdDays={thresholdDays} />
           </div>
+          {(report.vatSummary.vatableSales > 0 ||
+            report.vatSummary.vatAmount > 0 ||
+            report.vatSummary.vatExemptSales > 0 ||
+            report.vatSummary.zeroRatedSales > 0) && <VatSummaryCard summary={report.vatSummary} />}
           <CashierBreakdownTable rows={report.byCashier} grandTotal={report.totalSales} />
-          <SalesTable sales={report.sales} />
+          <SalesTable sales={report.sales} onVoidSale={onVoidSale} voidError={voidError} />
         </>
       )}
     </div>

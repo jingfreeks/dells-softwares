@@ -71,6 +71,19 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     paymentType: "credit",
     customerId: "c1",
     referenceNo: null,
+    receiptNumber: null,
+    status: "completed",
+    voidedAt: null,
+    voidedByName: null,
+    voidReason: null,
+    vatStatus: "non_vat",
+    vatRate: null,
+    vatableSales: 0,
+    vatAmount: 0,
+    vatExemptSales: 0,
+    zeroRatedSales: 0,
+    deviceId: null,
+    deviceName: null,
     ...overrides,
   };
 }
@@ -92,6 +105,15 @@ describe("computeOldestDebtDays", () => {
     ];
     expect(computeOldestDebtDays(sales, customer, now)).toBe(31);
   });
+
+  it("ignores a voided credit sale — void_sale() already reversed its balance effect", () => {
+    const customer = makeCustomer({ id: "c1", balance: 100 });
+    const sales = [
+      makeSale({ customerId: "c1", timestamp: "2026-07-01T00:00:00Z", status: "voided" }),
+      makeSale({ customerId: "c1", timestamp: "2026-07-20T00:00:00Z" }),
+    ];
+    expect(computeOldestDebtDays(sales, customer, now)).toBe(12);
+  });
 });
 
 describe("latestTransactionForCustomer", () => {
@@ -106,6 +128,14 @@ describe("latestTransactionForCustomer", () => {
       makeSale({ customerId: "other", timestamp: "2026-08-01T00:00:00Z", total: 999 }),
     ];
     expect(latestTransactionForCustomer(sales, "c1")).toEqual({ date: "2026-07-20T00:00:00Z", amount: 75 });
+  });
+
+  it("ignores a voided sale even if it's the most recent by timestamp", () => {
+    const sales = [
+      makeSale({ customerId: "c1", timestamp: "2026-07-01T00:00:00Z", total: 50 }),
+      makeSale({ customerId: "c1", timestamp: "2026-07-20T00:00:00Z", total: 75, status: "voided" }),
+    ];
+    expect(latestTransactionForCustomer(sales, "c1")).toEqual({ date: "2026-07-01T00:00:00Z", amount: 50 });
   });
 });
 

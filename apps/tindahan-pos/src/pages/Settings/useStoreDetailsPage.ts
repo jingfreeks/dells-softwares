@@ -7,9 +7,9 @@ import {
   ERROR_STORE_NAME_REQUIRED,
   ERROR_COULD_NOT_PROCESS_IMAGE,
   ERROR_COULD_NOT_SAVE_STORE_DETAILS,
+  type VatStatus,
 } from "@/lib";
 import { loadOpeningHours, saveOpeningHours, DEFAULT_OPENING_HOURS } from "../Onboarding/openingHoursSettings";
-import { loadStoreDetailsMock, saveStoreDetailsMock, DEFAULT_STORE_DETAILS_MOCK } from "./storeDetailsMock";
 
 const STORE_PHOTO_MAX_DIMENSION = 1024;
 
@@ -23,11 +23,14 @@ export function useStoreDetailsPage() {
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [processingPhoto, setProcessingPhoto] = useState(false);
 
-  const [contactNumber, setContactNumber] = useState(DEFAULT_STORE_DETAILS_MOCK.contactNumber);
-  const [city, setCity] = useState(DEFAULT_STORE_DETAILS_MOCK.city);
-  const [tin, setTin] = useState(DEFAULT_STORE_DETAILS_MOCK.tin);
-  const [businessPermitNo, setBusinessPermitNo] = useState(DEFAULT_STORE_DETAILS_MOCK.businessPermitNo);
-  const [birRegistered, setBirRegistered] = useState(DEFAULT_STORE_DETAILS_MOCK.birRegistered);
+  const [contactNumber, setContactNumber] = useState(store?.contactNumber ?? "");
+  const [city, setCity] = useState(store?.city ?? "");
+  const [tin, setTin] = useState(store?.tin ?? "");
+  const [businessPermitNo, setBusinessPermitNo] = useState(store?.businessPermitNo ?? "");
+  const [birRegistered, setBirRegistered] = useState(store?.birRegistered ?? false);
+  const [vatStatus, setVatStatus] = useState<VatStatus>(store?.vatStatus ?? "non_vat");
+  const [vatRate, setVatRate] = useState(store?.vatRate ?? 0.12);
+  const [invoiceType, setInvoiceType] = useState(store?.invoiceType ?? "Sales Invoice");
 
   const [openTime, setOpenTime] = useState(DEFAULT_OPENING_HOURS.openTime);
   const [closeTime, setCloseTime] = useState(DEFAULT_OPENING_HOURS.closeTime);
@@ -39,27 +42,35 @@ export function useStoreDetailsPage() {
   useEffect(() => {
     setStoreName(store?.name ?? "");
     setAddress(store?.address ?? "");
-  }, [store?.id, store?.name, store?.address]);
+    setContactNumber(store?.contactNumber ?? "");
+    setCity(store?.city ?? "");
+    setTin(store?.tin ?? "");
+    setBusinessPermitNo(store?.businessPermitNo ?? "");
+    setBirRegistered(store?.birRegistered ?? false);
+    setVatStatus(store?.vatStatus ?? "non_vat");
+    setVatRate(store?.vatRate ?? 0.12);
+    setInvoiceType(store?.invoiceType ?? "Sales Invoice");
+  }, [
+    store?.id,
+    store?.name,
+    store?.address,
+    store?.contactNumber,
+    store?.city,
+    store?.tin,
+    store?.businessPermitNo,
+    store?.birRegistered,
+    store?.vatStatus,
+    store?.vatRate,
+    store?.invoiceType,
+  ]);
 
   useEffect(() => {
     if (!user) return;
-    const savedMock = loadStoreDetailsMock(user.storeId);
-    setContactNumber(savedMock.contactNumber);
-    setCity(savedMock.city);
-    setTin(savedMock.tin);
-    setBusinessPermitNo(savedMock.businessPermitNo);
-    setBirRegistered(savedMock.birRegistered);
-
     const savedHours = loadOpeningHours(user.storeId);
     setOpenTime(savedHours.openTime);
     setCloseTime(savedHours.closeTime);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.storeId]);
-
-  useEffect(() => {
-    if (!user) return;
-    saveStoreDetailsMock(user.storeId, { contactNumber, city, tin, businessPermitNo, birRegistered });
-  }, [user, contactNumber, city, tin, businessPermitNo, birRegistered]);
 
   useEffect(() => {
     if (!user) return;
@@ -75,7 +86,15 @@ export function useStoreDetailsPage() {
   const isDirty =
     storeName !== (store?.name ?? "") ||
     address !== (store?.address ?? "") ||
-    photoBlob !== null;
+    photoBlob !== null ||
+    contactNumber !== (store?.contactNumber ?? "") ||
+    city !== (store?.city ?? "") ||
+    tin !== (store?.tin ?? "") ||
+    businessPermitNo !== (store?.businessPermitNo ?? "") ||
+    birRegistered !== (store?.birRegistered ?? false) ||
+    vatStatus !== (store?.vatStatus ?? "non_vat") ||
+    vatRate !== (store?.vatRate ?? 0.12) ||
+    invoiceType !== (store?.invoiceType ?? "Sales Invoice");
 
   async function handlePhotoSelect(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -114,6 +133,14 @@ export function useStoreDetailsPage() {
         name: storeName.trim(),
         address: address.trim() || null,
         ...(photoUrl !== undefined && { photoUrl }),
+        contactNumber: contactNumber.trim() || null,
+        city: city.trim() || null,
+        tin: tin.trim() || null,
+        businessPermitNo: businessPermitNo.trim() || null,
+        birRegistered,
+        vatStatus,
+        vatRate,
+        invoiceType,
       });
       if (!result.ok) {
         setFormError(result.error);
@@ -135,6 +162,14 @@ export function useStoreDetailsPage() {
     setPhotoBlob(null);
     setPhotoPreview(null);
     setFormError(null);
+    setContactNumber(store?.contactNumber ?? "");
+    setCity(store?.city ?? "");
+    setTin(store?.tin ?? "");
+    setBusinessPermitNo(store?.businessPermitNo ?? "");
+    setBirRegistered(store?.birRegistered ?? false);
+    setVatStatus(store?.vatStatus ?? "non_vat");
+    setVatRate(store?.vatRate ?? 0.12);
+    setInvoiceType(store?.invoiceType ?? "Sales Invoice");
   }
 
   const displayedPhoto = photoPreview ?? store?.photoUrl ?? null;
@@ -159,6 +194,12 @@ export function useStoreDetailsPage() {
     setBusinessPermitNo,
     birRegistered,
     setBirRegistered,
+    vatStatus,
+    setVatStatus,
+    vatRate,
+    setVatRate,
+    invoiceType,
+    setInvoiceType,
 
     openTime,
     setOpenTime,

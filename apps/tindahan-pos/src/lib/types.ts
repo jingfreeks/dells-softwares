@@ -38,12 +38,27 @@ export interface StoreFeeConfig {
   cashOut?: { max: number; fee: number }[];
 }
 
+export type VatStatus = "vat_registered" | "non_vat" | "vat_exempt" | "zero_rated";
+
 export interface Store {
   id: string;
   name: string;
   address: string | null;
   photoUrl: string | null;
   feeConfig: StoreFeeConfig | null;
+  contactNumber: string | null;
+  city: string | null;
+  /** BIR compliance §48 — these were localStorage mocks until now; real, admin-editable columns on `stores`. */
+  tin: string | null;
+  businessPermitNo: string | null;
+  birRegistered: boolean;
+  vatStatus: VatStatus;
+  /** Only meaningful when vatStatus is "vat_registered" — e.g. 0.12 for 12%. Configurable, not hardcoded, per BIR §53. */
+  vatRate: number;
+  /** The document type printed as the receipt heading — e.g. "Sales Invoice", "Service Invoice". */
+  invoiceType: string;
+  /** Admin-editable: whether a cashier may edit a product's price in Inventory. Enforced server-side (guard_cashier_product_update trigger), not just a UI gate. */
+  cashierCanEditPrices: boolean;
 }
 
 export interface Category {
@@ -100,6 +115,23 @@ export interface SaleRecord {
   referenceNo: string | null;
   /** Set when checkout() queued this sale offline instead of confirming it live — undefined/omitted for a normal live sale. */
   syncStatus?: "pending";
+  /** Server-assigned OR/invoice number, unique per store. Null only for a sale still queued offline — checkout_sale() assigns it once the sale actually lands in the database, so a not-yet-synced sale genuinely has none yet. */
+  receiptNumber: string | null;
+  /** BIR compliance §39: a voided sale is never deleted, only marked — these four fields are only set once status is "voided". */
+  status: "completed" | "voided";
+  voidedAt: string | null;
+  voidedByName: string | null;
+  voidReason: string | null;
+  /** BIR compliance §35: the store's VAT registration/rate as it stood at checkout time — never rewritten by a later config change. Null only for a sale still queued offline. */
+  vatStatus: VatStatus | null;
+  vatRate: number | null;
+  vatableSales: number;
+  vatAmount: number;
+  vatExemptSales: number;
+  zeroRatedSales: number;
+  /** BIR compliance §49: which paired POS device rang this up, if any — null when a staff member checked out directly (not via a paired device). */
+  deviceId: string | null;
+  deviceName: string | null;
 }
 
 export interface ServiceLine {

@@ -1,7 +1,6 @@
 import { PESO } from "@/lib/money";
 import type { SaleRecord, Store } from "@/lib/types";
 import {
-  LABEL_RECEIPT_HEADING,
   LABEL_RECEIPT_NUMBER_PREFIX,
   LABEL_CASHIER_ON_RECEIPT_PREFIX,
   LABEL_PAYMENT_CASH,
@@ -13,6 +12,12 @@ import {
   LABEL_UTANG_BALANCE_NOTE,
   LABEL_TOTAL_POS,
   TEXT_SAVED_OFFLINE_BADGE,
+  TEXT_RECEIPT_NUMBER_PENDING,
+  LABEL_VATABLE_SALES,
+  LABEL_VAT_AMOUNT,
+  LABEL_VAT_EXEMPT_SALES,
+  LABEL_ZERO_RATED_SALES,
+  TEXT_NOT_VAT_REGISTERED,
 } from "@/lib/textLabels";
 
 const PAYMENT_LABEL: Record<SaleRecord["paymentType"], string> = {
@@ -29,7 +34,6 @@ export interface ReceiptDisplaySettings {
   includeCashierName: boolean;
   includeUtangBalance: boolean;
   footerMessage: string;
-  nextReceiptNumber: string;
 }
 
 interface ReceiptProps {
@@ -55,13 +59,13 @@ export function Receipt({ sale, store, settings, tin, businessPermitNo, tendered
         {settings.includeTinAndPermit && businessPermitNo && (
           <p className="tpl-receipt-line">Permit: {businessPermitNo}</p>
         )}
-        <p className="tpl-receipt-heading">{LABEL_RECEIPT_HEADING}</p>
+        <p className="tpl-receipt-heading">{store.invoiceType}</p>
       </div>
 
       <div className="tpl-receipt-hr" />
 
       <p className="tpl-receipt-line">
-        {LABEL_RECEIPT_NUMBER_PREFIX} {settings.nextReceiptNumber}
+        {LABEL_RECEIPT_NUMBER_PREFIX} {sale.receiptNumber ?? TEXT_RECEIPT_NUMBER_PENDING}
       </p>
       <p className="tpl-receipt-line">
         {timestamp.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })}{" "}
@@ -88,6 +92,34 @@ export function Receipt({ sale, store, settings, tin, businessPermitNo, tendered
       ))}
 
       <div className="tpl-receipt-hr" />
+
+      {sale.vatStatus === "vat_registered" && (
+        <>
+          <div className="tpl-receipt-row">
+            <span>{LABEL_VATABLE_SALES}</span>
+            <span>{PESO.format(sale.vatableSales)}</span>
+          </div>
+          <div className="tpl-receipt-row">
+            <span>{LABEL_VAT_AMOUNT}</span>
+            <span>{PESO.format(sale.vatAmount)}</span>
+          </div>
+        </>
+      )}
+      {sale.vatStatus === "zero_rated" && (
+        <div className="tpl-receipt-row">
+          <span>{LABEL_ZERO_RATED_SALES}</span>
+          <span>{PESO.format(sale.zeroRatedSales)}</span>
+        </div>
+      )}
+      {sale.vatStatus === "vat_exempt" && (
+        <div className="tpl-receipt-row">
+          <span>{LABEL_VAT_EXEMPT_SALES}</span>
+          <span>{PESO.format(sale.vatExemptSales)}</span>
+        </div>
+      )}
+      {(sale.vatStatus === "non_vat" || sale.vatStatus === null) && (
+        <p className="tpl-receipt-line">{TEXT_NOT_VAT_REGISTERED}</p>
+      )}
 
       <div className="tpl-receipt-row tpl-receipt-total">
         <span>{LABEL_TOTAL_POS}</span>

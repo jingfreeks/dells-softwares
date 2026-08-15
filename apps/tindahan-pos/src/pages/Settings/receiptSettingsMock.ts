@@ -8,7 +8,6 @@ export interface ReceiptSettingsMock {
   includeUtangBalance: boolean;
   includeQrToPay: boolean;
   footerMessage: string;
-  nextReceiptNumber: string;
 }
 
 export const FOOTER_MESSAGE_MAX_LENGTH = 68;
@@ -23,15 +22,16 @@ export const DEFAULT_RECEIPT_SETTINGS_MOCK: ReceiptSettingsMock = {
   includeUtangBalance: true,
   includeQrToPay: false,
   footerMessage: "Salamat po! Balik kayo ulit.",
-  nextReceiptNumber: "OR-2026-0038",
 };
 
 const STORAGE_KEY_PREFIX = "tindahan-pos:receipt-settings:";
 
 /**
- * There's no receipt-printing, SMS, or OR-numbering system in the app yet —
- * this is a UI-only redesign, so all of these persist client-side for now.
+ * There's no receipt-printing/SMS delivery system in the app yet — this is
+ * a UI-only redesign, so these toggles persist client-side for now.
  * TODO: move to real store columns/backend once they exist.
+ * (OR/receipt numbering is no longer part of this mock — it's server-
+ * controlled via the `document_series` table and `checkout_sale()`.)
  */
 export function loadReceiptSettingsMock(storeId: string): ReceiptSettingsMock {
   try {

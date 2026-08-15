@@ -22,10 +22,17 @@ describe("salesToCsv", () => {
   it("includes a header row and joins item names with quantities", () => {
     const csv = salesToCsv([makeSaleRecord({ cashierName: "Aling Nena", total: 50 })]);
     const lines = csv.split("\r\n");
-    expect(lines[0]).toBe("Sale ID,Date,Cashier,Payment type,Reference no.,Items,Total");
+    expect(lines[0]).toBe("Sale ID,Date,Cashier,Payment type,Reference no.,Items,Total,Status,Void reason");
     expect(lines[1]).toContain("Aling Nena");
     expect(lines[1]).toContain("Sardines x2");
     expect(lines[1]).toContain("50");
+  });
+
+  it("includes the status and void reason for a voided sale", () => {
+    const csv = salesToCsv([makeSaleRecord({ status: "voided", voidReason: "Wrong quantity" })]);
+    const lines = csv.split("\r\n");
+    expect(lines[1]).toContain("voided");
+    expect(lines[1]).toContain("Wrong quantity");
   });
 });
 

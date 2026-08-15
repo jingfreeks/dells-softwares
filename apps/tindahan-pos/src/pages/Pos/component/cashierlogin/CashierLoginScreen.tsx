@@ -15,6 +15,9 @@ import {
   TEXT_GREETING_HI_PREFIX,
   TEXT_SETTING_UP_CASHIER_SESSION,
   BUTTON_TRY_AGAIN,
+  LABEL_COUNT_STARTING_CASH,
+  LABEL_OPENING_FLOAT,
+  BUTTON_CONTINUE,
 } from "@/lib";
 import "@/pages/authTheme.css";
 import { useCashierLoginScreen } from "./hooks";
@@ -35,6 +38,12 @@ export function CashierLoginScreen() {
     selectedStaff,
     selectStaff,
     backToPicker,
+    stage,
+    openingFloat,
+    setOpeningFloat,
+    openingFloatError,
+    confirmFloat,
+    backToFloat,
     pin,
     setPin,
     pinError,
@@ -64,7 +73,7 @@ export function CashierLoginScreen() {
         {dateLabel} &middot; {timeLabel}
       </p>
 
-      {!selectedStaff ? (
+      {stage === "picker" && (
         <>
           <p className="tpl-seclbl">{LABEL_CASHIER_PICKER_HEADING}</p>
           {loadingStaff ? (
@@ -105,7 +114,44 @@ export function CashierLoginScreen() {
             </div>
           )}
         </>
-      ) : (
+      )}
+
+      {stage === "float" && selectedStaff && (
+        <>
+          <p style={{ color: "var(--tpl-t4)", fontSize: 15, marginBottom: 16 }}>
+            {TEXT_GREETING_HI_PREFIX} {selectedStaff.name.split(" ")[0]} &mdash; {LABEL_COUNT_STARTING_CASH}
+          </p>
+          <label htmlFor="opening-float" className="sr-only">
+            {LABEL_OPENING_FLOAT}
+          </label>
+          <div className="tpl-fld" style={{ width: 220, marginBottom: 6 }}>
+            <input
+              id="opening-float"
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              value={openingFloat}
+              onChange={(e) => setOpeningFloat(e.target.value)}
+              autoFocus
+            />
+          </div>
+          {openingFloatError && (
+            <p role="alert" className="tpl-emsg" style={{ marginBottom: 6, justifyContent: "center" }}>
+              <i className="ti ti-alert-circle" aria-hidden />
+              {openingFloatError}
+            </p>
+          )}
+          <button type="button" className="tpl-btnp" style={{ width: 220, marginTop: 8 }} onClick={confirmFloat}>
+            {BUTTON_CONTINUE}
+          </button>
+          <button type="button" className="tpl-lnk" style={{ marginTop: 20 }} onClick={backToPicker}>
+            {BUTTON_SWITCH_CASHIER}
+          </button>
+        </>
+      )}
+
+      {stage === "pin" && selectedStaff && (
         <>
           <p style={{ color: "var(--tpl-t4)", fontSize: 15, marginBottom: 16 }}>
             {TEXT_GREETING_HI_PREFIX} {selectedStaff.name.split(" ")[0]} &mdash; {TEXT_ENTER_YOUR_PIN_SUFFIX}
@@ -130,7 +176,7 @@ export function CashierLoginScreen() {
               {pinError}
             </p>
           )}
-          <button type="button" className="tpl-lnk" style={{ marginTop: 20 }} onClick={backToPicker}>
+          <button type="button" className="tpl-lnk" style={{ marginTop: 20 }} onClick={backToFloat}>
             {BUTTON_SWITCH_CASHIER}
           </button>
         </>

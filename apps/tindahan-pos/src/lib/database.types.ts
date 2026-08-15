@@ -3,11 +3,12 @@
 // Once the project is live, prefer regenerating this from the real schema:
 //   npx supabase gen types typescript --project-id <ref> > src/lib/database.types.ts
 
-import type { PaymentType, StoreFeeConfig } from "./types";
+import type { PaymentType, StoreFeeConfig, VatStatus } from "./types";
 
 export type StaffRole = "admin" | "cashier";
 export type SaleItemType = "product" | "service";
 export type StoreFeeConfigRow = StoreFeeConfig;
+export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
 export interface Database {
   public: {
@@ -20,6 +21,15 @@ export interface Database {
           photo_url: string | null;
           fee_config: StoreFeeConfigRow | null;
           created_at: string;
+          contact_number: string | null;
+          city: string | null;
+          tin: string | null;
+          business_permit_no: string | null;
+          bir_registered: boolean;
+          vat_status: VatStatus;
+          vat_rate: number;
+          invoice_type: string;
+          cashier_can_edit_prices: boolean;
         };
         Insert: {
           id?: string;
@@ -28,6 +38,15 @@ export interface Database {
           photo_url?: string | null;
           fee_config?: StoreFeeConfigRow | null;
           created_at?: string;
+          contact_number?: string | null;
+          city?: string | null;
+          tin?: string | null;
+          business_permit_no?: string | null;
+          bir_registered?: boolean;
+          vat_status?: VatStatus;
+          vat_rate?: number;
+          invoice_type?: string;
+          cashier_can_edit_prices?: boolean;
         };
         Update: {
           id?: string;
@@ -36,6 +55,15 @@ export interface Database {
           photo_url?: string | null;
           fee_config?: StoreFeeConfigRow | null;
           created_at?: string;
+          contact_number?: string | null;
+          city?: string | null;
+          tin?: string | null;
+          business_permit_no?: string | null;
+          bir_registered?: boolean;
+          vat_status?: VatStatus;
+          vat_rate?: number;
+          invoice_type?: string;
+          cashier_can_edit_prices?: boolean;
         };
         Relationships: [];
       };
@@ -190,6 +218,18 @@ export interface Database {
           client_request_id: string | null;
           occurred_at: string | null;
           is_offline_replay: boolean;
+          receipt_number: string | null;
+          status: "completed" | "voided";
+          voided_at: string | null;
+          voided_by: string | null;
+          void_reason: string | null;
+          vat_status: VatStatus | null;
+          vat_rate: number | null;
+          vatable_sales: number;
+          vat_amount: number;
+          vat_exempt_sales: number;
+          zero_rated_sales: number;
+          device_id: string | null;
         };
         Insert: {
           id?: string;
@@ -203,6 +243,18 @@ export interface Database {
           client_request_id?: string | null;
           occurred_at?: string | null;
           is_offline_replay?: boolean;
+          receipt_number?: string | null;
+          status?: "completed" | "voided";
+          voided_at?: string | null;
+          voided_by?: string | null;
+          void_reason?: string | null;
+          vat_status?: VatStatus | null;
+          vat_rate?: number | null;
+          vatable_sales?: number;
+          vat_amount?: number;
+          vat_exempt_sales?: number;
+          zero_rated_sales?: number;
+          device_id?: string | null;
         };
         Update: {
           id?: string;
@@ -216,6 +268,18 @@ export interface Database {
           client_request_id?: string | null;
           occurred_at?: string | null;
           is_offline_replay?: boolean;
+          receipt_number?: string | null;
+          status?: "completed" | "voided";
+          voided_at?: string | null;
+          voided_by?: string | null;
+          void_reason?: string | null;
+          vat_status?: VatStatus | null;
+          vat_rate?: number | null;
+          vatable_sales?: number;
+          vat_amount?: number;
+          vat_exempt_sales?: number;
+          zero_rated_sales?: number;
+          device_id?: string | null;
         };
         Relationships: [
           {
@@ -234,6 +298,12 @@ export interface Database {
             foreignKeyName: "sales_customer_id_fkey";
             columns: ["customer_id"];
             referencedRelation: "customers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "sales_device_id_fkey";
+            columns: ["device_id"];
+            referencedRelation: "devices";
             referencedColumns: ["id"];
           },
         ];
@@ -595,6 +665,10 @@ export interface Database {
           created_at: string;
           expires_at: string;
           revoked_at: string | null;
+          opening_float: number | null;
+          closing_float: number | null;
+          expected_closing: number | null;
+          variance: number | null;
         };
         Insert: {
           id?: string;
@@ -605,6 +679,10 @@ export interface Database {
           created_at?: string;
           expires_at: string;
           revoked_at?: string | null;
+          opening_float?: number | null;
+          closing_float?: number | null;
+          expected_closing?: number | null;
+          variance?: number | null;
         };
         Update: {
           id?: string;
@@ -615,6 +693,10 @@ export interface Database {
           created_at?: string;
           expires_at?: string;
           revoked_at?: string | null;
+          opening_float?: number | null;
+          closing_float?: number | null;
+          expected_closing?: number | null;
+          variance?: number | null;
         };
         Relationships: [
           {
@@ -674,6 +756,92 @@ export interface Database {
           },
         ];
       };
+      document_series: {
+        Row: {
+          id: string;
+          store_id: string;
+          series_key: string;
+          prefix: string;
+          next_number: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          series_key?: string;
+          prefix?: string;
+          next_number?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          series_key?: string;
+          prefix?: string;
+          next_number?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "document_series_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      audit_log: {
+        Row: {
+          id: string;
+          store_id: string;
+          actor_id: string | null;
+          action: string;
+          entity_type: string;
+          entity_id: string;
+          previous_value: Json | null;
+          new_value: Json | null;
+          reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          actor_id?: string | null;
+          action: string;
+          entity_type: string;
+          entity_id: string;
+          previous_value?: Json | null;
+          new_value?: Json | null;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          actor_id?: string | null;
+          action?: string;
+          entity_type?: string;
+          entity_id?: string;
+          previous_value?: Json | null;
+          new_value?: Json | null;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "audit_log_actor_id_fkey";
+            columns: ["actor_id"];
+            referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -690,7 +858,14 @@ export interface Database {
           p_occurred_at?: string | null;
           p_is_offline_replay?: boolean;
         };
-        Returns: { sale_id: string; total: number }[];
+        Returns: { sale_id: string; total: number; receipt_number: string | null }[];
+      };
+      void_sale: {
+        Args: {
+          p_sale_id: string;
+          p_reason: string;
+        };
+        Returns: undefined;
       };
       record_credit_payment: {
         Args: {
@@ -717,6 +892,7 @@ export interface Database {
         Args: {
           p_staff_id: string;
           p_pin: string;
+          p_opening_float: number;
         };
         Returns: {
           ok: boolean;
@@ -732,6 +908,7 @@ export interface Database {
       end_cashier_session: {
         Args: {
           p_token: string;
+          p_closing_float?: number | null;
         };
         Returns: undefined;
       };

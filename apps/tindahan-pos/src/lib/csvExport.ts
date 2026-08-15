@@ -23,7 +23,7 @@ export function productsToCsv(products: Product[]): string {
 
 export function salesToCsv(sales: SaleRecord[]): string {
   return toCsv(
-    ["Sale ID", "Date", "Cashier", "Payment type", "Reference no.", "Items", "Total"],
+    ["Sale ID", "Date", "Cashier", "Payment type", "Reference no.", "Items", "Total", "Status", "Void reason"],
     sales.map((s) => [
       s.id,
       s.timestamp,
@@ -32,6 +32,8 @@ export function salesToCsv(sales: SaleRecord[]): string {
       s.referenceNo,
       s.items.map((item) => `${item.name} x${item.quantity}`).join("; "),
       s.total,
+      s.status,
+      s.voidReason,
     ])
   );
 }

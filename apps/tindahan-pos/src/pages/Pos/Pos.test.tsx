@@ -151,6 +151,19 @@ describe("Pos", () => {
     expect(screen.getByRole("button", { name: /Rice \(tingi\)/ })).toBeInTheDocument();
   });
 
+  it("loads products in batches of 10 when more than 10 are available", () => {
+    const manyProducts = Array.from({ length: 15 }, (_, i) =>
+      makeProduct({ id: `snack-${i}`, name: `Snack ${i}`, category: "Snacks" })
+    );
+    setup({ products: manyProducts });
+    renderPage();
+
+    for (let i = 0; i < 10; i++) {
+      expect(screen.getByRole("button", { name: new RegExp(`Snack ${i}(?!\\d)`) })).toBeInTheDocument();
+    }
+    expect(screen.queryByRole("button", { name: /Snack 10(?!\d)/ })).not.toBeInTheDocument();
+  });
+
   it("adds a custom item as a service line", async () => {
     const user = userEvent.setup();
     setup();
@@ -909,12 +922,14 @@ describe("Pos — cashier quick-switch gate", () => {
     renderPage();
 
     await user.click(await screen.findByText("Maricel"));
+    expect(screen.getByText(/Count your starting cash/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Continue" }));
     expect(screen.getByText(/Hi Maricel/)).toBeInTheDocument();
     for (const digit of ["1", "2", "3", "4"]) {
       await user.click(screen.getByRole("button", { name: digit }));
     }
 
-    expect(startCashierSession).toHaveBeenCalledWith("staff-2", "1234");
+    expect(startCashierSession).toHaveBeenCalledWith("staff-2", "1234", 2000);
   });
 
   it("shows a spinner/message while the cashier session is being set up, instead of an inert keypad", async () => {
@@ -939,6 +954,7 @@ describe("Pos — cashier quick-switch gate", () => {
     renderPage();
 
     await user.click(await screen.findByText("Maricel"));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
     for (const digit of ["1", "2", "3", "4"]) {
       await user.click(screen.getByRole("button", { name: digit }));
     }
@@ -989,6 +1005,7 @@ describe("Pos — cashier quick-switch gate", () => {
     renderPage();
 
     await user.click(await screen.findByText("Maricel"));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
     for (const digit of ["1", "2", "3", "4"]) {
       await user.click(screen.getByRole("button", { name: digit }));
     }

@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/auth";
 import { cartTotal, lineTotal } from "@/lib/pos";
 import { supabase } from "@/lib/supabaseClient";
 import { enqueueSale, isConnectivityFailure } from "@/lib/offlineQueue";
+import { computeVatBreakdown } from "@/lib/vat";
 import type { ReceivingLine } from "@/lib/inventory";
 import type {
   CartLine,
@@ -14,6 +15,7 @@ import type {
   ServiceLine,
   Supplier,
   SupplierPaymentTerms,
+  VatStatus,
 } from "@/lib/types";
 import { StoreDataContext, type AddSupplierInput, type CheckoutPayment, type ReceivingEntry } from "./storeDataContext";
 import { loadCachedStoreData, saveCachedStoreData } from "./storeDataCache";
@@ -114,11 +116,17 @@ function friendlyProductError(err: { code?: string; message: string }): Error {
   if (err.code === "23505") {
     return new Error("That barcode is already used by another product.");
   }
+  if (err.message.includes("PRICE_EDIT_NOT_ALLOWED")) {
+    return new Error("You don't have permission to edit this product.");
+  }
+  if (err.message.includes("ONLY_PRICE_FIELDS_EDITABLE")) {
+    return new Error("You can only change the price for this product.");
+  }
   return new Error(err.message);
 }
 
 const SALE_SELECT =
-  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, staff:cashier_id(id, name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)";
+  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, receipt_number, status, voided_at, void_reason, vat_status, vat_rate, vatable_sales, vat_amount, vat_exempt_sales, zero_rated_sales, device_id, staff:cashier_id(id, name), voided_by_staff:voided_by(id, name), device:device_id(id, name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)";
 
 function mapSaleRow(row: {
   id: string;
@@ -128,7 +136,19 @@ function mapSaleRow(row: {
   customer_id: string | null;
   payment_type: SaleRecord["paymentType"];
   reference_no: string | null;
+  receipt_number: string | null;
+  status: SaleRecord["status"];
+  voided_at: string | null;
+  void_reason: string | null;
+  vat_status: VatStatus | null;
+  vat_rate: number | null;
+  vatable_sales: number;
+  vat_amount: number;
+  vat_exempt_sales: number;
+  zero_rated_sales: number;
   staff: { id: string; name: string } | { id: string; name: string }[] | null;
+  voided_by_staff: { id: string; name: string } | { id: string; name: string }[] | null;
+  device: { id: string; name: string } | { id: string; name: string }[] | null;
   sale_items:
     | {
         product_id: string | null;
@@ -142,6 +162,8 @@ function mapSaleRow(row: {
     | null;
 }): SaleRecord {
   const staff = Array.isArray(row.staff) ? row.staff[0] : row.staff;
+  const voidedByStaff = Array.isArray(row.voided_by_staff) ? row.voided_by_staff[0] : row.voided_by_staff;
+  const device = Array.isArray(row.device) ? row.device[0] : row.device;
   return {
     id: row.id,
     // occurred_at (set only for a sale that was queued offline and synced
@@ -154,6 +176,19 @@ function mapSaleRow(row: {
     paymentType: row.payment_type,
     customerId: row.customer_id,
     referenceNo: row.reference_no,
+    receiptNumber: row.receipt_number,
+    status: row.status,
+    voidedAt: row.voided_at,
+    voidedByName: voidedByStaff?.name ?? null,
+    voidReason: row.void_reason,
+    vatStatus: row.vat_status,
+    vatRate: row.vat_rate,
+    vatableSales: row.vatable_sales,
+    vatAmount: row.vat_amount,
+    vatExemptSales: row.vat_exempt_sales,
+    zeroRatedSales: row.zero_rated_sales,
+    deviceId: device?.id ?? null,
+    deviceName: device?.name ?? null,
     items: (row.sale_items ?? []).map((item) => ({
       productId: item.product_id ?? "",
       name: item.name,
@@ -167,7 +202,7 @@ function mapSaleRow(row: {
 }
 
 export function StoreDataProvider({ children }: { children: ReactNode }) {
-  const { user, deviceSession } = useAuth();
+  const { user, deviceSession, store } = useAuth();
   const sessionId = user?.id ?? deviceSession?.id ?? null;
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
@@ -212,7 +247,12 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   // 100 rows for the Dashboard) so a report over a full month isn't silently
   // truncated.
   const fetchSalesInRange = useCallback(
-    async (params: { startDate: string; endDate: string; cashierId?: string | null }) => {
+    async (params: {
+      startDate: string;
+      endDate: string;
+      cashierId?: string | null;
+      deviceId?: string | null;
+    }) => {
       let query = supabase
         .from("sales")
         .select(SALE_SELECT)
@@ -222,6 +262,9 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         .limit(1000);
       if (params.cashierId) {
         query = query.eq("cashier_id", params.cashierId);
+      }
+      if (params.deviceId) {
+        query = query.eq("device_id", params.deviceId);
       }
       const { data, error: err } = await query;
       if (err) throw err;
@@ -447,9 +490,10 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
 
     let total: number;
     let saleId: string;
+    let receiptNumber: string | null;
     let queued = false;
     let rpcError: unknown = null;
-    let rpcResult: { sale_id: string; total: number } | undefined;
+    let rpcResult: { sale_id: string; total: number; receipt_number: string | null } | undefined;
     try {
       const { data, error: err } = await supabase.rpc("checkout_sale", rpcParams);
       if (err) {
@@ -475,6 +519,11 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       // the cashier's side.
       total = cartTotal(cart) + services.reduce((sum, line) => sum + line.amount + line.fee, 0);
       saleId = clientRequestId;
+      // No server round trip happened yet, so there's genuinely no
+      // receipt/OR number yet — checkout_sale() assigns one atomically only
+      // once this sale actually lands in the database, whether that's now
+      // (the branch below) or later when the sync engine replays it.
+      receiptNumber = null;
       queued = true;
       const storeId = user?.storeId ?? deviceSession?.storeId ?? null;
       if (storeId) {
@@ -501,6 +550,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       if (!rpcResult) throw new Error("Checkout did not return a result.");
       total = rpcResult.total;
       saleId = rpcResult.sale_id;
+      receiptNumber = rpcResult.receipt_number;
     }
 
     const saleRecord: SaleRecord = {
@@ -537,6 +587,23 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       paymentType: payment.type,
       customerId: payment.type === "credit" ? (payment.customerId ?? null) : null,
       referenceNo: payment.type === "qr" ? (payment.referenceNo?.trim() ?? null) : null,
+      receiptNumber,
+      status: "completed",
+      voidedAt: null,
+      voidedByName: null,
+      voidReason: null,
+      // Mirrors checkout_sale()'s own VAT snapshot (see 0040_vat_computation.sql)
+      // so the receipt shown immediately after checkout is correct without
+      // waiting on a refetch — the RPC computes the authoritative figures
+      // server-side from the same store config.
+      vatStatus: store?.vatStatus ?? null,
+      vatRate: store?.vatRate ?? null,
+      ...computeVatBreakdown(total, store?.vatStatus ?? null, store?.vatRate ?? 0.12),
+      // BIR compliance §49: mirrors checkout_sale()'s own device lookup —
+      // deviceSession is only set when this browser/tablet is itself a
+      // paired device (see AuthProvider), so this needs no RPC round trip.
+      deviceId: deviceSession?.id ?? null,
+      deviceName: deviceSession?.name ?? null,
       ...(queued ? { syncStatus: "pending" as const } : {}),
     };
 
@@ -562,6 +629,38 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     }
 
     return saleRecord;
+  }
+
+  // BIR compliance §39: void_sale() is the only server-side path that can
+  // ever change sales.status — it reverses the original stock decrement
+  // and (for a credit sale) the customer balance bump atomically, and
+  // writes an audit_log entry. This mirrors those same reversals into
+  // local state instead of refetching, same rationale as checkout()
+  // above: the RPC is already the source of truth, this just keeps the
+  // already-loaded products/customers/sales in sync with it.
+  async function voidSale(sale: SaleRecord, reason: string) {
+    const { error: err } = await supabase.rpc("void_sale", { p_sale_id: sale.id, p_reason: reason });
+    if (err) throw err;
+
+    setProducts((prev) =>
+      prev.map((p) => {
+        const item = sale.items.find((i) => i.itemType === "product" && i.productId === p.id);
+        return item ? { ...p, stock: p.stock + item.quantity } : p;
+      })
+    );
+    if (sale.paymentType === "credit" && sale.customerId) {
+      const customerId = sale.customerId;
+      setCustomers((prev) =>
+        prev.map((c) => (c.id === customerId ? { ...c, balance: c.balance - sale.total } : c))
+      );
+    }
+    setSales((prev) =>
+      prev.map((s) =>
+        s.id === sale.id
+          ? { ...s, status: "voided", voidedAt: new Date().toISOString(), voidReason: reason }
+          : s
+      )
+    );
   }
 
   async function addCategory(name: string): Promise<Category> {
@@ -844,6 +943,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         removeProduct,
         restock,
         checkout,
+        voidSale,
         refresh,
         addCategory,
         renameCategory,

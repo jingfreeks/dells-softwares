@@ -22,7 +22,7 @@ function Probe() {
       <p data-testid="token">{cashierToken ?? "none"}</p>
       <p data-testid="loading">{String(loading)}</p>
       <p data-testid="result">{result ? JSON.stringify(result) : "none"}</p>
-      <button onClick={async () => setResult(await startCashierSession("staff-2", "1234"))}>start</button>
+      <button onClick={async () => setResult(await startCashierSession("staff-2", "1234", 2000))}>start</button>
       <button onClick={() => endCashierSession()}>end</button>
       <button onClick={() => reportExpiredSession()}>expire</button>
     </div>
@@ -72,7 +72,11 @@ describe("CashierSessionProvider", () => {
 
     await waitFor(() => expect(screen.getByTestId("active-cashier")).toHaveTextContent("Maricel"));
     expect(screen.getByTestId("token")).toHaveTextContent("tok-abc");
-    expect(mockedSupabase.rpc).toHaveBeenCalledWith("start_cashier_session", { p_staff_id: "staff-2", p_pin: "1234" });
+    expect(mockedSupabase.rpc).toHaveBeenCalledWith("start_cashier_session", {
+      p_staff_id: "staff-2",
+      p_pin: "1234",
+      p_opening_float: 2000,
+    });
   });
 
   it("does not set an active cashier when the PIN check fails", async () => {
@@ -128,7 +132,7 @@ describe("CashierSessionProvider", () => {
     await user.click(screen.getByText("end"));
 
     expect(screen.getByTestId("active-cashier")).toHaveTextContent("none");
-    expect(mockedSupabase.rpc).toHaveBeenCalledWith("end_cashier_session", { p_token: "tok-abc" });
+    expect(mockedSupabase.rpc).toHaveBeenCalledWith("end_cashier_session", { p_token: "tok-abc", p_closing_float: null });
   });
 
   it("clears the active cashier on reportExpiredSession without calling the server", async () => {
