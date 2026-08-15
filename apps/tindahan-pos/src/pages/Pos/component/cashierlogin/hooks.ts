@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase, useCashierSession, useAuth, ERROR_COULD_NOT_LOAD_STAFF } from "@/lib";
-import { ERROR_INVALID_PIN, ERROR_PIN_LOCKED, ERROR_INACTIVE_EMPLOYEE } from "@/lib";
+import { supabase, useCashierSession, useAuth, useDrawerFloat, ERROR_COULD_NOT_LOAD_STAFF } from "@/lib";
+import { ERROR_INVALID_PIN, ERROR_PIN_LOCKED, ERROR_INACTIVE_EMPLOYEE, ERROR_INVALID_OPENING_FLOAT } from "@/lib";
 
 export interface CashierPickerRow {
   id: string;
@@ -16,14 +16,20 @@ function friendlyStartSessionError(message: string): string {
   return message;
 }
 
+export type CashierLoginStage = "picker" | "float" | "pin";
+
 export function useCashierLoginScreen() {
   const { startCashierSession } = useCashierSession();
+  const { balance: drawerBalance } = useDrawerFloat();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [staffList, setStaffList] = useState<CashierPickerRow[]>([]);
   const [loadingStaff, setLoadingStaff] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [stage, setStage] = useState<CashierLoginStage>("picker");
+  const [openingFloat, setOpeningFloat] = useState("");
+  const [openingFloatError, setOpeningFloatError] = useState<string | null>(null);
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -58,21 +64,41 @@ export function useCashierLoginScreen() {
 
   function selectStaff(staffId: string) {
     setSelectedStaffId(staffId);
+    setOpeningFloat(drawerBalance > 0 ? String(drawerBalance) : "");
+    setOpeningFloatError(null);
     setPin("");
     setPinError(null);
+    setStage("float");
   }
 
   function backToPicker() {
     setSelectedStaffId(null);
     setPin("");
     setPinError(null);
+    setStage("picker");
+  }
+
+  function backToFloat() {
+    setPin("");
+    setPinError(null);
+    setStage("float");
+  }
+
+  function confirmFloat() {
+    const parsed = Number(openingFloat);
+    if (openingFloat.trim() === "" || Number.isNaN(parsed) || parsed < 0) {
+      setOpeningFloatError(ERROR_INVALID_OPENING_FLOAT);
+      return;
+    }
+    setOpeningFloatError(null);
+    setStage("pin");
   }
 
   async function submitPin(enteredPin: string) {
     if (!selectedStaffId) return;
     setSubmitting(true);
     setPinError(null);
-    const result = await startCashierSession(selectedStaffId, enteredPin);
+    const result = await startCashierSession(selectedStaffId, enteredPin, Number(openingFloat));
     setSubmitting(false);
     if (!result.ok) {
       setPinError(friendlyStartSessionError(result.error));
@@ -104,6 +130,12 @@ export function useCashierLoginScreen() {
     selectedStaff,
     selectStaff,
     backToPicker,
+    stage,
+    openingFloat,
+    setOpeningFloat,
+    openingFloatError,
+    confirmFloat,
+    backToFloat,
     pin,
     setPin,
     pinError,

@@ -922,12 +922,14 @@ describe("Pos — cashier quick-switch gate", () => {
     renderPage();
 
     await user.click(await screen.findByText("Maricel"));
+    expect(screen.getByText(/Count your starting cash/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Continue" }));
     expect(screen.getByText(/Hi Maricel/)).toBeInTheDocument();
     for (const digit of ["1", "2", "3", "4"]) {
       await user.click(screen.getByRole("button", { name: digit }));
     }
 
-    expect(startCashierSession).toHaveBeenCalledWith("staff-2", "1234");
+    expect(startCashierSession).toHaveBeenCalledWith("staff-2", "1234", 2000);
   });
 
   it("shows a spinner/message while the cashier session is being set up, instead of an inert keypad", async () => {
@@ -952,6 +954,7 @@ describe("Pos — cashier quick-switch gate", () => {
     renderPage();
 
     await user.click(await screen.findByText("Maricel"));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
     for (const digit of ["1", "2", "3", "4"]) {
       await user.click(screen.getByRole("button", { name: digit }));
     }
@@ -1002,6 +1005,7 @@ describe("Pos — cashier quick-switch gate", () => {
     renderPage();
 
     await user.click(await screen.findByText("Maricel"));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
     for (const digit of ["1", "2", "3", "4"]) {
       await user.click(screen.getByRole("button", { name: digit }));
     }

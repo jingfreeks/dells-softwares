@@ -14,7 +14,16 @@ import {
   type SaleRecord,
 } from "@/lib";
 import { dateRangeForPreset } from "@/pages/Reports/lib";
-import { generatePassword, voidsThisWeek, type StaffRoleSelection, type SignInMethod, type ShiftSelection } from "./lib";
+import {
+  generatePassword,
+  voidsThisWeek,
+  drawerVarianceThisWeek,
+  type StaffRoleSelection,
+  type SignInMethod,
+  type ShiftSelection,
+  type ClosedShift,
+} from "./lib";
+import { useOpenShifts, staffName } from "./hooksShifts";
 
 export interface StaffRow {
   id: string;
@@ -62,10 +71,42 @@ export function useStaffPage() {
   const [setPinError, setSetPinError] = useState<string | null>(null);
   const [weekSales, setWeekSales] = useState<SaleRecord[]>([]);
   const [showVoidsWeek, setShowVoidsWeek] = useState(false);
+  const [closedShiftsThisWeek, setClosedShiftsThisWeek] = useState<ClosedShift[]>([]);
+  const [showOpenShifts, setShowOpenShifts] = useState(false);
+  const [showVariance, setShowVariance] = useState(false);
+  const { openShifts } = useOpenShifts();
 
   useEffect(() => {
     fetchSalesInRange(dateRangeForPreset("week", "", "")).then(setWeekSales);
   }, [fetchSalesInRange]);
+
+  useEffect(() => {
+    const { startDate, endDate } = dateRangeForPreset("week", "", "");
+    supabase
+      .from("cashier_sessions")
+      .select(
+        "id, staff_id, created_at, revoked_at, opening_float, closing_float, expected_closing, variance, staff:staff_id(name)"
+      )
+      .not("variance", "is", null)
+      .gte("revoked_at", startDate)
+      .lte("revoked_at", endDate)
+      .order("revoked_at", { ascending: false })
+      .then(({ data }) => {
+        setClosedShiftsThisWeek(
+          (data ?? []).map((row) => ({
+            id: row.id,
+            staffId: row.staff_id,
+            staffName: staffName(row.staff),
+            createdAt: row.created_at,
+            revokedAt: row.revoked_at as string,
+            openingFloat: row.opening_float,
+            closingFloat: row.closing_float,
+            expectedClosing: row.expected_closing,
+            variance: row.variance as number,
+          }))
+        );
+      });
+  }, []);
 
   const fetchStaff = useCallback(async () => {
     setLoadError(null);
@@ -242,5 +283,14 @@ export function useStaffPage() {
     showVoidsWeek,
     openVoidsWeek: () => setShowVoidsWeek(true),
     closeVoidsWeek: () => setShowVoidsWeek(false),
+    openShifts,
+    showOpenShifts,
+    openOpenShifts: () => setShowOpenShifts(true),
+    closeOpenShifts: () => setShowOpenShifts(false),
+    variance: drawerVarianceThisWeek(closedShiftsThisWeek),
+    closedShiftsThisWeek,
+    showVariance,
+    openVariance: () => setShowVariance(true),
+    closeVariance: () => setShowVariance(false),
   };
 }

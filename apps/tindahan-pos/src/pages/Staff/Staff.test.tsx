@@ -26,9 +26,29 @@ vi.mock("@/lib/supabaseClient", () => {
   }));
   const salesSelect = vi.fn(() => ({ in: vi.fn(() => Promise.resolve({ data: [], error: null })) }));
 
+  // cashier_sessions is queried three different ways across this page
+  // (useOpenShifts: .is().order(); closedShiftsThisWeek: .not().gte().lte().order();
+  // useShiftHistory: .order().limit()) — every chain method returns the same
+  // stub so it's both chainable in any order and thenable, resolving empty
+  // by default.
+  function makeQueryStub(result: { data: unknown; error: unknown } = { data: [], error: null }) {
+    const stub = {
+      is: vi.fn(() => stub),
+      not: vi.fn(() => stub),
+      gte: vi.fn(() => stub),
+      lte: vi.fn(() => stub),
+      order: vi.fn(() => stub),
+      limit: vi.fn(() => stub),
+      then: (resolve: (value: { data: unknown; error: unknown }) => void) => Promise.resolve(result).then(resolve),
+    };
+    return stub;
+  }
+  const cashierSessionsSelect = vi.fn(() => makeQueryStub());
+
   const from = vi.fn((table: string) => {
     if (table === "audit_log") return { select: auditLogSelect };
     if (table === "sales") return { select: salesSelect };
+    if (table === "cashier_sessions") return { select: cashierSessionsSelect };
     return { select, delete: deleteFn, update: updateFn };
   });
   const rpc = vi.fn();
@@ -38,7 +58,20 @@ vi.mock("@/lib/supabaseClient", () => {
       rpc,
       auth: { getSession: vi.fn() },
       functions: { invoke: vi.fn() },
-      __mocks: { order1, order2, select, from, deleteFn, deleteEqFn, updateFn, updateEqFn, rpc, auditLogSelect, salesSelect },
+      __mocks: {
+        order1,
+        order2,
+        select,
+        from,
+        deleteFn,
+        deleteEqFn,
+        updateFn,
+        updateEqFn,
+        rpc,
+        auditLogSelect,
+        salesSelect,
+        cashierSessionsSelect,
+      },
     },
   };
 });
@@ -56,6 +89,7 @@ type MockedSupabase = typeof supabase & {
     rpc: ReturnType<typeof vi.fn>;
     auditLogSelect: ReturnType<typeof vi.fn>;
     salesSelect: ReturnType<typeof vi.fn>;
+    cashierSessionsSelect: ReturnType<typeof vi.fn>;
   };
 };
 
