@@ -1249,6 +1249,16 @@ export const LABEL_DEVICE_NAME = "Device name";
 export const LABEL_PAIRED_DEVICES_HEADING = "Paired devices";
 export const BUTTON_DISMISS = "Dismiss";
 
+export const NAV_LABEL_AUDIT_LOG = "Audit Log";
+export const PAGE_HEADING_AUDIT_LOG = "Audit Log";
+export const TEXT_AUDIT_LOG_DESCRIPTION = "A record of sensitive actions taken on this store's data, such as voided sales.";
+export const LABEL_AUDIT_LOG_HEADING = "Recent activity";
+export const EMPTY_STATE_NO_AUDIT_LOG_ENTRIES = "No audit log entries yet.";
+export const LABEL_AUDIT_ACTOR_PREFIX = "By";
+export const LABEL_AUDIT_REASON_PREFIX = "Reason:";
+export const ERROR_COULD_NOT_LOAD_AUDIT_LOG = "Unable to load the audit log.";
+export const LABEL_AUDIT_ACTION_SALE_VOIDED = "Sale voided";
+
 // Connection resilience (freeze/blank-screen fix)
 export const TEXT_SETTING_UP_CASHIER_SESSION = "Setting up your cashier session…";
 export const BUTTON_TRY_AGAIN = "Try again";
