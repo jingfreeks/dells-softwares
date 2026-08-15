@@ -685,6 +685,12 @@ export interface Database {
         Args: Record<string, never>;
         Returns: string[];
       };
+      // 20260815096000_public_module_contract.sql -- the public wrapper the
+      // browser uses, since the `core` schema is not exposed to PostgREST.
+      my_store_modules: {
+        Args: Record<string, never>;
+        Returns: { module_code: string; name: string; enabled: boolean }[];
+      };
     };
     Enums: {
       staff_role: StaffRole;

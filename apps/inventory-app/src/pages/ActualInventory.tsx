@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useCan } from "../lib/permissions";
+import { useHasModule, MODULE_READ_ONLY_HINT } from "../lib/modules";
 import { listWarehouses, getWarehouseStock } from "../lib/warehouses";
 import { listProducts } from "../lib/products";
 import {
@@ -16,6 +17,7 @@ import type { InventoryCount, InventoryCountLine, Product, Warehouse } from "../
 export function ActualInventory() {
   const { user } = useAuth();
   const canManage = useCan("inventory.stock.count");
+  const hasInventory = useHasModule("INVENTORY");
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [counts, setCounts] = useState<InventoryCount[]>([]);
@@ -189,7 +191,8 @@ export function ActualInventory() {
           <button
             type="button"
             onClick={handleStartCount}
-            disabled={starting || !newWarehouseId}
+            disabled={starting || !newWarehouseId || !hasInventory}
+            title={hasInventory ? undefined : MODULE_READ_ONLY_HINT}
             className="h-10 cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {starting ? "Starting…" : "Start count"}

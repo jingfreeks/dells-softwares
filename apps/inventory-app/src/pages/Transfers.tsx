@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useCan } from "../lib/permissions";
+import { useHasModule, MODULE_READ_ONLY_HINT } from "../lib/modules";
 import { listWarehouses } from "../lib/warehouses";
 import { listProducts } from "../lib/products";
 import { listTransfers, transferStock } from "../lib/transfers";
@@ -12,6 +13,7 @@ const emptyForm = { fromWarehouseId: "", toWarehouseId: "", productId: "", quant
 export function Transfers() {
   const { user } = useAuth();
   const canManage = useCan("inventory.transfer.manage");
+  const hasInventory = useHasModule("INVENTORY");
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [transfers, setTransfers] = useState<WarehouseTransfer[]>([]);
@@ -198,7 +200,8 @@ export function Transfers() {
           </div>
           <button
             type="submit"
-            disabled={submitting || warehouses.length < 2}
+            disabled={submitting || warehouses.length < 2 || !hasInventory}
+            title={hasInventory ? undefined : MODULE_READ_ONLY_HINT}
             className="h-10 cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-2"
           >
             {submitting ? "Transferring…" : "Transfer stock"}
