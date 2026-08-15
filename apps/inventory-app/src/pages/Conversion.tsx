@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useCan } from "../lib/permissions";
+import { useHasModule, MODULE_READ_ONLY_HINT } from "../lib/modules";
 import { listProducts } from "../lib/products";
 import { addConversion, listConversions, removeConversion } from "../lib/conversions";
 import type { Product, UnitConversion } from "../lib/types";
@@ -9,6 +10,7 @@ import type { Product, UnitConversion } from "../lib/types";
 export function Conversion() {
   const { user } = useAuth();
   const canManage = useCan("inventory.product.manage");
+  const hasInventory = useHasModule("INVENTORY");
   const [products, setProducts] = useState<Product[]>([]);
   const [conversions, setConversions] = useState<UnitConversion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,7 +163,8 @@ export function Conversion() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !hasInventory}
+              title={hasInventory ? undefined : MODULE_READ_ONLY_HINT}
               className="mt-1 flex h-10 cursor-pointer items-center justify-center rounded-xl bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? "Saving…" : "Add conversion"}

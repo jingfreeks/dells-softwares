@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useCan } from "../lib/permissions";
+import { useHasModule, MODULE_READ_ONLY_HINT } from "../lib/modules";
 import { listWarehouses } from "../lib/warehouses";
 import { listProducts } from "../lib/products";
 import { listBeginningBalances, setBeginningBalance } from "../lib/beginningBalance";
@@ -12,6 +13,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 export function BeginningBalance() {
   const { user } = useAuth();
   const canManage = useCan("inventory.stock.adjust");
+  const hasInventory = useHasModule("INVENTORY");
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [balances, setBalances] = useState<BeginningBalanceRow[]>([]);
@@ -206,7 +208,8 @@ export function BeginningBalance() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !hasInventory}
+              title={hasInventory ? undefined : MODULE_READ_ONLY_HINT}
               className="mt-1 flex h-10 cursor-pointer items-center justify-center rounded-xl bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? "Saving…" : "Save balance"}

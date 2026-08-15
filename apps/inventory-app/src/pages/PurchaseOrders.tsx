@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useCan } from "../lib/permissions";
+import { useHasModule, MODULE_READ_ONLY_HINT } from "../lib/modules";
 import { listWarehouses } from "../lib/warehouses";
 import { listSuppliers } from "../lib/suppliers";
 import { listProducts } from "../lib/products";
@@ -39,6 +40,7 @@ const STATUS_COLOR: Record<PurchaseOrder["status"], string> = {
 export function PurchaseOrders() {
   const { user } = useAuth();
   const canManage = useCan("inventory.purchase_order.manage");
+  const hasInventory = useHasModule("INVENTORY");
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -200,7 +202,9 @@ export function PurchaseOrders() {
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="shrink-0 cursor-pointer rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
+          disabled={!hasInventory}
+          title={hasInventory ? undefined : MODULE_READ_ONLY_HINT}
+          className="shrink-0 cursor-pointer rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {showForm ? "Cancel" : "New purchase order"}
         </button>
