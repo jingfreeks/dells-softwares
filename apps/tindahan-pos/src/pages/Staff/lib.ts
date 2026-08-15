@@ -49,6 +49,19 @@ export function staffAccountCounts(staff: StaffRow[]): StaffAccountCounts {
   };
 }
 
+export interface VoidsThisWeek {
+  count: number;
+  total: number;
+}
+
+export function voidsThisWeek(sales: SaleRecord[]): VoidsThisWeek {
+  const voided = sales.filter((sale) => sale.status === "voided");
+  return {
+    count: voided.length,
+    total: voided.reduce((sum, sale) => sum + sale.total, 0),
+  };
+}
+
 /**
  * Today's sales total attributed to this staff member — matched by the
  * cashier's name on the sale record, since SaleRecord only stores a

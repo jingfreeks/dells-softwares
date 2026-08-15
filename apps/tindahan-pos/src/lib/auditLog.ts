@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase, ERROR_COULD_NOT_LOAD_AUDIT_LOG, LABEL_AUDIT_ACTION_SALE_VOIDED } from "@/lib";
+import { supabase } from "./supabaseClient";
+import { ERROR_COULD_NOT_LOAD_AUDIT_LOG, LABEL_AUDIT_ACTION_SALE_VOIDED } from "./textLabels";
 
 const ACTION_LABELS: Record<string, string> = {
   sale_voided: LABEL_AUDIT_ACTION_SALE_VOIDED,
 };
 
-const AUDIT_LOG_LIMIT = 200;
+const DEFAULT_AUDIT_LOG_LIMIT = 200;
 
 export interface AuditLogRow {
   id: string;
+  action: string;
   actionLabel: string;
   actorName: string;
   entityLabel: string;
@@ -20,7 +22,8 @@ function friendlyActionLabel(action: string): string {
   return ACTION_LABELS[action] ?? action;
 }
 
-export function useAuditLogPage() {
+export function useAuditLog(options: { limit?: number } = {}) {
+  const limit = options.limit ?? DEFAULT_AUDIT_LOG_LIMIT;
   const [entries, setEntries] = useState<AuditLogRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -33,7 +36,7 @@ export function useAuditLogPage() {
       .from("audit_log")
       .select("id, actor_id, action, entity_type, entity_id, reason, created_at")
       .order("created_at", { ascending: false })
-      .limit(AUDIT_LOG_LIMIT);
+      .limit(limit);
     if (logError) {
       setLoadError(logError.message || ERROR_COULD_NOT_LOAD_AUDIT_LOG);
       setLoading(false);
@@ -58,6 +61,7 @@ export function useAuditLogPage() {
         const receiptNumber = row.entity_type === "sale" ? receiptNumberBySaleId.get(row.entity_id) : null;
         return {
           id: row.id,
+          action: row.action,
           actionLabel: friendlyActionLabel(row.action),
           actorName: (row.actor_id && staffNameById.get(row.actor_id)) ?? "—",
           entityLabel: receiptNumber ? `Receipt ${receiptNumber}` : `${row.entity_type} ${row.entity_id.slice(0, 8)}`,
@@ -67,7 +71,7 @@ export function useAuditLogPage() {
       })
     );
     setLoading(false);
-  }, []);
+  }, [limit]);
 
   useEffect(() => {
     fetchEntries();

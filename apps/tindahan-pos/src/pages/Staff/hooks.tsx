@@ -11,8 +11,10 @@ import {
   ERROR_COULD_NOT_SET_STAFF_PIN,
   ERROR_COULD_NOT_UPDATE_STAFF_STATUS,
   type Role,
+  type SaleRecord,
 } from "@/lib";
-import { generatePassword, type StaffRoleSelection, type SignInMethod, type ShiftSelection } from "./lib";
+import { dateRangeForPreset } from "@/pages/Reports/lib";
+import { generatePassword, voidsThisWeek, type StaffRoleSelection, type SignInMethod, type ShiftSelection } from "./lib";
 
 export interface StaffRow {
   id: string;
@@ -45,7 +47,7 @@ function makeEmptyForm(): StaffFormValues {
 
 export function useStaffPage() {
   const { user, requestPasswordReset } = useAuth();
-  const { sales } = useStoreData();
+  const { sales, fetchSalesInRange } = useStoreData();
   const [staff, setStaff] = useState<StaffRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -58,6 +60,12 @@ export function useStaffPage() {
   const [setPinForId, setSetPinForId] = useState<string | null>(null);
   const [setPinSubmitting, setSetPinSubmitting] = useState(false);
   const [setPinError, setSetPinError] = useState<string | null>(null);
+  const [weekSales, setWeekSales] = useState<SaleRecord[]>([]);
+  const [showVoidsWeek, setShowVoidsWeek] = useState(false);
+
+  useEffect(() => {
+    fetchSalesInRange(dateRangeForPreset("week", "", "")).then(setWeekSales);
+  }, [fetchSalesInRange]);
 
   const fetchStaff = useCallback(async () => {
     setLoadError(null);
@@ -229,5 +237,10 @@ export function useStaffPage() {
     closeSetPinModal,
     handleSetPin,
     handleToggleActive,
+    voids: voidsThisWeek(weekSales),
+    voidedThisWeek: weekSales.filter((sale) => sale.status === "voided"),
+    showVoidsWeek,
+    openVoidsWeek: () => setShowVoidsWeek(true),
+    closeVoidsWeek: () => setShowVoidsWeek(false),
   };
 }

@@ -4,8 +4,8 @@ import {
   LABEL_AUDIT_REASON_PREFIX,
   LABEL_LOADING,
   EMPTY_STATE_NO_AUDIT_LOG_ENTRIES,
+  type AuditLogRow,
 } from "@/lib";
-import type { AuditLogRow } from "../../hooksAuditLog";
 
 interface AuditLogCardProps {
   entries: AuditLogRow[];
