@@ -8,14 +8,13 @@ const baseSettings: ReceiptDisplaySettings = {
   includeCashierName: true,
   includeUtangBalance: true,
   footerMessage: "Salamat po! Balik kayo ulit.",
-  nextReceiptNumber: "OR-2026-0038",
 };
 
 describe("Receipt", () => {
   it("renders store, receipt number, cashier, items, total, and footer for a cash sale", () => {
     render(
       <Receipt
-        sale={makeSaleRecord()}
+        sale={makeSaleRecord({ receiptNumber: "000042" })}
         store={makeStore({ address: "123 Rizal St." })}
         settings={baseSettings}
         tin="123-456-789-000"
@@ -29,13 +28,29 @@ describe("Receipt", () => {
     expect(screen.getByText("123 Rizal St.")).toBeInTheDocument();
     expect(screen.getByText("TIN: 123-456-789-000")).toBeInTheDocument();
     expect(screen.getByText("Permit: BP-2026-001")).toBeInTheDocument();
-    expect(screen.getByText(/OR-2026-0038/)).toBeInTheDocument();
+    expect(screen.getByText(/000042/)).toBeInTheDocument();
     expect(screen.getByText(/Aling Nena/)).toBeInTheDocument();
     expect(screen.getByText("Sardines")).toBeInTheDocument();
     expect(screen.getByText("2 x ₱25.00")).toBeInTheDocument();
     expect(screen.getAllByText("₱50.00").length).toBeGreaterThan(0);
     expect(screen.getByText("₱100.00")).toBeInTheDocument();
     expect(screen.getByText("Salamat po! Balik kayo ulit.")).toBeInTheDocument();
+    expect(screen.getByText("Sales Invoice")).toBeInTheDocument();
+  });
+
+  it("renders the store's configured invoice type as the heading, not a hardcoded label", () => {
+    render(
+      <Receipt
+        sale={makeSaleRecord()}
+        store={makeStore({ invoiceType: "Service Invoice" })}
+        settings={baseSettings}
+        tendered={100}
+        change={50}
+      />
+    );
+
+    expect(screen.getByText("Service Invoice")).toBeInTheDocument();
+    expect(screen.queryByText("Official Receipt")).not.toBeInTheDocument();
   });
 
   it("hides TIN/permit, cashier name, and footer when their settings are off", () => {
@@ -97,6 +112,19 @@ describe("Receipt", () => {
     expect(screen.getByText(/Saved offline/)).toBeInTheDocument();
   });
 
+  it("shows a pending placeholder instead of a receipt number for a sale queued offline", () => {
+    render(
+      <Receipt
+        sale={makeSaleRecord({ syncStatus: "pending", receiptNumber: null })}
+        store={makeStore()}
+        settings={baseSettings}
+        tendered={100}
+        change={50}
+      />
+    );
+    expect(screen.getByText(/Pending/)).toBeInTheDocument();
+  });
+
   it("shows no 'saved offline' badge for a normal, live sale", () => {
     render(
       <Receipt sale={makeSaleRecord()} store={makeStore()} settings={baseSettings} tendered={100} change={50} />
@@ -117,5 +145,86 @@ describe("Receipt", () => {
 
     expect(screen.getByText("Reference no.")).toBeInTheDocument();
     expect(screen.getByText("GC-998877")).toBeInTheDocument();
+  });
+
+  describe("VAT breakdown (BIR compliance §35)", () => {
+    it("shows VATable Sales and VAT Amount for a VAT-registered sale", () => {
+      render(
+        <Receipt
+          sale={makeSaleRecord({ vatStatus: "vat_registered", vatableSales: 100, vatAmount: 12 })}
+          store={makeStore()}
+          settings={baseSettings}
+          tendered={200}
+          change={88}
+        />
+      );
+
+      expect(screen.getByText("VATable sales")).toBeInTheDocument();
+      expect(screen.getByText("₱100.00")).toBeInTheDocument();
+      expect(screen.getByText("VAT amount")).toBeInTheDocument();
+      expect(screen.getByText("₱12.00")).toBeInTheDocument();
+      expect(screen.queryByText("This invoice is NOT VAT Registered.")).not.toBeInTheDocument();
+    });
+
+    it("shows Zero-Rated Sales for a zero-rated sale", () => {
+      render(
+        <Receipt
+          sale={makeSaleRecord({ vatStatus: "zero_rated", zeroRatedSales: 250, total: 250 })}
+          store={makeStore()}
+          settings={baseSettings}
+          tendered={250}
+          change={0}
+        />
+      );
+
+      expect(screen.getByText("Zero-rated sales")).toBeInTheDocument();
+      expect(screen.queryByText("VATable sales")).not.toBeInTheDocument();
+    });
+
+    it("shows VAT-Exempt Sales for a VAT-exempt sale", () => {
+      render(
+        <Receipt
+          sale={makeSaleRecord({ vatStatus: "vat_exempt", vatExemptSales: 75, total: 75 })}
+          store={makeStore()}
+          settings={baseSettings}
+          tendered={75}
+          change={0}
+        />
+      );
+
+      expect(screen.getByText("VAT-exempt sales")).toBeInTheDocument();
+      expect(screen.queryByText("VATable sales")).not.toBeInTheDocument();
+    });
+
+    it("shows a plain non-VAT disclosure for a non-VAT sale, with no VAT line items", () => {
+      render(
+        <Receipt
+          sale={makeSaleRecord({ vatStatus: "non_vat" })}
+          store={makeStore()}
+          settings={baseSettings}
+          tendered={100}
+          change={50}
+        />
+      );
+
+      expect(screen.getByText("This invoice is NOT VAT Registered.")).toBeInTheDocument();
+      expect(screen.queryByText("VATable sales")).not.toBeInTheDocument();
+      expect(screen.queryByText("Zero-rated sales")).not.toBeInTheDocument();
+      expect(screen.queryByText("VAT-exempt sales")).not.toBeInTheDocument();
+    });
+
+    it("shows the non-VAT disclosure for a sale still queued offline (vatStatus null)", () => {
+      render(
+        <Receipt
+          sale={makeSaleRecord({ vatStatus: null, syncStatus: "pending" })}
+          store={makeStore()}
+          settings={baseSettings}
+          tendered={100}
+          change={50}
+        />
+      );
+
+      expect(screen.getByText("This invoice is NOT VAT Registered.")).toBeInTheDocument();
+    });
   });
 });

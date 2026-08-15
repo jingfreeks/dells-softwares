@@ -13,3 +13,4 @@ export * from "./ownerapprovalmodal";
 export * from "./receiptmodal";
 export * from "./cashierlogin";
 export * from "./heldsalesmodal";
+export * from "./closeshiftmodal";

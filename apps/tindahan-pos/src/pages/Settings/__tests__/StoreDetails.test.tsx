@@ -130,21 +130,22 @@ describe("StoreDetails", () => {
     expect(screen.queryByText("Unsaved changes")).not.toBeInTheDocument();
   });
 
-  describe("contact details (mock)", () => {
-    it("persists contact number and city to localStorage", async () => {
+  describe("contact details", () => {
+    it("saves contact number and city as real store columns", async () => {
       const user = userEvent.setup();
+      const updateStore = vi.fn().mockResolvedValue({ ok: true });
       vi.mocked(useAuth).mockReturnValue(
-        makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }) })
+        makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }), updateStore })
       );
       renderPage();
 
       await user.type(screen.getByLabelText("Contact number"), "0917 555 0188");
       await user.type(screen.getByLabelText("City"), "Quezon City");
+      await user.click(screen.getByRole("button", { name: "Save changes" }));
 
-      const raw = window.localStorage.getItem("tindahan-pos:store-details:store-9");
-      const saved = JSON.parse(raw as string);
-      expect(saved.contactNumber).toBe("0917 555 0188");
-      expect(saved.city).toBe("Quezon City");
+      expect(updateStore).toHaveBeenCalledWith(
+        expect.objectContaining({ contactNumber: "0917 555 0188", city: "Quezon City" })
+      );
     });
   });
 
@@ -168,11 +169,12 @@ describe("StoreDetails", () => {
     });
   });
 
-  describe("BIR registration (mock)", () => {
-    it("toggles BIR registration and persists TIN / business permit no.", async () => {
+  describe("BIR registration", () => {
+    it("toggles BIR registration and saves TIN / business permit no. as real store columns", async () => {
       const user = userEvent.setup();
+      const updateStore = vi.fn().mockResolvedValue({ ok: true });
       vi.mocked(useAuth).mockReturnValue(
-        makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }) })
+        makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }), updateStore })
       );
       renderPage();
 
@@ -183,12 +185,65 @@ describe("StoreDetails", () => {
 
       await user.type(screen.getByLabelText("TIN"), "123-456-789-000");
       await user.type(screen.getByLabelText("Business permit no."), "QC-2026-08841");
+      await user.click(screen.getByRole("button", { name: "Save changes" }));
 
-      const raw = window.localStorage.getItem("tindahan-pos:store-details:store-9");
-      const saved = JSON.parse(raw as string);
-      expect(saved.birRegistered).toBe(true);
-      expect(saved.tin).toBe("123-456-789-000");
-      expect(saved.businessPermitNo).toBe("QC-2026-08841");
+      expect(updateStore).toHaveBeenCalledWith(
+        expect.objectContaining({
+          birRegistered: true,
+          tin: "123-456-789-000",
+          businessPermitNo: "QC-2026-08841",
+        })
+      );
+    });
+
+    it("saves the selected VAT status and invoice type", async () => {
+      const user = userEvent.setup();
+      const updateStore = vi.fn().mockResolvedValue({ ok: true });
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }), updateStore })
+      );
+      renderPage();
+
+      await user.selectOptions(screen.getByLabelText("VAT status"), "VAT Registered");
+      await user.selectOptions(screen.getByLabelText("Invoice type"), "Service Invoice");
+      await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+      expect(updateStore).toHaveBeenCalledWith(
+        expect.objectContaining({ vatStatus: "vat_registered", invoiceType: "Service Invoice" })
+      );
+    });
+
+    it("only shows the VAT rate field when VAT status is VAT Registered", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }) })
+      );
+      renderPage();
+
+      expect(screen.queryByLabelText("VAT rate (%)")).not.toBeInTheDocument();
+
+      await user.selectOptions(screen.getByLabelText("VAT status"), "VAT Registered");
+      expect(screen.getByLabelText("VAT rate (%)")).toBeInTheDocument();
+
+      await user.selectOptions(screen.getByLabelText("VAT status"), "Non-VAT");
+      expect(screen.queryByLabelText("VAT rate (%)")).not.toBeInTheDocument();
+    });
+
+    it("saves a changed VAT rate", async () => {
+      const user = userEvent.setup();
+      const updateStore = vi.fn().mockResolvedValue({ ok: true });
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }), updateStore })
+      );
+      renderPage();
+
+      await user.selectOptions(screen.getByLabelText("VAT status"), "VAT Registered");
+      const rateInput = screen.getByLabelText("VAT rate (%)");
+      await user.clear(rateInput);
+      await user.type(rateInput, "10");
+      await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+      expect(updateStore).toHaveBeenCalledWith(expect.objectContaining({ vatRate: 0.1 }));
     });
   });
 

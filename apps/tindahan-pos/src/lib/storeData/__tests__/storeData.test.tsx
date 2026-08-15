@@ -504,6 +504,32 @@ describe("StoreDataProvider", () => {
     await expect(captured!.updateProduct("p1", { price: 30 })).rejects.toThrow("boom");
   });
 
+  it("reports a friendly error when a cashier isn't permitted to edit prices", async () => {
+    const chain = makeChain("products");
+    chain.update = vi.fn(() => ({
+      eq: vi.fn(() => Promise.resolve({ error: { message: "PRICE_EDIT_NOT_ALLOWED" } })),
+    }));
+    mockedSupabase.from.mockImplementation((table: string) => (table === "products" ? chain : makeChain(table)));
+    renderProvider(<Capture />);
+    await waitFor(() => expect(captured?.loading).toBe(false));
+    await expect(captured!.updateProduct("p1", { price: 30 })).rejects.toThrow(
+      "You don't have permission to edit this product."
+    );
+  });
+
+  it("reports a friendly error when a permitted cashier tries to change a non-price field", async () => {
+    const chain = makeChain("products");
+    chain.update = vi.fn(() => ({
+      eq: vi.fn(() => Promise.resolve({ error: { message: "ONLY_PRICE_FIELDS_EDITABLE" } })),
+    }));
+    mockedSupabase.from.mockImplementation((table: string) => (table === "products" ? chain : makeChain(table)));
+    renderProvider(<Capture />);
+    await waitFor(() => expect(captured?.loading).toBe(false));
+    await expect(captured!.updateProduct("p1", { price: 30, name: "New name" })).rejects.toThrow(
+      "You can only change the price for this product."
+    );
+  });
+
   it("removes a product", async () => {
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));

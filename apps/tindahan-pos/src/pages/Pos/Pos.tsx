@@ -10,6 +10,7 @@ import {
   CashierLoginScreen,
   ReceiptModal,
   HeldSalesModal,
+  CloseShiftModal,
 } from "./component";
 import { usePosPage } from "./hooks";
 import "../authTheme.css";
@@ -105,6 +106,10 @@ export function Pos() {
     posServicesEnabled,
     activeCashier,
     switchCashier,
+    closeShiftOpen,
+    closeCloseShift,
+    confirmCloseShift,
+    skipCloseShift,
     productsLoading,
     productsError,
     onRetryProducts,
@@ -123,8 +128,8 @@ export function Pos() {
   }
 
   return (
-    <div className="tpl-root grid grid-cols-1 gap-6 p-6 lg:h-full lg:grid-cols-[1fr_360px]">
-      <div className="flex flex-col gap-6">
+    <div className="tpl-root flex flex-col gap-6 p-6 md:h-full md:min-h-0 md:flex-row">
+      <div className="flex flex-col gap-6 md:h-full md:min-h-0 md:flex-1">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="tpl-h1">{PAGE_HEADING_POS}</h1>
@@ -250,6 +255,10 @@ export function Pos() {
         onDiscard={discardHeldSale}
         onClose={closeHeldSales}
       />
+
+      {closeShiftOpen && (
+        <CloseShiftModal onConfirm={confirmCloseShift} onSkip={skipCloseShift} onCancel={closeCloseShift} />
+      )}
 
       <ReceiptModal
         open={!!lastSaleRecord}

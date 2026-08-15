@@ -48,7 +48,6 @@ import {
   loadReceiptSettingsMock,
   DEFAULT_RECEIPT_SETTINGS_MOCK,
 } from "@/pages/Settings/receiptSettingsMock";
-import { loadStoreDetailsMock } from "@/pages/Settings/storeDetailsMock";
 
 export const SERVICE_TYPES = [
   { key: "eload", label: SERVICE_LABEL_ELOAD, badge: "L", badgeClass: "bg-violet-100 text-violet-700" },
@@ -104,6 +103,7 @@ export function usePosPage() {
   const [serviceLines, setServiceLines] = useState<ServiceLine[]>([]);
   const [heldSales, setHeldSales] = useState<HeldSale[]>([]);
   const [heldSalesOpen, setHeldSalesOpen] = useState(false);
+  const [closeShiftOpen, setCloseShiftOpen] = useState(false);
   const [holdingSale, setHoldingSale] = useState(false);
   const [holdError, setHoldError] = useState<string | null>(null);
   const [resumeError, setResumeError] = useState<string | null>(null);
@@ -216,7 +216,6 @@ export function usePosPage() {
     () => (store ? loadReceiptSettingsMock(store.id) : DEFAULT_RECEIPT_SETTINGS_MOCK),
     [store]
   );
-  const storeDetails = useMemo(() => (store ? loadStoreDetailsMock(store.id) : null), [store]);
 
   const tenderedNumber = Number(tendered);
   const change =
@@ -419,6 +418,24 @@ export function usePosPage() {
 
   function closeReceipt() {
     setLastSaleRecord(null);
+  }
+
+  function openCloseShift() {
+    setCloseShiftOpen(true);
+  }
+
+  function closeCloseShift() {
+    setCloseShiftOpen(false);
+  }
+
+  async function confirmCloseShift(closingFloat: number) {
+    await endCashierSession(closingFloat);
+    setCloseShiftOpen(false);
+  }
+
+  async function skipCloseShift() {
+    await endCashierSession();
+    setCloseShiftOpen(false);
   }
 
   async function handleCompleteSale() {
@@ -658,7 +675,11 @@ export function usePosPage() {
     packPricingEnabled,
     posServicesEnabled,
     activeCashier,
-    switchCashier: endCashierSession,
+    switchCashier: openCloseShift,
+    closeShiftOpen,
+    closeCloseShift,
+    confirmCloseShift,
+    skipCloseShift,
     productsLoading: storeDataLoading,
     productsError: storeDataError,
     onRetryProducts: refreshStoreData,
@@ -667,8 +688,8 @@ export function usePosPage() {
     lastSaleTendered,
     lastSaleChange,
     receiptSettings,
-    receiptTin: storeDetails?.tin,
-    receiptBusinessPermitNo: storeDetails?.businessPermitNo,
+    receiptTin: store?.tin ?? undefined,
+    receiptBusinessPermitNo: store?.businessPermitNo ?? undefined,
     closeReceipt,
   };
 }

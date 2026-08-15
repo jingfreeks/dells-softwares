@@ -64,10 +64,18 @@ export function CashierSessionProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.id, authLoading]);
 
-  async function startCashierSession(staffId: string, pin: string): Promise<StartCashierSessionResult> {
+  async function startCashierSession(
+    staffId: string,
+    pin: string,
+    openingFloat: number
+  ): Promise<StartCashierSessionResult> {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc("start_cashier_session", { p_staff_id: staffId, p_pin: pin });
+      const { data, error } = await supabase.rpc("start_cashier_session", {
+        p_staff_id: staffId,
+        p_pin: pin,
+        p_opening_float: openingFloat,
+      });
       if (error) return { ok: false, error: error.message };
       const row = data?.[0];
       if (!row) return { ok: false, error: "Something went wrong. Please try again." };
@@ -93,9 +101,9 @@ export function CashierSessionProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function endCashierSession(): Promise<void> {
+  async function endCashierSession(closingFloat?: number): Promise<void> {
     if (session) {
-      await supabase.rpc("end_cashier_session", { p_token: session.token });
+      await supabase.rpc("end_cashier_session", { p_token: session.token, p_closing_float: closingFloat ?? null });
     }
     setSession(null);
     writeStoredSession(null);

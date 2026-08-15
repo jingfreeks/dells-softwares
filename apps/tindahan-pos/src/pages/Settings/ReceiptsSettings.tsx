@@ -5,7 +5,6 @@ import {
   BUTTON_SAVE_CHANGES,
   BUTTON_DISCARD,
   TEXT_RECEIPT_SETTINGS_UPDATED,
-  useAuth,
 } from "@/lib";
 import {
   SettingsLayout,
@@ -16,14 +15,10 @@ import {
   ReceiptPreviewPanel,
 } from "./component";
 import { useReceiptsSettingsPage } from "./useReceiptsSettingsPage";
-import { loadStoreDetailsMock } from "./storeDetailsMock";
 
 export function ReceiptsSettings() {
-  const { user } = useAuth();
-  const { settings, toggle, setFooterMessage, footerCharactersLeft, setNextReceiptNumber, isDirty, justSaved, onSubmit, onDiscard, store, tin } =
+  const { settings, toggle, setFooterMessage, footerCharactersLeft, nextInvoiceNumberPreview, isDirty, justSaved, onSubmit, onDiscard, store, tin } =
     useReceiptsSettingsPage();
-
-  const storeDetails = user ? loadStoreDetailsMock(user.storeId) : null;
 
   return (
     <SettingsLayout>
@@ -65,23 +60,21 @@ export function ReceiptsSettings() {
               onFooterMessageChange={setFooterMessage}
               charactersLeft={footerCharactersLeft}
             />
-            <ReceiptNumberingCard
-              nextReceiptNumber={settings.nextReceiptNumber}
-              onNextReceiptNumberChange={setNextReceiptNumber}
-            />
+            <ReceiptNumberingCard nextReceiptNumber={nextInvoiceNumberPreview} />
           </div>
 
           <ReceiptPreviewPanel
             storeName={store?.name ?? ""}
             storeAddress={store?.address ?? null}
-            city={storeDetails?.city ?? ""}
-            contactNumber={storeDetails?.contactNumber ?? ""}
+            city={store?.city ?? ""}
+            contactNumber={store?.contactNumber ?? ""}
             includeLogo={settings.includeLogo}
             includeTinAndPermit={settings.includeTinAndPermit}
             tin={tin}
             includeCashierName={settings.includeCashierName}
             footerMessage={settings.footerMessage}
-            nextReceiptNumber={settings.nextReceiptNumber}
+            nextReceiptNumber={nextInvoiceNumberPreview}
+            invoiceType={store?.invoiceType ?? "Sales Invoice"}
           />
         </div>
 

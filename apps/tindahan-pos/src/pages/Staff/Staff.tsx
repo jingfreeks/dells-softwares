@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Navigate } from "react-router-dom";
 import {
   NAV_LABEL_STAFF,
@@ -15,6 +16,10 @@ import {
   ActivityLogCard,
   AddStaffModal,
   ShiftHistoryModal,
+  VoidsWeekModal,
+  OnShiftNowModal,
+  DrawerVarianceModal,
+  EditRoleModal,
 } from "./component";
 import { useStaffPage } from "./hooks";
 import { staffAccountCounts } from "./lib";
@@ -47,13 +52,38 @@ export function Staff() {
     closeSetPinModal,
     handleSetPin,
     handleToggleActive,
+    voids,
+    voidedThisWeek,
+    showVoidsWeek,
+    openVoidsWeek,
+    closeVoidsWeek,
+    openShifts,
+    showOpenShifts,
+    openOpenShifts,
+    closeOpenShifts,
+    variance,
+    closedShiftsThisWeek,
+    showVariance,
+    openVariance,
+    closeVariance,
+    store,
+    updateStore,
+    showEditRole,
+    openEditRole,
+    closeEditRole,
   } = useStaffPage();
+
+  const staffTableRef = useRef<HTMLDivElement>(null);
 
   if (user && user.role !== "admin") {
     return <Navigate to="/pos" replace />;
   }
 
   const setPinTarget = staff.find((member) => member.id === setPinForId) ?? null;
+
+  function scrollToStaffTable() {
+    staffTableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   return (
     <div className="tpl-root p-6">
@@ -90,23 +120,34 @@ export function Staff() {
         </p>
       )}
 
-      <StaffMetrics counts={staffAccountCounts(staff)} />
-
-      <StaffTable
-        staff={staff}
-        loading={loading}
-        sales={sales}
-        currentUserId={user?.id}
-        removingId={removingId}
-        onEditName={handleEditName}
-        onResetPassword={handleResetPassword}
-        onSetPin={openSetPinModal}
-        onToggleActive={handleToggleActive}
-        onRemove={handleRemove}
+      <StaffMetrics
+        counts={staffAccountCounts(staff)}
+        voids={voids}
+        openShifts={openShifts}
+        variance={variance}
+        onStaffAccountsClick={scrollToStaffTable}
+        onVoidsClick={openVoidsWeek}
+        onOpenShiftsClick={openOpenShifts}
+        onVarianceClick={openVariance}
       />
 
+      <div ref={staffTableRef}>
+        <StaffTable
+          staff={staff}
+          loading={loading}
+          sales={sales}
+          currentUserId={user?.id}
+          removingId={removingId}
+          onEditName={handleEditName}
+          onResetPassword={handleResetPassword}
+          onSetPin={openSetPinModal}
+          onToggleActive={handleToggleActive}
+          onRemove={handleRemove}
+        />
+      </div>
+
       <div className="tpl-g2">
-        <CashierPermissionCard />
+        {store && <CashierPermissionCard store={store} onEditRole={openEditRole} />}
         <ActivityLogCard />
       </div>
 
@@ -122,6 +163,14 @@ export function Staff() {
       )}
 
       {showShiftHistory && <ShiftHistoryModal onClose={() => setShowShiftHistory(false)} />}
+
+      {showVoidsWeek && <VoidsWeekModal voidedSales={voidedThisWeek} onClose={closeVoidsWeek} />}
+
+      {showOpenShifts && <OnShiftNowModal openShifts={openShifts} onClose={closeOpenShifts} />}
+
+      {showVariance && <DrawerVarianceModal closedShifts={closedShiftsThisWeek} onClose={closeVariance} />}
+
+      {showEditRole && store && <EditRoleModal store={store} onSave={updateStore} onClose={closeEditRole} />}
 
       <SetPinModal
         open={setPinForId !== null}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { togglablePersistenceStorage } from "@/lib/supabaseClient/togglablePersistenceStorage";
-import type { DeviceSession, StaffAccount, Store, StoreFeeConfig } from "@/lib/types";
+import type { DeviceSession, StaffAccount, Store, StoreFeeConfig, VatStatus } from "@/lib/types";
 import { AuthContext, type AuthResult, type RegisterResult } from "./authContext";
 import { ERROR_COULD_NOT_START_SESSION } from "@/lib/textLabels";
 
@@ -46,7 +46,9 @@ async function loadDeviceProfile(userId: string): Promise<DeviceSession | null> 
 async function loadStore(storeId: string): Promise<Store | null> {
   const { data, error } = await supabase
     .from("stores")
-    .select("id, name, address, photo_url, fee_config")
+    .select(
+      "id, name, address, photo_url, fee_config, contact_number, city, tin, business_permit_no, bir_registered, vat_status, vat_rate, invoice_type, cashier_can_edit_prices"
+    )
     .eq("id", storeId)
     .single();
 
@@ -58,6 +60,15 @@ async function loadStore(storeId: string): Promise<Store | null> {
     address: data.address,
     photoUrl: data.photo_url,
     feeConfig: data.fee_config,
+    contactNumber: data.contact_number,
+    city: data.city,
+    tin: data.tin,
+    businessPermitNo: data.business_permit_no,
+    birRegistered: data.bir_registered,
+    vatStatus: data.vat_status,
+    vatRate: data.vat_rate,
+    invoiceType: data.invoice_type,
+    cashierCanEditPrices: data.cashier_can_edit_prices,
   };
 }
 
@@ -296,6 +307,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     address?: string | null;
     photoUrl?: string | null;
     feeConfig?: StoreFeeConfig | null;
+    contactNumber?: string | null;
+    city?: string | null;
+    tin?: string | null;
+    businessPermitNo?: string | null;
+    birRegistered?: boolean;
+    vatStatus?: VatStatus;
+    vatRate?: number;
+    invoiceType?: string;
+    cashierCanEditPrices?: boolean;
   }): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
     const { error } = await supabase
@@ -305,6 +325,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...(patch.address !== undefined && { address: patch.address }),
         ...(patch.photoUrl !== undefined && { photo_url: patch.photoUrl }),
         ...(patch.feeConfig !== undefined && { fee_config: patch.feeConfig }),
+        ...(patch.contactNumber !== undefined && { contact_number: patch.contactNumber }),
+        ...(patch.city !== undefined && { city: patch.city }),
+        ...(patch.tin !== undefined && { tin: patch.tin }),
+        ...(patch.businessPermitNo !== undefined && { business_permit_no: patch.businessPermitNo }),
+        ...(patch.birRegistered !== undefined && { bir_registered: patch.birRegistered }),
+        ...(patch.vatStatus !== undefined && { vat_status: patch.vatStatus }),
+        ...(patch.vatRate !== undefined && { vat_rate: patch.vatRate }),
+        ...(patch.invoiceType !== undefined && { invoice_type: patch.invoiceType }),
+        ...(patch.cashierCanEditPrices !== undefined && { cashier_can_edit_prices: patch.cashierCanEditPrices }),
       })
       .eq("id", user.storeId);
     if (error) return { ok: false, error: error.message };
