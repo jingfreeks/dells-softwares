@@ -29,6 +29,7 @@ export interface Database {
           vat_status: VatStatus;
           vat_rate: number;
           invoice_type: string;
+          cashier_can_edit_prices: boolean;
         };
         Insert: {
           id?: string;
@@ -45,6 +46,7 @@ export interface Database {
           vat_status?: VatStatus;
           vat_rate?: number;
           invoice_type?: string;
+          cashier_can_edit_prices?: boolean;
         };
         Update: {
           id?: string;
@@ -61,6 +63,7 @@ export interface Database {
           vat_status?: VatStatus;
           vat_rate?: number;
           invoice_type?: string;
+          cashier_can_edit_prices?: boolean;
         };
         Relationships: [];
       };
