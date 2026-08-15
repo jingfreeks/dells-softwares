@@ -1,4 +1,5 @@
-import { useAuth, STORE_NAME, APP_NAME, LABEL_LOG_OUT } from "@/lib";
+import { Link } from "react-router-dom";
+import { useAuth, STORE_NAME, APP_NAME, LABEL_LOG_OUT, LABEL_SETTINGS_HEADING } from "@/lib";
 import { LogoutIcon } from "@/components/icons";
 import "@/pages/authTheme.css";
 
@@ -11,9 +12,14 @@ export function MobileHeader() {
         <p className="tpl-bn">{STORE_NAME}</p>
         <p className="tpl-bs">{APP_NAME}</p>
       </div>
-      <button type="button" onClick={logout} aria-label={LABEL_LOG_OUT}>
-        <LogoutIcon />
-      </button>
+      <div className="flex items-center gap-1">
+        <Link to="/settings/profile" aria-label={LABEL_SETTINGS_HEADING}>
+          <i className="ti ti-settings" aria-hidden />
+        </Link>
+        <button type="button" onClick={logout} aria-label={LABEL_LOG_OUT}>
+          <LogoutIcon />
+        </button>
+      </div>
     </header>
   );
 }
