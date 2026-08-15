@@ -1,4 +1,4 @@
-import type { SaleRecord } from "@/lib";
+import type { SaleRecord, Store } from "@/lib";
 import {
   navItemsForRole,
   TEXT_LAST_ACTIVE_PREFIX,
@@ -126,16 +126,17 @@ export interface CashierPermission {
 }
 
 /**
- * What a cashier account can actually do today, derived from the same
- * role-based nav table that gates routes (@/lib/nav) rather than a
+ * What a cashier account can actually do today. Most rows are derived from
+ * the same role-based nav table that gates routes (@/lib/nav) rather than a
  * hardcoded copy — so this card can't drift out of sync with the real
- * access rules. Cash-out and void aren't PIN-gated in the app yet (no
- * PIN system exists); those two rows describe the intended rule, not
- * an enforced one, and are marked accordingly.
- * TODO: once PIN-gated overrides ship, replace the "needs-pin" rows
- * with a real enforcement check instead of this static annotation.
+ * access rules. "Change prices" is derived from the real, admin-editable
+ * `store.cashierCanEditPrices` flag instead (enforced server-side by the
+ * guard_cashier_product_update trigger — see 0043_cashier_price_edit_permission.sql),
+ * not from route access. Cash-out and void aren't PIN-gated in the app yet
+ * (no such mechanism was built for them); those two rows describe the
+ * intended rule, not an enforced one, and are marked accordingly.
  */
-export function cashierPermissions(): CashierPermission[] {
+export function cashierPermissions(store: Store): CashierPermission[] {
   const cashierRoutes = new Set(navItemsForRole("cashier").map((item) => item.to));
   const adminOnlyRoutes = navItemsForRole("admin").filter((item) => !cashierRoutes.has(item.to));
 
@@ -147,7 +148,7 @@ export function cashierPermissions(): CashierPermission[] {
     { label: LABEL_PERMISSION_ELOAD_CASHIN, state: cashierRoutes.has("/pos") ? "allowed" : "blocked" },
     { label: LABEL_PERMISSION_CASH_OUT, state: "needs-pin" },
     { label: LABEL_PERMISSION_VOID_SALE, state: "needs-pin" },
-    { label: LABEL_PERMISSION_CHANGE_PRICES, state: cashierRoutes.has("/inventory") ? "allowed" : "blocked" },
+    { label: LABEL_PERMISSION_CHANGE_PRICES, state: store.cashierCanEditPrices ? "allowed" : "blocked" },
     { label: LABEL_PERMISSION_VIEW_REPORTS, state: canViewReports ? "allowed" : "blocked" },
   ];
 }

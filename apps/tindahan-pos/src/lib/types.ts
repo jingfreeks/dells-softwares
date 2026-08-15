@@ -57,6 +57,8 @@ export interface Store {
   vatRate: number;
   /** The document type printed as the receipt heading — e.g. "Sales Invoice", "Service Invoice". */
   invoiceType: string;
+  /** Admin-editable: whether a cashier may edit a product's price in Inventory. Enforced server-side (guard_cashier_product_update trigger), not just a UI gate. */
+  cashierCanEditPrices: boolean;
 }
 
 export interface Category {

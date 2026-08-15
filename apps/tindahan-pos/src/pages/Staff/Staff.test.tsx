@@ -397,4 +397,21 @@ describe("Staff", () => {
     await user.click(screen.getByRole("button", { name: /staff accounts/i }));
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
   });
+
+  it("opens the edit role modal and saves the price-edit permission", async () => {
+    const user = userEvent.setup();
+    const updateStore = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ role: "admin" }), updateStore })
+    );
+    renderStaff();
+    await screen.findByText("Aling Nena");
+
+    await user.click(screen.getByRole("button", { name: "Edit role" }));
+    const dialog = await screen.findByRole("dialog", { name: "Edit role" });
+    await user.click(within(dialog).getByRole("switch", { name: "Cashiers can edit prices" }));
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    expect(updateStore).toHaveBeenCalledWith({ cashierCanEditPrices: true });
+  });
 });

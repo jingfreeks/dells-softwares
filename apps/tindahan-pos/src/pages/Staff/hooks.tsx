@@ -55,7 +55,7 @@ function makeEmptyForm(): StaffFormValues {
 }
 
 export function useStaffPage() {
-  const { user, requestPasswordReset } = useAuth();
+  const { user, store, requestPasswordReset, updateStore } = useAuth();
   const { sales, fetchSalesInRange } = useStoreData();
   const [staff, setStaff] = useState<StaffRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +74,7 @@ export function useStaffPage() {
   const [closedShiftsThisWeek, setClosedShiftsThisWeek] = useState<ClosedShift[]>([]);
   const [showOpenShifts, setShowOpenShifts] = useState(false);
   const [showVariance, setShowVariance] = useState(false);
+  const [showEditRole, setShowEditRole] = useState(false);
   const { openShifts } = useOpenShifts();
 
   useEffect(() => {
@@ -292,5 +293,10 @@ export function useStaffPage() {
     showVariance,
     openVariance: () => setShowVariance(true),
     closeVariance: () => setShowVariance(false),
+    store,
+    updateStore,
+    showEditRole,
+    openEditRole: () => setShowEditRole(true),
+    closeEditRole: () => setShowEditRole(false),
   };
 }

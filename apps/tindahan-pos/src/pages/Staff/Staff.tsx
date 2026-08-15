@@ -19,6 +19,7 @@ import {
   VoidsWeekModal,
   OnShiftNowModal,
   DrawerVarianceModal,
+  EditRoleModal,
 } from "./component";
 import { useStaffPage } from "./hooks";
 import { staffAccountCounts } from "./lib";
@@ -65,6 +66,11 @@ export function Staff() {
     showVariance,
     openVariance,
     closeVariance,
+    store,
+    updateStore,
+    showEditRole,
+    openEditRole,
+    closeEditRole,
   } = useStaffPage();
 
   const staffTableRef = useRef<HTMLDivElement>(null);
@@ -141,7 +147,7 @@ export function Staff() {
       </div>
 
       <div className="tpl-g2">
-        <CashierPermissionCard />
+        {store && <CashierPermissionCard store={store} onEditRole={openEditRole} />}
         <ActivityLogCard />
       </div>
 
@@ -163,6 +169,8 @@ export function Staff() {
       {showOpenShifts && <OnShiftNowModal openShifts={openShifts} onClose={closeOpenShifts} />}
 
       {showVariance && <DrawerVarianceModal closedShifts={closedShiftsThisWeek} onClose={closeVariance} />}
+
+      {showEditRole && store && <EditRoleModal store={store} onSave={updateStore} onClose={closeEditRole} />}
 
       <SetPinModal
         open={setPinForId !== null}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { makeSaleRecord } from "../../test/testUtils";
-import { voidsThisWeek, drawerVarianceThisWeek, type ClosedShift } from "./lib";
+import { makeSaleRecord, makeStore } from "../../test/testUtils";
+import { voidsThisWeek, drawerVarianceThisWeek, cashierPermissions, type ClosedShift } from "./lib";
 
 function makeClosedShift(overrides: Partial<ClosedShift> = {}): ClosedShift {
   return {
@@ -40,5 +40,17 @@ describe("drawerVarianceThisWeek", () => {
 
   it("returns zero for no closed shifts", () => {
     expect(drawerVarianceThisWeek([])).toEqual({ shiftCount: 0, netVariance: 0 });
+  });
+});
+
+describe("cashierPermissions", () => {
+  it("marks Change prices as allowed when the store permits it, independent of route access", () => {
+    const permissions = cashierPermissions(makeStore({ cashierCanEditPrices: true }));
+    expect(permissions.find((p) => p.label === "Change prices")).toMatchObject({ state: "allowed" });
+  });
+
+  it("marks Change prices as blocked when the store does not permit it", () => {
+    const permissions = cashierPermissions(makeStore({ cashierCanEditPrices: false }));
+    expect(permissions.find((p) => p.label === "Change prices")).toMatchObject({ state: "blocked" });
   });
 });

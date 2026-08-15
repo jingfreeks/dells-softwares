@@ -116,6 +116,12 @@ function friendlyProductError(err: { code?: string; message: string }): Error {
   if (err.code === "23505") {
     return new Error("That barcode is already used by another product.");
   }
+  if (err.message.includes("PRICE_EDIT_NOT_ALLOWED")) {
+    return new Error("You don't have permission to edit this product.");
+  }
+  if (err.message.includes("ONLY_PRICE_FIELDS_EDITABLE")) {
+    return new Error("You can only change the price for this product.");
+  }
   return new Error(err.message);
 }
 
