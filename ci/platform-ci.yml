@@ -1,0 +1,125 @@
+name: Platform CI
+
+# Covers what tindahan-pos-ci.yml does not: the database itself, the two
+# static guards from the integration's definition of done, and the two apps
+# that had no CI at all (inventory-app, and the super-admin console).
+#
+# The database job needs no secrets. It starts a throwaway Supabase stack in
+# the runner, applies every migration from scratch and runs the pgTAP suites
+# against it, so a broken policy or a dropped authorization guard fails here
+# rather than in staging.
+
+on:
+  push:
+    branches: [dev, main]
+    paths:
+      - "apps/tindahan-pos/supabase/**"
+      - "apps/inventory-app/**"
+      - "apps/super-admin/**"
+      - "scripts/**"
+      - ".github/workflows/platform-ci.yml"
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - "apps/tindahan-pos/supabase/**"
+      - "apps/inventory-app/**"
+      - "apps/super-admin/**"
+      - "scripts/**"
+      - ".github/workflows/platform-ci.yml"
+
+jobs:
+  # Static guards. Cheap, no services, so they fail fast and give the
+  # clearest possible message.
+  guards:
+    name: Security guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Vite inlines VITE_-prefixed variables into the bundle, so a
+      # service-role key reaching client code is a shipped credential, not a
+      # style problem.
+      - name: No client-reachable secrets
+        run: node scripts/check-no-client-secrets.mjs
+
+      - name: RLS coverage
+        run: node scripts/check-rls-coverage.mjs
+
+  database:
+    name: Migrations + pgTAP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Applies all migrations from empty. A migration that cannot replay
+      # cleanly fails here, which is the only place it is cheap to find out.
+      - name: Start Supabase and apply migrations
+        working-directory: apps/tindahan-pos
+        run: supabase start
+
+      - name: Run pgTAP suites
+        working-directory: apps/tindahan-pos
+        run: bash supabase/tests/run.sh
+
+      - name: Stop Supabase
+        if: always()
+        working-directory: apps/tindahan-pos
+        run: supabase stop --no-backup
+
+  apps:
+    name: Build and test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [inventory-app, super-admin]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        working-directory: apps/${{ matrix.app }}
+        run: npm run lint
+
+      # These are build-time placeholders only. Both apps read the anon key
+      # at runtime from the deployment environment; the build just needs the
+      # variables to exist so the client module does not throw at import.
+      - name: Type-check and build
+        working-directory: apps/${{ matrix.app }}
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: http://localhost:54321
+          VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+
+      - name: Unit tests
+        working-directory: apps/${{ matrix.app }}
+        run: npm run test --if-present
+        env:
+          VITE_SUPABASE_URL: http://localhost:54321
+          VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+
+# ---------------------------------------------------------------------------
+# NOTE ON THIS FILE'S LOCATION
+#
+# This belongs at .github/workflows/platform-ci.yml. It is parked here only
+# because the token used to open this PR lacks GitHub's `workflow` scope, so
+# it cannot create or update files under .github/workflows/. Move it with:
+#
+#     git mv ci/platform-ci.yml .github/workflows/platform-ci.yml
+#
+# Nothing else needs to change -- the paths inside are already written
+# relative to the repository root.
+# ---------------------------------------------------------------------------
