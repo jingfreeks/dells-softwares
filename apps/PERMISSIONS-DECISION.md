@@ -1,10 +1,22 @@
 # Two permission systems: which one wins
 
+> **DECIDED — option A, implemented in `20260815106000`.**
+> `core.is_org_wide_staff()` no longer exists; its call sites ask
+> `core.is_org_member(org) and has_permission(...)`, and `has_permission()`
+> no longer branches on `staff.role = 'admin'`. Covered by
+> `210_permission_unification`.
+>
+> This document is kept as the reasoning behind that choice, and as the
+> measurements it was based on. **It is written in the present tense of the
+> code as it stood before the change** — read it as a record, not as a
+> description of the schema today. The one correction worth carrying forward
+> is in "What the decision turned up", at the end.
+
 This is a decision document, not a design. It exists because the platform
 integration left two authorization systems in the database and never chose
 between them, and picking one is now cheaper than continuing to maintain the
-ambiguity. Everything below is measured from the code as it stands on `dev`,
-not from intent.
+ambiguity. Everything below is measured from the code as it stood on `dev`
+when it was written.
 
 **The recommendation is in the last section.** The rest is the evidence.
 
@@ -191,17 +203,33 @@ flips**, and that is the actual question to answer.
 
 ---
 
-## The decision needed
+## The decision
 
-One of:
+**Option A was chosen and is implemented** in `20260815106000`.
 
-- **A — adopt the recommendation.** One migration retires the interim, one
-  closes the `admin` shortcut. I can prepare both.
-- **B — commit to `core`.** Then Phase 3 proceeds as originally written, and
-  it should be scheduled deliberately, with the parallel-run window planned
-  rather than discovered.
-- **C — leave it.** Defensible in the short term, since nothing is broken.
-  The cost is that `is_org_wide_staff()` keeps being copied into new `core`
-  policies as they are written, and the 11 becomes 20.
+The alternatives, recorded so the reasoning is not lost: **B** would have
+committed to building the RBAC tables in `core` and migrating 78 checkpoints
+to them, with a parallel-run window to plan; **C** would have left the
+ambiguity in place, at the cost of `is_org_wide_staff()` being copied into
+each new `core` policy until 11 became 20.
 
-Nothing here is urgent. It is only getting more expensive.
+## What the decision turned up
+
+Implementing it found something this analysis had missed, and it is the part
+worth remembering:
+
+**The `staff.role = 'admin'` shortcut was load-bearing, not cosmetic.** This
+document treated removing it as a tidy-up — "one migration closes the `admin`
+shortcut". In fact `handle_new_user()` creates an admin staff row for every
+signup and *nothing had ever assigned it the OWNER role*; `0044`'s backfill
+was one-time. A brand-new admin held zero `staff_roles` rows and passed
+authorization solely through that branch.
+
+Removing it first would have stripped every permission from every admin
+created since `0044`, on a live POS. The migration therefore grants OWNER —
+backfill plus a trigger — *before* removing the shortcut, and the trigger
+syncs in both directions so that a demotion actually demotes.
+
+The lesson is narrow and worth stating plainly: an analysis that counts call
+sites does not tell you what a check is *load-bearing for*. That only showed
+up by running it.
