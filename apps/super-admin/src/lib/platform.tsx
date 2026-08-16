@@ -30,6 +30,15 @@ export interface OrganizationModule {
   validUntil: string | null;
 }
 
+/** Usage against ceiling for one limit key. `cap` null means unlimited. */
+export interface OrganizationLimit {
+  moduleCode: string;
+  limitKey: string;
+  cap: number | null;
+  currentUsage: number | null;
+  atOrOver: boolean;
+}
+
 export interface Plan {
   planCode: string;
   name: string;
@@ -211,6 +220,42 @@ export async function setPlan(orgId: string, planCode: string, reason: string): 
   const { error } = await supabase.rpc("platform_set_plan", {
     p_org: orgId,
     p_plan_code: planCode,
+    p_reason: reason || null,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function listOrganizationLimits(orgId: string): Promise<OrganizationLimit[]> {
+  const { data, error } = await supabase.rpc("platform_organization_limits", { p_org: orgId });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, never>) => ({
+    moduleCode: r.module_code,
+    limitKey: r.limit_key,
+    cap: r.cap,
+    currentUsage: r.current_usage,
+    atOrOver: r.at_or_over,
+  }));
+}
+
+/**
+ * Raise, lower or remove a ceiling.
+ *
+ * `value === null` removes the key, which means UNLIMITED — distinct from 0,
+ * which really does mean nobody may add another. The server keeps those two
+ * apart deliberately, so the caller has to as well.
+ */
+export async function setLimit(
+  orgId: string,
+  moduleCode: string,
+  limitKey: string,
+  value: number | null,
+  reason: string
+): Promise<void> {
+  const { error } = await supabase.rpc("platform_set_limit", {
+    p_org: orgId,
+    p_module: moduleCode,
+    p_key: limitKey,
+    p_value: value,
     p_reason: reason || null,
   });
   if (error) throw new Error(error.message);

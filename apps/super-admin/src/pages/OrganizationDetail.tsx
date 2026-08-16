@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
+  listOrganizationLimits,
   listOrganizationModules,
   listOrganizations,
   listPlans,
   resetModuleToPlan,
   setModule,
   setPlan,
+  setLimit,
   setSubscriptionStatus,
   blocksWrites,
   SUBSCRIPTION_STATUSES,
   type Organization,
+  type OrganizationLimit,
   type OrganizationModule,
   type Plan,
   type SubscriptionStatus,
@@ -20,6 +23,8 @@ export function OrganizationDetail() {
   const { orgId = "" } = useParams();
   const [org, setOrg] = useState<Organization | null>(null);
   const [modules, setModules] = useState<OrganizationModule[]>([]);
+  const [limits, setLimits] = useState<OrganizationLimit[]>([]);
+  const [busyLimit, setBusyLimit] = useState<string | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [busyPlan, setBusyPlan] = useState(false);
   const [busyStatus, setBusyStatus] = useState(false);
@@ -29,14 +34,16 @@ export function OrganizationDetail() {
   const [reason, setReason] = useState("");
 
   const load = useCallback(async () => {
-    const [orgs, mods, planList] = await Promise.all([
+    const [orgs, mods, planList, limitList] = await Promise.all([
       listOrganizations(),
       listOrganizationModules(orgId),
       listPlans(),
+      listOrganizationLimits(orgId),
     ]);
     setOrg(orgs.find((o) => o.organizationId === orgId) ?? null);
     setModules(mods);
     setPlans(planList);
+    setLimits(limitList);
   }, [orgId]);
 
   useEffect(() => {
@@ -76,6 +83,20 @@ export function OrganizationDetail() {
       setError(err instanceof Error ? err.message : "Could not change the billing state.");
     } finally {
       setBusyStatus(false);
+    }
+  }
+
+  async function handleSetLimit(limit: OrganizationLimit, value: number | null) {
+    setBusyLimit(limit.limitKey);
+    setError(null);
+    try {
+      await setLimit(orgId, limit.moduleCode, limit.limitKey, value, reason);
+      await load();
+      setReason("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not change this limit.");
+    } finally {
+      setBusyLimit(null);
     }
   }
 
@@ -273,6 +294,76 @@ export function OrganizationDetail() {
           );
         })}
       </div>
+
+      {limits.length > 0 && (
+        <div className="mt-4 max-w-2xl rounded-2xl border border-slate-200 bg-white p-4">
+          <p className="text-sm font-medium text-slate-800">Limits</p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Usage is counted the same way the database counts it when refusing a new record, so
+            these numbers are what the tenant is actually hitting. Retired devices and closed
+            branches don&apos;t count.
+          </p>
+
+          <div className="mt-3 space-y-2">
+            {limits.map((l) => (
+              <div
+                key={`${l.moduleCode}.${l.limitKey}`}
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-slate-100 px-3 py-2"
+              >
+                <div className="min-w-[9rem] flex-1">
+                  <p className="text-sm text-slate-800">
+                    {l.limitKey}{" "}
+                    <span
+                      className={`font-medium ${l.atOrOver ? "text-red-600" : "text-slate-500"}`}
+                    >
+                      {l.currentUsage ?? "—"} / {l.cap ?? "∞"}
+                    </span>
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {l.moduleCode}
+                    {l.atOrOver && " · at the ceiling"}
+                  </p>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleSetLimit(l, (l.cap ?? 0) + 1)}
+                    disabled={busyLimit === l.limitKey || l.cap === null}
+                    title="Raise this ceiling by one"
+                    className="cursor-pointer rounded-lg border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    +1
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetLimit(l, Math.max(0, (l.cap ?? 0) - 1))}
+                    disabled={busyLimit === l.limitKey || l.cap === null || l.cap === 0}
+                    title="Lower this ceiling by one. Existing records are never removed."
+                    className="cursor-pointer rounded-lg border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    −1
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetLimit(l, null)}
+                    disabled={busyLimit === l.limitKey || l.cap === null}
+                    title="Remove the ceiling entirely — unlimited, which is not the same as zero"
+                    className="cursor-pointer rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Uncap
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-3 text-xs text-slate-400">
+            Lowering a ceiling below current usage never deletes anything — the tenant keeps what
+            they have and simply cannot add more. Changing a plan re-derives these.
+          </p>
+        </div>
+      )}
 
       <p className="mt-3 max-w-2xl text-xs text-slate-400">
         Changes take effect immediately and are recorded as a manual grant, so they survive the
