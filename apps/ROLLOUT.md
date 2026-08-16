@@ -1,7 +1,9 @@
 # Rolling the platform out
 
-Twenty-eight migrations exist in `dev`. **None of them has ever run against
-real data.** Every PR in this series ends with the same unchecked box, and
+**Thirty-one migrations are pending**, and none has ever run against real
+data. Measured against both hosted projects on 2026-08-16 — not estimated.
+Note that this includes `0044` and `0045`, the RBAC foundation, which were
+never applied either; it is not only the platform work. Every PR in this series ends with the same unchecked box, and
 this document exists to make that line finally actionable rather than a
 standing warning.
 
@@ -23,10 +25,29 @@ query here is untested.
 
 ## Before anything
 
-**1. There must be a staging project.** If the only hosted project is
-production, stop and make one. The single most dangerous property of this
-rollout is that it has never met real data; staging is what converts that from
-a risk into an observation.
+**1. Confirm WHICH project you are pointed at. This is the one that can go
+badly wrong.**
+
+There are two ACTIVE_HEALTHY projects with confusingly similar names:
+
+| name | ref |
+|---|---|
+| `DellsSoftware` | `zwjwbfzrfjhslyxpsxby` — **production** |
+| `DellsSoftware-staging` | `qfkdecarbqwbpkzqqdxk` — staging |
+
+The repository was found **linked to production**, so a `supabase db push`
+run without checking would have applied all 31 migrations to the live system.
+Worse, the names alone do not settle it: `qfkdecarbqwbpkzqqdxk` — the one now
+called *staging* — is the ref the original architecture plan describes as the
+project both live apps share. Do not infer from the name.
+
+```bash
+cat supabase/.temp/project-ref     # what am I actually linked to?
+supabase link --project-ref qfkdecarbqwbpkzqqdxk   # staging, explicitly
+```
+
+The repo is currently left linked to **staging**, deliberately — if the link
+is going to be stale, stale-pointing-at-staging is the safe direction.
 
 **2. Confirm what production actually has.** The migration history in this
 repo is the *intended* state. The live project has had things applied to it
@@ -34,14 +55,18 @@ outside this repo — that is exactly how the missing table grants
 (`20260815101000`) went unnoticed. Before assuming the histories match:
 
 ```bash
-supabase link --project-ref <ref>
-supabase migration list
+supabase migration list --linked
 ```
 
 Any migration marked **local-only** is one this rollout will apply. Any marked
 **remote-only** is a change someone made in the dashboard that this repo does
 not know about — investigate each one before continuing, because it may
 conflict with what follows.
+
+Checked on 2026-08-16: **both projects report zero remote-only migrations**,
+and both sit at `0043`. The repo and the hosted schemas agree about history,
+which is the good case — though it says nothing about objects changed in the
+dashboard without a migration, which is what bit us with the table grants.
 
 **3. Take a backup, and confirm it is restorable.** Not "a backup exists" —
 actually restore it somewhere. An untested backup is a belief, not a plan.
@@ -52,7 +77,17 @@ and `PLATFORM.md`), but do it when someone is available to watch.
 
 ---
 
-## Phase 0 — the audit that has to happen first
+## The limit audit — after Phase 3, before Phase 4
+
+> **Corrected.** An earlier version of this document called this "Phase 0" and
+> told you to run it before anything else. **That is impossible**, and it was
+> found by trying: the audit queries `core.organizations` and
+> `core.organization_modules`, which do not exist until Phases 1–3 create and
+> seed them. On a database that has not been migrated it fails immediately.
+>
+> Its purpose was always "before *enforcement*", not "before everything" —
+> limits only exist once entitlement is seeded. So it belongs here: after
+> Phase 3, before Phase 4. The phases below are otherwise unchanged.
 
 ```bash
 psql "$DATABASE_URL" -f apps/tindahan-pos/supabase/snippets/limit-audit.sql
@@ -73,9 +108,10 @@ on deliberately rather than being surprised by it later.
 
 ---
 
-## Phase 1 — core schema (migrations 1–14)
+## Phase 1 — RBAC + core schema (migrations 0044, 0045, then 1–14)
 
-`20260815090000` through `20260815091500`.
+`0044` and `0045` first — they are pending too, and everything after assumes
+`has_permission()` exists — then `20260815090000` through `20260815091500`.
 
 Creates the `core` schema, its tables, helpers, RLS baseline and indexes.
 **Touches nothing in `public`** and no application reads any of it yet.
@@ -231,7 +267,7 @@ All three are **write-only**: reads and exports are never affected, existing
 records are never hidden or deleted, and the till keeps selling. That is what
 bounds the risk here.
 
-**Do not apply this phase until Phase 0's audit is clean and Phase 3's second
+**Do not apply this phase until the limit audit is clean and Phase 3's second
 verification query returns zero.**
 
 ### Verify
@@ -241,7 +277,7 @@ verification query returns zero.**
 select count(*) from core.organizations o
 where not core.org_writes_allowed(o.id);                          -- expect 0
 
--- Re-run the limit audit. Same expectation as Phase 0.
+-- Re-run the limit audit. Same expectation as before Phase 4.
 \i apps/tindahan-pos/supabase/snippets/limit-audit.sql
 ```
 
