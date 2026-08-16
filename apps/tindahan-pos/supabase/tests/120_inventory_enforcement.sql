@@ -26,6 +26,14 @@ create or replace function pg_temp.org() returns uuid language sql as $$
   select id from core.organizations where name = 'Enforcement Test Store'
 $$;
 
+-- This suite exercises module entitlement, not numeric limits, and its flow
+-- legitimately creates a fourth warehouse -- which BASIC caps at 3 as of
+-- 20260815102000. Lift the ceiling for this fixture so a limit failure can
+-- never be mistaken for the gating failure being tested here. Limits have
+-- their own suite, 170_plan_limits.
+update core.organization_modules set limits = '{}'::jsonb
+ where organization_id = pg_temp.org() and module_code = 'INVENTORY';
+
 -- Something to read later, created while still entitled.
 insert into warehouses (store_id, name, is_default)
   select pg_temp.org(), 'Back Room', false;

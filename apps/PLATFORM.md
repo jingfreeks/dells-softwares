@@ -157,7 +157,7 @@ cannot be recorded there.
 ```bash
 cd apps/tindahan-pos
 supabase db reset          # applies all migrations from empty
-bash supabase/tests/run.sh # 136 assertions
+bash supabase/tests/run.sh # 158 assertions
 ```
 
 | Suite | Guards |
@@ -169,6 +169,7 @@ bash supabase/tests/run.sh # 136 assertions
 | `140_session_helpers` | `current_user_id()` treats absent claims as absent, not as an error |
 | `150_plan_management` | plan changes take effect; a MANUAL override survives one, and can be handed back |
 | `160_grace_ladder` | suspension blocks writes and ONLY writes; an unprovisioned tenant keeps working |
+| `170_plan_limits` | caps stop the next row, absent means unlimited, and it holds for `service_role` |
 
 Plus two static guards (`scripts/check-*.mjs`): no client-reachable secrets,
 and no table without RLS. All of it runs in `Platform CI`
@@ -240,10 +241,23 @@ a human can supply.
   than discovering the overlap.
 - **`suppliers` / `receiving` module ownership** — a pricing decision, above.
 - **POS gating** — deliberately not built, above.
-- **Limit enforcement.** `organization_modules.limits` is seeded and readable
-  (branches, devices, products) but nothing enforces it. Architecture v1 §08
-  specifies constraint triggers; adding them could instantly break a tenant
-  already over a limit, so it needs an "is anyone already over?" audit first.
+- ~~**Limit enforcement.**~~ **Built** in `20260815102000`. Triggers rather
+  than policies, because devices are inserted by the pair-device Edge
+  Function on a `service_role` client that bypasses RLS entirely — a policy
+  would have enforced the device cap against nobody. Enforcement is
+  INSERT-only: a tenant already over keeps everything and simply cannot add
+  more. Absent limits mean unlimited, never zero.
+  - Counting excludes retired rows (`devices.unpaired_at`, `branches` that
+    are CLOSED), so a store is never penalised for having replaced a
+    terminal.
+  - **Run `supabase/snippets/limit-audit.sql` before applying this to real
+    data.** It is read-only and lists anyone at or over a cap. The migration
+    cannot corrupt anything, but it can surprise someone.
+  - Note that on BASIC every existing tenant is already **at** the branch
+    ceiling (1 of 1), since the backfill synthesized one branch per store.
+    Harmless while nothing creates branches, and correct commercially —
+    multi-branch is a PRO feature — but it means the day a multi-branch
+    feature ships, BASIC tenants are capped at one by construction.
 - ~~**Grace/downgrade ladder.**~~ **Built** in `20260815100000`.
   `core.org_writes_allowed()` implements §08: TRIALING, ACTIVE and PAST_DUE
   all still write (grace gets a banner, not a lock); SUSPENDED, CANCELLED
