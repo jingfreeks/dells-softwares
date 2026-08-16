@@ -214,6 +214,21 @@ a human can supply.
 
 ## Known gaps and pending decisions
 
+- ~~**The migration set could not stand up a working environment.**~~
+  **Fixed** in `20260815101000`. Applying every migration to a new project
+  produced a database where both apps were dead on arrival: sign-in
+  succeeded, then the first query — the app reading its own `staff` row —
+  returned 403. Not RLS; a missing GRANT one level below it. Migrations run
+  as `postgres`, whose default ACL for `public` is `Dxtm` (truncate,
+  references, trigger) — no DML — while `supabase_admin`'s is `arwdDxtm`. So
+  every table this repo creates was unreachable by `authenticated` and
+  `service_role`, the latter breaking the `create-cashier` Edge Function too.
+  The live project already has these grants, applied outside this repository
+  when the defaults were more permissive, which is why production works and
+  the schema only *appears* complete. The migration grants them explicitly
+  and sets default privileges so the next new table cannot reintroduce the
+  gap. `anon` is deliberately granted nothing. The three RLS suites no longer
+  carry their compensating `grant`, so they now fail if this regresses.
 - **Nothing has been applied to staging or production.** Twenty migrations
   exist locally and in `dev`; the reconciliation queries from the tenancy
   backfill have only ever run against a handful of local rows.

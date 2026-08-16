@@ -30,10 +30,10 @@ $$;
 insert into warehouses (store_id, name, is_default)
   select pg_temp.org(), 'Back Room', false;
 
--- These policies are only reachable by the API roles; grant DML the way a
--- real Supabase project does, so `authenticated` is stopped by RLS rather
--- than by a missing table grant (which would prove nothing).
-grant select, insert, update, delete on all tables in schema public to authenticated;
+-- No grant needed here any more. These policies are only reachable by the API
+-- roles, and 20260815101000 grants them for real -- so `authenticated` being
+-- stopped below is RLS doing its job, not a missing privilege. Leaving the
+-- compensating grant in would hide a regression in that migration.
 
 -- -----------------------------------------------------------------------------
 -- ALLOW: entitled tenant can write

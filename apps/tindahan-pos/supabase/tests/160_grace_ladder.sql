@@ -46,7 +46,10 @@ end $$;
 insert into warehouses (store_id, name, is_default)
   select pg_temp.org(), 'Back Room', false;
 
-grant select, insert, update, delete on all tables in schema public to authenticated;
+-- No grant needed here any more. These policies are only reachable by the API
+-- roles, and 20260815101000 grants them for real -- so `authenticated` being
+-- stopped below is RLS doing its job, not a missing privilege. Leaving the
+-- compensating grant in would hide a regression in that migration.
 
 create or replace function pg_temp.set_sub(p_status text)
 returns void language sql as $$

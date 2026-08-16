@@ -72,9 +72,10 @@ insert into sales (store_id, cashier_id, total)
   values (pg_temp.id_a(), 'd1000000-0000-4000-8000-00000000a001', 100),
          (pg_temp.id_b(), 'd2000000-0000-4000-8000-00000000b001', 200);
 
--- Grants as a real Supabase project has them, so `authenticated` is stopped
--- by RLS rather than by a missing table grant, which would prove nothing.
-grant select, insert, update, delete on all tables in schema public to authenticated;
+-- No grant needed here any more. These policies are only reachable by the API
+-- roles, and 20260815101000 grants them for real -- so `authenticated` being
+-- stopped below is RLS doing its job, not a missing privilege. Leaving the
+-- compensating grant in would hide a regression in that migration.
 
 set local role authenticated;
 select pg_temp.act_as('d1000000-0000-4000-8000-00000000a001');
