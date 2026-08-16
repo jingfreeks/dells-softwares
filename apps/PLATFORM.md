@@ -160,7 +160,7 @@ cannot be recorded there.
 ```bash
 cd apps/tindahan-pos
 supabase db reset          # applies all migrations from empty
-bash supabase/tests/run.sh # 192 assertions
+bash supabase/tests/run.sh # 199 assertions
 ```
 
 | Suite | Guards |
@@ -175,6 +175,7 @@ bash supabase/tests/run.sh # 192 assertions
 | `170_plan_limits` | caps stop the next row, absent means unlimited, and it holds for `service_role` |
 | `180_limit_controls` | the console's usage number IS the trigger's, and a ceiling can be changed |
 | `190_tenant_limits` | a store sees its own ceilings, cannot aim at another's, fails closed |
+| `200_audit_partition_isolation` | a partition of `core.audit_logs` is not a way past the parent's policy |
 
 Plus two static guards (`scripts/check-*.mjs`): no client-reachable secrets,
 and no table without RLS. All of it runs in `Platform CI`
@@ -235,6 +236,17 @@ a human can supply.
   and sets default privileges so the next new table cannot reintroduce the
   gap. `anon` is deliberately granted nothing. The three RLS suites no longer
   carry their compensating `grant`, so they now fail if this regresses.
+- ~~**A tenant could read every other tenant's audit log.**~~ **Fixed** in
+  `20260815105000`. `core.audit_logs` is FORCE RLS, but its monthly
+  partitions had RLS disabled and were granted directly to `authenticated`
+  by `ensure_audit_partition()` — and in Postgres a partition queried
+  *directly* is subject to its own RLS, not its parent's. Naming one
+  returned every tenant's rows (measured: 6 through the parent, 12 through
+  the partition). Not reachable from a browser, since `core` is not exposed
+  to PostgREST, but it would have opened silently the moment it was.
+  `check-rls-coverage.mjs` had skipped partitions on the explicit belief
+  that they inherit the parent's policies; that exemption is gone. Covered
+  by `200_audit_partition_isolation`.
 - **Nothing has been applied to staging or production.** Twenty-five migrations
   exist locally and in `dev`; the reconciliation queries from the tenancy
   backfill have only ever run against a handful of local rows.

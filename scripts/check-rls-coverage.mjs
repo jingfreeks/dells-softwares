@@ -66,9 +66,20 @@ for (const table of created) {
   if (seen.has(table.qualified)) continue;
   seen.add(table.qualified);
 
-  // A partition inherits its parent's policies.
+  // Partitions were skipped here, on the belief that "a partition inherits
+  // its parent's policies". It does not. A partition queried DIRECTLY is
+  // subject to its OWN RLS; the parent's policies apply only to access
+  // through the parent. A granted partition with RLS disabled therefore
+  // exposes every row in it -- which is exactly what happened to
+  // core.audit_logs. See 20260815105000.
+  //
+  // So partitions are checked too, with two differences: they inherit their
+  // parent's policies for routed access and need none of their own (a
+  // policy-less partition denies direct reads, which is the goal), and they
+  // are not held to FORCE, because the platform's audit readers are SECURITY
+  // DEFINER functions owned by postgres that already filter by organization.
   const after = flat.split(`create table ${table.qualified}`)[1]?.slice(0, 200) ?? '';
-  if (/partition of/.test(after)) continue;
+  const isPartition = /partition of/.test(after);
 
   const q = table.qualified.replace('.', '\\.');
 
@@ -76,12 +87,12 @@ for (const table of created) {
     problems.push(`${table.qualified}: RLS is not enabled`);
   }
 
-  if (table.schema === 'core' &&
+  if (!isPartition && table.schema === 'core' &&
       !flat.includes(`alter table ${table.qualified} force row level security`)) {
     problems.push(`${table.qualified}: core tables must FORCE RLS`);
   }
 
-  if (!DENY_ALL_OK.has(table.name) &&
+  if (!isPartition && !DENY_ALL_OK.has(table.name) &&
       !new RegExp(`create policy (?:"[^"]+"|[a-z_]+) on ${q}\\b`).test(flat)) {
     problems.push(`${table.qualified}: has no policy`);
   }
