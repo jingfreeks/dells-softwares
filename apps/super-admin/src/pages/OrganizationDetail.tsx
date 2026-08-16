@@ -7,9 +7,13 @@ import {
   resetModuleToPlan,
   setModule,
   setPlan,
+  setSubscriptionStatus,
+  blocksWrites,
+  SUBSCRIPTION_STATUSES,
   type Organization,
   type OrganizationModule,
   type Plan,
+  type SubscriptionStatus,
 } from "../lib/platform";
 
 export function OrganizationDetail() {
@@ -18,6 +22,7 @@ export function OrganizationDetail() {
   const [modules, setModules] = useState<OrganizationModule[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [busyPlan, setBusyPlan] = useState(false);
+  const [busyStatus, setBusyStatus] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyModule, setBusyModule] = useState<string | null>(null);
@@ -56,6 +61,21 @@ export function OrganizationDetail() {
       setError(err instanceof Error ? err.message : "Could not change the plan.");
     } finally {
       setBusyPlan(false);
+    }
+  }
+
+  async function handleSetStatus(status: SubscriptionStatus) {
+    if (status === org?.subscriptionStatus) return;
+    setBusyStatus(true);
+    setError(null);
+    try {
+      await setSubscriptionStatus(orgId, status, reason);
+      await load();
+      setReason("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not change the billing state.");
+    } finally {
+      setBusyStatus(false);
     }
   }
 
@@ -149,6 +169,53 @@ export function OrganizationDetail() {
             );
           })}
         </div>
+      </div>
+
+      <div className="mt-4 max-w-2xl rounded-2xl border border-slate-200 bg-white p-4">
+        <p className="text-sm font-medium text-slate-800">Billing state</p>
+        <p className="mt-0.5 text-xs text-slate-500">
+          Suspending or cancelling stops this tenant creating new records. It never hides,
+          blocks or deletes what they already have — they can still read and export
+          everything. Both require a reason.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {SUBSCRIPTION_STATUSES.map((s) => {
+            const current = s === org?.subscriptionStatus;
+            const destructive = blocksWrites(s);
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => handleSetStatus(s)}
+                disabled={busyStatus || current}
+                className={`cursor-pointer rounded-xl px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed ${
+                  current
+                    ? destructive
+                      ? "bg-red-600 text-white disabled:opacity-100"
+                      : "bg-[var(--color-brand)] text-white disabled:opacity-100"
+                    : destructive
+                      ? "border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-60"
+                      : "border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                }`}
+              >
+                {s.replace("_", " ")}
+                {current && " ·  current"}
+              </button>
+            );
+          })}
+        </div>
+        {org && blocksWrites(org.subscriptionStatus) && (
+          <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+            This tenant cannot create new records. Their data is untouched and still readable
+            by them. Changing their plan will not lift this — reinstate them here.
+          </p>
+        )}
+        {org?.subscriptionStatus === "PAST_DUE" && (
+          <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            In grace: still fully usable, and warned in their own app. Nothing escalates this
+            automatically — suspending is a decision someone has to make here.
+          </p>
+        )}
       </div>
 
       <div className="mt-4 max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white">
