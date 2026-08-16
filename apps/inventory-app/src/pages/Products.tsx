@@ -1,3 +1,4 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
@@ -31,7 +32,7 @@ export function Products() {
         setForm((f) => ({ ...f, categoryId: f.categoryId || categoryRows[0]?.id || "" }));
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load products.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load products."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -80,7 +81,7 @@ export function Products() {
       setShowForm(false);
       setForm((f) => ({ ...emptyForm, categoryId: f.categoryId }));
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not save product.");
+      setFormError(describeWriteError(err, "Could not save product."));
     } finally {
       setSubmitting(false);
     }
@@ -91,7 +92,7 @@ export function Products() {
       await deleteProduct(id);
       setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete product.");
+      setError(describeWriteError(err, "Could not delete product."));
     }
   }
 

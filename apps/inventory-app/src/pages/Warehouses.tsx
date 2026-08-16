@@ -1,3 +1,4 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
@@ -5,6 +6,7 @@ import { useCan } from "../lib/permissions";
 import { useHasModule, MODULE_READ_ONLY_HINT } from "../lib/modules";
 import { addWarehouse, listWarehouses } from "../lib/warehouses";
 import type { Warehouse } from "../lib/types";
+import { findLimit, isAtLimit, listMyStoreLimits, type StoreLimit } from "../lib/storeLimits";
 
 const emptyForm = { name: "", address: "" };
 
@@ -19,16 +21,24 @@ export function Warehouses() {
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [limits, setLimits] = useState<StoreLimit[]>([]);
+  const atLimit = isAtLimit(limits, "warehouses");
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
+    // Best effort: a failure here costs the tenant a warning, not the page.
+    listMyStoreLimits()
+      .then((rows) => {
+        if (!cancelled) setLimits(rows);
+      })
+      .catch(() => {});
     listWarehouses(user.storeId)
       .then((rows) => {
         if (!cancelled) setWarehouses(rows);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load warehouses.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load warehouses."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -56,8 +66,17 @@ export function Warehouses() {
       setWarehouses((prev) => [...prev, warehouse]);
       setShowForm(false);
       setForm(emptyForm);
+      listMyStoreLimits()
+        .then(setLimits)
+        .catch(() => {});
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not save warehouse.");
+      setFormError(describeWriteError(err, "Could not save warehouse."));
+      // Re-read usage on failure too. A refusal means our count was stale --
+      // leaving "3 of 4" above a message saying they are using all of them
+      // reads as a bug in the app rather than a real limit.
+      listMyStoreLimits()
+        .then(setLimits)
+        .catch(() => {});
     } finally {
       setSubmitting(false);
     }
@@ -72,12 +91,30 @@ export function Warehouses() {
             The default warehouse mirrors the stock used at POS checkout. Additional warehouses track
             their own stock separately.
           </p>
+          {(() => {
+            const l = findLimit(limits, "warehouses");
+            if (!l || l.cap === null) return null;
+            return (
+              <p
+                className={`mt-1 text-xs ${atLimit ? "font-medium text-red-600" : "text-slate-400"}`}
+              >
+                Using {l.currentUsage} of {l.cap} included in your plan
+                {atLimit && " — contact support to add more"}
+              </p>
+            );
+          })()}
         </div>
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          disabled={!hasInventory}
-          title={hasInventory ? undefined : MODULE_READ_ONLY_HINT}
+          disabled={!hasInventory || (atLimit && !showForm)}
+          title={
+            !hasInventory
+              ? MODULE_READ_ONLY_HINT
+              : atLimit && !showForm
+                ? "You are using every warehouse your plan includes."
+                : undefined
+          }
           className="shrink-0 cursor-pointer rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {showForm ? "Cancel" : "Add warehouse"}

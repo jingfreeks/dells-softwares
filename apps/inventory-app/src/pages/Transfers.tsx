@@ -1,3 +1,4 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
@@ -49,7 +50,7 @@ export function Transfers() {
         }));
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load transfers.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load transfers."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -104,7 +105,7 @@ export function Transfers() {
       await reload(user.storeId);
       setForm((f) => ({ ...f, quantity: "", notes: "" }));
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not complete transfer.");
+      setFormError(describeWriteError(err, "Could not complete transfer."));
     } finally {
       setSubmitting(false);
     }

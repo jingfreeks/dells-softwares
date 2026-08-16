@@ -1,3 +1,4 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
@@ -70,7 +71,7 @@ export function Receiving() {
         setWarehouseId((prev) => prev || w.find((wh) => wh.isDefault)?.id || w[0]?.id || "");
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load receiving data.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load receiving data."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -112,7 +113,7 @@ export function Receiving() {
           }))
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load purchase order lines.");
+      setError(describeWriteError(err, "Could not load purchase order lines."));
     }
   }
 
@@ -178,7 +179,7 @@ export function Receiving() {
       setHistory(h);
       setTimeout(() => setSavedMessage(null), 4000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save receiving entry.");
+      setError(describeWriteError(err, "Could not save receiving entry."));
     } finally {
       setSaving(false);
     }

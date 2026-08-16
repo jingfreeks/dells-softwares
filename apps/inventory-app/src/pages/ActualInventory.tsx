@@ -1,3 +1,4 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
@@ -59,7 +60,7 @@ export function ActualInventory() {
         setNewWarehouseId((prev) => prev || w.find((wh) => wh.isDefault)?.id || w[0]?.id || "");
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load inventory counts.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load inventory counts."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -116,7 +117,7 @@ export function ActualInventory() {
       setCounts((prev) => [count, ...prev]);
       setSelectedCountId(count.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start inventory count.");
+      setError(describeWriteError(err, "Could not start inventory count."));
     } finally {
       setStarting(false);
     }
@@ -140,7 +141,7 @@ export function ActualInventory() {
       });
       setLines((prev) => [...prev.filter((l) => l.productId !== productId), line]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save counted quantity.");
+      setError(describeWriteError(err, "Could not save counted quantity."));
     } finally {
       setSavingProductId(null);
     }
@@ -154,7 +155,7 @@ export function ActualInventory() {
       await closeInventoryCount(selectedCount.id);
       setCounts((prev) => prev.map((c) => (c.id === selectedCount.id ? { ...c, status: "closed" } : c)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not close inventory count.");
+      setError(describeWriteError(err, "Could not close inventory count."));
     } finally {
       setClosing(false);
     }
