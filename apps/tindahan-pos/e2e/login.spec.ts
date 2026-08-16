@@ -7,6 +7,7 @@ import {
   uniqueEmail,
   TEST_PASSWORD,
 } from './helpers'
+import { SEG_SIGN_IN } from '../src/lib/textLabels/textLabels'
 
 test.describe('Login (stories D1-D3)', () => {
   test('unauthenticated visitor is redirected to login', async ({ page }) => {
@@ -18,7 +19,7 @@ test.describe('Login (stories D1-D3)', () => {
     await page.goto('/login')
     await page.getByLabel('Email address').fill(uniqueEmail('nobody'))
     await page.getByLabel('Password', { exact: true }).fill('wrongpass')
-    await page.getByRole('button', { name: 'Log in' }).click()
+    await page.getByRole('button', { name: SEG_SIGN_IN }).click()
 
     await expect(page.getByRole('alert')).toHaveText(/incorrect email or password/i)
     await expect(page).toHaveURL(/\/login/)
@@ -70,16 +71,9 @@ test.describe('Registration (story D1)', () => {
     }
   })
 
-  test('rejects mismatched passwords', async ({ page }) => {
-    await page.goto('/register')
-    await page.getByLabel('Store name').fill("Aling Nena's Store")
-    await page.getByLabel('Your name').fill('Nena Reyes')
-    await page.getByLabel('Email address').fill(uniqueEmail('nena'))
-    await page.getByLabel('Password', { exact: true }).fill(TEST_PASSWORD)
-    await page.getByLabel('Confirm password').fill('different')
-    await page.getByRole('button', { name: 'Create account' }).click()
-
-    await expect(page.getByRole('alert')).toHaveText(/do not match/i)
-    await expect(page).toHaveURL(/\/register/)
-  })
+  // A 'rejects mismatched passwords' test lived here. The register form has
+  // no confirm-password field any more, so it asserted behaviour the product
+  // does not have -- it was not a regression to fix but a test to retire.
+  // Password rules that DO still exist (minLength 8, required) are enforced
+  // by the browser and covered by the unit suite.
 })

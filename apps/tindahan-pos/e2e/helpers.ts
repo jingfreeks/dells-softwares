@@ -1,4 +1,20 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test'
+// Imported from the app's own label module rather than retyped as string
+// literals. Every one of these selectors had rotted: the login page was
+// redesigned into Sign in / Create account tabs, its submit button stopped
+// saying "Log in", and the register form lost its confirm-password field --
+// and 34 of 42 e2e tests had been failing on that ever since, invisibly,
+// because the CI job is `if: false`. Importing the constants means a copy
+// change breaks the build instead of silently rotting the suite.
+import {
+  SEG_SIGN_IN,
+  SEG_CREATE_ACCOUNT,
+  LABEL_EMAIL_ADDRESS,
+  LABEL_PASSWORD,
+  PAGE_HEADING_ADMIN_DASHBOARD,
+} from '../src/lib/textLabels/textLabels'
+
+export { PAGE_HEADING_ADMIN_DASHBOARD }
 
 // These e2e tests run against a real Supabase project (see .env / .env.example)
 // rather than mock data. Whether the project currently requires email
@@ -40,10 +56,10 @@ export async function registerFreshStore(
   await page.goto('/register')
   await page.getByLabel('Store name').fill(opts?.storeName ?? 'E2E Test Store')
   await page.getByLabel('Your name').fill(opts?.ownerName ?? 'Test Admin')
-  await page.getByLabel('Email address').fill(email)
-  await page.getByLabel('Password', { exact: true }).fill(TEST_PASSWORD)
-  await page.getByLabel('Confirm password').fill(TEST_PASSWORD)
-  await page.getByRole('button', { name: 'Create account' }).click()
+  await page.getByLabel(LABEL_EMAIL_ADDRESS).fill(email)
+  await page.getByLabel(LABEL_PASSWORD, { exact: true }).fill(TEST_PASSWORD)
+  // No confirm-password field: the register form does not have one.
+  await page.getByRole('button', { name: SEG_CREATE_ACCOUNT }).click()
 
   await expect(
     page.getByRole('heading', { name: 'POS Checkout' }).or(page.getByRole('heading', { name: 'Check your email' }))
@@ -104,6 +120,35 @@ export async function createTestStoreAccount(
   if (!res.ok()) {
     throw new Error(`createTestStoreAccount failed: ${res.status()} ${await res.text()}`)
   }
+
+  // Mark the store as having finished the onboarding wizard.
+  //
+  // ProtectedRoute sends any admin with onboarded_at = null to /onboarding, and
+  // handle_new_user() creates every staff row with it unset -- so without this
+  // a freshly-created account lands on the wizard, not the POS. That wizard was
+  // added after this suite was written, and it is why 24 tests were failing on
+  // `expect(page).toHaveURL(/\/pos/)`.
+  //
+  // Stamped here rather than clicked through, because these tests are about
+  // what a WORKING store can do. Onboarding has its own coverage; making every
+  // other spec walk a four-step wizard first would be slow and would couple
+  // them all to its markup.
+  const { id } = (await res.json()) as { id: string }
+  const patch = await request.patch(`${SUPABASE_URL}/rest/v1/staff?id=eq.${id}`, {
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    data: { onboarded_at: new Date().toISOString() },
+  })
+  if (!patch.ok()) {
+    throw new Error(
+      `createTestStoreAccount could not complete onboarding: ${patch.status()} ${await patch.text()}`
+    )
+  }
+
   return { email, password: TEST_PASSWORD }
 }
 
@@ -140,7 +185,7 @@ export async function login(page: Page, email: string, password = TEST_PASSWORD)
   await expect(emailInput).toHaveValue(email, { timeout: 15_000 })
   await expect(passwordInput).toHaveValue(password, { timeout: 15_000 })
   await page.waitForTimeout(100)
-  await page.getByRole('button', { name: 'Log in' }).click()
+  await page.getByRole('button', { name: SEG_SIGN_IN }).click()
   await expect(page).toHaveURL(/\/pos/, { timeout: 15_000 })
 }
 

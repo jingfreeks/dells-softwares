@@ -32,9 +32,13 @@ export const LABEL_PASSWORD = "Password";
 export const ARIA_SHOW_PASSWORD = "Show password";
 export const ARIA_HIDE_PASSWORD = "Hide password";
 
-// Shared auth navigation link text — LABEL_LOG_IN doubles as the Login
-// page's submit button text and Register's "already have an account?"
-// link text, since both are literally the word "Log in".
+// Shared auth navigation link text.
+//
+// LABEL_LOG_IN used to double as the Login page's submit button text. It does
+// not any more -- that page was redesigned into Sign in / Create account tabs
+// and its button renders SEG_SIGN_IN below. The e2e suite was still selecting
+// on "Log in" because of this comment, and 34 of its 42 tests had been failing
+// on it silently. Kept for Register's "already have an account?" link.
 export const LINK_BACK_TO_LOGIN = "Back to login";
 export const LABEL_LOG_IN = "Log in";
 export const LINK_REGISTER = "Register";
