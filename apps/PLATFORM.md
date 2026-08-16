@@ -247,7 +247,10 @@ a human can supply.
   `check-rls-coverage.mjs` had skipped partitions on the explicit belief
   that they inherit the parent's policies; that exemption is gone. Covered
   by `200_audit_partition_isolation`.
-- **Nothing has been applied to staging or production.** Twenty-five migrations
+- **Nothing has been applied to staging or production.** The ordered
+  procedure for doing so is [ROLLOUT.md](ROLLOUT.md) — phased, with
+  verification queries after each step and abort criteria per phase. Every
+  query in it has been executed locally; none has met real data. Twenty-five migrations
   exist locally and in `dev`; the reconciliation queries from the tenancy
   backfill have only ever run against a handful of local rows.
 - **Two permission systems coexist.** `public.roles`/`permissions`/
