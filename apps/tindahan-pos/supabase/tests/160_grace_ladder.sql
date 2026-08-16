@@ -42,6 +42,14 @@ begin
    where user_id = 'db000000-0000-4000-8000-000000000002';
 end $$;
 
+-- This suite exercises the billing ladder, not numeric limits, and its flow
+-- legitimately creates a fourth warehouse -- which BASIC caps at 3 as of
+-- 20260815102000. Lift the ceiling for this fixture so a limit failure can
+-- never be mistaken for the gating failure being tested here. Limits have
+-- their own suite, 170_plan_limits.
+update core.organization_modules set limits = '{}'::jsonb
+ where organization_id = pg_temp.org() and module_code = 'INVENTORY';
+
 -- Created while healthy, so there is something to still be able to read later.
 insert into warehouses (store_id, name, is_default)
   select pg_temp.org(), 'Back Room', false;
