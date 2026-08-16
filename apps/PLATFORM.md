@@ -34,7 +34,10 @@ deliberate `public` contract:
 | `platform_verify_mfa()` | super-admin | stamp MFA after a challenge |
 | `platform_organizations()` | super-admin | every tenant, with plan and counts |
 | `platform_organization_modules(org)` | super-admin | one tenant's module matrix |
-| `platform_set_module(...)` | super-admin | turn a module on or off |
+| `platform_set_module(...)` | super-admin | turn a module on or off (a MANUAL override) |
+| `platform_plans()` | super-admin | the plan catalogue and what each includes |
+| `platform_set_plan(...)` | super-admin | move a tenant to a plan, re-materializing |
+| `platform_reset_module_to_plan(...)` | super-admin | drop an override so the plan governs |
 | `platform_audit(limit)` | super-admin | platform-level activity |
 
 Adding a capability means adding a function here on purpose — not a client
@@ -89,7 +92,9 @@ subscription_plans ──> plan_modules ──> organization_subscriptions
 
 - A **manual grant** (`source = 'MANUAL'`) is never overwritten by
   materialization, so a comp survives the tenant's next plan change instead
-  of quietly expiring at renewal.
+  of quietly expiring at renewal. The console therefore treats **changing the
+  plan** as the primary action — toggling a module by hand opts it out of
+  plan control until `platform_reset_module_to_plan()` hands it back.
 - `module_enabled()` **fails closed** — unknown module, missing row, expired
   or not-yet-started grant all answer false. `CORE` is the sole always-on
   exception.
@@ -150,7 +155,7 @@ cannot be recorded there.
 ```bash
 cd apps/tindahan-pos
 supabase db reset          # applies all migrations from empty
-bash supabase/tests/run.sh # 77 assertions
+bash supabase/tests/run.sh # 100 assertions
 ```
 
 | Suite | Guards |
@@ -160,6 +165,7 @@ bash supabase/tests/run.sh # 77 assertions
 | `120_inventory_enforcement` | writes blocked, **reads not** |
 | `130_tenant_isolation` | §30's premise: tenant A cannot read tenant B |
 | `140_session_helpers` | `current_user_id()` treats absent claims as absent, not as an error |
+| `150_plan_management` | plan changes take effect; a MANUAL override survives one, and can be handed back |
 
 Plus two static guards (`scripts/check-*.mjs`): no client-reachable secrets,
 and no table without RLS. All of it runs in `Platform CI`

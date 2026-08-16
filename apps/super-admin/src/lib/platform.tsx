@@ -30,6 +30,16 @@ export interface OrganizationModule {
   validUntil: string | null;
 }
 
+export interface Plan {
+  planCode: string;
+  name: string;
+  description: string | null;
+  pricePhp: number | null;
+  billingInterval: string | null;
+  isActive: boolean;
+  modules: string[];
+}
+
 export interface PlatformAuditEntry {
   id: number;
   actorEmail: string | null;
@@ -178,6 +188,43 @@ export async function setModule(
     p_org: orgId,
     p_module: moduleCode,
     p_enabled: enabled,
+    p_reason: reason || null,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function listPlans(): Promise<Plan[]> {
+  const { data, error } = await supabase.rpc("platform_plans");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, never>) => ({
+    planCode: r.plan_code,
+    name: r.name,
+    description: r.description,
+    pricePhp: r.price_php,
+    billingInterval: r.billing_interval,
+    isActive: r.is_active,
+    modules: r.modules ?? [],
+  }));
+}
+
+export async function setPlan(orgId: string, planCode: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc("platform_set_plan", {
+    p_org: orgId,
+    p_plan_code: planCode,
+    p_reason: reason || null,
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Drops a MANUAL override so the tenant's plan governs the module again. */
+export async function resetModuleToPlan(
+  orgId: string,
+  moduleCode: string,
+  reason: string
+): Promise<void> {
+  const { error } = await supabase.rpc("platform_reset_module_to_plan", {
+    p_org: orgId,
+    p_module: moduleCode,
     p_reason: reason || null,
   });
   if (error) throw new Error(error.message);

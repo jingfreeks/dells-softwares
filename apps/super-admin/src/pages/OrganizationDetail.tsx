@@ -3,24 +3,35 @@ import { Link, useParams } from "react-router-dom";
 import {
   listOrganizationModules,
   listOrganizations,
+  listPlans,
+  resetModuleToPlan,
   setModule,
+  setPlan,
   type Organization,
   type OrganizationModule,
+  type Plan,
 } from "../lib/platform";
 
 export function OrganizationDetail() {
   const { orgId = "" } = useParams();
   const [org, setOrg] = useState<Organization | null>(null);
   const [modules, setModules] = useState<OrganizationModule[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [busyPlan, setBusyPlan] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyModule, setBusyModule] = useState<string | null>(null);
   const [reason, setReason] = useState("");
 
   const load = useCallback(async () => {
-    const [orgs, mods] = await Promise.all([listOrganizations(), listOrganizationModules(orgId)]);
+    const [orgs, mods, planList] = await Promise.all([
+      listOrganizations(),
+      listOrganizationModules(orgId),
+      listPlans(),
+    ]);
     setOrg(orgs.find((o) => o.organizationId === orgId) ?? null);
     setModules(mods);
+    setPlans(planList);
   }, [orgId]);
 
   useEffect(() => {
@@ -32,6 +43,35 @@ export function OrganizationDetail() {
       cancelled = true;
     };
   }, [load]);
+
+  async function handleSetPlan(planCode: string) {
+    if (!planCode || planCode === org?.planCode) return;
+    setBusyPlan(true);
+    setError(null);
+    try {
+      await setPlan(orgId, planCode, reason);
+      await load();
+      setReason("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not change the plan.");
+    } finally {
+      setBusyPlan(false);
+    }
+  }
+
+  async function handleReset(module: OrganizationModule) {
+    setBusyModule(module.moduleCode);
+    setError(null);
+    try {
+      await resetModuleToPlan(orgId, module.moduleCode, reason);
+      await load();
+      setReason("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not hand this module back to the plan.");
+    } finally {
+      setBusyModule(null);
+    }
+  }
 
   async function handleToggle(module: OrganizationModule) {
     setBusyModule(module.moduleCode);
@@ -81,6 +121,36 @@ export function OrganizationDetail() {
         />
       </div>
 
+      <div className="mt-4 max-w-2xl rounded-2xl border border-slate-200 bg-white p-4">
+        <p className="text-sm font-medium text-slate-800">Plan</p>
+        <p className="mt-0.5 text-xs text-slate-500">
+          Changing the plan re-derives this tenant&apos;s modules. Prefer it over toggling modules
+          one by one — a manual toggle opts that module out of plan control until it is handed back.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {plans.map((p) => {
+            const current = p.planCode === org?.planCode;
+            return (
+              <button
+                key={p.planCode}
+                type="button"
+                onClick={() => handleSetPlan(p.planCode)}
+                disabled={busyPlan || current || !p.isActive}
+                title={p.modules.filter((m) => m !== "CORE").join(", ") || "No modules"}
+                className={`cursor-pointer rounded-xl px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed ${
+                  current
+                    ? "bg-[var(--color-brand)] text-white disabled:opacity-100"
+                    : "border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                }`}
+              >
+                {p.name}
+                {current && " ·  current"}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="mt-4 max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white">
         {modules.map((m) => {
           // CORE is always on and not sellable; the server refuses to disable
@@ -105,6 +175,18 @@ export function OrganizationDetail() {
                   Always on
                 </span>
               ) : (
+                <div className="flex shrink-0 items-center gap-2">
+                {m.source === "MANUAL" && (
+                  <button
+                    type="button"
+                    onClick={() => handleReset(m)}
+                    disabled={busyModule === m.moduleCode}
+                    title="Drop the manual override so this tenant's plan governs the module again"
+                    className="cursor-pointer rounded-xl px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Follow plan
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => handleToggle(m)}
@@ -118,6 +200,7 @@ export function OrganizationDetail() {
                 >
                   {busyModule === m.moduleCode ? "Saving…" : m.enabled ? "Enabled" : "Disabled"}
                 </button>
+                </div>
               )}
             </div>
           );
