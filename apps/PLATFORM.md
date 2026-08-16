@@ -248,12 +248,14 @@ a human can supply.
   `check-rls-coverage.mjs` had skipped partitions on the explicit belief
   that they inherit the parent's policies; that exemption is gone. Covered
   by `200_audit_partition_isolation`.
-- **Nothing has been applied to staging or production.** The ordered
-  procedure for doing so is [ROLLOUT.md](ROLLOUT.md) — phased, with
-  verification queries after each step and abort criteria per phase. Every
-  query in it has been executed locally; none has met real data. Twenty-five migrations
-  exist locally and in `dev`; the reconciliation queries from the tenancy
-  backfill have only ever run against a handful of local rows.
+- **Applied to STAGING on 2026-08-16** (`DellsSoftware-staging`,
+  `qfkdecarbqwbpkzqqdxk`): all 31 pending migrations, 73 applied / 0 pending.
+  Reconciliation against 661 real tenants and 666 staff adds up exactly —
+  organizations 661 = stores 661, one primary branch each, core.staff 666 =
+  staff 666, one live subscription each, and organization_modules 1322 =
+  661 x 2, meaning materialization ran for every organization without a gap.
+  **Production has had nothing applied.** See [ROLLOUT.md](ROLLOUT.md), and
+  note it is the *other* project — `DellsSoftware`, `zwjwbfzrfjhslyxpsxby`.
 - ~~**Two permission systems coexist.**~~ **Resolved** in `20260815106000`,
   adopting option A from [PERMISSIONS-DECISION.md](PERMISSIONS-DECISION.md).
   `core.is_org_wide_staff()` is gone; its 11 call sites now ask
