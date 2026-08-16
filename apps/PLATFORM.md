@@ -38,6 +38,8 @@ deliberate `public` contract:
 | `platform_plans()` | super-admin | the plan catalogue and what each includes |
 | `platform_set_plan(...)` | super-admin | move a tenant to a plan, re-materializing |
 | `platform_reset_module_to_plan(...)` | super-admin | drop an override so the plan governs |
+| `platform_set_subscription_status(...)` | super-admin | move a tenant along the §08 ladder |
+| `my_store_billing_state()` | tenant apps | what to warn this store about, if anything |
 | `platform_audit(limit)` | super-admin | platform-level activity |
 
 Adding a capability means adding a function here on purpose — not a client
@@ -155,7 +157,7 @@ cannot be recorded there.
 ```bash
 cd apps/tindahan-pos
 supabase db reset          # applies all migrations from empty
-bash supabase/tests/run.sh # 100 assertions
+bash supabase/tests/run.sh # 136 assertions
 ```
 
 | Suite | Guards |
@@ -166,6 +168,7 @@ bash supabase/tests/run.sh # 100 assertions
 | `130_tenant_isolation` | §30's premise: tenant A cannot read tenant B |
 | `140_session_helpers` | `current_user_id()` treats absent claims as absent, not as an error |
 | `150_plan_management` | plan changes take effect; a MANUAL override survives one, and can be handed back |
+| `160_grace_ladder` | suspension blocks writes and ONLY writes; an unprovisioned tenant keeps working |
 
 Plus two static guards (`scripts/check-*.mjs`): no client-reachable secrets,
 and no table without RLS. All of it runs in `Platform CI`
@@ -226,9 +229,22 @@ a human can supply.
   (branches, devices, products) but nothing enforces it. Architecture v1 §08
   specifies constraint triggers; adding them could instantly break a tenant
   already over a limit, so it needs an "is anyone already over?" audit first.
-- **Grace/downgrade ladder.** The subscription statuses exist so
-  `PAST_DUE → SUSPENDED → CANCELLED` is representable; the read-only-on-
-  suspend behaviour belongs with enforcement.
+- ~~**Grace/downgrade ladder.**~~ **Built** in `20260815100000`.
+  `core.org_writes_allowed()` implements §08: TRIALING, ACTIVE and PAST_DUE
+  all still write (grace gets a banner, not a lock); SUSPENDED, CANCELLED
+  and a suspended *organization* withdraw writes only — reads and exports
+  survive every state, and entitlement is untouched, so reinstating is one
+  click. It fails **open** for an organization with no subscription row,
+  because `grant_default_subscription()` swallows its own failures by design
+  and a provisioning gap must never read as a suspension.
+  `platform_set_subscription_status()` is the operator control (BILLING
+  scope, and a reason is required to suspend or cancel).
+  - **POS is not gated by it.** A suspended tenant can still sell. Blocking
+    sales is the sharpest possible change to a live money-handling system
+    and depends on the open POS-gating decision below; `160_grace_ladder`
+    asserts the current boundary so it cannot move silently.
+  - Nothing escalates PAST_DUE to SUSPENDED automatically. The 14-day window
+    is reported to the tenant, but the transition is a person's decision.
 - ~~A latent sharp edge in `core.current_user_id()`.~~ **Fixed** in
   `20260815098000`. It cast `request.jwt.claims` to `jsonb` before guarding
   the empty string, and a transaction-local `set_config` reverts to `''`

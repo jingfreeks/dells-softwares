@@ -12,8 +12,24 @@ export interface StoreModule {
   enabled: boolean;
 }
 
+/**
+ * The §08 grace ladder, from public.my_store_billing_state().
+ *
+ * Entitlement ("may this store use Inventory at all") and billing state
+ * ("is this store paid up") are separate questions with separate answers,
+ * and a store can fail either one independently. They are fetched together
+ * only because they share a lifecycle.
+ */
+export interface BillingState {
+  subscriptionStatus: string;
+  writesAllowed: boolean;
+  /** Only set while PAST_DUE: when grace runs out. */
+  graceEndsAt: string | null;
+}
+
 interface ModulesContextValue {
   modules: StoreModule[];
+  billing: BillingState | null;
   /** True until the first fetch resolves for the current staff member. */
   loading: boolean;
 }
@@ -33,6 +49,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.id;
   const [modules, setModules] = useState<StoreModule[]>(EMPTY);
+  const [billing, setBilling] = useState<BillingState | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,22 +57,42 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
 
     if (!userId) {
       setModules(EMPTY);
+      setBilling(null);
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    supabase.rpc("my_store_modules").then(({ data, error }) => {
+    Promise.all([
+      supabase.rpc("my_store_modules"),
+      supabase.rpc("my_store_billing_state"),
+    ]).then(([mods, bill]) => {
       if (cancelled) return;
+
       setModules(
-        error || !data
+        mods.error || !mods.data
           ? EMPTY
-          : data.map((row) => ({
+          : mods.data.map((row) => ({
               moduleCode: row.module_code,
               name: row.name,
               enabled: row.enabled,
             }))
       );
+
+      // A failed or empty read leaves this null, which every consumer reads
+      // as "nothing to warn about". Presentation must never be the thing
+      // that stops someone working -- the database is the real boundary.
+      const row = bill.error ? null : bill.data?.[0];
+      setBilling(
+        row
+          ? {
+              subscriptionStatus: row.subscription_status,
+              writesAllowed: row.writes_allowed,
+              graceEndsAt: row.grace_ends_at,
+            }
+          : null
+      );
+
       setLoading(false);
     });
 
@@ -64,7 +101,11 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
     };
   }, [userId]);
 
-  return <ModulesContext.Provider value={{ modules, loading }}>{children}</ModulesContext.Provider>;
+  return (
+    <ModulesContext.Provider value={{ modules, billing, loading }}>
+      {children}
+    </ModulesContext.Provider>
+  );
 }
 
 export function useModules() {
@@ -87,4 +128,16 @@ export function useHasModule(moduleCode: string): boolean {
   if (loading) return true;
   const found = modules.find((m) => m.moduleCode === moduleCode);
   return found ? found.enabled : false;
+}
+
+/**
+ * The store's billing state, or null while loading or unknown.
+ *
+ * Same optimism as useHasModule: an unknown answer means "say nothing".
+ * A banner wrongly claiming someone is suspended is worse than a missing
+ * one, and the write would be refused server-side regardless.
+ */
+export function useBillingState(): BillingState | null {
+  const { billing, loading } = useModules();
+  return loading ? null : billing;
 }

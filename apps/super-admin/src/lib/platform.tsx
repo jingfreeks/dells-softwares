@@ -216,6 +216,34 @@ export async function setPlan(orgId: string, planCode: string, reason: string): 
   if (error) throw new Error(error.message);
 }
 
+/** The §08 ladder. SUSPENDED and CANCELLED withdraw writes; reads never stop. */
+export const SUBSCRIPTION_STATUSES = [
+  "TRIALING",
+  "ACTIVE",
+  "PAST_DUE",
+  "SUSPENDED",
+  "CANCELLED",
+] as const;
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
+
+/** The two states that take a tenant's ability to work away. */
+export function blocksWrites(status: string): boolean {
+  return status === "SUSPENDED" || status === "CANCELLED";
+}
+
+export async function setSubscriptionStatus(
+  orgId: string,
+  status: SubscriptionStatus,
+  reason: string
+): Promise<void> {
+  const { error } = await supabase.rpc("platform_set_subscription_status", {
+    p_org: orgId,
+    p_status: status,
+    p_reason: reason || null,
+  });
+  if (error) throw new Error(error.message);
+}
+
 /** Drops a MANUAL override so the tenant's plan governs the module again. */
 export async function resetModuleToPlan(
   orgId: string,
