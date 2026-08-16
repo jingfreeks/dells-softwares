@@ -15,8 +15,15 @@ function friendlyUnpairError(message: string): string {
   return message || ERROR_COULD_NOT_UNPAIR_DEVICE;
 }
 
+export interface DeviceAllowance {
+  cap: number;
+  used: number;
+  atLimit: boolean;
+}
+
 export function useDevicesPage() {
   const [devices, setDevices] = useState<DeviceRow[]>([]);
+  const [allowance, setAllowance] = useState<DeviceAllowance | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -29,6 +36,32 @@ export function useDevicesPage() {
   const [unpairPin, setUnpairPin] = useState("");
   const [unpairSubmitting, setUnpairSubmitting] = useState(false);
   const [unpairError, setUnpairError] = useState<string | null>(null);
+
+  // Deliberately separate from fetchDevices. It is a nice-to-have count, and
+  // an allowance that fails to load must cost the owner that count and
+  // nothing else -- never the device list itself.
+  //
+  // Retired devices do not count here, the same rule the enforcement trigger
+  // applies, so a store that has replaced a till is not judged on its history.
+  const fetchAllowance = useCallback(async () => {
+    try {
+      const { data } = await supabase.rpc("my_store_limits");
+      const row = (data ?? []).find(
+        (r: { limit_key: string }) => r.limit_key === "devices"
+      );
+      setAllowance(
+        row && row.cap !== null
+          ? {
+              cap: row.cap,
+              used: row.current_usage ?? 0,
+              atLimit: (row.current_usage ?? 0) >= row.cap,
+            }
+          : null
+      );
+    } catch {
+      setAllowance(null);
+    }
+  }, []);
 
   const fetchDevices = useCallback(async () => {
     setLoading(true);
@@ -60,7 +93,8 @@ export function useDevicesPage() {
 
   useEffect(() => {
     fetchDevices();
-  }, [fetchDevices]);
+    fetchAllowance();
+  }, [fetchDevices, fetchAllowance]);
 
   async function generateCode() {
     setGenerating(true);
@@ -108,6 +142,7 @@ export function useDevicesPage() {
 
       closeUnpairModal();
       await fetchDevices();
+      await fetchAllowance();
     } catch (err) {
       setUnpairError(friendlyUnpairError(err instanceof Error ? err.message : ERROR_COULD_NOT_UNPAIR_DEVICE));
       setUnpairPin("");
@@ -118,6 +153,7 @@ export function useDevicesPage() {
 
   return {
     devices,
+    allowance,
     loading,
     loadError,
     generatedCode,

@@ -18,6 +18,7 @@ export * from "./nav";
 export * from "./network";
 export * from "./offlineQueue";
 export * from "./permissions";
+export * from "./platformErrors";
 export * from "./pos";
 export * from "./printReport";
 export * from "./qr";

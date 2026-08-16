@@ -267,7 +267,11 @@ a human can supply.
     `describeWriteError()` turns `LIMIT_EXCEEDED: warehouses (max 3)` — which
     used to reach the screen verbatim — into a sentence naming the number and
     what to do. Unrecognised errors pass through unchanged, deliberately: a
-    friendly generic would hide the real fault.
+    friendly generic would hide the real fault. `tindahan-pos` carries the
+    same translator (`describePlatformError`) and shows "Using 2 of 3
+    registers" in Settings → Devices; the register limit is the one a
+    customer is most likely to meet, since it surfaced on the screen of a
+    brand-new till mid-pairing.
   - **Run `supabase/snippets/limit-audit.sql` before applying this to real
     data.** It is read-only and lists anyone at or over a cap. The migration
     cannot corrupt anything, but it can surprise someone.
