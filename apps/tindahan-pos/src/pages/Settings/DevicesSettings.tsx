@@ -5,6 +5,7 @@ import { useDevicesPage } from "./hooksDevices";
 export function DevicesSettings() {
   const {
     devices,
+    allowance,
     loading,
     loadError,
     generatedCode,
@@ -31,6 +32,15 @@ export function DevicesSettings() {
             {PAGE_HEADING_DEVICES}
           </p>
           <p className="tpl-sub">{TEXT_DEVICES_DESCRIPTION}</p>
+          {allowance && (
+            <p
+              className="tpl-sub"
+              style={{ marginTop: 2, color: allowance.atLimit ? "var(--tpl-danger, #b91c1c)" : undefined }}
+            >
+              Using {allowance.used} of {allowance.cap} registers included in your plan
+              {allowance.atLimit && " — contact support to pair another"}
+            </p>
+          )}
         </div>
       </div>
 

@@ -1022,6 +1022,18 @@ export interface Database {
       // 20260815100000_grace_and_downgrade_ladder.sql -- the §08 ladder,
       // reached through a public wrapper because `core` is not exposed to
       // PostgREST.
+      // 20260815104000_my_store_limits.sql -- takes no argument on purpose:
+      // it can only ever answer for the caller's own store.
+      my_store_limits: {
+        Args: Record<string, never>;
+        Returns: {
+          module_code: string;
+          limit_key: string;
+          /** null means no ceiling. */
+          cap: number | null;
+          current_usage: number | null;
+        }[];
+      };
       my_store_billing_state: {
         Args: Record<string, never>;
         Returns: {
