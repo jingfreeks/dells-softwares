@@ -150,7 +150,7 @@ cannot be recorded there.
 ```bash
 cd apps/tindahan-pos
 supabase db reset          # applies all migrations from empty
-bash supabase/tests/run.sh # 69 assertions
+bash supabase/tests/run.sh # 77 assertions
 ```
 
 | Suite | Guards |
@@ -159,6 +159,7 @@ bash supabase/tests/run.sh # 69 assertions
 | `110_platform_admin` | the `platform_*` contract — deny tests first |
 | `120_inventory_enforcement` | writes blocked, **reads not** |
 | `130_tenant_isolation` | §30's premise: tenant A cannot read tenant B |
+| `140_session_helpers` | `current_user_id()` treats absent claims as absent, not as an error |
 
 Plus two static guards (`scripts/check-*.mjs`): no client-reachable secrets,
 and no table without RLS. All of it runs in `Platform CI`
@@ -222,10 +223,10 @@ a human can supply.
 - **Grace/downgrade ladder.** The subscription statuses exist so
   `PAST_DUE → SUSPENDED → CANCELLED` is representable; the read-only-on-
   suspend behaviour belongs with enforcement.
-- **A latent sharp edge in the platform package.**
-  `core.current_user_id()` casts `request.jwt.claims` to `jsonb` without
-  guarding the empty string. After a transaction-local `set_config` reverts,
-  that GUC becomes `''`, and `''::jsonb` throws. PostgREST always sets valid
-  claims, so production paths look safe — but running entitlement updates
-  from a SQL session that previously set claims will produce a confusing
-  error. The fix is `nullif(current_setting(...), '')::jsonb`.
+- ~~A latent sharp edge in `core.current_user_id()`.~~ **Fixed** in
+  `20260815098000`. It cast `request.jwt.claims` to `jsonb` before guarding
+  the empty string, and a transaction-local `set_config` reverts to `''`
+  rather than NULL — which is the resting state of every pooled PostgREST
+  connection between requests. Because it is the session primitive behind
+  every RLS helper, it raised rather than failing closed. Regression covered
+  by `140_session_helpers`.
