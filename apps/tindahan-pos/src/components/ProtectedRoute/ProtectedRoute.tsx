@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth, TITLE_UNABLE_TO_CONNECT } from "@/lib";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileHeader } from "@/components/MobileHeader";
+import { BillingBanner } from "@/components/BillingBanner";
 import { BottomNav } from "@/components/BottomNav";
 import { PageLoadingOverlay } from "@/components/PageLoadingOverlay";
 import { PageErrorOverlay } from "@/components/PageErrorOverlay";
@@ -58,6 +59,7 @@ export function ProtectedRoute() {
       <Sidebar />
       <div className="flex min-h-0 flex-1 flex-col">
         <MobileHeader />
+        <BillingBanner />
         <main className="tpl-main flex-1 pb-16 lg:pb-0">
           <Outlet />
         </main>

@@ -270,6 +270,12 @@ a human can supply.
   and a provisioning gap must never read as a suspension.
   `platform_set_subscription_status()` is the operator control (BILLING
   scope, and a reason is required to suspend or cancel).
+  - Both apps warn the tenant: `inventory-app`'s `ModuleBanner` (where the
+    gated writes are) and `tindahan-pos`'s `BillingBanner`. The POS one is
+    shown to **admins only** and never on a paired device — a cashier cannot
+    pay a bill, the till faces the customer, and nothing in the POS is
+    blocked by billing state anyway. If POS gating is ever adopted, that
+    last reason disappears and the audience should be revisited.
   - **POS is not gated by it.** A suspended tenant can still sell. Blocking
     sales is the sharpest possible change to a live money-handling system
     and depends on the open POS-gating decision below; `160_grace_ladder`

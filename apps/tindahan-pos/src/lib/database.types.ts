@@ -1019,6 +1019,19 @@ export interface Database {
         Args: { p_staff_id: string; p_role_code: string };
         Returns: undefined;
       };
+      // 20260815100000_grace_and_downgrade_ladder.sql -- the §08 ladder,
+      // reached through a public wrapper because `core` is not exposed to
+      // PostgREST.
+      my_store_billing_state: {
+        Args: Record<string, never>;
+        Returns: {
+          organization_status: string;
+          subscription_status: string;
+          writes_allowed: boolean;
+          /** Only set while PAST_DUE. */
+          grace_ends_at: string | null;
+        }[];
+      };
     };
     Enums: {
       staff_role: StaffRole;
