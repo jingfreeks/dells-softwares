@@ -119,16 +119,3 @@ jobs:
         env:
           VITE_SUPABASE_URL: http://localhost:54321
           VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
-
-# ---------------------------------------------------------------------------
-# NOTE ON THIS FILE'S LOCATION
-#
-# This belongs at .github/workflows/platform-ci.yml. It is parked here only
-# because the token used to open this PR lacks GitHub's `workflow` scope, so
-# it cannot create or update files under .github/workflows/. Move it with:
-#
-#     git mv ci/platform-ci.yml .github/workflows/platform-ci.yml
-#
-# Nothing else needs to change -- the paths inside are already written
-# relative to the repository root.
-# ---------------------------------------------------------------------------
