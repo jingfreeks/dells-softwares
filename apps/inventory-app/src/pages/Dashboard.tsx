@@ -1,3 +1,4 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
@@ -52,7 +53,7 @@ export function Dashboard() {
         });
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load dashboard.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load dashboard."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

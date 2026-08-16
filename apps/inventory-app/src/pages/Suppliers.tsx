@@ -1,3 +1,4 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
@@ -26,7 +27,7 @@ export function Suppliers() {
         if (!cancelled) setSuppliers(rows);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load suppliers.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load suppliers."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -61,7 +62,7 @@ export function Suppliers() {
       setShowForm(false);
       setForm(emptyForm);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not save supplier.");
+      setFormError(describeWriteError(err, "Could not save supplier."));
     } finally {
       setSubmitting(false);
     }
@@ -72,7 +73,7 @@ export function Suppliers() {
       await deleteSupplier(id);
       setSuppliers((prev) => prev.filter((s) => s.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete supplier.");
+      setError(describeWriteError(err, "Could not delete supplier."));
     }
   }
 

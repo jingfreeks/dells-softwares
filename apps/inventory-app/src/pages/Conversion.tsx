@@ -1,3 +1,4 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
@@ -39,7 +40,7 @@ export function Conversion() {
         setProductId((prev) => prev || p[0]?.id || "");
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load conversions.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load conversions."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -78,7 +79,7 @@ export function Conversion() {
       setUnitName("");
       setBaseUnitFactor("");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not save conversion.");
+      setFormError(describeWriteError(err, "Could not save conversion."));
     } finally {
       setSubmitting(false);
     }
@@ -91,7 +92,7 @@ export function Conversion() {
       await removeConversion(id);
       setConversions((prev) => prev.filter((c) => c.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not remove conversion.");
+      setError(describeWriteError(err, "Could not remove conversion."));
     } finally {
       setBusyId(null);
     }

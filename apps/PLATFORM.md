@@ -41,6 +41,7 @@ deliberate `public` contract:
 | `platform_set_subscription_status(...)` | super-admin | move a tenant along the §08 ladder |
 | `platform_organization_limits(...)` | super-admin | usage against ceiling, per limit |
 | `platform_set_limit(...)` | super-admin | raise, lower or remove a ceiling |
+| `my_store_limits()` | both apps | the caller's OWN ceilings and usage; takes no argument |
 | `my_store_billing_state()` | tenant apps | what to warn this store about, if anything |
 | `platform_audit(limit)` | super-admin | platform-level activity |
 
@@ -159,7 +160,7 @@ cannot be recorded there.
 ```bash
 cd apps/tindahan-pos
 supabase db reset          # applies all migrations from empty
-bash supabase/tests/run.sh # 185 assertions
+bash supabase/tests/run.sh # 192 assertions
 ```
 
 | Suite | Guards |
@@ -173,6 +174,7 @@ bash supabase/tests/run.sh # 185 assertions
 | `160_grace_ladder` | suspension blocks writes and ONLY writes; an unprovisioned tenant keeps working |
 | `170_plan_limits` | caps stop the next row, absent means unlimited, and it holds for `service_role` |
 | `180_limit_controls` | the console's usage number IS the trigger's, and a ceiling can be changed |
+| `190_tenant_limits` | a store sees its own ceilings, cannot aim at another's, fails closed |
 
 Plus two static guards (`scripts/check-*.mjs`): no client-reachable secrets,
 and no table without RLS. All of it runs in `Platform CI`
@@ -260,6 +262,12 @@ a human can supply.
     "how many do they have", called by both the triggers and the console, so
     the number an operator sees is by construction the number that gets
     enforced.
+  - The tenant is warned before hitting one: `inventory-app` shows "Using 3
+    of 3 included in your plan" and disables the action, and
+    `describeWriteError()` turns `LIMIT_EXCEEDED: warehouses (max 3)` — which
+    used to reach the screen verbatim — into a sentence naming the number and
+    what to do. Unrecognised errors pass through unchanged, deliberately: a
+    friendly generic would hide the real fault.
   - **Run `supabase/snippets/limit-audit.sql` before applying this to real
     data.** It is read-only and lists anyone at or over a cap. The migration
     cannot corrupt anything, but it can surprise someone.

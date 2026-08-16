@@ -1,3 +1,4 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
@@ -45,7 +46,7 @@ export function BeginningBalance() {
         setWarehouseId((prev) => prev || w.find((wh) => wh.isDefault)?.id || w[0]?.id || "");
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load data.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load data."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -63,7 +64,7 @@ export function BeginningBalance() {
         if (!cancelled) setBalances(rows);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load beginning balances.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load beginning balances."));
       });
     return () => {
       cancelled = true;
@@ -107,7 +108,7 @@ export function BeginningBalance() {
       setQuantity("");
       setUnitCost("");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not save beginning balance.");
+      setFormError(describeWriteError(err, "Could not save beginning balance."));
     } finally {
       setSubmitting(false);
     }
