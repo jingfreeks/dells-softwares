@@ -160,7 +160,7 @@ cannot be recorded there.
 ```bash
 cd apps/tindahan-pos
 supabase db reset          # applies all migrations from empty
-bash supabase/tests/run.sh # 199 assertions
+bash supabase/tests/run.sh # 221 assertions
 ```
 
 | Suite | Guards |
@@ -176,6 +176,7 @@ bash supabase/tests/run.sh # 199 assertions
 | `180_limit_controls` | the console's usage number IS the trigger's, and a ceiling can be changed |
 | `190_tenant_limits` | a store sees its own ceilings, cannot aim at another's, fails closed |
 | `200_audit_partition_isolation` | a partition of `core.audit_logs` is not a way past the parent's policy |
+| `210_permission_unification` | an admin keeps every permission across the change; a demotion actually demotes |
 
 Plus two static guards (`scripts/check-*.mjs`): no client-reachable secrets,
 and no table without RLS. All of it runs in `Platform CI`
@@ -253,14 +254,19 @@ a human can supply.
   query in it has been executed locally; none has met real data. Twenty-five migrations
   exist locally and in `dev`; the reconciliation queries from the tenancy
   backfill have only ever run against a handful of local rows.
-- **Two permission systems coexist.** `public.roles`/`permissions`/
-  `staff_roles` with `has_permission()` was built before the core
-  integration; the platform's own Phase 3 is designed to add its own, and
-  `core.is_org_wide_staff()` is its interim marker. **Analyzed in
-  [PERMISSIONS-DECISION.md](PERMISSIONS-DECISION.md)** — 78 live checkpoints
-  on the built system against 11 interim ones, so the recommendation is to
-  keep `public` and retire the interim into it. Still a decision to make, not
-  a decision made.
+- ~~**Two permission systems coexist.**~~ **Resolved** in `20260815106000`,
+  adopting option A from [PERMISSIONS-DECISION.md](PERMISSIONS-DECISION.md).
+  `core.is_org_wide_staff()` is gone; its 11 call sites now ask
+  `core.is_org_member(org) and has_permission('core.x.y')` — membership *and*
+  authority, rather than one standing in for the other — using the codes each
+  site already named in its own comment. `has_permission()` no longer branches
+  on `staff.role = 'admin'`, so nothing anywhere branches on a role name (§07).
+  - That shortcut was load-bearing: `handle_new_user()` creates an admin staff
+    row and nothing ever assigned it OWNER, so removing it first would have
+    stripped every permission from every admin created after `0044`.
+    `trg_staff_sync_owner_role` keeps `staff.role = 'admin'` and the OWNER
+    grant in step **in both directions** — a demotion that left OWNER behind
+    would be a demotion in name only.
 - **`suppliers` / `receiving` module ownership** — a pricing decision, above.
 - **POS gating** — deliberately not built, above.
 - ~~**Limit enforcement.**~~ **Built** in `20260815102000`. Triggers rather
