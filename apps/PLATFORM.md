@@ -230,15 +230,17 @@ a human can supply.
   and sets default privileges so the next new table cannot reintroduce the
   gap. `anon` is deliberately granted nothing. The three RLS suites no longer
   carry their compensating `grant`, so they now fail if this regresses.
-- **Nothing has been applied to staging or production.** Twenty migrations
+- **Nothing has been applied to staging or production.** Twenty-five migrations
   exist locally and in `dev`; the reconciliation queries from the tenancy
   backfill have only ever run against a handful of local rows.
 - **Two permission systems coexist.** `public.roles`/`permissions`/
   `staff_roles` with `has_permission()` was built before the core
   integration; the platform's own Phase 3 is designed to add its own, and
-  `core.is_org_wide_staff()` is its interim marker. They have not been
-  reconciled — whoever scopes Phase 3 needs to decide which one wins rather
-  than discovering the overlap.
+  `core.is_org_wide_staff()` is its interim marker. **Analyzed in
+  [PERMISSIONS-DECISION.md](PERMISSIONS-DECISION.md)** — 78 live checkpoints
+  on the built system against 11 interim ones, so the recommendation is to
+  keep `public` and retire the interim into it. Still a decision to make, not
+  a decision made.
 - **`suppliers` / `receiving` module ownership** — a pricing decision, above.
 - **POS gating** — deliberately not built, above.
 - ~~**Limit enforcement.**~~ **Built** in `20260815102000`. Triggers rather
