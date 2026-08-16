@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { addProduct, canCreateTestAccountsDirectly, loginAsFreshStore, uniqueEmail } from './helpers'
+import { SEG_SIGN_IN } from '../src/lib/textLabels/textLabels'
 
 // These tests exercise the app's actual security boundaries — Row Level
 // Security policies and route guards — rather than just UI behavior.
@@ -164,7 +165,7 @@ test.describe('Route guards', () => {
     const email = uniqueEmail('security-probe')
     await page.getByLabel('Email address').fill(email)
     await page.getByLabel('Password', { exact: true }).fill('definitely-wrong')
-    await page.getByRole('button', { name: 'Log in' }).click()
+    await page.getByRole('button', { name: SEG_SIGN_IN }).click()
 
     // Same generic message for "no such user" and "wrong password" —
     // a distinct message for either would let an attacker enumerate
