@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { addProduct, loginAsFreshStore } from './helpers'
+import { addProduct, loginAsFreshStore, primeCashierPin, startCashierSession } from './helpers'
 
 test.describe('POS checkout flow (Epic A)', () => {
   test.beforeEach(async ({ page, request }) => {
-    await loginAsFreshStore(request, page)
+    const email = await loginAsFreshStore(request, page)
+    await primeCashierPin(request, email)
     await addProduct(page, {
       name: 'Sardines in Tomato Sauce',
       category: 'Canned Goods',
@@ -16,7 +17,7 @@ test.describe('POS checkout flow (Epic A)', () => {
       price: '8',
       stock: '120',
     })
-    await page.goto('/pos')
+    await startCashierSession(page)
   })
 
   test('unknown barcode shows "Product not found" (story A1)', async ({ page }) => {
@@ -120,20 +121,23 @@ test.describe('Inventory (Epic B)', () => {
 
   test('a new product can be added and appears in the table (story B1)', async ({ page }) => {
     await page.getByRole('button', { name: 'Add product' }).click()
-    await page.getByLabel('Name').fill('Instant Noodles')
+    await page.getByLabel('Name', { exact: true }).fill('Instant Noodles')
     // Category is a dropdown of existing per-store categories, not free
     // text — "Snacks & Chips" already exists from beforeEach's addProduct.
-    await page.getByLabel('Category').selectOption({ label: 'Snacks & Chips' })
+    await page.getByLabel('Category', { exact: true }).selectOption({ label: 'Snacks & Chips' })
     await page.getByLabel('Price').fill('15')
     await page.getByLabel('Stock', { exact: true }).fill('40')
     await page.locator('form').getByRole('button', { name: 'Add product' }).click()
 
-    await expect(page.getByRole('cell', { name: 'Instant Noodles' })).toBeVisible()
+    await expect(page.getByRole('row', { name: 'Instant Noodles' })).toBeVisible()
   })
 
   test('restocking increases the stock count (story B4)', async ({ page }) => {
     const row = page.getByRole('row', { name: /Ube Crackers/ })
     await row.getByRole('button', { name: '+10 stock' }).click()
-    await expect(row.getByRole('cell', { name: '18' })).toBeVisible()
+    // The stock figure is a <p> inside the row, not a table cell, so match on
+    // the row's own accessible text rather than a cell role the markup does
+    // not use.
+    await expect(row).toContainText('18')
   })
 })

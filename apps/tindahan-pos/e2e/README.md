@@ -3,7 +3,8 @@
 ## State of this suite, honestly
 
 **It is largely broken, and has been for a while.** Measured on a clean local
-run: **11 of 41 tests pass.**
+run: **15 of 41 tests pass** — up from 8 when this was first pointed at a
+local stack, and from 11 at the end of the first repair pass.
 
 That is not a regression introduced here — it is what was already true and
 nobody could see, because the CI job is `if: false`
@@ -45,6 +46,18 @@ below. `.env.local` is gitignored; never point these at a hosted project again.
 
 ## What has been fixed
 
+- **Ambiguous label selectors.** The inventory search box carries
+  `aria-label="Search by name, category, or barcode"`, and `getByLabel` matches
+  substrings — so `getByLabel('Name')`, `('Category')` and `(/Barcode/)` each
+  resolved to *two* elements and Playwright refused in strict mode. Not renamed
+  fields, as it first appeared: ambiguous selectors. Now exact-matched.
+- **`role="cell"` assertions.** The product list renders rows whose children
+  are `<p>`, not table cells, so `getByRole('cell')` matched nothing while the
+  row carries the accessible name. Now `getByRole('row')`.
+- **The admin dashboard has no heading at all** — its title is a time-based
+  greeting in a `<p>`. Tests now key off the reporting-date picker's
+  `aria-label`, which is a stable, semantic landmark.
+
 - **Selectors now import the app's own label constants** rather than repeating
   string literals. The login page was redesigned into `Sign in` /
   `Create account` tabs and its submit button stopped saying "Log in" — 62 of
@@ -61,13 +74,28 @@ below. `.env.local` is gitignored; never point these at a hosted project again.
 
 ## What is still broken, and why
 
-| count | waiting for | cause |
+| count | spec | cause |
 |---|---|---|
-| 14 | `getByLabel('Name')` | the product form's field was renamed |
-| 7 | `heading 'Admin dashboard'` | **no such heading exists in the app** — `PAGE_HEADING_ADMIN_DASHBOARD` is defined in `textLabels.ts` and rendered by nothing |
-| 4 | `button 'Services'` | a POS tab that was renamed or removed |
-| 2 | `heading 'POS Checkout'` | same |
-| 3 | assorted | a redirect assertion, a `Create account` button |
+| 9 | `pos-checkout` | **the cashier-session gate** — see below |
+| 7 | `reports` | downstream of the same gate / dashboard landmarks |
+| 5 | `feature-flags` | adds products then drives the POS, so the same gate |
+| 2 | `login`, 2 `security`, 1 `performance` | assorted |
+
+**The cashier-session gate is the one blocker worth understanding.** `/pos`
+no longer shows the register — it shows a cashier picker, and getting past it
+needs a staff member with a PIN, entered on a *keypad* (the aria-label is on a
+`<div role="status">` showing dots, so `fill()` has nothing to fill). That
+gate was added after this suite was written, and it is why every POS test
+timed out looking for a search control: the page they were driving was the
+picker.
+
+`primeCashierPin()` and `startCashierSession()` in `helpers.ts` are the
+beginnings of a fix — the PIN is set through `set_own_pin()` with the
+account's own token, and the digits are pressed rather than filled. **They do
+not work yet.** The keypad renders and the digits are pressed, but the session
+does not open; the failure is somewhere in `start_cashier_session`, past the
+point I traced. Anyone picking this up should start there, not at the
+selectors.
 
 Two of these need a decision rather than a fix:
 

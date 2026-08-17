@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext } from '@playwright/test'
 import { loginAsFreshStore } from './helpers'
+import { PAGE_HEADING_POS } from './helpers'
 
 // Regression coverage for the feature-flags kill switch itself (migration
 // 0007) and the two features currently wired to it: pos_services and
@@ -60,7 +61,7 @@ test.describe('Feature flag kill switches', () => {
 
     await expect(page.getByRole('button', { name: 'Services', exact: true })).toHaveCount(0)
     // Products browsing must be completely unaffected by the flag.
-    await expect(page.getByRole('heading', { name: 'POS Checkout' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: PAGE_HEADING_POS })).toBeVisible()
   })
 
   test('re-enabling pos_services (or removing the row) brings the tab back', async ({ page, request }) => {
@@ -101,8 +102,8 @@ test.describe('Feature flag kill switches', () => {
     // (default) — 3 pcs for ₱20, i.e. ~₱6.67/pc.
     await page.goto('/inventory')
     await page.getByRole('button', { name: 'Add product' }).click()
-    await page.getByLabel('Name').fill('Pack Priced Candy')
-    await page.getByLabel('Category').selectOption({ label: '+ New category…' })
+    await page.getByLabel('Name', { exact: true }).fill('Pack Priced Candy')
+    await page.getByLabel('Category', { exact: true }).selectOption({ label: '+ New category…' })
     await page.getByPlaceholder('New category name').fill('Pack Test')
     await page.getByRole('button', { name: 'Add', exact: true }).click()
     await page.getByLabel(/Sell by pack/).check()
@@ -110,7 +111,7 @@ test.describe('Feature flag kill switches', () => {
     await page.getByLabel('Pack price (₱)').fill('20')
     await page.getByLabel('Stock', { exact: true }).fill('30')
     await page.locator('form').getByRole('button', { name: 'Add product' }).click()
-    await expect(page.getByRole('cell', { name: 'Pack Priced Candy' })).toBeVisible()
+    await expect(page.getByRole('row', { name: 'Pack Priced Candy' })).toBeVisible()
 
     // With the flag on, POS shows the pack label and charges pack math.
     await page.goto('/pos')

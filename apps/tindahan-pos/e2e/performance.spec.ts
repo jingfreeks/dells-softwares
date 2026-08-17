@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { login } from './helpers'
+import { ARIA_DASHBOARD_DATE } from './helpers'
 
 // Speed check for the app's key screens and interactions, against a real
 // Supabase project (not mocked) so the numbers reflect actual network
@@ -104,7 +105,7 @@ test.describe('Performance', () => {
 
     const searchMs = await timeAction(async () => {
       await page.getByPlaceholder('Search by name, category, or barcode').fill('Kopiko')
-      await expect(page.getByRole('cell', { name: /Kopiko/ }).first()).toBeVisible()
+      await expect(page.getByRole('row', { name: /Kopiko/ }).first()).toBeVisible()
     })
     results['Inventory search filter latency'] = searchMs
     expect(searchMs, 'search filtering should feel instant (well under 2s)').toBeLessThan(2000)
@@ -147,7 +148,7 @@ test.describe('Performance', () => {
     // (35 products, real sales/low-stock/best-seller data) — not an
     // empty test store like the e2e reports.spec.ts suite uses.
     await page.goto('/admin')
-    await expect(page.getByRole('heading', { name: 'Admin dashboard' })).toBeVisible()
+    await expect(page.getByLabel(ARIA_DASHBOARD_DATE)).toBeVisible()
 
     const downloadMs = await timeAction(async () => {
       const [download] = await Promise.all([

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { canCreateTestAccountsDirectly, loginAsFreshStore } from './helpers'
+import { ARIA_DASHBOARD_DATE } from './helpers'
 
 // Coverage for the admin daily sales report (PDF download/print/share,
 // both the combined report and the per-card single-section exports).
@@ -10,7 +11,7 @@ test.describe('Daily sales report', () => {
   test.beforeEach(async ({ page, request }) => {
     await loginAsFreshStore(request, page)
     await page.goto('/admin')
-    await expect(page.getByRole('heading', { name: 'Admin dashboard' })).toBeVisible()
+    await expect(page.getByLabel(ARIA_DASHBOARD_DATE)).toBeVisible()
   })
 
   test('the report card and every stat/list card action icon is present', async ({ page }) => {
