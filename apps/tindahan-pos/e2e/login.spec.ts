@@ -7,6 +7,7 @@ import {
   uniqueEmail,
   TEST_PASSWORD,
 } from './helpers'
+import { PAGE_HEADING_POS } from './helpers'
 import { SEG_SIGN_IN } from '../src/lib/textLabels/textLabels'
 
 test.describe('Login (stories D1-D3)', () => {
@@ -30,7 +31,7 @@ test.describe('Login (stories D1-D3)', () => {
     const { email, password } = await createTestStoreAccount(request)
 
     await login(page, email, password)
-    await expect(page.getByRole('heading', { name: 'POS Checkout' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: PAGE_HEADING_POS })).toBeVisible()
   })
 
   test('forgot-password link is reachable and shows a confirmation', async ({ page }) => {

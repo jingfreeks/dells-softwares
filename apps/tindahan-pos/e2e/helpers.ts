@@ -11,10 +11,17 @@ import {
   SEG_CREATE_ACCOUNT,
   LABEL_EMAIL_ADDRESS,
   LABEL_PASSWORD,
-  PAGE_HEADING_ADMIN_DASHBOARD,
+  LABEL_NAME,
+  PAGE_HEADING_POS,
+  ARIA_DASHBOARD_DATE,
+  LABEL_CASHIER_PIN_ARIA,
+  LABEL_OPENING_FLOAT,
+  BUTTON_CONTINUE,
 } from '../src/lib/textLabels/textLabels'
 
-export { PAGE_HEADING_ADMIN_DASHBOARD }
+export { PAGE_HEADING_POS, ARIA_DASHBOARD_DATE }
+
+export const TEST_PIN = '1234'
 
 // These e2e tests run against a real Supabase project (see .env / .env.example)
 // rather than mock data. Whether the project currently requires email
@@ -62,7 +69,7 @@ export async function registerFreshStore(
   await page.getByRole('button', { name: SEG_CREATE_ACCOUNT }).click()
 
   await expect(
-    page.getByRole('heading', { name: 'POS Checkout' }).or(page.getByRole('heading', { name: 'Check your email' }))
+    page.getByRole('heading', { name: PAGE_HEADING_POS }).or(page.getByRole('heading', { name: 'Check your email' }))
   ).toBeVisible({ timeout: 15_000 })
 
   const outcome = (await page.getByRole('heading', { name: 'Check your email' }).count()) > 0
@@ -72,6 +79,7 @@ export async function registerFreshStore(
 }
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY
 // Server-side only (not VITE_-prefixed) — used exclusively from Node via
 // Playwright's `request` fixture, never sent to the browser/client.
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -202,15 +210,15 @@ export async function addProduct(
 ) {
   await page.goto('/inventory')
   await page.getByRole('button', { name: 'Add product' }).click()
-  await page.getByLabel('Name').fill(product.name)
+  await page.getByLabel(LABEL_NAME, { exact: true }).fill(product.name)
   if (product.barcode) {
-    await page.getByLabel(/Barcode/).fill(product.barcode)
+    await page.getByLabel('Barcode', { exact: true }).fill(product.barcode)
   }
 
   // Category is a dropdown of existing per-store categories (plus a
   // "+ New category…" option), not free text — pick the existing option
   // if there is one, otherwise create it inline the way an admin would.
-  const categorySelect = page.getByLabel('Category')
+  const categorySelect = page.getByLabel('Category', { exact: true })
   const hasCategory = await categorySelect.locator('option', { hasText: product.category }).count()
   if (hasCategory > 0) {
     await categorySelect.selectOption({ label: product.category })
@@ -226,5 +234,77 @@ export async function addProduct(
     await page.getByLabel('Low-stock at').fill(product.lowStockThreshold)
   }
   await page.locator('form').getByRole('button', { name: 'Add product' }).click()
-  await expect(page.getByRole('cell', { name: product.name })).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByRole('row', { name: product.name })).toBeVisible({ timeout: 10_000 })
+}
+
+/**
+ * Open the register.
+ *
+ * /pos does not show the checkout screen directly any more — it shows the
+ * cashier picker, and getting past it needs a staff member with a PIN. That
+ * gate was added after this suite was written and is why every POS test was
+ * timing out on the search control: the page they were driving was the picker,
+ * not the register.
+ *
+ * The PIN is set through set_own_pin() with the account's own token rather
+ * than by writing pin_hash directly, because the hash is produced by crypt()
+ * inside that function — reproducing it here would encode an implementation
+ * detail of how PINs are stored into the test suite.
+ */
+export async function primeCashierPin(request: APIRequestContext, email: string) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error('primeCashierPin requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
+  }
+  const auth = await request.post(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    headers: { apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+    data: { email, password: TEST_PASSWORD },
+  })
+  if (!auth.ok()) throw new Error(`primeCashierPin sign-in failed: ${await auth.text()}`)
+  const { access_token: token } = (await auth.json()) as { access_token: string }
+
+  const res = await request.post(`${SUPABASE_URL}/rest/v1/rpc/set_own_pin`, {
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    data: { p_pin: TEST_PIN },
+  })
+  if (!res.ok()) throw new Error(`set_own_pin failed: ${res.status()} ${await res.text()}`)
+}
+
+/** Pick the staff member on the cashier picker and unlock the register. */
+export async function startCashierSession(page: Page, staffName = 'Test Admin') {
+  await page.goto('/pos')
+  await page.getByRole('button', { name: new RegExp(staffName) }).first().click()
+
+  // The picker branches: a staff member with a PIN is asked for it, and
+  // whoever opens the register is asked to count the starting cash. An admin
+  // who has just been given a PIN may see either, so handle both rather than
+  // assuming one -- an assumption here is what made this look like a broken
+  // selector instead of an unmet product step.
+  // Wait for the stage to render before deciding which one it is. Checking
+  // visibility immediately after the click always reported "not the PIN
+  // stage", silently skipped the digits, and failed later on the heading --
+  // a race that looked exactly like a bad selector.
+  const firstKey = page.getByRole('button', { name: '1', exact: true })
+  await firstKey.waitFor({ timeout: 10_000 }).catch(() => {})
+
+  if (await firstKey.isVisible().catch(() => false)) {
+    // A keypad, not a text field: the aria-label is on a <div role="status">
+    // showing the dots, so fill() has nothing to fill.
+    for (const digit of TEST_PIN) {
+      await page.getByRole('button', { name: digit, exact: true }).click()
+    }
+  }
+
+  const float = page.getByLabel(LABEL_OPENING_FLOAT)
+  if (await float.isVisible().catch(() => false)) {
+    await float.fill('0')
+    await page.getByRole('button', { name: BUTTON_CONTINUE }).click()
+  }
+
+  await expect(page.getByRole('heading', { name: PAGE_HEADING_POS })).toBeVisible({
+    timeout: 15_000,
+  })
 }
