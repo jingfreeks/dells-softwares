@@ -3,8 +3,9 @@
 ## State of this suite, honestly
 
 **It is largely broken, and has been for a while.** Measured on a clean local
-run: **15 of 41 tests pass** — up from 8 when this was first pointed at a
-local stack, and from 11 at the end of the first repair pass.
+run: **18 of 41 tests pass** — up from 8 when this was first pointed at a
+local stack, then 11, then 15. The POS checkout specs went from 0 to 6 once
+the cashier-session flow was understood.
 
 That is not a regression introduced here — it is what was already true and
 nobody could see, because the CI job is `if: false`
@@ -81,33 +82,23 @@ below. `.env.local` is gitignored; never point these at a hosted project again.
 | 5 | `feature-flags` | adds products then drives the POS, so the same gate |
 | 2 | `login`, 2 `security`, 1 `performance` | assorted |
 
-**The cashier-session gate is the one blocker worth understanding.** `/pos`
-no longer shows the register — it shows a cashier picker, and getting past it
-needs a staff member with a PIN, entered on a *keypad* (the aria-label is on a
-`<div role="status">` showing dots, so `fill()` has nothing to fill). That
-gate was added after this suite was written, and it is why every POS test
-timed out looking for a search control: the page they were driving was the
-picker.
+**The cashier-session flow — solved, and worth writing down.** `/pos` does not
+show the register directly. The real sequence, established by walking it in a
+browser after guessing it wrong twice:
 
-`primeCashierPin()` and `startCashierSession()` in `helpers.ts` are the
-beginnings of a fix — the PIN is set through `set_own_pin()` with the
-account's own token, and the digits are pressed rather than filled. **They do
-not work yet.** The keypad renders and the digits are pressed, but the session
-does not open; the failure is somewhere in `start_cashier_session`, past the
-point I traced. Anyone picking this up should start there, not at the
-selectors.
+    pick staff  ->  count starting cash  ->  Continue  ->  PIN keypad  ->  register
 
-Two of these need a decision rather than a fix:
+Both middle steps are conditional, and **the starting cash comes before the
+PIN**, not after — which is what defeated two earlier attempts. The PIN is a
+keypad, not a text field: `LABEL_CASHIER_PIN_ARIA` labels a
+`<div role="status">` holding the dots, so `fill()` has nothing to fill; the
+digits must be pressed. `startCashierSession()` in `helpers.ts` does all of
+this, and `primeCashierPin()` sets the PIN through `set_own_pin()` with the
+account's own token rather than writing `pin_hash` directly.
 
-- **Headings are not headings.** Eleven pages render their title as
-  `<p className="tpl-h1">`, only two as `<h1>`. `getByRole('heading')` finds
-  nothing on those pages. Fixing the tests means selecting on text instead —
-  fixing the *app* means semantic headings, which is also an accessibility
-  improvement and a larger change. The tests should not be bent around this
-  until someone decides which.
-- **`PAGE_HEADING_ADMIN_DASHBOARD` and `LABEL_LOG_IN` are dead constants.**
-  Neither is rendered anywhere. They should either be used or deleted; leaving
-  them is what let the tests keep believing in UI that no longer exists.
+**The POS search box was also unified.** There used to be a scan/search mode
+toggle; there is now a single field ("Scan barcode or search products"), so
+the `'Search by name'` button the specs clicked no longer exists.
 
 ## Re-enabling in CI
 

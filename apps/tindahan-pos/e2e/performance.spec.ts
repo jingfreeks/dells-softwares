@@ -113,8 +113,7 @@ test.describe('Performance', () => {
 
   test('POS add-to-cart and cart-update interaction latency', async () => {
     await page.goto('/pos')
-    await page.getByRole('button', { name: 'Search by name' }).click()
-
+    
     const searchAddMs = await timeAction(async () => {
       await page.getByPlaceholder('e.g. sardines').fill('Kopiko')
       await page.getByRole('button', { name: /Kopiko/ }).first().click()
