@@ -63,10 +63,33 @@ Any migration marked **local-only** is one this rollout will apply. Any marked
 not know about — investigate each one before continuing, because it may
 conflict with what follows.
 
-Checked on 2026-08-16: **both projects report zero remote-only migrations**,
-and both sit at `0043`. The repo and the hosted schemas agree about history,
-which is the good case — though it says nothing about objects changed in the
+Checked again on 2026-08-20, after staging was migrated:
+
+| | applied | pending | remote-only drift |
+|---|---|---|---|
+| `DellsSoftware` (**production**) | 42, last `0043` | **33** | **0** |
+| `DellsSoftware-staging` | 73, last `20260815106000` | 2 | 0 |
+
+**Zero remote-only migrations on either.** The repo and both hosted schemas
+agree about history, and production is exactly where staging was before it
+was migrated — so staging really is a rehearsal for production rather than a
+different system that happens to share a name.
+
+That said, agreeing about *history* says nothing about objects changed in the
 dashboard without a migration, which is what bit us with the table grants.
+Checked that separately, with each project's own anon key — the key that
+ships in the bundle:
+
+```
+production and staging, identically:
+  feature_flags, staff, stores, products, sales, customers, devices, audit_log
+    -> HTTP 200, zero rows
+```
+
+Zero rows everywhere, so RLS is holding on both. The 200s are wide grants
+applied outside this repository; `20260815108000` narrows them, and the fact
+that both projects answer identically is what makes it safe to prove that
+change on staging first.
 
 **3. Take a backup, and confirm it is restorable.** Not "a backup exists" —
 actually restore it somewhere. An untested backup is a belief, not a plan.
