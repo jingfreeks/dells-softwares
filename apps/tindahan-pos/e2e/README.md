@@ -2,9 +2,10 @@
 
 ## State of this suite, honestly
 
-**Measured on a clean local run: 24 of 37 tests pass** — up from 8 when this
-was first pointed at a local stack, then 11, 15, 18. `login` and the report
-export are fully green; POS checkout went from 0 to 6.
+**Measured on a clean local run: 29 of 37 tests pass** — up from 8 when this
+was first pointed at a local stack, then 11, 15, 18, 24. Three of the five
+spec files are fully green, including **`pos-checkout`, the money path**,
+which was 0 of 11 at the start.
 
 (37, not 41: `reports` had seven tests for a PDF feature the app no longer
 has. They are three tests against the Excel export that replaced it.)
@@ -75,6 +76,18 @@ below. `.env.local` is gitignored; never point these at a hosted project again.
   leaves `onboarded_at` unset. `registerFreshStore()` exercises the real
   signup and now expects that; `createTestStoreAccount()` stamps it for every
   test that just wants a working store.
+- **The POS search box is one field for both jobs.** A barcode is submitted
+  with **Enter** — there is no 'Add' button — and there is no separate
+  'No-barcode quick items' tab; an item without a barcode is just an item.
+- **The field clears on submit, not on clicking a result.**
+  `handleProductQuerySubmit` calls `setProductQuery("")` after adding, while
+  clicking a result keeps the query so several matches can be added in a row.
+  Worth knowing before "fixing" a test that asserts clearing.
+- **`+10 stock` moved into the row's actions menu** (`More actions`), as a
+  `role="menuitem"`. It is no longer a button on the row itself.
+- **Two `Admin` links exist** — sidebar and bottom nav — so `getByRole` needs
+  disambiguating, and the "Sale recorded" toast covers the bottom one just
+  after checkout.
 - **"Lands on POS" is the route, not the register.** `/pos` shows the cashier
   picker until a session is started, so the login spec asserts the URL and the
   picker rather than the register heading.
@@ -98,7 +111,6 @@ below. `.env.local` is gitignored; never point these at a hosted project again.
 | count | spec |
 |---|---|
 | 5 | `feature-flags` |
-| 5 | `pos-checkout` |
 | 2 | `security` |
 | 1 | `performance` |
 
