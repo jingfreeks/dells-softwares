@@ -2,6 +2,7 @@ import {
   useAuth,
   useEloadWallet,
   usePermissions,
+  useFeatures,
   navItemsForRole,
   LABEL_MENU,
   LABEL_LOG_OUT,
@@ -16,7 +17,8 @@ export function Sidebar() {
   const { balance: walletBalance, setBalance: setWalletBalance } =
     useEloadWallet();
   const { permissions } = usePermissions();
-  const navItems = navItemsForRole(user?.role, permissions);
+  const { features, loading: loadingFeatures } = useFeatures();
+  const navItems = navItemsForRole(user?.role, permissions, loadingFeatures ? null : features);
 
   return (
     <aside className="tpl-root tpl-side hidden h-full shrink-0 lg:flex">
