@@ -1,11 +1,26 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { canCreateTestAccountsDirectly, loginAsFreshStore } from './helpers'
 import { ARIA_DASHBOARD_DATE } from './helpers'
+import { ARIA_EXPORT_EXCEL } from '../src/lib/textLabels/textLabels'
 
-// Coverage for the admin daily sales report (PDF download/print/share,
-// both the combined report and the per-card single-section exports).
+// Coverage for the admin dashboard's report export.
+//
+// This file used to cover a PDF report: a combined download, per-card
+// single-section exports, print-to-new-tab, and a Web Share fallback --
+// seven tests, none of which had run since the CI job was disabled.
+//
+// That feature no longer exists. There is no 'as PDF', 'Print report' or
+// 'Share report' label anywhere in the app and no PDF library in src/; the
+// dashboard now offers one action, "Export dashboard report as Excel",
+// which builds a workbook with ExcelJS and downloads it as
+// <store>-dashboard-<date>.xlsx.
+//
+// So these are not selectors to repair. Seven tests asserting a removed
+// feature are rewritten as three asserting the one that replaced it, keeping
+// the original intent: the action is reachable, it produces a real file, and
+// it does not fall over on a store with no sales yet.
 
-test.describe('Daily sales report', () => {
+test.describe('Dashboard report export', () => {
   test.skip(!canCreateTestAccountsDirectly, 'SUPABASE_SERVICE_ROLE_KEY not set')
 
   test.beforeEach(async ({ page, request }) => {
@@ -14,96 +29,34 @@ test.describe('Daily sales report', () => {
     await expect(page.getByLabel(ARIA_DASHBOARD_DATE)).toBeVisible()
   })
 
-  test('the report card and every stat/list card action icon is present', async ({ page }) => {
-    await expect(page.getByText('Daily sales report')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Download report as PDF' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Print report' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Share report' })).toBeVisible()
-
-    for (const label of ["Today's sales", 'Transactions today', 'Low stock', 'Total products']) {
-      // exact: true matters here — "Print Low stock" is otherwise a
-      // substring match of "Print Low stock alerts" (the list card).
-      await expect(page.getByRole('button', { name: `Download ${label} as PDF`, exact: true })).toBeVisible()
-      await expect(page.getByRole('button', { name: `Print ${label}`, exact: true })).toBeVisible()
-      await expect(page.getByRole('button', { name: `Share ${label}`, exact: true })).toBeVisible()
-    }
+  test('the export action is present on the dashboard', async ({ page }) => {
+    await expect(page.getByRole('button', { name: ARIA_EXPORT_EXCEL })).toBeVisible()
   })
 
-  test('downloading the combined report produces a real PDF file', async ({ page }) => {
-    const [download] = await Promise.all([
-      page.waitForEvent('download'),
-      page.getByRole('button', { name: 'Download report as PDF' }).click(),
-    ])
-    expect(download.suggestedFilename()).toMatch(/^daily-sales-report-\d{4}-\d{2}-\d{2}\.pdf$/)
+  test('exporting produces a real .xlsx file', async ({ page }) => {
+    const downloadPromise = page.waitForEvent('download')
+    await page.getByRole('button', { name: ARIA_EXPORT_EXCEL }).click()
+    const download = await downloadPromise
 
+    expect(download.suggestedFilename()).toMatch(/\.xlsx$/)
+
+    // Not just "a download happened": a workbook that fails to build can
+    // still yield an empty blob. ExcelJS writes a ZIP, so the first two
+    // bytes are the local file header magic "PK".
     const path = await download.path()
-    expect(path, 'download should have saved to a temp file').toBeTruthy()
+    const fs = await import('node:fs/promises')
+    const bytes = await fs.readFile(path)
+    expect(bytes.length).toBeGreaterThan(0)
+    expect(bytes.subarray(0, 2).toString()).toBe('PK')
   })
 
-  test('downloading a single card (Recent sales) produces its own focused PDF', async ({ page }) => {
-    const [download] = await Promise.all([
-      page.waitForEvent('download'),
-      page.getByRole('button', { name: 'Download Recent sales as PDF' }).click(),
-    ])
-    expect(download.suggestedFilename()).toMatch(/^recent-sales-\d{4}-\d{2}-\d{2}\.pdf$/)
-  })
+  test('exporting does not error on a store with no sales yet', async ({ page }) => {
+    // A fresh store has an empty dashboard, which is the state most likely to
+    // divide by zero or index an empty array while building the workbook.
+    const downloadPromise = page.waitForEvent('download')
+    await page.getByRole('button', { name: ARIA_EXPORT_EXCEL }).click()
+    await expect(await downloadPromise).toBeTruthy()
 
-  // Printing opens a window synchronously (window.open("", "_blank")) and
-  // then writes an <embed src="blob:..."> into that same about:blank
-  // document, rather than navigating the window's top-level URL to the
-  // blob — Chromium silently blocks navigating an already-open window to
-  // a blob: URL from the opener's script. So the popup's own .url() stays
-  // "about:blank" by design; what to check is the embed it was given.
-  async function embedSrc(popup: Page): Promise<string | null> {
-    const getSrc = () => popup.evaluate(() => document.querySelector('embed')?.getAttribute('src') ?? null)
-    await expect.poll(getSrc, { timeout: 10_000 }).not.toBeNull()
-    return getSrc()
-  }
-
-  test('printing the combined report opens a new tab with the generated PDF', async ({ page }) => {
-    const [popup] = await Promise.all([
-      page.waitForEvent('popup'),
-      page.getByRole('button', { name: 'Print report' }).click(),
-    ])
-    expect(await embedSrc(popup)).toMatch(/^blob:/)
-    await popup.close()
-  })
-
-  test('printing a single card opens a new tab, independent of the combined report', async ({ page }) => {
-    const [popup] = await Promise.all([
-      page.waitForEvent('popup'),
-      page.getByRole('button', { name: "Print Today's sales", exact: true }).click(),
-    ])
-    expect(await embedSrc(popup)).toMatch(/^blob:/)
-    await popup.close()
-  })
-
-  test('sharing falls back to a download with a visible notice when the Web Share API is unavailable', async ({
-    page,
-  }) => {
-    // Playwright's default Chromium doesn't implement navigator.share,
-    // so this exercises the exact fallback path real desktop browsers
-    // without OS-level share integration would hit too.
-    const [download] = await Promise.all([
-      page.waitForEvent('download'),
-      page.getByRole('button', { name: 'Share report' }).click(),
-    ])
-    expect(download.suggestedFilename()).toMatch(/\.pdf$/)
-    await expect(page.getByRole('status')).toContainText(/sharing isn't supported/i)
-  })
-
-  test('report actions do not error when there is no sales data yet', async ({ page }) => {
-    // A brand-new store from loginAsFreshStore has zero sales/products
-    // beyond what the test adds — this is exactly that empty state,
-    // which is where "no rows" branches in the PDF builder are exercised.
-    const errors: string[] = []
-    page.on('pageerror', (err) => errors.push(err.message))
-
-    const [download] = await Promise.all([
-      page.waitForEvent('download'),
-      page.getByRole('button', { name: 'Download report as PDF' }).click(),
-    ])
-    expect(download.suggestedFilename()).toMatch(/\.pdf$/)
-    expect(errors, 'generating a report for an empty store should not throw').toEqual([])
+    await expect(page.getByLabel(ARIA_DASHBOARD_DATE)).toBeVisible()
   })
 })

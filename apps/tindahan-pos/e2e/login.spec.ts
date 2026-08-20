@@ -8,7 +8,7 @@ import {
   TEST_PASSWORD,
 } from './helpers'
 import { PAGE_HEADING_POS } from './helpers'
-import { SEG_SIGN_IN } from '../src/lib/textLabels/textLabels'
+import { SEG_SIGN_IN, LABEL_CASHIER_PICKER_HEADING } from '../src/lib/textLabels/textLabels'
 
 test.describe('Login (stories D1-D3)', () => {
   test('unauthenticated visitor is redirected to login', async ({ page }) => {
@@ -31,7 +31,12 @@ test.describe('Login (stories D1-D3)', () => {
     const { email, password } = await createTestStoreAccount(request)
 
     await login(page, email, password)
-    await expect(page.getByRole('heading', { name: PAGE_HEADING_POS })).toBeVisible()
+    // "Lands on POS" is about login, not about opening the register: /pos
+    // shows the cashier picker until a session is started. Asserting the
+    // register heading here would be testing startCashierSession(), which
+    // pos-checkout.spec.ts already covers.
+    await expect(page).toHaveURL(/\/pos/)
+    await expect(page.getByText(LABEL_CASHIER_PICKER_HEADING)).toBeVisible()
   })
 
   test('forgot-password link is reachable and shows a confirmation', async ({ page }) => {
@@ -66,7 +71,12 @@ test.describe('Registration (story D1)', () => {
     // just because that setting changed since the test was written.
     const { email, outcome } = await registerFreshStore(page)
     if (outcome === 'confirmed') {
-      await expect(page).toHaveURL(/\/pos/)
+      // A brand-new store lands on the onboarding wizard, not the register:
+      // handle_new_user leaves onboarded_at unset and ProtectedRoute redirects
+      // on it. Tests that want a working store use createTestStoreAccount(),
+      // which stamps it; this one is exercising the real signup, so it sees
+      // what a real new customer sees.
+      await expect(page).toHaveURL(/\/onboarding/)
     } else {
       await expect(page.getByRole('status')).toContainText(email)
     }

@@ -66,10 +66,25 @@ export async function registerFreshStore(
   await page.getByLabel(LABEL_EMAIL_ADDRESS).fill(email)
   await page.getByLabel(LABEL_PASSWORD, { exact: true }).fill(TEST_PASSWORD)
   // No confirm-password field: the register form does not have one.
+  //
+  // The submit button is disabled until the terms checkbox is ticked
+  // (canSubmit = !submitting && agreedToTerms). That consent step was added
+  // after this suite was written, and without it the click just times out
+  // against a permanently disabled button.
+  await page.getByRole('checkbox', {
+    name: 'I agree to the Terms of Service and Privacy Policy',
+  }).click()
+
   await page.getByRole('button', { name: SEG_CREATE_ACCOUNT }).click()
 
+  // A store registered through the real form has onboarded_at unset, so
+  // ProtectedRoute sends it to the onboarding wizard -- not to the register.
+  // (createTestStoreAccount stamps onboarded_at precisely to skip this; this
+  // helper deliberately does not, because it is testing the real signup.)
   await expect(
-    page.getByRole('heading', { name: PAGE_HEADING_POS }).or(page.getByRole('heading', { name: 'Check your email' }))
+    page
+      .getByRole('heading', { name: 'Check your email' })
+      .or(page.locator('body').filter({ hasText: /Let.s get your shop ready to sell/i }))
   ).toBeVisible({ timeout: 15_000 })
 
   const outcome = (await page.getByRole('heading', { name: 'Check your email' }).count()) > 0

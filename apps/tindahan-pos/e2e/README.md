@@ -2,10 +2,12 @@
 
 ## State of this suite, honestly
 
-**It is largely broken, and has been for a while.** Measured on a clean local
-run: **18 of 41 tests pass** — up from 8 when this was first pointed at a
-local stack, then 11, then 15. The POS checkout specs went from 0 to 6 once
-the cashier-session flow was understood.
+**Measured on a clean local run: 24 of 37 tests pass** — up from 8 when this
+was first pointed at a local stack, then 11, 15, 18. `login` and the report
+export are fully green; POS checkout went from 0 to 6.
+
+(37, not 41: `reports` had seven tests for a PDF feature the app no longer
+has. They are three tests against the Excel export that replaced it.)
 
 That is not a regression introduced here — it is what was already true and
 nobody could see, because the CI job is `if: false`
@@ -58,6 +60,24 @@ below. `.env.local` is gitignored; never point these at a hosted project again.
 - **The admin dashboard has no heading at all** — its title is a time-based
   greeting in a `<p>`. Tests now key off the reporting-date picker's
   `aria-label`, which is a stable, semantic landmark.
+- **The PDF report feature is gone.** `reports.spec.ts` covered a combined
+  PDF, per-card exports, print-to-tab and a Web Share fallback. There is no
+  `as PDF` / `Print report` / `Share report` label left in the app and no PDF
+  library in `src/`; the dashboard now offers one action, *Export dashboard
+  report as Excel*. Seven tests for a removed feature became three against
+  the one that replaced it — including a check that the file really is a
+  workbook (ExcelJS writes a ZIP, so it must start `PK`) rather than an empty
+  blob from a failed build.
+- **Registration needs the terms checkbox.** `canSubmit = !submitting &&
+  agreedToTerms`, so *Create account* is disabled until it is ticked and the
+  click simply timed out against it.
+- **A new store lands on `/onboarding`,** not the register — `handle_new_user`
+  leaves `onboarded_at` unset. `registerFreshStore()` exercises the real
+  signup and now expects that; `createTestStoreAccount()` stamps it for every
+  test that just wants a working store.
+- **"Lands on POS" is the route, not the register.** `/pos` shows the cashier
+  picker until a session is started, so the login spec asserts the URL and the
+  picker rather than the register heading.
 
 - **Selectors now import the app's own label constants** rather than repeating
   string literals. The login page was redesigned into `Sign in` /
@@ -75,12 +95,16 @@ below. `.env.local` is gitignored; never point these at a hosted project again.
 
 ## What is still broken, and why
 
-| count | spec | cause |
-|---|---|---|
-| 9 | `pos-checkout` | **the cashier-session gate** — see below |
-| 7 | `reports` | downstream of the same gate / dashboard landmarks |
-| 5 | `feature-flags` | adds products then drives the POS, so the same gate |
-| 2 | `login`, 2 `security`, 1 `performance` | assorted |
+| count | spec |
+|---|---|
+| 5 | `feature-flags` |
+| 5 | `pos-checkout` |
+| 2 | `security` |
+| 1 | `performance` |
+
+All of the same class — the UI moved and the tests did not follow — but now
+against a suite that reaches the app's main screens, so each is cheap to
+diagnose. Drive the flow in a browser before theorising; see below.
 
 **The cashier-session flow — solved, and worth writing down.** `/pos` does not
 show the register directly. The real sequence, established by walking it in a
