@@ -3,6 +3,7 @@ import {
   useEloadWallet,
   usePermissions,
   useFeatures,
+  useFeature,
   navItemsForRole,
   LABEL_MENU,
   LABEL_LOG_OUT,
@@ -30,10 +31,15 @@ export function Sidebar() {
 
       <div className="tpl-grow" />
 
-      <Eloadwallet
-        walletBalance={walletBalance}
-        setWalletBalance={setWalletBalance}
-      />
+      {/* The wallet is the e-load float. A store that does not sell load has
+          no float to show -- and unlike shifts, hiding it takes nothing else
+          with it. */}
+      {useFeature("pos.eload") && (
+        <Eloadwallet
+          walletBalance={walletBalance}
+          setWalletBalance={setWalletBalance}
+        />
+      )}
 
       <Navlink user={user} />
       
