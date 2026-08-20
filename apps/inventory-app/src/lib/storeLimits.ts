@@ -18,7 +18,7 @@ export interface StoreLimit {
 export async function listMyStoreLimits(): Promise<StoreLimit[]> {
   const { data, error } = await supabase.rpc("my_store_limits");
   if (error) throw new Error(error.message);
-  return (data ?? []).map((r: Record<string, never>) => ({
+  return (data ?? []).map((r) => ({
     moduleCode: r.module_code,
     limitKey: r.limit_key,
     cap: r.cap,
