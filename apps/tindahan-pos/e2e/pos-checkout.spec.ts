@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test'
 import { addProduct, loginAsFreshStore, primeCashierPin, startCashierSession } from './helpers'
-import { LABEL_SCAN_OR_SEARCH_PRODUCTS } from '../src/lib/textLabels/textLabels'
+import {
+  LABEL_SCAN_OR_SEARCH_PRODUCTS,
+  ARIA_PRODUCT_ACTIONS,
+  BUTTON_PLUS_10_STOCK,
+} from '../src/lib/textLabels/textLabels'
 
 test.describe('POS checkout flow (Epic A)', () => {
   test.beforeEach(async ({ page, request }) => {
@@ -22,8 +26,10 @@ test.describe('POS checkout flow (Epic A)', () => {
   })
 
   test('unknown barcode shows "Product not found" (story A1)', async ({ page }) => {
-    await page.getByPlaceholder('Scan or type a barcode, then press Enter').fill('0000000000000')
-    await page.getByRole('button', { name: 'Add' }).click()
+    // A barcode is submitted with Enter, not an 'Add' button -- see
+    // Pos.test.tsx, which types "111{Enter}" against the same field.
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('0000000000000')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).press('Enter')
 
     await expect(page.getByRole('alert')).toHaveText(/product not found/i)
   })
@@ -42,9 +48,13 @@ test.describe('POS checkout flow (Epic A)', () => {
   })
 
   test('search clears after adding, ready for the next lookup (story A2)', async ({ page }) => {
-        const search = page.getByPlaceholder('e.g. sardines')
+    // The field clears on SUBMIT, not on clicking a result: handleProductQuerySubmit
+    // calls setProductQuery("") after adding, while clicking a result deliberately
+    // keeps the query so several matches can be added in a row. This test is about
+    // being ready for the next lookup, which is the scan-then-scan-again path.
+    const search = page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS)
     await search.fill('sardines')
-    await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
+    await search.press('Enter')
 
     await expect(search).toHaveValue('')
     await expect(page.locator('ul.mt-2', { hasText: 'Sardines in Tomato Sauce' })).toHaveCount(0)
@@ -59,7 +69,9 @@ test.describe('POS checkout flow (Epic A)', () => {
   })
 
   test('a no-barcode quick item (tingi) can be added directly (story A4)', async ({ page }) => {
-    await page.getByRole('button', { name: 'No-barcode quick items' }).click()
+    // There is no 'No-barcode quick items' tab any more: a product without a
+    // barcode is just a product, reachable through the same unified search.
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('Shampoo')
     await page.getByRole('button', { name: /Shampoo Sachet \(Tingi\)/ }).click()
     await expect(page.getByLabel('Cart items').getByText('Shampoo Sachet (Tingi)')).toBeVisible()
   })
@@ -83,7 +95,11 @@ test.describe('POS checkout flow (Epic A)', () => {
     await expect(page.getByText('Sale recorded')).toBeVisible({ timeout: 10_000 })
     await expect(page.getByText('Cart is empty')).toBeVisible()
 
-    await page.getByRole('link', { name: 'Admin' }).click()
+    // Navigated rather than clicked: both the sidebar and the bottom nav expose
+    // an Admin link, and the "Sale recorded" toast sits over the bottom one just
+    // after checkout. This assertion is about the sale reaching the dashboard,
+    // not about the nav, so the click was only ever a way to get there.
+    await page.goto('/admin')
     await expect(page).toHaveURL(/\/admin/)
     await expect(page.getByText('₱22.00').first()).toBeVisible()
   })
@@ -129,7 +145,10 @@ test.describe('Inventory (Epic B)', () => {
 
   test('restocking increases the stock count (story B4)', async ({ page }) => {
     const row = page.getByRole('row', { name: /Ube Crackers/ })
-    await row.getByRole('button', { name: '+10 stock' }).click()
+    // +10 stock is no longer a button on the row -- it is a menuitem inside
+    // the row's actions menu, which has to be opened first.
+    await row.getByRole('button', { name: ARIA_PRODUCT_ACTIONS }).click()
+    await page.getByRole('menuitem', { name: BUTTON_PLUS_10_STOCK }).click()
     // The stock figure is a <p> inside the row, not a table cell, so match on
     // the row's own accessible text rather than a cell role the markup does
     // not use.

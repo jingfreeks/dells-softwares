@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { login } from './helpers'
 import { ARIA_DASHBOARD_DATE } from './helpers'
+import { LABEL_SCAN_OR_SEARCH_PRODUCTS } from '../src/lib/textLabels/textLabels'
 
 // Speed check for the app's key screens and interactions, against a real
 // Supabase project (not mocked) so the numbers reflect actual network
@@ -115,7 +116,7 @@ test.describe('Performance', () => {
     await page.goto('/pos')
     
     const searchAddMs = await timeAction(async () => {
-      await page.getByPlaceholder('e.g. sardines').fill('Kopiko')
+      await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('Kopiko')
       await page.getByRole('button', { name: /Kopiko/ }).first().click()
       await expect(page.getByLabel('Cart items').getByText(/Kopiko/)).toBeVisible()
     })
