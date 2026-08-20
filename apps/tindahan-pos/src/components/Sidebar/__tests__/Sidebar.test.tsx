@@ -8,6 +8,11 @@ import { Sidebar } from "../Sidebar";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/lib/permissions", () => ({ usePermissions: () => ({ permissions: new Set(), loading: false }) }));
+vi.mock("@/lib/features", () => ({
+  // loading:false with a full set — these suites are about nav rendering,
+  // not entitlement; useFeature() failing open is covered in features.test.ts.
+  useFeatures: () => ({ features: new Set(["pos.utang"]), loading: false }),
+}));
 
 function renderSidebar() {
   return render(

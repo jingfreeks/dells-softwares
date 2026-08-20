@@ -9,6 +9,7 @@ export * from "./dom";
 export * from "./auditLog";
 export * from "./excelExport";
 export * from "./featureFlags";
+export * from "./features";
 export * from "./heldSales";
 export * from "./imageUpload";
 export * from "./inventory";

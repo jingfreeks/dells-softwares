@@ -1024,6 +1024,17 @@ export interface Database {
       // PostgREST.
       // 20260815104000_my_store_limits.sql -- takes no argument on purpose:
       // it can only ever answer for the caller's own store.
+      // 20260815110000_feature_contracts.sql -- no argument: answers only for
+      // auth_store_id().
+      my_store_features: {
+        Args: Record<string, never>;
+        Returns: {
+          feature_code: string;
+          module_code: string;
+          name: string;
+          enabled: boolean;
+        }[];
+      };
       my_store_limits: {
         Args: Record<string, never>;
         Returns: {
