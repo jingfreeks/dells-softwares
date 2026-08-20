@@ -271,8 +271,15 @@ export const SUBSCRIPTION_STATUSES = [
 ] as const;
 export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 
-/** The two states that take a tenant's ability to work away. */
-export function blocksWrites(status: string): boolean {
+/**
+ * The two states that take a tenant's ability to work away.
+ *
+ * Accepts null because subscriptionStatus is nullable: an organization can
+ * legitimately have no live subscription row. That case must answer FALSE,
+ * matching core.org_writes_allowed(), which fails OPEN for a tenant that was
+ * never provisioned — a provisioning gap must not read as a suspension.
+ */
+export function blocksWrites(status: string | null): boolean {
   return status === "SUSPENDED" || status === "CANCELLED";
 }
 
