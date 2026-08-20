@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
+  listOrganizationFeatures,
   listOrganizationLimits,
   listOrganizationModules,
   listOrganizations,
@@ -8,11 +9,14 @@ import {
   resetModuleToPlan,
   setModule,
   setPlan,
+  setFeature,
   setLimit,
+  resetFeatureToPlan,
   setSubscriptionStatus,
   blocksWrites,
   SUBSCRIPTION_STATUSES,
   type Organization,
+  type OrganizationFeature,
   type OrganizationLimit,
   type OrganizationModule,
   type Plan,
@@ -24,6 +28,8 @@ export function OrganizationDetail() {
   const [org, setOrg] = useState<Organization | null>(null);
   const [modules, setModules] = useState<OrganizationModule[]>([]);
   const [limits, setLimits] = useState<OrganizationLimit[]>([]);
+  const [features, setFeatures] = useState<OrganizationFeature[]>([]);
+  const [busyFeature, setBusyFeature] = useState<string | null>(null);
   const [busyLimit, setBusyLimit] = useState<string | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [busyPlan, setBusyPlan] = useState(false);
@@ -34,16 +40,18 @@ export function OrganizationDetail() {
   const [reason, setReason] = useState("");
 
   const load = useCallback(async () => {
-    const [orgs, mods, planList, limitList] = await Promise.all([
+    const [orgs, mods, planList, limitList, featureList] = await Promise.all([
       listOrganizations(),
       listOrganizationModules(orgId),
       listPlans(),
       listOrganizationLimits(orgId),
+      listOrganizationFeatures(orgId),
     ]);
     setOrg(orgs.find((o) => o.organizationId === orgId) ?? null);
     setModules(mods);
     setPlans(planList);
     setLimits(limitList);
+    setFeatures(featureList);
   }, [orgId]);
 
   useEffect(() => {
@@ -83,6 +91,34 @@ export function OrganizationDetail() {
       setError(err instanceof Error ? err.message : "Could not change the billing state.");
     } finally {
       setBusyStatus(false);
+    }
+  }
+
+  async function handleSetFeature(feature: OrganizationFeature, enabled: boolean) {
+    setBusyFeature(feature.featureCode);
+    setError(null);
+    try {
+      await setFeature(orgId, feature.featureCode, enabled, reason);
+      await load();
+      setReason("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not change this feature.");
+    } finally {
+      setBusyFeature(null);
+    }
+  }
+
+  async function handleResetFeature(feature: OrganizationFeature) {
+    setBusyFeature(feature.featureCode);
+    setError(null);
+    try {
+      await resetFeatureToPlan(orgId, feature.featureCode, reason);
+      await load();
+      setReason("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not hand this feature back.");
+    } finally {
+      setBusyFeature(null);
     }
   }
 
@@ -361,6 +397,81 @@ export function OrganizationDetail() {
           <p className="mt-3 text-xs text-slate-400">
             Lowering a ceiling below current usage never deletes anything — the tenant keeps what
             they have and simply cannot add more. Changing a plan re-derives these.
+          </p>
+        </div>
+      )}
+
+      {features.length > 0 && (
+        <div className="mt-4 max-w-2xl rounded-2xl border border-slate-200 bg-white p-4">
+          <p className="text-sm font-medium text-slate-800">Features</p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            What this tenant gets <em>within</em> the modules they hold. A sari-sari store and a
+            convenience store can both be on POS and still have different products. Nothing
+            enforces these yet — they are recorded and ready for when it does.
+          </p>
+
+          {Array.from(new Set(features.map((f) => f.moduleCode))).map((moduleCode) => (
+            <div key={moduleCode} className="mt-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                {moduleCode}
+              </p>
+              <div className="mt-1 space-y-1.5">
+                {features
+                  .filter((f) => f.moduleCode === moduleCode)
+                  .map((f) => {
+                    // A feature is dark whenever its module is off, however its
+                    // own row reads. Saying so beats showing "Enabled" on
+                    // something the tenant cannot reach.
+                    const dark = !f.moduleHeld;
+                    return (
+                      <div
+                        key={f.featureCode}
+                        className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-slate-100 px-3 py-2"
+                      >
+                        <div className="min-w-[11rem] flex-1">
+                          <p className="text-sm text-slate-800">{f.name}</p>
+                          <p className="text-xs text-slate-400">
+                            {f.featureCode}
+                            {f.source === "MANUAL" && " · MANUAL"}
+                            {dark && " · off because " + moduleCode + " is disabled"}
+                          </p>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-1">
+                          {f.source === "MANUAL" && (
+                            <button
+                              type="button"
+                              onClick={() => handleResetFeature(f)}
+                              disabled={busyFeature === f.featureCode}
+                              title="Hand this feature back to the plan"
+                              className="cursor-pointer rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              Follow plan
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleSetFeature(f, !f.enabled)}
+                            disabled={busyFeature === f.featureCode}
+                            className={`cursor-pointer rounded-lg px-3 py-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-40 ${
+                              f.enabled && !dark
+                                ? "bg-[var(--color-brand-soft,#fdecea)] text-[var(--color-brand)]"
+                                : "border border-slate-300 text-slate-500"
+                            }`}
+                          >
+                            {f.enabled ? (dark ? "On, but dark" : "Enabled") : "Disabled"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          ))}
+
+          <p className="mt-3 text-xs text-slate-400">
+            Turning one off records a manual decision that survives the tenant&apos;s next plan
+            change — use <span className="font-medium">Follow plan</span> to hand it back.
           </p>
         </div>
       )}
