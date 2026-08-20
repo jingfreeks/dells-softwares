@@ -150,7 +150,10 @@ test.describe('Route guards', () => {
   test('logging out clears the session so a protected route redirects again', async ({ page, request }) => {
     test.skip(!canCreateTestAccountsDirectly, 'SUPABASE_SERVICE_ROLE_KEY not set')
     await loginAsFreshStore(request, page)
-    await expect(page.getByRole('heading', { name: PAGE_HEADING_POS })).toBeVisible()
+    // Login lands on the cashier picker, not the register -- this test is
+    // about logging OUT clearing the session, so the URL is the right proof
+    // that we were signed in at all.
+    await expect(page).toHaveURL(/\/pos/)
 
     await page.getByRole('button', { name: 'Log out' }).click()
     await expect(page).toHaveURL(/\/login/)
