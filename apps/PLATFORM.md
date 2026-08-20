@@ -248,6 +248,16 @@ a human can supply.
   `check-rls-coverage.mjs` had skipped partitions on the explicit belief
   that they inherit the parent's policies; that exemption is gone. Covered
   by `200_audit_partition_isolation`.
+- **`anon`'s reach is now the same everywhere.** A database built from these
+  migrations gives `anon` one thing: SELECT on `feature_flags`, which
+  `FeatureFlagsProvider` reads before sign-in. The hosted projects granted it
+  SELECT on every public table — probed against staging with the key that
+  ships in the bundle: `staff`, `stores`, `products`, `sales`, `customers`,
+  `devices` and `audit_log` all answered 200. **Every one returned zero rows**,
+  so RLS was holding and this was never a breach — but it left RLS as the only
+  layer, and `20260815105000` is proof that "RLS covers it" can simply be
+  false. `20260815108000` narrows hosted to match, and `220_anon_surface`
+  asserts the invariant.
 - **Applied to STAGING on 2026-08-16** (`DellsSoftware-staging`,
   `qfkdecarbqwbpkzqqdxk`): all 31 pending migrations, 73 applied / 0 pending.
   Reconciliation against 661 real tenants and 666 staff adds up exactly —

@@ -1,0 +1,65 @@
+-- =============================================================================
+-- Security · make the hosted anon surface match the repository's
+-- -----------------------------------------------------------------------------
+-- A database built purely from these migrations grants `anon` exactly one
+-- thing: SELECT on feature_flags (20260815107000), because
+-- FeatureFlagsProvider reads it before anyone signs in. Nothing else.
+--
+-- The hosted projects do not look like that. Probed against staging with its
+-- own anon key, which is the key that ships inside the JavaScript bundle:
+--
+--   GET /rest/v1/staff                 -> 200   (local: 401)
+--   GET /rest/v1/stores                -> 200
+--   GET /rest/v1/products              -> 200
+--   GET /rest/v1/sales                 -> 200
+--   GET /rest/v1/customers             -> 200
+--   GET /rest/v1/devices               -> 200
+--   GET /rest/v1/audit_log             -> 200
+--
+-- Every one returned ZERO ROWS. This is not a breach: RLS is doing its job,
+-- and the 200 is PostgREST saying "you may ask", not "here is the data". The
+-- grants were applied outside this repository, the same way the missing
+-- grants in 20260815101000 were.
+--
+-- WHY NARROW IT ANYWAY. Right now RLS is the only thing between an anonymous
+-- caller and every tenant's data, and the grant layer underneath it is wide
+-- open. That is one mistake deep. This codebase has already had exactly that
+-- mistake: 20260815105000 fixed audit-log partitions that were granted to a
+-- tenant role with RLS disabled, where the assumption "RLS covers it" was
+-- simply false. Grants are the cheap second layer, and `anon` has no
+-- legitimate need for any of these tables.
+--
+-- WHAT ANON ACTUALLY NEEDS, checked rather than assumed:
+--   * feature_flags -- FeatureFlagsProvider is mounted OUTSIDE AuthProvider in
+--     App.tsx and reads it on mount, before sign-in.
+--   * nothing else. The Login, Register, Pair and ForgotPassword pages read no
+--     tables; PIN login and device pairing go through SECURITY DEFINER
+--     functions whose EXECUTE grants are separate and untouched here.
+--
+-- ROLLOUT. This changes privileges on a live system, so it goes to staging
+-- first and is watched. If a pre-login path somewhere does need a table this
+-- takes away, the symptom is an immediate 401 from PostgREST before sign-in,
+-- and the fix is one narrow `grant select on public.<table> to anon` -- the
+-- same shape as the feature_flags grant above it.
+--
+-- Local databases are unaffected: they never had these grants, which is why
+-- 220_anon_surface already passes there. After this, hosted and local finally
+-- assert the same thing.
+--
+-- Affected schemas : public (privileges only -- no table, policy or function
+--                    is created, altered or dropped)
+-- Rollback         : grant select on all tables in schema public to anon
+-- Risk             : low, and reversible in one statement. RLS already denies
+--                    every row this takes away, so the observable behaviour
+--                    should be identical except for the status code.
+-- =============================================================================
+
+revoke select, insert, update, delete on all tables in schema public from anon;
+
+-- The one thing it genuinely needs, re-granted after the blanket revoke so
+-- the order cannot leave it without access.
+grant select on public.feature_flags to anon;
+
+-- Future tables: migrations run as `postgres`, whose default ACL for public
+-- already excludes DML for anon, so nothing new inherits access. Stated
+-- because the blanket revoke above only covers tables that exist today.
