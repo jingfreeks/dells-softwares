@@ -279,6 +279,15 @@ a human can supply.
     `trg_staff_sync_owner_role` keeps `staff.role = 'admin'` and the OWNER
     grant in step **in both directions** — a demotion that left OWNER behind
     would be a demotion in name only.
+- **Feature entitlement exists but is not enforced.** `20260815109000` adds
+  `core.features` / `plan_features` / `organization_features` and
+  `core.feature_enabled()`, mirroring the module layer, so a capability can be
+  sold on its own — a sari-sari store and a convenience store can both hold
+  POS and get different POS products. **Nothing enforces it yet**, by design:
+  every plan currently grants every feature, so applying it changed nothing
+  for anyone. Which features belong to which tier is a pricing decision and is
+  deliberately not made in a migration — the console makes it a one-row change
+  with an audit entry.
 - **`suppliers` / `receiving` module ownership** — a pricing decision, above.
 - **POS gating** — deliberately not built, above.
 - ~~**Limit enforcement.**~~ **Built** in `20260815102000`. Triggers rather
