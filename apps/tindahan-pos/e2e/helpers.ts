@@ -278,30 +278,30 @@ export async function startCashierSession(page: Page, staffName = 'Test Admin') 
   await page.goto('/pos')
   await page.getByRole('button', { name: new RegExp(staffName) }).first().click()
 
-  // The picker branches: a staff member with a PIN is asked for it, and
-  // whoever opens the register is asked to count the starting cash. An admin
-  // who has just been given a PIN may see either, so handle both rather than
-  // assuming one -- an assumption here is what made this look like a broken
-  // selector instead of an unmet product step.
-  // Wait for the stage to render before deciding which one it is. Checking
-  // visibility immediately after the click always reported "not the PIN
-  // stage", silently skipped the digits, and failed later on the heading --
-  // a race that looked exactly like a bad selector.
-  const firstKey = page.getByRole('button', { name: '1', exact: true })
-  await firstKey.waitFor({ timeout: 10_000 }).catch(() => {})
-
-  if (await firstKey.isVisible().catch(() => false)) {
-    // A keypad, not a text field: the aria-label is on a <div role="status">
-    // showing the dots, so fill() has nothing to fill.
-    for (const digit of TEST_PIN) {
-      await page.getByRole('button', { name: digit, exact: true }).click()
-    }
-  }
+  // The order here was established by walking the flow in a browser, after
+  // guessing it wrong twice: starting cash comes BEFORE the PIN, not after.
+  //
+  //   pick staff -> count starting cash -> Continue -> PIN keypad -> register
+  //
+  // Both middle steps are conditional (a cashier without a PIN skips the
+  // keypad; a register already open skips the float), so each is attempted
+  // only if it actually appears.
 
   const float = page.getByLabel(LABEL_OPENING_FLOAT)
+  await float.waitFor({ timeout: 10_000 }).catch(() => {})
   if (await float.isVisible().catch(() => false)) {
     await float.fill('0')
     await page.getByRole('button', { name: BUTTON_CONTINUE }).click()
+  }
+
+  // A keypad, not a text field: LABEL_CASHIER_PIN_ARIA labels a
+  // <div role="status"> holding the dots, so fill() has nothing to fill.
+  const firstKey = page.getByRole('button', { name: '1', exact: true })
+  await firstKey.waitFor({ timeout: 10_000 }).catch(() => {})
+  if (await firstKey.isVisible().catch(() => false)) {
+    for (const digit of TEST_PIN) {
+      await page.getByRole('button', { name: digit, exact: true }).click()
+    }
   }
 
   await expect(page.getByRole('heading', { name: PAGE_HEADING_POS })).toBeVisible({

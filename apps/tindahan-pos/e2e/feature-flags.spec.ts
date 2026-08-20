@@ -1,6 +1,7 @@
 import { expect, test, type APIRequestContext } from '@playwright/test'
 import { loginAsFreshStore } from './helpers'
 import { PAGE_HEADING_POS } from './helpers'
+import { LABEL_SCAN_OR_SEARCH_PRODUCTS } from '../src/lib/textLabels/textLabels'
 
 // Regression coverage for the feature-flags kill switch itself (migration
 // 0007) and the two features currently wired to it: pos_services and
@@ -115,8 +116,7 @@ test.describe('Feature flag kill switches', () => {
 
     // With the flag on, POS shows the pack label and charges pack math.
     await page.goto('/pos')
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    await page.getByPlaceholder('e.g. sardines').fill('Pack Priced Candy')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('Pack Priced Candy')
     await page.getByRole('button', { name: /Pack Priced Candy/ }).click()
     await page.getByRole('button', { name: /Increase quantity/ }).click()
     await page.getByRole('button', { name: /Increase quantity/ }).click()
@@ -128,8 +128,7 @@ test.describe('Feature flag kill switches', () => {
     // of gating the RPC in migration 0008, not just the client.
     await setFlag(request, 'pack_pricing', false)
     await page.reload()
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    await page.getByPlaceholder('e.g. sardines').fill('Pack Priced Candy')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('Pack Priced Candy')
     await page.getByRole('button', { name: /Pack Priced Candy/ }).click()
     await page.getByRole('button', { name: /Increase quantity/ }).click()
     await page.getByRole('button', { name: /Increase quantity/ }).click()

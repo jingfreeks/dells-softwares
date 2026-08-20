@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { addProduct, loginAsFreshStore, primeCashierPin, startCashierSession } from './helpers'
+import { LABEL_SCAN_OR_SEARCH_PRODUCTS } from '../src/lib/textLabels/textLabels'
 
 test.describe('POS checkout flow (Epic A)', () => {
   test.beforeEach(async ({ page, request }) => {
@@ -30,8 +31,7 @@ test.describe('POS checkout flow (Epic A)', () => {
   test('adding a product by search shows it in the cart with the right total (stories A2, A5)', async ({
     page,
   }) => {
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    await page.getByPlaceholder('e.g. sardines').fill('sardines')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
 
     await expect(page.getByLabel('Cart items').getByText('Sardines in Tomato Sauce')).toBeVisible()
@@ -42,8 +42,7 @@ test.describe('POS checkout flow (Epic A)', () => {
   })
 
   test('search clears after adding, ready for the next lookup (story A2)', async ({ page }) => {
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    const search = page.getByPlaceholder('e.g. sardines')
+        const search = page.getByPlaceholder('e.g. sardines')
     await search.fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
 
@@ -52,8 +51,7 @@ test.describe('POS checkout flow (Epic A)', () => {
   })
 
   test('quantity can be adjusted without rescanning (story A3)', async ({ page }) => {
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    await page.getByPlaceholder('e.g. sardines').fill('sardines')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
 
     await page.getByRole('button', { name: /Increase quantity/ }).click()
@@ -67,8 +65,7 @@ test.describe('POS checkout flow (Epic A)', () => {
   })
 
   test('an item can be removed before checkout (story A7)', async ({ page }) => {
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    await page.getByPlaceholder('e.g. sardines').fill('sardines')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
     await page.getByRole('button', { name: /Remove Sardines/ }).click()
 
@@ -78,8 +75,7 @@ test.describe('POS checkout flow (Epic A)', () => {
   test('completing a sale clears the cart and records it on the dashboard (story A6, C5)', async ({
     page,
   }) => {
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    await page.getByPlaceholder('e.g. sardines').fill('sardines')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
     await page.getByLabel('Amount tendered').fill('50')
     await page.getByRole('button', { name: 'Complete sale' }).click()
@@ -93,8 +89,7 @@ test.describe('POS checkout flow (Epic A)', () => {
   })
 
   test('the Complete sale button is disabled without sufficient payment', async ({ page }) => {
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    await page.getByPlaceholder('e.g. sardines').fill('sardines')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
     await page.getByLabel('Amount tendered').fill('5')
 
