@@ -1,0 +1,45 @@
+-- =============================================================================
+-- Fix · pre-login feature flags are unreadable in a fresh environment
+-- -----------------------------------------------------------------------------
+-- 20260815101000 granted DML on public to `authenticated` and `service_role`,
+-- and deliberately granted `anon` nothing, on this reasoning:
+--
+--   "nothing in either application queries a table before signing in, and the
+--    pre-login paths (PIN login, device pairing) go through SECURITY DEFINER
+--    functions whose EXECUTE grants are already in their own migrations."
+--
+-- That was wrong, and narrowly so. It was checked against the Login, Register
+-- and Pair PAGES -- which do read no tables -- but not against the PROVIDERS
+-- mounted above them. App.tsx nests FeatureFlagsProvider OUTSIDE AuthProvider,
+-- and it calls `supabase.from("feature_flags").select(...)` on mount, before
+-- anyone has signed in, with the anon key.
+--
+-- Measured on a clean database built from these migrations:
+--
+--   has_table_privilege('anon','public.feature_flags','SELECT')  ->  false
+--   GET /rest/v1/feature_flags as anon                           ->  401
+--
+-- The live projects are unaffected: the grant already exists there, applied
+-- outside this repository. Which is the same reason the ORIGINAL missing-grant
+-- bug stayed hidden -- production works, so the schema looks complete.
+--
+-- feature_flags is intended to be world-readable. 0007 gives it
+-- `for select using (true)`, and scripts/check-rls-coverage.mjs exempts it by
+-- name as "platform reference data, not tenant-scoped". The table holds flag
+-- keys and booleans, nothing per-tenant.
+--
+-- SCOPE: one table, SELECT only. `anon` gains nothing else, and the default
+-- privileges from 20260815101000 are untouched, so a future table does not
+-- inherit anon access by accident.
+--
+-- Found by the e2e suite -- specifically the test named "feature_flags remains
+-- readable without auth (needed pre-login)", which had been failing invisibly
+-- for as long as the CI job has been `if: false`.
+--
+-- Affected schemas : public (one grant)
+-- Rollback         : revoke select on public.feature_flags from anon
+-- Risk             : none. It restores, in a fresh environment, exactly what
+--                    the live projects already have.
+-- =============================================================================
+
+grant select on public.feature_flags to anon;

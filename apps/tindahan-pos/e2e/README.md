@@ -1,22 +1,31 @@
 # End-to-end tests
 
-## State of this suite, honestly
+## State of this suite
 
-**Measured on a clean local run: 29 of 37 tests pass** — up from 8 when this
-was first pointed at a local stack, then 11, 15, 18, 24. Three of the five
-spec files are fully green, including **`pos-checkout`, the money path**,
-which was 0 of 11 at the start.
+**41 of 41 pass** on a clean local stack.
 
-(37, not 41: `reports` had seven tests for a PDF feature the app no longer
-has. They are three tests against the Excel export that replaced it.)
+That is worth stating against where it started: **8 of 42** the first time it
+was pointed at a local database. The suite had been rotting invisibly for as
+long as the CI job has been `if: false`
+(`.github/workflows/tindahan-pos-ci.yml`) and the pre-push hook has skipped
+e2e — a suite that never runs cannot report that it has stopped working.
 
-That is not a regression introduced here — it is what was already true and
-nobody could see, because the CI job is `if: false`
-(`.github/workflows/tindahan-pos-ci.yml`) and the pre-push hook skips e2e on
-purpose. A suite that never runs cannot tell you it has stopped working.
+Progression: 8 → 11 → 15 → 18 → 24 → 29 → 36 → **41**.
 
-Every failure is the same class: **the app's UI moved and the tests did not
-follow.** None of them so far indicates an actual product bug.
+Almost every failure was the app moving and the tests not following. **Three
+were real bugs**, and they are the argument for having done this at all:
+
+1. **`anon` could not read `feature_flags`** — `20260815101000` granted it
+   nothing on the reasoning that nothing is queried before sign-in. But
+   `FeatureFlagsProvider` is mounted *outside* `AuthProvider` and runs on
+   mount, so pre-login flags 401'd in any fresh environment. Fixed in
+   `20260815107000`, covered by `220_anon_surface`.
+2. **Deep-linking to `/staff` or `/suppliers` bounced an authorised owner to
+   `/pos`** — `useCan()` returns false while permissions load, and both pages
+   redirected on it without waiting. A refresh or a pasted link was enough.
+   Fixed in both pages.
+3. **A real account and password were committed** in `performance.spec.ts`
+   (`StagingTest123!`). It now provisions its own account per run.
 
 ## Running it locally
 
@@ -106,17 +115,13 @@ below. `.env.local` is gitignored; never point these at a hosted project again.
 - **A register test asserting a field that no longer exists** (confirm
   password) was retired rather than repaired.
 
-## What is still broken, and why
+## Notes for whoever touches this next
 
-| count | spec |
-|---|---|
-| 5 | `feature-flags` |
-| 2 | `security` |
-| 1 | `performance` |
 
-All of the same class — the UI moved and the tests did not follow — but now
-against a suite that reaches the app's main screens, so each is cheap to
-diagnose. Drive the flow in a browser before theorising; see below.
+**Drive the flow in a browser before theorising.** Two rounds of reading
+components produced confident wrong answers about the cashier-session order;
+one round of actually clicking through settled it. Reading tells you what
+elements exist, not which ones render when.
 
 **The cashier-session flow — solved, and worth writing down.** `/pos` does not
 show the register directly. The real sequence, established by walking it in a
