@@ -39,6 +39,17 @@ export interface OrganizationLimit {
   atOrOver: boolean;
 }
 
+/** A capability a tenant can hold, within a module they must also hold. */
+export interface OrganizationFeature {
+  featureCode: string;
+  moduleCode: string;
+  name: string;
+  enabled: boolean;
+  source: string | null;
+  /** False when the owning module is off — the feature is dark regardless. */
+  moduleHeld: boolean;
+}
+
 export interface Plan {
   planCode: string;
   name: string;
@@ -256,6 +267,55 @@ export async function setLimit(
     p_module: moduleCode,
     p_key: limitKey,
     p_value: value,
+    p_reason: reason || null,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function listOrganizationFeatures(orgId: string): Promise<OrganizationFeature[]> {
+  const { data, error } = await supabase.rpc("platform_organization_features", { p_org: orgId });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, never>) => ({
+    featureCode: r.feature_code,
+    moduleCode: r.module_code,
+    name: r.name,
+    enabled: r.enabled,
+    source: r.source,
+    moduleHeld: r.module_held,
+  }));
+}
+
+/**
+ * Grant or revoke one capability.
+ *
+ * Writes source = MANUAL, so the decision survives the tenant's next plan
+ * change — and therefore needs resetFeatureToPlan() to be undoable. Both
+ * halves shipped together deliberately; the module layer learned that the
+ * hard way.
+ */
+export async function setFeature(
+  orgId: string,
+  featureCode: string,
+  enabled: boolean,
+  reason: string
+): Promise<void> {
+  const { error } = await supabase.rpc("platform_set_feature", {
+    p_org: orgId,
+    p_feature: featureCode,
+    p_enabled: enabled,
+    p_reason: reason || null,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function resetFeatureToPlan(
+  orgId: string,
+  featureCode: string,
+  reason: string
+): Promise<void> {
+  const { error } = await supabase.rpc("platform_reset_feature_to_plan", {
+    p_org: orgId,
+    p_feature: featureCode,
     p_reason: reason || null,
   });
   if (error) throw new Error(error.message);
