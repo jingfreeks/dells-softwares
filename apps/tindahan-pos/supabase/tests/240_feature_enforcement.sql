@@ -162,5 +162,33 @@ select isnt_empty($$ select 1 from purchase_orders where store_id = pg_temp.org(
   'while the orders already raised remain readable');
 
 reset role;
+
+-- -----------------------------------------------------------------------------
+-- inventory.transfers -- guarded by a trigger for the same reason utang is:
+-- warehouse_transfers has no INSERT policy, so transfer_stock() is the only
+-- way in, and restating 95 lines of stock arithmetic to add one condition is
+-- the riskier option.
+-- -----------------------------------------------------------------------------
+insert into warehouses (store_id, name, is_default)
+select pg_temp.org(), 'Back Room', false;
+
+update core.organization_features set enabled = false, source = 'MANUAL'
+ where organization_id = pg_temp.org() and feature_code = 'inventory.transfers';
+
+set local role authenticated;
+select pg_temp.act_as('ea200000-0000-4000-8000-000000000001');
+
+select throws_ok($$
+  select transfer_stock(
+    (select id from warehouses where store_id = pg_temp.org() and is_default limit 1),
+    (select id from warehouses where store_id = pg_temp.org() and not is_default limit 1),
+    (select id from products where store_id = pg_temp.org() limit 1), 1)
+$$, 'P0001', 'FEATURE_NOT_ENABLED: inventory.transfers',
+   'a stock transfer is refused when the feature is withheld');
+
+select isnt_empty($$ select 1 from warehouses where store_id = pg_temp.org() $$,
+  'and the warehouses themselves are untouched -- writes only, again');
+
+reset role;
 select * from finish();
 rollback;
