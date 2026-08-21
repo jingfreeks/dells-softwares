@@ -538,14 +538,20 @@ is still null for BASIC, PRO and ENTERPRISE.
 ## Phase 8 — enforcement, and the corrections that followed it
 
 Phase 7 covers the tier split. It is not the end of the batch: **twelve
-migrations are pending, and this phase is the other eight.** They are grouped
-here because they share one property — this is the first time the platform ever
-*refuses* a tenant's write on entitlement grounds, and five of them change what
-happens on the money path.
+migrations shipped together, and this phase is the other eleven.** (This
+section said "eight" and the table below was missing two rows — `108000` and
+`109000` — until this was corrected while planning the production push. Found
+by counting rather than trusting the prose: the batch is twelve, Phase 7 is
+one, eleven remain, and the table had nine.) They are grouped here because
+they share one property — this is the first time the platform ever *refuses* a
+tenant's write on entitlement grounds, and five of them change what happens on
+the money path.
 
 | migration | what it does | what changes for a tenant |
 |---|---|---|
 | `107000` | pre-login feature flags readable again | nothing; fixes a fresh-environment regression |
+| `108000` | narrows the hosted `anon` surface to match the repository's | nothing for a signed-in tenant; closes a pre-existing gap where `anon` could read `staff`/`stores`/etc. on the hosted project |
+| `109000` | creates `core.features` / `plan_features` / `organization_features` — the entitlement schema itself | nothing yet; every plan grants every feature at this point, by construction |
 | `110000` | contracts: `my_store_features()`, `platform_*` feature RPCs | nothing; read-only surface |
 | `111000` | **enforces** features: 13 policies, utang + void triggers | first refusals; all tenants grandfathered, so none should see one |
 | `112000` | enforces `inventory.transfers` | as above |
@@ -554,6 +560,19 @@ happens on the money path.
 | `116000` | un-gates `credit_payments` | a store without utang can collect existing debts again |
 | `117000` | un-gates UPDATE/DELETE on purchase orders + stock counts | in-flight work can reach a terminal state |
 | `118000` | offline replay of a credit sale made before withdrawal | a queued sale can land after the capability is gone |
+
+### `119000` — a correction found by verifying against staging, not locally
+
+Applied separately from the twelve above, after running `security-surface.sql`
+against staging for real once the batch landed and finding all fifteen
+`platform_*` functions executable by `anon` and `service_role`, not just
+`authenticated` — a pre-existing, project-wide default-privilege
+characteristic of the hosted project, not caused by this batch, and not a live
+exposure while it stood (every one of those functions checks
+`core.is_platform_admin()` internally). `119000` revokes it. Belongs in this
+phase's "corrections that followed it" the same way `116000`–`118000` do,
+just found a step later — after the push, against the real database, rather
+than during it.
 
 ### Why none of this should be visible on the day
 
@@ -598,6 +617,19 @@ where c.relname in ('credit_payments', 'purchase_orders', 'inventory_counts')
 -- 3. The console RPC kept its narrow grant after being dropped and recreated.
 --    Expect exactly: postgres and authenticated. Never PUBLIC.
 select array_to_string(proacl, ', ') from pg_proc where proname = 'platform_plans';
+
+-- 4. Nothing but authenticated can call ANY platform_* function. Expect 0 rows.
+--    This is what 119000 fixes and 110_platform_admin now pins permanently --
+--    query 3 alone would have missed this: the real hosted-project finding
+--    was anon and service_role, named roles, not the bare PUBLIC grant query 3
+--    checks for.
+select p.proname, coalesce(r.rolname, 'PUBLIC') as grantee
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+left join pg_roles r on r.oid = a.grantee
+where n.nspname = 'public' and p.proname like 'platform\_%'
+  and a.privilege_type = 'EXECUTE'
+  and coalesce(r.rolname, 'PUBLIC') not in ('authenticated', 'postgres');
 ```
 
 Then run the security surface, which asserts (3) and seven other properties and
@@ -615,13 +647,19 @@ psql "$STAGING_URL" -v ON_ERROR_STOP=1 -f apps/tindahan-pos/supabase/snippets/se
   catch it: disabling a grandfathered tenant's module makes this return 9.)
 - Query 3 shows `PUBLIC` — `115000`'s drop-and-recreate lost its grants and the
   plan catalogue is readable by every signed-in shopkeeper.
+- Query 4 returns anything — a `platform_*` function is executable by more
+  than `authenticated`. Not itself proof of a live breach (every one of these
+  functions still checks `core.is_platform_admin()` internally), but the
+  defense-in-depth `119000` exists to guarantee is not actually there.
 - Support reports a `FEATURE_NOT_ENABLED` from a paying tenant in the first
   48 hours.
 
 Rolling back one of these individually is not sensible — `116000`, `117000` and
 `118000` exist to undo traps that `111000` created, so reverting the corrections
 without reverting the enforcement is strictly worse than either state. If this
-phase has to come out, take `111000` onward out together.
+phase has to come out, take `111000` onward out together (`119000` included --
+it stands on its own against `anon`/`service_role`, but it is still part of
+this phase's story).
 
 ---
 
