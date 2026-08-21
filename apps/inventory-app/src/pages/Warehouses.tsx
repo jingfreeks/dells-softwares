@@ -2,7 +2,7 @@ import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
 import { useHasModule, MODULE_READ_ONLY_HINT } from "../lib/modules";
 import { addWarehouse, listWarehouses } from "../lib/warehouses";
 import type { Warehouse } from "../lib/types";
@@ -12,7 +12,7 @@ const emptyForm = { name: "", address: "" };
 
 export function Warehouses() {
   const { user } = useAuth();
-  const canManage = useCan("inventory.warehouse.manage");
+  const accessDenied = useAccessDenied("inventory.warehouse.manage");
   const hasInventory = useHasModule("INVENTORY");
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +48,7 @@ export function Warehouses() {
     };
   }, [user]);
 
-  if (user && !canManage) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 

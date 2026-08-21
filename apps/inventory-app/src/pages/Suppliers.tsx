@@ -2,7 +2,7 @@ import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
 import { createSupplier, deleteSupplier, listSuppliers } from "../lib/suppliers";
 import type { Supplier } from "../lib/types";
 
@@ -10,7 +10,7 @@ const emptyForm = { name: "", phone: "", address: "" };
 
 export function Suppliers() {
   const { user } = useAuth();
-  const canManage = useCan("inventory.supplier.manage");
+  const accessDenied = useAccessDenied("inventory.supplier.manage");
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export function Suppliers() {
     };
   }, [user]);
 
-  if (user && !canManage) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 
