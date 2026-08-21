@@ -382,6 +382,21 @@ a human can supply.
 
   When testing this class of bug, assert on **row count**, not on the absence of
   an error. `lives_ok()` passes against a silent no-op, which is exactly the bug.
+
+  `20260815118000` extends the same rule to the offline queue, which is the most
+  literal case of already-underway: a credit sale rung up with no signal, sitting
+  in the device queue while `pos.utang` is withdrawn. Refusing the replay undoes
+  nothing — the goods are gone, the customer owes the money — it only keeps the
+  shop's books from recording it. `checkout_sale()` had already decided this for
+  stock in migration 0030, letting a replay drive stock negative and recording a
+  discrepancy; the entitlement layer now agrees with the layer beneath it.
+
+  The exemption is narrower than the flag, deliberately. `is_offline_replay` is
+  caller-supplied, so trusting it alone would hand every store utang for free.
+  The sale must *also* have occurred before the grant last changed, which a
+  freshly rung-up sale cannot claim. What remains is a tenant backdating
+  `occurred_at`, bounded by `checkout_sale()`'s existing offline-age limits and
+  stamped `is_offline_replay = true` on the row for an audit to find.
 - **Winding down is not using a feature.** `20260815111000` gated
   `credit_payments` alongside `sales`, reasoning that a store which cannot sell
   on credit cannot collect on it either. `20260815116000` undoes that half.
