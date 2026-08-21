@@ -118,15 +118,30 @@ Cancelled included — so no `SELECT` policy anywhere consults entitlement. A
 tenant whose module lapses keeps full visibility of their records and can
 still export them; they simply cannot change them.
 
-| Gated (inventory-app only) | Not gated, and why |
+| Gated | Not gated, and why |
 |---|---|
-| warehouses, warehouse_stock, warehouse_transfers, purchase_orders + lines, product_unit_conversions, inventory_beginning_balances, inventory_counts + lines | `products`/`categories` — POS cannot function without them; `suppliers` and `receiving` — tindahan-pos exposes both; `sales`/`sale_items` — the money path, untouched |
+| warehouses, warehouse_stock, warehouse_transfers, purchase_orders + lines, product_unit_conversions, inventory_beginning_balances, inventory_counts + lines, **suppliers**, **receiving_entries + lines** | `products`/`categories` — POS cannot function without them; `sales`/`sale_items` — the money path, untouched |
 
-Whether `suppliers` and `receiving` belong to the Inventory plan is a
-**pricing decision that has not been made**. POS is not gated at all: every
-plan includes it, so gating would only ever fire for a suspended tenant while
-carrying the highest risk in the system — a wrong row means a shop cannot
-sell.
+`suppliers` and `receiving` were the last exception, left ungated because
+tindahan-pos exposes both and gating them on the Inventory module would have
+broken a POS-only store. Whether they belonged to the Inventory plan was
+recorded here as an unmade pricing decision.
+
+`20260815113000` made it: both are BASIC features of the INVENTORY module.
+`20260815114000` enforced it, and `core.feature_enabled()` requires the owning
+module, so a tenant without INVENTORY no longer holds the feature either. Only
+FREE is affected — it grants POS alone — and no tenant is on FREE.
+
+Those six write policies had checked the store and the caller's role and
+**nothing else**: no module, no feature, and no grace ladder, meaning a
+SUSPENDED tenant could go on receiving stock indefinitely. All three gates are
+now in front of them, tested independently in `260_suppliers_receiving_-
+enforcement` — a test that revokes all three at once cannot tell which one is
+holding the door.
+
+POS itself is still not gated at all: every plan includes it, so gating would
+only ever fire for a suspended tenant while carrying the highest risk in the
+system — a wrong row means a shop cannot sell.
 
 ---
 
@@ -324,7 +339,9 @@ a human can supply.
   `supabase/snippets/tier-split-audit.sql` is what proves the backfill itself
   — run it on staging, before and after, and check that no tenant's count of
   enabled grants falls.
-- **`suppliers` / `receiving` module ownership** — a pricing decision, above.
+- ~~**`suppliers` / `receiving` module ownership**~~ **Decided** in
+  `20260815113000` and enforced in `20260815114000` — both are BASIC features
+  of INVENTORY. See above.
 - **POS gating** — deliberately not built, above.
 - ~~**Limit enforcement.**~~ **Built** in `20260815102000`. Triggers rather
   than policies, because devices are inserted by the pair-device Edge

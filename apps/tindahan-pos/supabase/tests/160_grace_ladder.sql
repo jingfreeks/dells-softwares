@@ -141,6 +141,9 @@ select lives_ok($$
 $$, 'and a healthy tenant can create a warehouse');
 
 reset role;
+-- Seeded while the tenant is still ACTIVE, so the read-survives assertion
+-- below has a real row to find.
+insert into suppliers (store_id, name) select id, 'Aling Nena Trading' from stores;
 select pg_temp.set_sub('SUSPENDED');
 set local role authenticated;
 select pg_temp.act_as('da000000-0000-4000-8000-000000000001');
@@ -169,10 +172,21 @@ select isnt_empty($$ select 1 from categories $$,
 select ok(public.current_store_has_module('INVENTORY'),
   'the module is still ENTITLED -- suspension is a billing state, not a downgrade');
 
--- Known limitation, asserted so it cannot change silently: POS is not gated.
-select lives_ok($$
-  insert into suppliers (store_id, name) select id, 'Not Gated' from stores
-$$, 'suppliers are NOT blocked -- ungated surfaces stay ungated (see PLATFORM.md)');
+-- This used to assert that suppliers were NOT blocked, as a known limitation
+-- held in place so it could not change silently. It has now changed
+-- deliberately: 20260815114000 put the module, the feature and this very
+-- ladder in front of supplier writes, which had never carried any of the
+-- three. POS itself is still not gated -- every plan includes it, so gating
+-- would only ever fire for a suspended tenant while carrying the highest risk
+-- in the system: a wrong row means a shop cannot sell.
+select throws_ok($$
+  insert into suppliers (store_id, name) select id, 'Suspended' from stores
+$$, '42501', null,
+   'a suspended tenant can no longer add a supplier');
+
+select isnt_empty($$ select 1 from suppliers $$,
+  'but still reads every supplier they had -- suspension withdraws writes, '
+  'never data');
 
 reset role;
 select pg_temp.set_sub('ACTIVE');

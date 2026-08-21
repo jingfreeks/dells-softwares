@@ -58,6 +58,10 @@ $$, 'an entitled tenant can create a warehouse');
 
 reset role;
 
+-- Seeded here, while the module is STILL HELD, so the read-survives assertion
+-- further down has a real row to find rather than passing on an empty table.
+insert into suppliers (store_id, name) select id, 'Aling Nena Trading' from stores;
+
 -- -----------------------------------------------------------------------------
 -- DENY: the same tenant, module switched off
 -- -----------------------------------------------------------------------------
@@ -95,10 +99,20 @@ select isnt_empty($$ select 1 from warehouses $$,
 select isnt_empty($$ select 1 from warehouses where name = 'Back Room' $$,
   'including records created before the module lapsed');
 
--- And nothing outside the Inventory module was collaterally gated.
-select lives_ok($$
-  insert into suppliers (store_id, name) select id, 'Still Allowed' from stores
-$$, 'suppliers are untouched -- tindahan-pos uses them too');
+-- Suppliers used to be the exception here: tindahan-pos exposes the table, so
+-- gating it on the Inventory module would have broken a POS-only store, and
+-- whether it belonged to the Inventory plan was recorded as an unmade pricing
+-- decision. 20260815113000 made that decision -- inventory.suppliers is a
+-- BASIC feature of the INVENTORY module -- and 20260815114000 enforced it.
+-- core.feature_enabled() requires the owning module, so a tenant without
+-- INVENTORY no longer holds the feature either.
+select throws_ok($$
+  insert into suppliers (store_id, name) select id, 'No Longer Allowed' from stores
+$$, '42501', null,
+   'suppliers now follow the module too -- the pricing decision was made in 113000');
+
+select isnt_empty($$ select 1 from suppliers $$,
+  'and the suppliers already on file remain readable -- §08 is unchanged');
 
 reset role;
 
