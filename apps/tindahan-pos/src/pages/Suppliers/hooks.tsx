@@ -1,3 +1,4 @@
+import { describePlatformError } from "@/lib/platformErrors";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   useStoreData,
@@ -165,7 +166,7 @@ export function useSuppliersPage() {
         setShowModal(false);
       }
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : ERROR_COULD_NOT_SAVE_SUPPLIER);
+      setFormError(describePlatformError(err, ERROR_COULD_NOT_SAVE_SUPPLIER));
     } finally {
       setSubmitting(false);
     }

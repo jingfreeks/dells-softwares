@@ -1,7 +1,9 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
+import { useHasModule, MODULE_READ_ONLY_HINT } from "../lib/modules";
 import { listWarehouses } from "../lib/warehouses";
 import { listProducts } from "../lib/products";
 import { listBeginningBalances, setBeginningBalance } from "../lib/beginningBalance";
@@ -11,7 +13,8 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export function BeginningBalance() {
   const { user } = useAuth();
-  const canManage = useCan("inventory.stock.adjust");
+  const accessDenied = useAccessDenied("inventory.stock.adjust");
+  const hasInventory = useHasModule("INVENTORY");
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [balances, setBalances] = useState<BeginningBalanceRow[]>([]);
@@ -43,7 +46,7 @@ export function BeginningBalance() {
         setWarehouseId((prev) => prev || w.find((wh) => wh.isDefault)?.id || w[0]?.id || "");
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load data.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load data."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -61,14 +64,14 @@ export function BeginningBalance() {
         if (!cancelled) setBalances(rows);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load beginning balances.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load beginning balances."));
       });
     return () => {
       cancelled = true;
     };
   }, [warehouseId]);
 
-  if (user && !canManage) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 
@@ -105,7 +108,7 @@ export function BeginningBalance() {
       setQuantity("");
       setUnitCost("");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not save beginning balance.");
+      setFormError(describeWriteError(err, "Could not save beginning balance."));
     } finally {
       setSubmitting(false);
     }
@@ -206,7 +209,8 @@ export function BeginningBalance() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !hasInventory}
+              title={hasInventory ? undefined : MODULE_READ_ONLY_HINT}
               className="mt-1 flex h-10 cursor-pointer items-center justify-center rounded-xl bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? "Saving…" : "Save balance"}

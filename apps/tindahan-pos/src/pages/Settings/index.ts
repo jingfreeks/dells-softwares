@@ -7,3 +7,4 @@ export * from "./BackupSettings";
 export * from "./DevicesSettings";
 export * from "./AuditLogSettings";
 export * from "./ComingSoonSettingsPage";
+export * from "./PlanSettings";

@@ -4,6 +4,8 @@ import {
   CashierSessionProvider,
   FeatureFlagsProvider,
   PermissionsProvider,
+  BillingProvider,
+  FeaturesProvider,
   StoreDataProvider,
   EloadWalletProvider,
   DrawerFloatProvider,
@@ -33,6 +35,7 @@ import {
   AuditLogSettings,
   Onboarding,
   Reports,
+  PlanSettings,
 } from "@/pages";
 
 function App() {
@@ -41,6 +44,8 @@ function App() {
       <FeatureFlagsProvider>
         <AuthProvider>
           <PermissionsProvider>
+          <BillingProvider>
+          <FeaturesProvider>
           <CashierSessionProvider>
             <StoreDataProvider>
               <OfflineQueueProvider>
@@ -68,6 +73,7 @@ function App() {
                           <Route path="/settings/alerts" element={<AlertsSettings />} />
                           <Route path="/settings/backup" element={<BackupSettings />} />
                           <Route path="/settings/devices" element={<DevicesSettings />} />
+                          <Route path="/settings/plan" element={<PlanSettings />} />
                           <Route path="/settings/audit-log" element={<AuditLogSettings />} />
                         </Route>
                         <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
@@ -89,6 +95,8 @@ function App() {
               </OfflineQueueProvider>
             </StoreDataProvider>
           </CashierSessionProvider>
+          </FeaturesProvider>
+          </BillingProvider>
           </PermissionsProvider>
         </AuthProvider>
       </FeatureFlagsProvider>

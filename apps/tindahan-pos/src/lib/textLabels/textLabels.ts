@@ -32,9 +32,13 @@ export const LABEL_PASSWORD = "Password";
 export const ARIA_SHOW_PASSWORD = "Show password";
 export const ARIA_HIDE_PASSWORD = "Hide password";
 
-// Shared auth navigation link text — LABEL_LOG_IN doubles as the Login
-// page's submit button text and Register's "already have an account?"
-// link text, since both are literally the word "Log in".
+// Shared auth navigation link text.
+//
+// LABEL_LOG_IN used to double as the Login page's submit button text. It does
+// not any more -- that page was redesigned into Sign in / Create account tabs
+// and its button renders SEG_SIGN_IN below. The e2e suite was still selecting
+// on "Log in" because of this comment, and 34 of its 42 tests had been failing
+// on it silently. Kept for Register's "already have an account?" link.
 export const LINK_BACK_TO_LOGIN = "Back to login";
 export const LABEL_LOG_IN = "Log in";
 export const LINK_REGISTER = "Register";
@@ -1268,6 +1272,23 @@ export const ERROR_INVALID_OR_EXPIRED_CODE = "That code is invalid or has expire
 export const ERROR_COULD_NOT_PAIR_DEVICE = "Could not pair this device. Please try again.";
 export const BUTTON_PAIRING = "Pairing…";
 export const NAV_LABEL_DEVICES = "Devices";
+export const NAV_LABEL_YOUR_PLAN = "Your plan";
+export const PAGE_HEADING_YOUR_PLAN = "Your plan";
+export const TEXT_PLAN_DESCRIPTION =
+  "What your store can do today, and what it cannot yet.";
+export const TEXT_PLAN_INCLUDED = "Included in your plan";
+export const TEXT_PLAN_NOT_INCLUDED = "Not in your plan";
+export const TEXT_PLAN_ALL_INCLUDED =
+  "Your store holds every capability the platform sells.";
+export const TEXT_PLAN_LOCKED_HINT =
+  "Switching plans never moves or hides your data — everything you already have stays exactly where it is.";
+export const TEXT_PLAN_CONTACT_US = "Contact us";
+export const TEXT_PLAN_UPGRADE_PREFIX = "Upgrade to ";
+export const TEXT_PLAN_WRITES_PAUSED =
+  "New records are paused while billing is unsettled. Everything you have recorded is still here, and still yours to read and export.";
+export const MODULE_LABEL_POS = "Selling";
+export const MODULE_LABEL_INVENTORY = "Stock and suppliers";
+export const MODULE_LABEL_ACCOUNTING = "Accounting";
 export const PAGE_HEADING_DEVICES = "Devices";
 export const TEXT_DEVICES_DESCRIPTION = "Registers paired to this store.";
 export const BUTTON_GENERATE_PAIRING_CODE = "Generate pairing code";

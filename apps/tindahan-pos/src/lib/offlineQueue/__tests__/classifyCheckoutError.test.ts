@@ -42,3 +42,28 @@ describe("isConnectivityFailure", () => {
     );
   });
 });
+
+describe("entitlement rejections are business rules, not connectivity", () => {
+  // The failure this guards against loses a sale in a way nobody sees.
+  // enforce_utang_feature() is a BEFORE INSERT trigger on `sales`, so a credit
+  // sale from a store without pos.utang comes back out of checkout_sale() as
+  // FEATURE_NOT_ENABLED. It was not on the whitelist, so it fell through to
+  // the default -- "assume connectivity" -- and the sale was queued for
+  // replay: retried forever against a server that refuses it every time, and
+  // never surfaced to the cashier. A sale that cannot happen looked to them
+  // like a sale that had.
+  it("does not queue a credit sale the store is not entitled to make", () => {
+    expect(isConnectivityFailure(new Error("FEATURE_NOT_ENABLED: pos.utang"))).toBe(false);
+  });
+
+  it("treats any withheld capability the same way", () => {
+    expect(isConnectivityFailure(new Error("FEATURE_NOT_ENABLED: pos.void"))).toBe(false);
+  });
+
+  // The default still has to hold for everything genuinely unknown: wrongly
+  // blocking a real offline sale is worse than queuing one twice, since
+  // checkout_sale is idempotent on client_request_id.
+  it("still assumes connectivity for an unrecognised failure", () => {
+    expect(isConnectivityFailure(new Error("Failed to fetch"))).toBe(true);
+  });
+});

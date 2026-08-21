@@ -1,0 +1,77 @@
+-- =============================================================================
+-- Reproducibility · the table grants the applications have always relied on
+-- -----------------------------------------------------------------------------
+-- Applying every migration in this repository to a brand-new Supabase project
+-- produces a database where BOTH applications are completely non-functional:
+-- signing in succeeds, and then the very first query -- the app reading its
+-- own `staff` row -- returns 403. Nothing can be read or written at all.
+--
+-- Not RLS. A missing GRANT, one level below it.
+--
+-- WHY. In a current Supabase project the default privileges differ by who
+-- creates the object:
+--
+--   supabase_admin's default ACL for public : arwdDxtm  (includes DML)
+--   postgres's      default ACL for public : Dxtm      (truncate/refs/trigger)
+--
+-- Migrations run as `postgres`, so every table this repository creates is
+-- owned by postgres and inherits the SECOND row -- truncate and trigger
+-- rights, but no select, insert, update or delete for anon, authenticated or
+-- service_role. Postgres then refuses the query before any policy is
+-- consulted, because a policy can only narrow a privilege that was granted.
+--
+-- Verified on a clean `supabase db reset`: 33 tables in public, and
+-- `authenticated`, `anon` and `service_role` hold SELECT on exactly zero of
+-- them. The only reason this was never noticed is that the live project
+-- already has these grants -- applied outside this repository, at a time when
+-- the defaults were more permissive -- so production works and the schema
+-- appears complete while it is not.
+--
+-- That makes this a rollout bug rather than a runtime one, and it lands
+-- precisely on the step this project has not taken yet: standing up staging.
+--
+-- WHAT IS GRANTED, AND WHAT IS NOT.
+--
+--   authenticated  DML on public tables. This is the Supabase model: the
+--                  grant makes a table reachable, RLS decides which rows.
+--                  All 33 tables have RLS enabled -- enforced in CI by
+--                  scripts/check-rls-coverage.mjs -- so a grant without a
+--                  matching policy still yields nothing.
+--
+--   service_role   DML, for the Edge Functions. create-cashier writes staff,
+--                  stores, roles and staff_roles through the service-role
+--                  client; without this it fails in any new environment.
+--
+--   anon           NOTHING. Deliberately. It holds no DML on any public table
+--                  today, nothing in either application queries a table
+--                  before signing in, and the pre-login paths (PIN login,
+--                  device pairing) go through SECURITY DEFINER functions
+--                  whose EXECUTE grants are already in their own migrations.
+--                  Granting anon table access "to match the Supabase default"
+--                  would widen the unauthenticated surface for no caller.
+--
+-- No sequences are granted because there are none -- every key is a uuid.
+--
+-- The `alter default privileges` at the end is the part that stops this
+-- recurring: without it the next migration to create a table reintroduces
+-- exactly this gap, and would again only be noticed in a fresh environment.
+--
+-- Affected schemas : public (privileges only -- no table, policy or function
+--                    is created, altered or dropped)
+-- Rollback         : revoke the same grants and drop the default privileges
+-- Risk             : none in the live project, where these grants already
+--                    exist and re-granting is a no-op. In a new environment
+--                    it is the difference between a working system and one
+--                    that cannot read its own staff table. RLS is untouched
+--                    and remains the actual boundary.
+-- =============================================================================
+
+grant select, insert, update, delete
+  on all tables in schema public
+  to authenticated, service_role;
+
+-- Future tables, so this cannot silently regress the next time someone adds
+-- one. Scoped to `postgres` because that is the role migrations run as, and
+-- therefore the role whose defaults actually applied above.
+alter default privileges for role postgres in schema public
+  grant select, insert, update, delete on tables to authenticated, service_role;

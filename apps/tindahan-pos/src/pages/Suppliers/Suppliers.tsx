@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
-import { useAuth, useCan, PAGE_HEADING_SUPPLIERS, TEXT_SUPPLIERS_DESCRIPTION, BUTTON_ADD_SUPPLIER, BUTTON_PRINT_SCAN_SHEET } from "@/lib";
+import { useAuth, useCan, usePermissions, PAGE_HEADING_SUPPLIERS, TEXT_SUPPLIERS_DESCRIPTION, BUTTON_ADD_SUPPLIER, BUTTON_PRINT_SCAN_SHEET } from "@/lib";
 import {
   AddSupplierModal,
   SuppliersMetricsRow,
@@ -12,6 +12,7 @@ import { useSuppliersPage } from "./hooks";
 
 export function Suppliers() {
   const { user } = useAuth();
+  const { loading: permissionsLoading } = usePermissions();
   const canManageSuppliers = useCan("inventory.supplier.manage");
   const {
     suppliers,
@@ -52,7 +53,12 @@ export function Suppliers() {
     handlePrintSupplierCode,
   } = useSuppliersPage();
 
-  if (user && !canManageSuppliers) {
+  // Wait for permissions before deciding. useCan() returns false while they
+  // are still loading, so redirecting on it bounced an authorised owner to
+  // /pos on any DIRECT navigation -- a deep link, a refresh, or anything that
+  // is not a client-side transition from a page where permissions had already
+  // resolved. Caught by the e2e suite navigating straight to this route.
+  if (user && !permissionsLoading && !canManageSuppliers) {
     return <Navigate to="/pos" replace />;
   }
 

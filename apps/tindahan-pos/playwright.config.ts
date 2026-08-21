@@ -38,6 +38,17 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:4173',
     trace: 'on-first-retry',
+    // Chromium otherwise runs in UTC no matter what the host clock says,
+    // while every store this POS serves is in UTC+8. The dashboard decides
+    // what "today" means by comparing local calendar dates, so for the eight
+    // hours a day where the UTC date and the Manila date disagree, a sale the
+    // test just rang up stops counting as today's — the checkout spec failed
+    // three times running at 23:59 UTC and passed at 00:02 with no code
+    // change. Production browsers sit in Manila and never see the split;
+    // pinning it here makes the suite match production instead of drifting
+    // with the wall clock.
+    timezoneId: 'Asia/Manila',
+    locale: 'en-PH',
   },
   projects: [
     {

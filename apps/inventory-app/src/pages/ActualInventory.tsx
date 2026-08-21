@@ -1,7 +1,14 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
+import {
+  useHasModule,
+  useHasFeature,
+  MODULE_READ_ONLY_HINT,
+  FEATURE_NOT_IN_PLAN_HINT,
+} from "../lib/modules";
 import { listWarehouses, getWarehouseStock } from "../lib/warehouses";
 import { listProducts } from "../lib/products";
 import {
@@ -15,7 +22,18 @@ import type { InventoryCount, InventoryCountLine, Product, Warehouse } from "../
 
 export function ActualInventory() {
   const { user } = useAuth();
-  const canManage = useCan("inventory.stock.count");
+  const accessDenied = useAccessDenied("inventory.stock.count");
+  const hasInventory = useHasModule("INVENTORY");
+  const hasFeature = useHasFeature("inventory.stock_count");
+  // The module hint wins when both are off: core.feature_enabled()
+  // requires the owning module, so a missing module is the true cause
+  // and saying "not in your plan" would send the owner after the wrong
+  // thing.
+  const writeHint = !hasInventory
+    ? MODULE_READ_ONLY_HINT
+    : !hasFeature
+      ? FEATURE_NOT_IN_PLAN_HINT
+      : undefined;
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [counts, setCounts] = useState<InventoryCount[]>([]);
@@ -57,7 +75,7 @@ export function ActualInventory() {
         setNewWarehouseId((prev) => prev || w.find((wh) => wh.isDefault)?.id || w[0]?.id || "");
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load inventory counts.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load inventory counts."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -97,7 +115,7 @@ export function ActualInventory() {
     };
   }, [selectedCount, selectedWarehouse, products]);
 
-  if (user && !canManage) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 
@@ -114,7 +132,7 @@ export function ActualInventory() {
       setCounts((prev) => [count, ...prev]);
       setSelectedCountId(count.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start inventory count.");
+      setError(describeWriteError(err, "Could not start inventory count."));
     } finally {
       setStarting(false);
     }
@@ -138,7 +156,7 @@ export function ActualInventory() {
       });
       setLines((prev) => [...prev.filter((l) => l.productId !== productId), line]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save counted quantity.");
+      setError(describeWriteError(err, "Could not save counted quantity."));
     } finally {
       setSavingProductId(null);
     }
@@ -152,7 +170,7 @@ export function ActualInventory() {
       await closeInventoryCount(selectedCount.id);
       setCounts((prev) => prev.map((c) => (c.id === selectedCount.id ? { ...c, status: "closed" } : c)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not close inventory count.");
+      setError(describeWriteError(err, "Could not close inventory count."));
     } finally {
       setClosing(false);
     }
@@ -189,7 +207,8 @@ export function ActualInventory() {
           <button
             type="button"
             onClick={handleStartCount}
-            disabled={starting || !newWarehouseId}
+            disabled={starting || !newWarehouseId || !hasInventory || !hasFeature}
+            title={writeHint}
             className="h-10 cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {starting ? "Starting…" : "Start count"}

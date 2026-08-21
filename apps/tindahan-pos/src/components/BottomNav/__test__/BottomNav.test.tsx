@@ -7,6 +7,12 @@ import { BottomNav } from "../BottomNav";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/lib/permissions", () => ({ usePermissions: () => ({ permissions: new Set(), loading: false }) }));
+vi.mock("@/lib/features", () => ({
+  // loading:false with a full set — these suites are about nav rendering,
+  // not entitlement; useFeature() failing open is covered in features.test.ts.
+  useFeatures: () => ({ features: new Set(["pos.utang"]), loading: false }),
+  useFeature: () => true,
+}));
 
 describe("BottomNav", () => {
   it("shows admin nav items for an admin user", () => {

@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./lib/auth";
 import { PermissionsProvider } from "./lib/permissions";
+import { ModulesProvider } from "./lib/modules";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
@@ -20,6 +21,7 @@ function App() {
   return (
     <AuthProvider>
       <PermissionsProvider>
+      <ModulesProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -109,6 +111,7 @@ function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
+      </ModulesProvider>
       </PermissionsProvider>
     </AuthProvider>
   );

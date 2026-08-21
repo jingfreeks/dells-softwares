@@ -9,6 +9,7 @@ import {
   NAV_LABEL_BACKUP,
   NAV_LABEL_DEVICES,
   NAV_LABEL_AUDIT_LOG,
+  NAV_LABEL_YOUR_PLAN,
 } from "@/lib";
 
 const SETTINGS_NAV_ITEMS = [
@@ -20,6 +21,7 @@ const SETTINGS_NAV_ITEMS = [
   { to: "/settings/backup", label: NAV_LABEL_BACKUP, icon: "ti-database-export" },
   { to: "/settings/devices", label: NAV_LABEL_DEVICES, icon: "ti-device-tablet" },
   { to: "/settings/audit-log", label: NAV_LABEL_AUDIT_LOG, icon: "ti-history" },
+  { to: "/settings/plan", label: NAV_LABEL_YOUR_PLAN, icon: "ti-license" },
 ];
 
 export function SettingsSidebar() {

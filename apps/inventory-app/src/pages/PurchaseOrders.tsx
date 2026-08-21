@@ -1,7 +1,14 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
+import {
+  useHasModule,
+  useHasFeature,
+  MODULE_READ_ONLY_HINT,
+  FEATURE_NOT_IN_PLAN_HINT,
+} from "../lib/modules";
 import { listWarehouses } from "../lib/warehouses";
 import { listSuppliers } from "../lib/suppliers";
 import { listProducts } from "../lib/products";
@@ -38,7 +45,18 @@ const STATUS_COLOR: Record<PurchaseOrder["status"], string> = {
 
 export function PurchaseOrders() {
   const { user } = useAuth();
-  const canManage = useCan("inventory.purchase_order.manage");
+  const accessDenied = useAccessDenied("inventory.purchase_order.manage");
+  const hasInventory = useHasModule("INVENTORY");
+  const hasFeature = useHasFeature("inventory.purchase_orders");
+  // The module hint wins when both are off: core.feature_enabled()
+  // requires the owning module, so a missing module is the true cause
+  // and saying "not in your plan" would send the owner after the wrong
+  // thing.
+  const writeHint = !hasInventory
+    ? MODULE_READ_ONLY_HINT
+    : !hasFeature
+      ? FEATURE_NOT_IN_PLAN_HINT
+      : undefined;
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -91,7 +109,7 @@ export function PurchaseOrders() {
         setWarehouseId((prev) => prev || w.find((wh) => wh.isDefault)?.id || w[0]?.id || "");
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load purchase orders.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load purchase orders."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -101,7 +119,7 @@ export function PurchaseOrders() {
     };
   }, [user]);
 
-  if (user && !canManage) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 
@@ -169,7 +187,7 @@ export function PurchaseOrders() {
       setShowForm(false);
       resetForm();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not save purchase order.");
+      setFormError(describeWriteError(err, "Could not save purchase order."));
     } finally {
       setSubmitting(false);
     }
@@ -182,7 +200,7 @@ export function PurchaseOrders() {
       await submitPurchaseOrder(id);
       setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: "submitted" } : o)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not submit purchase order.");
+      setError(describeWriteError(err, "Could not submit purchase order."));
     } finally {
       setBusyId(null);
     }
@@ -200,7 +218,9 @@ export function PurchaseOrders() {
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="shrink-0 cursor-pointer rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)]"
+          disabled={!hasInventory || !hasFeature}
+          title={writeHint}
+          className="shrink-0 cursor-pointer rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {showForm ? "Cancel" : "New purchase order"}
         </button>

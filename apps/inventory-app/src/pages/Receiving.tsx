@@ -1,7 +1,8 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
 import { listWarehouses } from "../lib/warehouses";
 import { listSuppliers } from "../lib/suppliers";
 import { listProducts } from "../lib/products";
@@ -20,7 +21,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export function Receiving() {
   const { user } = useAuth();
-  const canReceive = useCan("inventory.stock.receive");
+  const accessDenied = useAccessDenied("inventory.stock.receive");
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -70,7 +71,7 @@ export function Receiving() {
         setWarehouseId((prev) => prev || w.find((wh) => wh.isDefault)?.id || w[0]?.id || "");
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load receiving data.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load receiving data."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -80,7 +81,7 @@ export function Receiving() {
     };
   }, [user]);
 
-  if (user && !canReceive) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 
@@ -112,7 +113,7 @@ export function Receiving() {
           }))
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load purchase order lines.");
+      setError(describeWriteError(err, "Could not load purchase order lines."));
     }
   }
 
@@ -178,7 +179,7 @@ export function Receiving() {
       setHistory(h);
       setTimeout(() => setSavedMessage(null), 4000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save receiving entry.");
+      setError(describeWriteError(err, "Could not save receiving entry."));
     } finally {
       setSaving(false);
     }

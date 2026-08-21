@@ -1,9 +1,15 @@
 import { expect, test } from '@playwright/test'
-import { addProduct, loginAsFreshStore } from './helpers'
+import { addProduct, loginAsFreshStore, primeCashierPin, startCashierSession } from './helpers'
+import {
+  LABEL_SCAN_OR_SEARCH_PRODUCTS,
+  ARIA_PRODUCT_ACTIONS,
+  BUTTON_PLUS_10_STOCK,
+} from '../src/lib/textLabels/textLabels'
 
 test.describe('POS checkout flow (Epic A)', () => {
   test.beforeEach(async ({ page, request }) => {
-    await loginAsFreshStore(request, page)
+    const email = await loginAsFreshStore(request, page)
+    await primeCashierPin(request, email)
     await addProduct(page, {
       name: 'Sardines in Tomato Sauce',
       category: 'Canned Goods',
@@ -16,12 +22,14 @@ test.describe('POS checkout flow (Epic A)', () => {
       price: '8',
       stock: '120',
     })
-    await page.goto('/pos')
+    await startCashierSession(page)
   })
 
   test('unknown barcode shows "Product not found" (story A1)', async ({ page }) => {
-    await page.getByPlaceholder('Scan or type a barcode, then press Enter').fill('0000000000000')
-    await page.getByRole('button', { name: 'Add' }).click()
+    // A barcode is submitted with Enter, not an 'Add' button -- see
+    // Pos.test.tsx, which types "111{Enter}" against the same field.
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('0000000000000')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).press('Enter')
 
     await expect(page.getByRole('alert')).toHaveText(/product not found/i)
   })
@@ -29,8 +37,7 @@ test.describe('POS checkout flow (Epic A)', () => {
   test('adding a product by search shows it in the cart with the right total (stories A2, A5)', async ({
     page,
   }) => {
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    await page.getByPlaceholder('e.g. sardines').fill('sardines')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
 
     await expect(page.getByLabel('Cart items').getByText('Sardines in Tomato Sauce')).toBeVisible()
@@ -41,18 +48,20 @@ test.describe('POS checkout flow (Epic A)', () => {
   })
 
   test('search clears after adding, ready for the next lookup (story A2)', async ({ page }) => {
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    const search = page.getByPlaceholder('e.g. sardines')
+    // The field clears on SUBMIT, not on clicking a result: handleProductQuerySubmit
+    // calls setProductQuery("") after adding, while clicking a result deliberately
+    // keeps the query so several matches can be added in a row. This test is about
+    // being ready for the next lookup, which is the scan-then-scan-again path.
+    const search = page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS)
     await search.fill('sardines')
-    await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
+    await search.press('Enter')
 
     await expect(search).toHaveValue('')
     await expect(page.locator('ul.mt-2', { hasText: 'Sardines in Tomato Sauce' })).toHaveCount(0)
   })
 
   test('quantity can be adjusted without rescanning (story A3)', async ({ page }) => {
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    await page.getByPlaceholder('e.g. sardines').fill('sardines')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
 
     await page.getByRole('button', { name: /Increase quantity/ }).click()
@@ -60,14 +69,15 @@ test.describe('POS checkout flow (Epic A)', () => {
   })
 
   test('a no-barcode quick item (tingi) can be added directly (story A4)', async ({ page }) => {
-    await page.getByRole('button', { name: 'No-barcode quick items' }).click()
+    // There is no 'No-barcode quick items' tab any more: a product without a
+    // barcode is just a product, reachable through the same unified search.
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('Shampoo')
     await page.getByRole('button', { name: /Shampoo Sachet \(Tingi\)/ }).click()
     await expect(page.getByLabel('Cart items').getByText('Shampoo Sachet (Tingi)')).toBeVisible()
   })
 
   test('an item can be removed before checkout (story A7)', async ({ page }) => {
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    await page.getByPlaceholder('e.g. sardines').fill('sardines')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
     await page.getByRole('button', { name: /Remove Sardines/ }).click()
 
@@ -77,8 +87,7 @@ test.describe('POS checkout flow (Epic A)', () => {
   test('completing a sale clears the cart and records it on the dashboard (story A6, C5)', async ({
     page,
   }) => {
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    await page.getByPlaceholder('e.g. sardines').fill('sardines')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
     await page.getByLabel('Amount tendered').fill('50')
     await page.getByRole('button', { name: 'Complete sale' }).click()
@@ -86,14 +95,17 @@ test.describe('POS checkout flow (Epic A)', () => {
     await expect(page.getByText('Sale recorded')).toBeVisible({ timeout: 10_000 })
     await expect(page.getByText('Cart is empty')).toBeVisible()
 
-    await page.getByRole('link', { name: 'Admin' }).click()
+    // Navigated rather than clicked: both the sidebar and the bottom nav expose
+    // an Admin link, and the "Sale recorded" toast sits over the bottom one just
+    // after checkout. This assertion is about the sale reaching the dashboard,
+    // not about the nav, so the click was only ever a way to get there.
+    await page.goto('/admin')
     await expect(page).toHaveURL(/\/admin/)
     await expect(page.getByText('₱22.00').first()).toBeVisible()
   })
 
   test('the Complete sale button is disabled without sufficient payment', async ({ page }) => {
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    await page.getByPlaceholder('e.g. sardines').fill('sardines')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('sardines')
     await page.getByRole('button', { name: /Sardines in Tomato Sauce/ }).click()
     await page.getByLabel('Amount tendered').fill('5')
 
@@ -120,20 +132,26 @@ test.describe('Inventory (Epic B)', () => {
 
   test('a new product can be added and appears in the table (story B1)', async ({ page }) => {
     await page.getByRole('button', { name: 'Add product' }).click()
-    await page.getByLabel('Name').fill('Instant Noodles')
+    await page.getByLabel('Name', { exact: true }).fill('Instant Noodles')
     // Category is a dropdown of existing per-store categories, not free
     // text — "Snacks & Chips" already exists from beforeEach's addProduct.
-    await page.getByLabel('Category').selectOption({ label: 'Snacks & Chips' })
+    await page.getByLabel('Category', { exact: true }).selectOption({ label: 'Snacks & Chips' })
     await page.getByLabel('Price').fill('15')
     await page.getByLabel('Stock', { exact: true }).fill('40')
     await page.locator('form').getByRole('button', { name: 'Add product' }).click()
 
-    await expect(page.getByRole('cell', { name: 'Instant Noodles' })).toBeVisible()
+    await expect(page.getByRole('row', { name: 'Instant Noodles' })).toBeVisible()
   })
 
   test('restocking increases the stock count (story B4)', async ({ page }) => {
     const row = page.getByRole('row', { name: /Ube Crackers/ })
-    await row.getByRole('button', { name: '+10 stock' }).click()
-    await expect(row.getByRole('cell', { name: '18' })).toBeVisible()
+    // +10 stock is no longer a button on the row -- it is a menuitem inside
+    // the row's actions menu, which has to be opened first.
+    await row.getByRole('button', { name: ARIA_PRODUCT_ACTIONS }).click()
+    await page.getByRole('menuitem', { name: BUTTON_PLUS_10_STOCK }).click()
+    // The stock figure is a <p> inside the row, not a table cell, so match on
+    // the row's own accessible text rather than a cell role the markup does
+    // not use.
+    await expect(row).toContainText('18')
   })
 })
