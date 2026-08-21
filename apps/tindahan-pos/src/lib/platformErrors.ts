@@ -50,9 +50,25 @@ const FEATURE_MESSAGES: Record<string, string> = {
 const GENERIC_FEATURE_MESSAGE =
   "This isn’t part of your current plan. Nothing you have already recorded is affected.";
 
+/**
+ * Supabase hands back a PostgrestError, which is a plain object and NOT an
+ * Error. Reading only `err instanceof Error` therefore missed the single most
+ * common shape in this codebase, and every translation below was unreachable
+ * from an RPC or a PostgREST write -- the caller fell through to its generic
+ * fallback and the cashier was told "Could not complete sale." with no reason.
+ */
+function messageOf(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  if (err && typeof err === "object" && "message" in err) {
+    const m = (err as { message?: unknown }).message;
+    if (typeof m === "string") return m;
+  }
+  return "";
+}
+
 export function describePlatformError(err: unknown, fallback = "Something went wrong."): string {
-  const raw =
-    err instanceof Error ? err.message : typeof err === "string" ? err : "";
+  const raw = messageOf(err);
   if (!raw) return fallback;
 
   const limit = LIMIT.exec(raw);
@@ -76,6 +92,18 @@ export function describePlatformError(err: unknown, fallback = "Something went w
 
   if (raw.includes("UNAUTHORIZED_ACTION") || raw.includes("ADMIN_ONLY")) {
     return "You do not have permission to do this. Ask the store owner.";
+  }
+
+  // A bare policy denial. The cause is genuinely ambiguous -- a capability the
+  // plan does not include, a module switched off, or a suspended subscription
+  // -- so this deliberately does NOT say "you do not have permission". Since
+  // the tier split that is usually false, and it sends the owner off checking
+  // staff roles for something no role can grant.
+  if (raw.includes("row-level security policy") || raw.includes("violates row-level")) {
+    return (
+      "This isn’t available to your store right now — it may not be part of your plan, " +
+      "or billing may need attention. Nothing you have already recorded is affected."
+    );
   }
 
   return raw;
