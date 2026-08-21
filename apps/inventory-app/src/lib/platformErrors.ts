@@ -35,6 +35,18 @@ export function describeWriteError(err: unknown, fallback = "Something went wron
           `Existing ${noun} are unaffected — contact support to raise the limit.`;
   }
 
+  // FEATURE_NOT_ENABLED: inventory.transfers -- raised by
+  // enforce_transfers_feature() (20260815112000). Distinct from
+  // MODULE_NOT_ENABLED: the module is on, this one capability within it is
+  // not, and telling someone Inventory is disabled when it plainly is not
+  // sends them after the wrong thing.
+  const feature = /FEATURE_NOT_ENABLED:\s*([a-z_]+\.[a-z_]+)/.exec(raw);
+  if (feature) {
+    return feature[1] === "inventory.transfers"
+      ? "Stock transfers aren’t part of your plan. Your existing stock is unaffected."
+      : "This isn’t part of your plan. Your existing records are unaffected.";
+  }
+
   if (raw.includes("MODULE_NOT_ENABLED")) {
     return "This feature is not part of your current plan. Your existing records are unaffected.";
   }

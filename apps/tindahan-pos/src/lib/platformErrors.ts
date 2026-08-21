@@ -27,6 +27,29 @@ const RESOURCE_NAMES: Record<string, string> = {
 /** `LIMIT_EXCEEDED: devices (max 3)` — raised by the plan-limit triggers. */
 const LIMIT = /^LIMIT_EXCEEDED:\s*(\w+)\s*\(max (\d+)\)/;
 
+/** `FEATURE_NOT_ENABLED: pos.utang` — raised by the entitlement triggers. */
+const FEATURE = /FEATURE_NOT_ENABLED:\s*([a-z_]+\.[a-z_]+)/;
+
+/**
+ * Named per capability rather than answered generically, because the useful
+ * half of the sentence is what the cashier should do INSTEAD. "Not part of
+ * your plan" leaves someone standing at the counter with a customer in front
+ * of them and no next step.
+ */
+const FEATURE_MESSAGES: Record<string, string> = {
+  "pos.utang":
+    "This store isn’t set up for utang. You can still take cash, GCash or card — " +
+    "ask the owner if utang should be turned on.",
+  "pos.void":
+    "Voiding a sale isn’t part of this store’s plan. Ask the owner, or record a " +
+    "return instead.",
+  "inventory.transfers":
+    "Stock transfers aren’t part of this store’s plan. Existing stock is unaffected.",
+};
+
+const GENERIC_FEATURE_MESSAGE =
+  "This isn’t part of your current plan. Nothing you have already recorded is affected.";
+
 export function describePlatformError(err: unknown, fallback = "Something went wrong."): string {
   const raw =
     err instanceof Error ? err.message : typeof err === "string" ? err : "";
@@ -40,6 +63,11 @@ export function describePlatformError(err: unknown, fallback = "Something went w
       ? `Your plan does not currently allow any ${noun}. Contact support to change this.`
       : `Your plan includes ${max} ${noun}, and you are using all of them. ` +
           `Contact support to raise the limit.`;
+  }
+
+  const feature = FEATURE.exec(raw);
+  if (feature) {
+    return FEATURE_MESSAGES[feature[1]] ?? GENERIC_FEATURE_MESSAGE;
   }
 
   if (raw.includes("MODULE_NOT_ENABLED")) {
