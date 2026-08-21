@@ -175,7 +175,7 @@ cannot be recorded there.
 ```bash
 cd apps/tindahan-pos
 supabase db reset          # applies all migrations from empty
-bash supabase/tests/run.sh # 221 assertions
+bash supabase/tests/run.sh # 344 assertions
 ```
 
 | Suite | Guards |
@@ -186,12 +186,20 @@ bash supabase/tests/run.sh # 221 assertions
 | `130_tenant_isolation` | §30's premise: tenant A cannot read tenant B |
 | `140_session_helpers` | `current_user_id()` treats absent claims as absent, not as an error |
 | `150_plan_management` | plan changes take effect; a MANUAL override survives one, and can be handed back |
-| `160_grace_ladder` | suspension blocks writes and ONLY writes; an unprovisioned tenant keeps working |
+| `160_grace_ladder` | suspension blocks writes and ONLY writes; an unprovisioned tenant keeps working; POS itself is not one of those blocked writes |
 | `170_plan_limits` | caps stop the next row, absent means unlimited, and it holds for `service_role` |
 | `180_limit_controls` | the console's usage number IS the trigger's, and a ceiling can be changed |
 | `190_tenant_limits` | a store sees its own ceilings, cannot aim at another's, fails closed |
 | `200_audit_partition_isolation` | a partition of `core.audit_logs` is not a way past the parent's policy |
 | `210_permission_unification` | an admin keeps every permission across the change; a demotion actually demotes |
+| `220_anon_surface` | the anon key ships in the bundle; it reaches `feature_flags` and nothing else |
+| `230_feature_entitlement` | a feature is dark without its module; a new tenant holds exactly its plan |
+| `240_feature_enforcement` | server-side refusal on a withheld feature; §08 still holds — reads survive |
+| `250_tier_split` | the ladder is cumulative; no plan grants a module with none of its features; grandfathering survives a re-materialize |
+| `260_suppliers_receiving_enforcement` | the last two sold-but-ungated capabilities, gated on module, feature and the writes ladder independently |
+| `270_finish_in_flight` | entitlement blocks starting, never finishing; a silent RLS no-op is caught by asserting row counts, not the absence of an error |
+| `280_offline_replay_entitlement` | a queued sale that predates a withdrawal still lands; one claiming to postdate it does not |
+| `290_every_feature_is_decided` | every catalogue feature is withheld, or named with a reason for why not — a stale excuse fails too |
 
 Plus two static guards (`scripts/check-*.mjs`): no client-reachable secrets,
 and no table without RLS. All of it runs in `Platform CI`
