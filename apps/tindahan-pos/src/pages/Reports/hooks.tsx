@@ -11,6 +11,7 @@ import {
   type SaleRecord,
 } from "@/lib";
 import { buildRangeReport } from "@/lib/reports";
+import { describePlatformError } from "@/lib/platformErrors";
 import { DEFAULT_ALERTS_MOCK, loadAlertsMock } from "@/pages/Settings/alertsMock";
 import { dateRangeForPreset, toDateInputValue, type DateRangePreset } from "./lib";
 
@@ -122,7 +123,7 @@ export function useReportsPage() {
         )
       );
     } catch (err) {
-      setVoidError(err instanceof Error ? err.message : ERROR_COULD_NOT_VOID_SALE);
+      setVoidError(describePlatformError(err, ERROR_COULD_NOT_VOID_SALE));
       throw err;
     }
   }

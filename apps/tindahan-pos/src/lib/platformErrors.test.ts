@@ -103,3 +103,34 @@ describe("FEATURE_NOT_ENABLED", () => {
     expect(feature).not.toBe(module);
   });
 });
+
+describe("ALREADY_VOIDED and VOID_REASON_REQUIRED", () => {
+  // The reachable one. void_sale() raises this whenever the list an admin is
+  // looking at is stale -- a second admin voided it first, or the page has
+  // been open since before someone else did. Reproduced directly against a
+  // real database while building this: calling void_sale() twice on the same
+  // sale raises the bare string `ALREADY_VOIDED`, no colon, no detail.
+  it("explains a stale void attempt rather than showing the bare code", () => {
+    const msg = describePlatformError(new Error("ALREADY_VOIDED"));
+    expect(msg).not.toBe("ALREADY_VOIDED");
+    expect(msg).toMatch(/already.*voided/i);
+  });
+
+  it("translates VOID_REASON_REQUIRED too, even though the UI already blocks an empty reason", () => {
+    const msg = describePlatformError(new Error("VOID_REASON_REQUIRED"));
+    expect(msg).not.toBe("VOID_REASON_REQUIRED");
+    expect(msg).toMatch(/reason/i);
+  });
+
+  // The actual bug this closes: void_sale()'s error is a PostgrestError, a
+  // plain object and not an Error instance -- exactly the shape #188 fixed for
+  // checkout and suppliers, at a call site that fix did not reach. Before this
+  // PR, Reports/hooks.tsx read `err instanceof Error ? err.message : fallback`
+  // directly, so a real ALREADY_VOIDED response fell through to the generic
+  // "Could not void this sale." with the actual reason discarded.
+  it("still works when the error is a plain object, not an Error instance", () => {
+    const postgrestShaped = { message: "ALREADY_VOIDED", code: "P0001" };
+    const msg = describePlatformError(postgrestShaped);
+    expect(msg).toMatch(/already.*voided/i);
+  });
+});
