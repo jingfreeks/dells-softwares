@@ -94,3 +94,32 @@ describe("isAtLimit", () => {
     expect(isAtLimit([], "warehouses")).toBe(false);
   });
 });
+
+describe("FEATURE_NOT_ENABLED", () => {
+  it("never puts the raw code on screen", () => {
+    const msg = describeWriteError(new Error("FEATURE_NOT_ENABLED: inventory.transfers"));
+    expect(msg).not.toContain("FEATURE_NOT_ENABLED");
+    expect(msg).not.toContain("inventory.transfers");
+  });
+
+  it("names transfers, and says the stock is untouched", () => {
+    const msg = describeWriteError(new Error("FEATURE_NOT_ENABLED: inventory.transfers"));
+    expect(msg).toMatch(/transfer/i);
+    expect(msg).toMatch(/unaffected/i);
+  });
+
+  // Distinct from MODULE_NOT_ENABLED deliberately: Inventory is plainly on --
+  // the user is looking at it -- and telling them it is disabled sends them
+  // after the wrong thing entirely.
+  it("does not claim the Inventory module is off", () => {
+    const feature = describeWriteError(new Error("FEATURE_NOT_ENABLED: inventory.transfers"));
+    const module = describeWriteError(new Error("MODULE_NOT_ENABLED"));
+    expect(feature).not.toBe(module);
+  });
+
+  it("still answers readably for a capability it has not heard of", () => {
+    const msg = describeWriteError(new Error("FEATURE_NOT_ENABLED: inventory.brand_new"));
+    expect(msg).not.toContain("FEATURE_NOT_ENABLED");
+    expect(msg).toMatch(/plan/i);
+  });
+});
