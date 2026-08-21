@@ -6,8 +6,29 @@ import { useAuth } from "./auth";
 export const MODULE_READ_ONLY_HINT =
   "Inventory isn’t enabled for your store. Existing records stay viewable, but can’t be changed.";
 
+/**
+ * Tooltip for a write control disabled because the tenant's PLAN does not
+ * include this capability — a different thing from the module being off, and a
+ * very different thing from lacking permission.
+ *
+ * Before the tier split every plan sold every feature, so this could not
+ * happen. Now a store on BASIC genuinely does not have purchase orders, and
+ * without this they would meet a bare policy denial reading "You do not have
+ * permission to make this change" — which blames the person for something no
+ * amount of permission-granting can fix.
+ */
+export const FEATURE_NOT_IN_PLAN_HINT =
+  "This isn’t part of your plan. Existing records stay viewable, and nothing has been removed.";
+
 export interface StoreModule {
   moduleCode: string;
+  name: string;
+  enabled: boolean;
+}
+
+/** One row of my_store_features() — the whole catalogue, held or not. */
+export interface StoreFeature {
+  featureCode: string;
   name: string;
   enabled: boolean;
 }
@@ -29,6 +50,7 @@ export interface BillingState {
 
 interface ModulesContextValue {
   modules: StoreModule[];
+  features: StoreFeature[];
   billing: BillingState | null;
   /** True until the first fetch resolves for the current staff member. */
   loading: boolean;
@@ -36,6 +58,7 @@ interface ModulesContextValue {
 
 const ModulesContext = createContext<ModulesContextValue | null>(null);
 const EMPTY: StoreModule[] = [];
+const NO_FEATURES: StoreFeature[] = [];
 
 /**
  * Which applications this store is entitled to, from
@@ -49,6 +72,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.id;
   const [modules, setModules] = useState<StoreModule[]>(EMPTY);
+  const [features, setFeatures] = useState<StoreFeature[]>(NO_FEATURES);
   const [billing, setBilling] = useState<BillingState | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -57,6 +81,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
 
     if (!userId) {
       setModules(EMPTY);
+      setFeatures(NO_FEATURES);
       setBilling(null);
       setLoading(false);
       return;
@@ -66,7 +91,8 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
     Promise.all([
       supabase.rpc("my_store_modules"),
       supabase.rpc("my_store_billing_state"),
-    ]).then(([mods, bill]) => {
+      supabase.rpc("my_store_features"),
+    ]).then(([mods, bill, feats]) => {
       if (cancelled) return;
 
       setModules(
@@ -74,6 +100,16 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
           ? EMPTY
           : mods.data.map((row) => ({
               moduleCode: row.module_code,
+              name: row.name,
+              enabled: row.enabled,
+            }))
+      );
+
+      setFeatures(
+        feats.error || !feats.data
+          ? NO_FEATURES
+          : feats.data.map((row) => ({
+              featureCode: row.feature_code,
               name: row.name,
               enabled: row.enabled,
             }))
@@ -102,7 +138,7 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   return (
-    <ModulesContext.Provider value={{ modules, billing, loading }}>
+    <ModulesContext.Provider value={{ modules, features, billing, loading }}>
       {children}
     </ModulesContext.Provider>
   );
@@ -128,6 +164,27 @@ export function useHasModule(moduleCode: string): boolean {
   if (loading) return true;
   const found = modules.find((m) => m.moduleCode === moduleCode);
   return found ? found.enabled : false;
+}
+
+/**
+ * Does this store's plan include `featureCode`?
+ *
+ * Same deliberate optimism as useHasModule, for the same reason: this drives
+ * read-only *presentation*, the database is the real boundary, and flashing
+ * "not in your plan" on every page load before the answer arrives would be
+ * both wrong and alarming.
+ *
+ * A feature the catalogue does not mention at all answers TRUE. That is not
+ * an oversight — an unknown code means this client is older than the server's
+ * catalogue, and refusing a capability because the UI has not heard of it yet
+ * would break a store for shipping a deploy in the wrong order. The server
+ * refuses anything genuinely withheld.
+ */
+export function useHasFeature(featureCode: string): boolean {
+  const { features, loading } = useModules();
+  if (loading) return true;
+  const found = features.find((f) => f.featureCode === featureCode);
+  return found ? found.enabled : true;
 }
 
 /**
