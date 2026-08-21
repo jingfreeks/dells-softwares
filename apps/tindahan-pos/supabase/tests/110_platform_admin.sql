@@ -144,5 +144,45 @@ $$, 'P0001', 'LAST_SUPERUSER: promote another superuser before revoking this one
    'the last superuser cannot revoke themselves and lock everyone out');
 reset role;
 
+-- -----------------------------------------------------------------------------
+-- Every platform_* function is executable by authenticated and nobody else.
+--
+-- Added after running security-surface.sql against the real staging project
+-- and finding all fifteen granted to anon and service_role too, a pre-existing
+-- default-privilege characteristic of the hosted project that no migration in
+-- this repository had introduced or noticed (20260815119000 revoked it). That
+-- was caught by hand, once, by pointing a snippet at a real database. This is
+-- the version of the same check that runs every time -- locally, in CI, on
+-- every future platform_* function -- so the next one is not the sixteenth
+-- silent over-grant sitting undetected until someone happens to check staging
+-- again.
+--
+-- anon: the console signs in through Supabase Auth like any other app; there
+-- is no pre-login platform_* call anywhere in super-admin's client code.
+-- service_role: no Edge Function in this codebase calls a platform_* RPC --
+-- platform administration is a human-in-the-loop console action, not
+-- something automation performs.
+-- -----------------------------------------------------------------------------
+select is_empty(
+  $$
+  select p.proname || ' -> ' || coalesce(r.rolname, 'PUBLIC')
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+  left join pg_roles r on r.oid = a.grantee
+  where n.nspname = 'public' and p.proname like 'platform\_%'
+    and a.privilege_type = 'EXECUTE'
+    and coalesce(r.rolname, 'PUBLIC') not in ('authenticated', 'postgres')
+  $$,
+  'no platform_* function is executable by anon, service_role, or PUBLIC'
+);
+
+select ok(
+  (select bool_and(has_function_privilege('authenticated', p.oid, 'EXECUTE'))
+   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public' and p.proname like 'platform\_%'),
+  'and authenticated can still call every one of them -- the console is unaffected'
+);
+
 select * from finish();
 rollback;
