@@ -359,6 +359,24 @@ a human can supply.
 - ~~**`suppliers` / `receiving` module ownership**~~ **Decided** in
   `20260815113000` and enforced in `20260815114000` — both are BASIC features
   of INVENTORY. See above.
+- **Winding down is not using a feature.** `20260815111000` gated
+  `credit_payments` alongside `sales`, reasoning that a store which cannot sell
+  on credit cannot collect on it either. `20260815116000` undoes that half.
+
+  A shop with fifty thousand pesos of utang across forty neighbours loses the
+  capability. §08 holds — every debt is still there and still readable — and
+  nobody can ever pay her back *in the system*. The neighbours hand over cash
+  as they always have, she takes it, and the ledger goes on insisting they owe
+  her. Every repayment makes her books further from the truth. That is a worse
+  outcome than anything the entitlement was protecting.
+
+  §08 withdraws writes so a tenant cannot take on **new commitments**. It was
+  never meant to trap them in a state they cannot leave. A credit sale creates
+  an obligation; a payment discharges one. The limit layer already had this
+  right and is the precedent — enforcement is INSERT-only on *growth*, and a
+  tenant already over the ceiling keeps everything and simply cannot add more.
+
+  The trigger on `sales` stays; that is the half that withholds the capability.
 - **POS gating** — deliberately not built, above.
 - ~~**Limit enforcement.**~~ **Built** in `20260815102000`. Triggers rather
   than policies, because devices are inserted by the pair-device Edge
