@@ -322,15 +322,23 @@ a human can supply.
 
   **Existing tenants are grandfathered.** Everyone alive before the split held
   all fifteen features, so the migration re-sources every held grant from
-  SUBSCRIPTION to MANUAL *before* narrowing the plans. MANUAL outranks the
-  plan inside `materialize_subscription_features()`, so nobody loses a
-  capability they were already using and the split governs new subscriptions
-  only. An operator hands one back deliberately, per feature, through
-  `platform_reset_feature_to_plan()`, with the reason recorded.
+  `SUBSCRIPTION` to `GRANDFATHERED` *before* narrowing the plans. That source
+  outranks the plan inside `materialize_subscription_features()` exactly as
+  `MANUAL` does, so nobody loses a capability they were already using and the
+  split governs new subscriptions only. An operator hands one back
+  deliberately, per feature, through `platform_reset_feature_to_plan()`, with
+  the reason recorded.
 
-  Those MANUAL rows name no actor, because a migration has none — the one set
-  of manual grants in the system with no human behind it. That is the price of
-  not breaking live stores in a single push.
+  **Why a fourth source rather than reusing `MANUAL`.** `MANUAL` means a human
+  looked at one tenant and decided something — the console says so in as many
+  words. Had the backfill written `MANUAL`, every feature of every tenant would
+  have read `MANUAL` the morning after the push, 15 × 661 of them, and the word
+  would have stopped carrying any information. `GRANDFATHERED` says the other
+  thing honestly: nobody chose this, it is what the tenant already had. "Which
+  tenants are we carrying on old terms, and which did we genuinely comp?" is a
+  question the business will ask, and it is unanswerable if both write the same
+  word. The console labels them *comped* and *grandfathered* and offers **Follow
+  plan** on both.
 
   **The grandfather step cannot be verified locally.** A fresh local database
   has no organizations at the moment the migration runs, so the backfill

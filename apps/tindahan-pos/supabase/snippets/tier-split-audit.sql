@@ -14,13 +14,18 @@
 
 \echo '== 1. tenants, and what they hold =========================================='
 -- BEFORE the migration every tenant should hold all 15, all SUBSCRIPTION.
--- AFTER, the same tenants should hold all 15, all MANUAL. The count of enabled
--- grants per tenant MUST NOT FALL. That is the whole promise.
+-- AFTER, the same tenants should hold all 15, all GRANDFATHERED. The count of
+-- enabled grants per tenant MUST NOT FALL. That is the whole promise.
+--
+-- manual_grants must NOT move: MANUAL means a human comped a feature for one
+-- tenant, and the backfill is not that. If this number jumps, the migration
+-- wrote the wrong source and the distinction is lost for good.
 select
-  count(distinct o.id)                                          as tenants,
-  count(*) filter (where f.enabled)                             as enabled_grants,
-  count(*) filter (where f.enabled and f.source = 'MANUAL')     as manual_grants,
-  count(*) filter (where f.enabled and f.source = 'SUBSCRIPTION') as subscription_grants
+  count(distinct o.id)                                             as tenants,
+  count(*) filter (where f.enabled)                                as enabled_grants,
+  count(*) filter (where f.enabled and f.source = 'GRANDFATHERED') as grandfathered,
+  count(*) filter (where f.enabled and f.source = 'MANUAL')        as manual_grants,
+  count(*) filter (where f.enabled and f.source = 'SUBSCRIPTION')  as subscription_grants
 from core.organizations o
 left join core.organization_features f on f.organization_id = o.id;
 
@@ -79,4 +84,4 @@ join core.organization_features f on f.organization_id = o.id
 where o.id = (select id from core.organizations order by created_at limit 1)
 order by f.feature_code;
 -- The oldest tenant. After the push, every row should read enabled = t and
--- source = MANUAL, including the features BASIC no longer sells.
+-- source = GRANDFATHERED, including the features BASIC no longer sells.

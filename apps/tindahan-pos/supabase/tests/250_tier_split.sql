@@ -155,11 +155,11 @@ begin
   values ('pgTAP grandfathered tenant', 'ACTIVE') returning id into v_old;
 
   -- Put it into the state 20260815113000 leaves a pre-split tenant in: holding
-  -- the whole catalogue, every grant re-sourced to MANUAL.
+  -- the whole catalogue, every grant re-sourced to GRANDFATHERED.
   insert into core.organization_features (organization_id, feature_code, enabled, source)
-  select v_old, f.code, true, 'MANUAL' from core.features f
+  select v_old, f.code, true, 'GRANDFATHERED' from core.features f
   on conflict (organization_id, feature_code)
-  do update set enabled = true, source = 'MANUAL';
+  do update set enabled = true, source = 'GRANDFATHERED';
 
   insert into core.organizations (name, status)
   values ('pgTAP newcomer', 'ACTIVE') returning id into v_new;
@@ -182,8 +182,8 @@ select lives_ok(
 
 select ok(
   core.feature_enabled((select id from t_org where kind = 'old'), 'inventory.transfers'),
-  'and they STILL hold it -- MANUAL outranks the plan, which is the only '
-  || 'reason the backfill protects anyone'
+  'and they STILL hold it -- GRANDFATHERED outranks the plan, which is the '
+  || 'only reason the backfill protects anyone'
 );
 
 select ok(
@@ -206,6 +206,35 @@ select ok(
 select ok(
   not core.feature_enabled((select id from t_org where kind = 'new'), 'inventory.purchase_orders'),
   'nor purchase orders, which start at PRO'
+);
+
+-- MANUAL must keep meaning what it meant. If the backfill had written MANUAL,
+-- every feature of every tenant would say a human chose it, and the word would
+-- carry no information at all.
+select is(
+  (select source from core.organization_features
+   where organization_id = (select id from t_org where kind = 'old')
+     and feature_code = 'inventory.transfers'),
+  'GRANDFATHERED',
+  'the backfill is distinguishable from a deliberate comp'
+);
+
+-- Comp one feature on the newcomer, the way platform_set_feature() does.
+update core.organization_features set source = 'MANUAL'
+ where organization_id = (select id from t_org where kind = 'new')
+   and feature_code = 'pos.utang';
+
+select lives_ok(
+  $$ select core.materialize_subscription_features((select id from t_org where kind = 'new')) $$,
+  'materializing a tenant carrying a genuine MANUAL comp succeeds'
+);
+
+select is(
+  (select source from core.organization_features
+   where organization_id = (select id from t_org where kind = 'new')
+     and feature_code = 'pos.utang'),
+  'MANUAL',
+  'and the comp stays MANUAL -- both protected sources survive, and stay apart'
 );
 
 -- The invariant the production backfill must leave behind. Vacuous on a local
