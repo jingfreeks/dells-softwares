@@ -27,7 +27,7 @@ select * from no_plan();
 select is_empty(
   $$
   with rank (code, r) as (
-    values ('FREE', 0), ('BASIC', 1), ('PRO', 2), ('ENTERPRISE', 3)
+    values ('FREE', 0), ('BASIC', 1), ('BUSINESS', 2), ('PRO', 3), ('ENTERPRISE', 4)
   )
   select lo.code || ' has ' || pf.feature_code || ' but ' || hi.code || ' does not'
   from rank lo
@@ -98,6 +98,18 @@ select set_eq(
 
 select set_eq(
   $$ select pf.feature_code from core.plan_features pf
+     join core.subscription_plans p on p.id = pf.plan_id where p.code = 'BUSINESS' $$,
+  array['pos.shifts', 'pos.void', 'pos.discounts', 'pos.pack_pricing',
+        'pos.utang', 'pos.eload', 'pos.held_sales',
+        'inventory.suppliers', 'inventory.receiving',
+        'inventory.purchase_orders', 'inventory.stock_count',
+        'inventory.conversions'],
+  'BUSINESS is the growing store: purchase orders, stock counts and unit '
+  || 'conversions on top of BASIC'
+);
+
+select set_eq(
+  $$ select pf.feature_code from core.plan_features pf
      join core.subscription_plans p on p.id = pf.plan_id where p.code = 'PRO' $$,
   array['pos.shifts', 'pos.void', 'pos.discounts', 'pos.pack_pricing',
         'pos.utang', 'pos.eload', 'pos.held_sales',
@@ -105,7 +117,9 @@ select set_eq(
         'pos.multi_register', 'pos.bir_receipts',
         'inventory.purchase_orders', 'inventory.stock_count',
         'inventory.conversions'],
-  'PRO is the convenience store: everything but stock transfers'
+  'PRO is the convenience store: everything but stock transfers -- the SAME '
+  || 'fourteen codes as before BUSINESS existed, since BUSINESS was carved '
+  || 'out of what PRO already sold rather than PRO losing anything'
 );
 
 select is(
@@ -282,8 +296,9 @@ select set_config('request.jwt.claims',
 
 select set_eq(
   $$ select plan_code from public.platform_plans() $$,
-  array['FREE', 'BASIC', 'PRO', 'ENTERPRISE'],
-  'the console sees every plan'
+  array['FREE', 'BASIC', 'BUSINESS', 'PRO', 'ENTERPRISE'],
+  'the console sees every plan, including the one added after this file was '
+  || 'first written'
 );
 
 select is(

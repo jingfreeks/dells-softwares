@@ -23,6 +23,7 @@ import {
   type SubscriptionStatus,
   outranksPlan,
   featuresLostByPlanChange,
+  planPriceLabel,
 } from "../lib/platform";
 
 export function OrganizationDetail() {
@@ -222,6 +223,7 @@ export function OrganizationDetail() {
                 onClick={() => handleSetPlan(p.planCode)}
                 disabled={busyPlan || current || !p.isActive}
                 title={
+                  `Price: ${planPriceLabel(p)}\n` +
                   `Modules: ${p.modules.filter((m) => m !== "CORE").join(", ") || "none"}\n` +
                   `Features: ${p.features.length}` +
                   (lost.length > 0
@@ -235,7 +237,7 @@ export function OrganizationDetail() {
                 }`}
               >
                 {p.name}
-                {current ? " ·  current" : ` · ${p.features.length}`}
+                {current ? " ·  current" : ` · ${planPriceLabel(p)}`}
                 {lost.length > 0 && (
                   <span className="ml-1 text-amber-600" title="">
                     −{lost.length}

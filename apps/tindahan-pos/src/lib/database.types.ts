@@ -1035,6 +1035,20 @@ export interface Database {
           enabled: boolean;
         }[];
       };
+      // 20260815120000_set_tier_pricing.sql -- authenticated-gated, not anon:
+      // there is no pre-login pricing surface in this app to need it.
+      plan_prices: {
+        Args: Record<string, never>;
+        Returns: {
+          plan_code: string;
+          name: string;
+          description: string | null;
+          price_php: number | null;
+          billing_interval: string;
+          sort_order: number;
+          features: string[];
+        }[];
+      };
       my_store_limits: {
         Args: Record<string, never>;
         Returns: {

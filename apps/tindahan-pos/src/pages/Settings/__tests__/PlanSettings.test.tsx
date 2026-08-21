@@ -29,6 +29,46 @@ vi.mock("@/lib/billing/billingContext", async (orig) => ({
   }),
 }));
 
+// usePlanPage() calls plan_prices() directly through the client, rather than
+// through a context -- it is page-specific, one-shot data, not something the
+// whole app needs to gate on. Mocked here at the same seam.
+const rpc = vi.fn();
+vi.mock("@/lib/supabaseClient", () => ({ supabase: { rpc: (name: string) => rpc(name) } }));
+
+const PLANS = [
+  { plan_code: "FREE", name: "Free", price_php: 0, billing_interval: "MONTHLY", sort_order: 0, features: [] },
+  {
+    plan_code: "BASIC",
+    name: "Basic",
+    price_php: 299,
+    billing_interval: "MONTHLY",
+    sort_order: 1,
+    features: ["pos.utang", "pos.eload", "inventory.suppliers"],
+  },
+  {
+    plan_code: "BUSINESS",
+    name: "Business",
+    price_php: 599,
+    billing_interval: "MONTHLY",
+    sort_order: 2,
+    features: ["pos.utang", "pos.eload", "inventory.suppliers", "inventory.purchase_orders"],
+  },
+  {
+    plan_code: "ENTERPRISE",
+    name: "Enterprise",
+    price_php: null,
+    billing_interval: "MONTHLY",
+    sort_order: 4,
+    features: [
+      "pos.utang",
+      "pos.eload",
+      "inventory.suppliers",
+      "inventory.purchase_orders",
+      "inventory.transfers",
+    ],
+  },
+];
+
 const BASIC: StoreFeature[] = [
   { code: "pos.utang", moduleCode: "POS", name: "Utang (customer credit)", held: true },
   { code: "pos.eload", moduleCode: "POS", name: "E-load and cash-in", held: true },
@@ -49,57 +89,86 @@ beforeEach(() => {
   state.catalogue = BASIC;
   state.loading = false;
   state.writesAllowed = true;
+  rpc.mockReset().mockResolvedValue({ data: PLANS, error: null });
 });
 
 describe("PlanSettings", () => {
-  it("shows what the store holds", () => {
+  it("shows what the store holds", async () => {
     renderPage();
-    expect(screen.getByText("Utang (customer credit)")).toBeInTheDocument();
+    expect(await screen.findByText("Utang (customer credit)")).toBeInTheDocument();
     expect(screen.getByText("Suppliers")).toBeInTheDocument();
   });
 
   // The whole point of the page. my_store_features() returns the entire
   // catalogue rather than only what is held precisely so a shopkeeper can see
   // what they are missing -- a tier nobody can see is a tier nobody buys.
-  it("shows what the store does NOT hold, rather than hiding it", () => {
+  it("shows what the store does NOT hold, rather than hiding it", async () => {
     renderPage();
-    expect(screen.getByText("Purchase orders")).toBeInTheDocument();
+    expect(await screen.findByText("Purchase orders")).toBeInTheDocument();
     expect(screen.getByText("Stock transfers")).toBeInTheDocument();
     expect(screen.getByText(/Not in your plan/)).toBeInTheDocument();
   });
 
-  it("groups by module, so an upgrade is a sentence and not a list of codes", () => {
+  it("groups what it HOLDS by module, so an upgrade is a sentence and not a list of codes", async () => {
     renderPage();
+    await screen.findByText("Purchase orders");
     expect(screen.getAllByText("Selling").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Stock and suppliers").length).toBeGreaterThan(0);
   });
 
-  it("says so plainly when nothing is withheld, instead of an empty panel", () => {
+  // The new behaviour plan_prices() exists for: a locked feature is grouped
+  // under the cheapest plan that unlocks it, priced right there. Purchase
+  // orders is BUSINESS's real differentiator in the fixture; stock transfers
+  // is ENTERPRISE-only, so the two land in different groups with different
+  // prices, not one flat "Not in your plan" list.
+  it("groups what it does NOT hold by the cheapest plan that unlocks it, priced", async () => {
+    renderPage();
+    await screen.findByText("Purchase orders");
+
+    expect(screen.getByText(/Upgrade to Business.*₱599/)).toBeInTheDocument();
+    expect(screen.getByText(/Upgrade to Enterprise.*Contact us/)).toBeInTheDocument();
+  });
+
+  it("says so plainly when nothing is withheld, instead of an empty panel", async () => {
     state.catalogue = BASIC.map((f) => ({ ...f, held: true }));
     renderPage();
-    expect(screen.getByText(/holds every capability/)).toBeInTheDocument();
+    expect(await screen.findByText(/holds every capability/)).toBeInTheDocument();
     expect(screen.queryByText(/Not in your plan/)).not.toBeInTheDocument();
   });
 
-  it("renders nothing until the fetch resolves, so no capability flickers away", () => {
+  it("renders nothing until BOTH the features and the prices resolve", () => {
     state.loading = true;
+    rpc.mockReturnValue(new Promise(() => {})); // never resolves
     renderPage();
     expect(screen.queryByText("Utang (customer credit)")).not.toBeInTheDocument();
     expect(screen.queryByText(/Not in your plan/)).not.toBeInTheDocument();
   });
 
+  it("waits for prices specifically, even once features have already loaded", async () => {
+    let settle: (v: unknown) => void = () => {};
+    rpc.mockReturnValue(new Promise((r) => { settle = r; }));
+    renderPage();
+
+    // Features are ready; nothing renders yet because pricing is not.
+    expect(screen.queryByText("Utang (customer credit)")).not.toBeInTheDocument();
+
+    settle({ data: PLANS, error: null });
+    expect(await screen.findByText("Utang (customer credit)")).toBeInTheDocument();
+  });
+
   // §08: a suspended tenant is told writes are paused -- and told, in the same
   // breath, that nothing has been taken away. The page must never imply the
   // data is gone.
-  it("explains a write pause without suggesting anything was lost", () => {
+  it("explains a write pause without suggesting anything was lost", async () => {
     state.writesAllowed = false;
     renderPage();
-    expect(screen.getByText(/New records are paused/)).toBeInTheDocument();
+    expect(await screen.findByText(/New records are paused/)).toBeInTheDocument();
     expect(screen.getByText(/still here, and still yours to read and export/)).toBeInTheDocument();
   });
 
-  it("says nothing about billing while writes are allowed", () => {
+  it("says nothing about billing while writes are allowed", async () => {
     renderPage();
+    await screen.findByText("Utang (customer credit)");
     expect(screen.queryByText(/New records are paused/)).not.toBeInTheDocument();
   });
 });

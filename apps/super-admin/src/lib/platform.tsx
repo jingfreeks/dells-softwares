@@ -346,6 +346,21 @@ export async function setFeature(
  * between "we comped this" and "we are carrying them on old terms", which the
  * business will want to ask about separately.
  */
+const PESO = new Intl.NumberFormat("en-PH", {
+  style: "currency",
+  currency: "PHP",
+  minimumFractionDigits: 0,
+});
+
+const BILLING_INTERVAL_LABELS: Record<string, string> = { MONTHLY: "month", ANNUAL: "year" };
+
+/** How a plan's price reads to an operator -- "₱599/month" or "Custom" for null. */
+export function planPriceLabel(plan: Plan): string {
+  if (plan.pricePhp === null) return "Custom";
+  const interval = BILLING_INTERVAL_LABELS[plan.billingInterval ?? ""] ?? "month";
+  return `${PESO.format(plan.pricePhp)}/${interval}`;
+}
+
 export function outranksPlan(source: string | null): boolean {
   return source === "MANUAL" || source === "GRANDFATHERED";
 }
