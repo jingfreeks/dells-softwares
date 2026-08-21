@@ -73,6 +73,14 @@ jobs:
         working-directory: apps/tindahan-pos
         run: bash supabase/tests/run.sh
 
+      # ROLLOUT.md is the document someone follows while pushing to 661 live
+      # stores, having read it once. Its SQL blocks are prose-adjacent -- a
+      # renamed column or a dropped function rots them silently otherwise, and
+      # the first person to find out would be mid-rollout.
+      - name: ROLLOUT.md SQL still runs
+        working-directory: apps/tindahan-pos
+        run: bash supabase/tests/check-rollout-sql.sh
+
       # Best-effort teardown. If the CLI never installed, `supabase` is not on
       # PATH and this would otherwise report a second, misleading failure on
       # top of the real one.
