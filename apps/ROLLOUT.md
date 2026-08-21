@@ -464,6 +464,45 @@ is still null for BASIC, PRO and ENTERPRISE.
 
 ---
 
+## The security surface, before and after every push
+
+```bash
+psql "$STAGING_URL" -f apps/tindahan-pos/supabase/snippets/security-surface.sql
+```
+
+Eight questions, each written so the safe answer is **zero rows**. Anything
+printed is something to look at.
+
+1. `SECURITY DEFINER` without a pinned `search_path`
+2. what `anon` can reach — expect **`feature_flags`, SELECT only**
+3. unconditional write policies
+4. console RPCs reachable by `PUBLIC`
+5. console RPCs missing the `is_platform_admin` gate — `platform_me` and
+   `platform_verify_mfa` are excluded by name, because both answer only for the
+   caller and gating the second would deadlock the check it exists to satisfy
+6. tenant RPCs taking an organization argument — `my_store_*` must take none,
+   or the caller picks whose data they read
+7. public tables without RLS
+8. audit partitions with RLS off or readable directly — the shape of the
+   cross-tenant read fixed in `20260815105000`
+
+This is not the same claim the CI guards make. `check-rls-coverage.mjs` and
+`check-no-client-secrets.mjs` read the migration *files*; this reads the
+*database those files produced*. A hosted project also carries grants applied
+outside this repository, which is precisely how the missing-GRANT problem behind
+`20260815101000` stayed invisible — the migrations looked complete and the
+database was not.
+
+Section 9 is informational, not a gate: several `core.*` functions are
+executable by `PUBLIC`. Nothing is reachable through it today — `core` is not
+exposed to PostgREST, and the dangerous ones gate themselves on
+`is_platform_admin('SUPERUSER')` — but it is defence resting on a configuration
+rather than a privilege. Worth revoking as **its own change on a quiet day**,
+not bundled with a batch touching 661 live stores, and not before checking that
+no trigger owned by `supabase_auth_admin` depends on that grant.
+
+---
+
 ## After staging, before production
 
 1. **Leave it running.** A day of real use finds things a checklist cannot.
