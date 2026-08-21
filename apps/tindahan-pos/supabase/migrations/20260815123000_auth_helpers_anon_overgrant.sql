@@ -1,0 +1,32 @@
+-- =============================================================================
+-- auth_role()/auth_store_id() still had anon and service_role after 122000
+-- -----------------------------------------------------------------------------
+-- 20260815122000 handled these two as a special case: "never revoked from
+-- PUBLIC at all, so revoke-from-public-then-regrant-to-authenticated". That
+-- was correct for the bare PUBLIC pseudo-role entry, and it's what a fresh
+-- local reset actually has. But re-verifying on staging after that migration
+-- ran (security-surface.sql check 9) found anon and service_role STILL
+-- explicitly granted -- these two functions apparently picked up the same
+-- per-role default-ACL grant every other function in this audit did, in
+-- addition to the separate bare-PUBLIC grant 122000 already knew about and
+-- stripped. "revoke all ... from public" only ever strips the PUBLIC
+-- pseudo-role entry; it was never going to touch a distinct explicit grant
+-- to anon or service_role sitting alongside it, the exact same gap this
+-- migration chain (119000, 121000, 122000) keeps closing one function at a
+-- time. This is that same fix, direct this time instead of via "from public".
+--
+-- Confirmed still nothing reachable: authenticated is the only role either
+-- function is ever called by directly (RLS policies evaluate them as the
+-- querying role), and no client code anywhere calls them via a bare
+-- .rpc("auth_role") / .rpc("auth_store_id").
+--
+-- Affected schemas : public (2 functions; EXECUTE revoked from anon and
+--                    service_role, authenticated untouched)
+-- Rollback         : grant execute back to anon/service_role -- though
+--                    there is no legitimate reason to want that back
+-- Risk             : none -- see 20260815122000's own reasoning for these
+--                    two functions, unchanged here
+-- =============================================================================
+
+revoke execute on function public.auth_role()      from anon, service_role;
+revoke execute on function public.auth_store_id()   from anon, service_role;
