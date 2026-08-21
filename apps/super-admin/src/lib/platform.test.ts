@@ -3,6 +3,7 @@ import {
   outranksPlan,
   blocksWrites,
   featuresLostByPlanChange,
+  planPriceLabel,
   type OrganizationFeature,
   type Plan,
 } from "./platform";
@@ -112,5 +113,34 @@ describe("featuresLostByPlanChange", () => {
     const target = plan({ modules: ["POS"], features: ["inventory.transfers"] });
     const lost = featuresLostByPlanChange([feature()], target);
     expect(lost.map((f) => f.featureCode)).toEqual(["inventory.transfers"]);
+  });
+});
+
+describe("planPriceLabel", () => {
+  const plan = (over: Partial<Plan> = {}): Plan => ({
+    planCode: "BUSINESS",
+    name: "Business",
+    description: null,
+    pricePhp: 599,
+    billingInterval: "MONTHLY",
+    isActive: true,
+    modules: ["POS", "INVENTORY"],
+    features: [],
+    ...over,
+  });
+
+  it("formats a real price with the billing interval", () => {
+    expect(planPriceLabel(plan({ pricePhp: 599 }))).toBe("₱599/month");
+  });
+
+  // ENTERPRISE's null is a decision (custom pricing, negotiated per contract
+  // -- see 20260815120000), not a missing value. An operator reading "Custom"
+  // must not mistake it for a plan nobody has priced yet.
+  it("reads a null price as custom, not as missing", () => {
+    expect(planPriceLabel(plan({ pricePhp: null }))).toBe("Custom");
+  });
+
+  it("does not crash on a billing interval it has not seen", () => {
+    expect(planPriceLabel(plan({ pricePhp: 100, billingInterval: "WEEKLY" }))).toBe("₱100/month");
   });
 });

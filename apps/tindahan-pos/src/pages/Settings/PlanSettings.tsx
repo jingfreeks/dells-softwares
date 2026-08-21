@@ -5,12 +5,36 @@ import {
   TEXT_PLAN_NOT_INCLUDED,
   TEXT_PLAN_ALL_INCLUDED,
   TEXT_PLAN_LOCKED_HINT,
+  TEXT_PLAN_UPGRADE_PREFIX,
   TEXT_PLAN_WRITES_PAUSED,
 } from "@/lib";
 import { SettingsLayout } from "./component";
-import { usePlanPage, type PlanGroup } from "./usePlanPage";
+import { usePlanPage, type PlanGroup, type LockedByPlan } from "./usePlanPage";
 
-function GroupList({ groups, held }: { groups: PlanGroup[]; held: boolean }) {
+function FeatureRow({ name, held }: { name: string; held: boolean }) {
+  return (
+    <li
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "4px 0",
+        // Explicit tokens rather than an opacity on inherited colour: a bare
+        // span here inherits a dark default and renders effectively
+        // invisible on this theme. Held reads at full strength, locked is
+        // muted but still legible -- the tenant is meant to READ what they
+        // are missing, not squint at it.
+        color: held ? "var(--tpl-t2)" : "var(--tpl-t6)",
+      }}
+    >
+      <i className={`ti ${held ? "ti-check" : "ti-lock"}`} aria-hidden style={{ fontSize: 15 }} />
+      <span style={{ fontSize: 14 }}>{name}</span>
+    </li>
+  );
+}
+
+/** What this store already has, grouped by module -- "you have Selling" is a sentence once it's yours. */
+function HeldList({ groups }: { groups: PlanGroup[] }) {
   return (
     <>
       {groups.map((g) => (
@@ -20,28 +44,7 @@ function GroupList({ groups, held }: { groups: PlanGroup[]; held: boolean }) {
           </p>
           <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {g.features.map((f) => (
-              <li
-                key={f.code}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "4px 0",
-                  // Explicit tokens rather than an opacity on inherited colour:
-                  // a bare span here inherits a dark default and renders
-                  // effectively invisible on this theme. Held reads at full
-                  // strength, locked is muted but still legible -- the tenant
-                  // is meant to READ what they are missing, not squint at it.
-                  color: held ? "var(--tpl-t2)" : "var(--tpl-t6)",
-                }}
-              >
-                <i
-                  className={`ti ${held ? "ti-check" : "ti-lock"}`}
-                  aria-hidden
-                  style={{ fontSize: 15 }}
-                />
-                <span style={{ fontSize: 14 }}>{f.name}</span>
-              </li>
+              <FeatureRow key={f.code} name={f.name} held />
             ))}
           </ul>
         </div>
@@ -51,19 +54,48 @@ function GroupList({ groups, held }: { groups: PlanGroup[]; held: boolean }) {
 }
 
 /**
- * What this store can do, and what it cannot.
+ * What this store does not have, grouped by the cheapest plan that would
+ * unlock it and priced right there -- "Purchase orders, not in your plan" has
+ * no next step; "Purchase orders — Upgrade to Business, ₱599/month" is a
+ * decision a shopkeeper can actually make.
+ */
+function LockedByPlanList({ groups }: { groups: LockedByPlan[] }) {
+  return (
+    <>
+      {groups.map((g) => (
+        <div key={g.plan.planCode} style={{ marginBottom: 14 }}>
+          <p className="tpl-sub" style={{ marginBottom: 6, fontWeight: 600 }}>
+            {TEXT_PLAN_UPGRADE_PREFIX}
+            {g.plan.name} — {g.priceLabel}
+          </p>
+          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+            {g.features.map((f) => (
+              <FeatureRow key={f.code} name={f.name} held={false} />
+            ))}
+          </ul>
+        </div>
+      ))}
+    </>
+  );
+}
+
+/**
+ * What this store can do, what it cannot, and what getting the rest would
+ * cost.
  *
  * Deliberately shows the locked capabilities rather than hiding them —
  * my_store_features() returns the whole catalogue for exactly this reason. A
  * shopkeeper who cannot see that purchase orders exist has no way to ask for
  * them, and a tier nobody can see is a tier nobody buys.
  *
- * It does not show a price or offer a checkout: pricing has not been set
- * (core.subscription_plans.price_php is still null above FREE), and inventing
- * one here would be a promise the platform cannot keep.
+ * The locked section is grouped by PLAN, not module, and priced — unlike the
+ * held section, which stays grouped by module because "you have Selling"
+ * only needs to be legible, not sold. plan_prices() supplies real numbers now
+ * (20260815120000); an earlier version of this page said nothing about price
+ * because there was none to say.
  */
 export function PlanSettings() {
-  const { loading, held, locked, holdsEverything, writesPaused } = usePlanPage();
+  const { loading, held, lockedByPlan, holdsEverything, writesPaused } = usePlanPage();
 
   return (
     <SettingsLayout>
@@ -90,18 +122,18 @@ export function PlanSettings() {
             <p className="tpl-h3" style={{ marginBottom: 10 }}>
               {TEXT_PLAN_INCLUDED}
             </p>
-            <GroupList groups={held} held />
+            <HeldList groups={held} />
           </div>
 
           {holdsEverything ? (
             <p className="tpl-sub">{TEXT_PLAN_ALL_INCLUDED}</p>
           ) : (
-            locked.length > 0 && (
+            lockedByPlan.length > 0 && (
               <div className="tpl-card">
                 <p className="tpl-h3" style={{ marginBottom: 10 }}>
                   {TEXT_PLAN_NOT_INCLUDED}
                 </p>
-                <GroupList groups={locked} held={false} />
+                <LockedByPlanList groups={lockedByPlan} />
                 <p className="tpl-sub" style={{ marginTop: 8 }}>
                   {TEXT_PLAN_LOCKED_HINT}
                 </p>

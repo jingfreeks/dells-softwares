@@ -44,10 +44,19 @@ test.describe('Your plan', () => {
     await login(page, email, 'testpass123')
     await page.goto('/settings/plan')
 
-    // BASIC does not sell purchase orders -- those start at PRO. The whole
-    // point is that the tenant can see they exist.
+    // BASIC does not sell purchase orders -- those start at BUSINESS. The
+    // whole point is that the tenant can see they exist.
     await expect(page.getByText('Not in your plan')).toBeVisible()
     await expect(page.getByText('Purchase orders')).toBeVisible()
+  })
+
+  // 20260815120000: real prices exist now, and locked capabilities are
+  // grouped by the plan that unlocks them instead of by module.
+  test('groups what it does NOT hold by plan, and shows the real price', async ({ page }) => {
+    await login(page, email, 'testpass123')
+    await page.goto('/settings/plan')
+
+    await expect(page.getByText(/Upgrade to Business.*\u20b1599/)).toBeVisible()
   })
 
   test('groups capabilities by module', async ({ page }) => {

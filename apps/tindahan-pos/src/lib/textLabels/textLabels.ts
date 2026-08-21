@@ -1281,7 +1281,9 @@ export const TEXT_PLAN_NOT_INCLUDED = "Not in your plan";
 export const TEXT_PLAN_ALL_INCLUDED =
   "Your store holds every capability the platform sells.";
 export const TEXT_PLAN_LOCKED_HINT =
-  "Talk to us if you need one of these — they can be switched on without moving your data.";
+  "Switching plans never moves or hides your data — everything you already have stays exactly where it is.";
+export const TEXT_PLAN_CONTACT_US = "Contact us";
+export const TEXT_PLAN_UPGRADE_PREFIX = "Upgrade to ";
 export const TEXT_PLAN_WRITES_PAUSED =
   "New records are paused while billing is unsettled. Everything you have recorded is still here, and still yours to read and export.";
 export const MODULE_LABEL_POS = "Selling";
