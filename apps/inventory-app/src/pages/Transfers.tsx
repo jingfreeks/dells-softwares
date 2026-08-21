@@ -3,7 +3,12 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useCan } from "../lib/permissions";
-import { useHasModule, MODULE_READ_ONLY_HINT } from "../lib/modules";
+import {
+  useHasModule,
+  useHasFeature,
+  MODULE_READ_ONLY_HINT,
+  FEATURE_NOT_IN_PLAN_HINT,
+} from "../lib/modules";
 import { listWarehouses } from "../lib/warehouses";
 import { listProducts } from "../lib/products";
 import { listTransfers, transferStock } from "../lib/transfers";
@@ -15,6 +20,16 @@ export function Transfers() {
   const { user } = useAuth();
   const canManage = useCan("inventory.transfer.manage");
   const hasInventory = useHasModule("INVENTORY");
+  const hasFeature = useHasFeature("inventory.transfers");
+  // The module hint wins when both are off: core.feature_enabled()
+  // requires the owning module, so a missing module is the true cause
+  // and saying "not in your plan" would send the owner after the wrong
+  // thing.
+  const writeHint = !hasInventory
+    ? MODULE_READ_ONLY_HINT
+    : !hasFeature
+      ? FEATURE_NOT_IN_PLAN_HINT
+      : undefined;
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [transfers, setTransfers] = useState<WarehouseTransfer[]>([]);
@@ -201,8 +216,8 @@ export function Transfers() {
           </div>
           <button
             type="submit"
-            disabled={submitting || warehouses.length < 2 || !hasInventory}
-            title={hasInventory ? undefined : MODULE_READ_ONLY_HINT}
+            disabled={submitting || warehouses.length < 2 || !hasInventory || !hasFeature}
+            title={writeHint}
             className="h-10 cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-2"
           >
             {submitting ? "Transferring…" : "Transfer stock"}

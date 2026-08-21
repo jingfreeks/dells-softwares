@@ -3,7 +3,12 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useCan } from "../lib/permissions";
-import { useHasModule, MODULE_READ_ONLY_HINT } from "../lib/modules";
+import {
+  useHasModule,
+  useHasFeature,
+  MODULE_READ_ONLY_HINT,
+  FEATURE_NOT_IN_PLAN_HINT,
+} from "../lib/modules";
 import { listWarehouses } from "../lib/warehouses";
 import { listSuppliers } from "../lib/suppliers";
 import { listProducts } from "../lib/products";
@@ -42,6 +47,16 @@ export function PurchaseOrders() {
   const { user } = useAuth();
   const canManage = useCan("inventory.purchase_order.manage");
   const hasInventory = useHasModule("INVENTORY");
+  const hasFeature = useHasFeature("inventory.purchase_orders");
+  // The module hint wins when both are off: core.feature_enabled()
+  // requires the owning module, so a missing module is the true cause
+  // and saying "not in your plan" would send the owner after the wrong
+  // thing.
+  const writeHint = !hasInventory
+    ? MODULE_READ_ONLY_HINT
+    : !hasFeature
+      ? FEATURE_NOT_IN_PLAN_HINT
+      : undefined;
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -203,8 +218,8 @@ export function PurchaseOrders() {
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          disabled={!hasInventory}
-          title={hasInventory ? undefined : MODULE_READ_ONLY_HINT}
+          disabled={!hasInventory || !hasFeature}
+          title={writeHint}
           className="shrink-0 cursor-pointer rounded-xl bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {showForm ? "Cancel" : "New purchase order"}

@@ -691,6 +691,19 @@ export interface Database {
         Args: Record<string, never>;
         Returns: { module_code: string; name: string; enabled: boolean }[];
       };
+      // 20260815109000_core_feature_entitlement.sql -- returns the WHOLE
+      // catalogue with a held flag, not only what the store holds, so a
+      // capability the plan omits can be shown as unavailable rather than
+      // silently missing.
+      my_store_features: {
+        Args: Record<string, never>;
+        Returns: {
+          feature_code: string;
+          module_code: string;
+          name: string;
+          enabled: boolean;
+        }[];
+      };
       // 20260815100000_grace_and_downgrade_ladder.sql -- the §08 ladder.
       // Separate from my_store_modules: entitlement and billing state are
       // different questions and a store can fail either independently.

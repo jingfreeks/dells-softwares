@@ -3,7 +3,12 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { useCan } from "../lib/permissions";
-import { useHasModule, MODULE_READ_ONLY_HINT } from "../lib/modules";
+import {
+  useHasModule,
+  useHasFeature,
+  MODULE_READ_ONLY_HINT,
+  FEATURE_NOT_IN_PLAN_HINT,
+} from "../lib/modules";
 import { listProducts } from "../lib/products";
 import { addConversion, listConversions, removeConversion } from "../lib/conversions";
 import type { Product, UnitConversion } from "../lib/types";
@@ -12,6 +17,16 @@ export function Conversion() {
   const { user } = useAuth();
   const canManage = useCan("inventory.product.manage");
   const hasInventory = useHasModule("INVENTORY");
+  const hasFeature = useHasFeature("inventory.conversions");
+  // The module hint wins when both are off: core.feature_enabled()
+  // requires the owning module, so a missing module is the true cause
+  // and saying "not in your plan" would send the owner after the wrong
+  // thing.
+  const writeHint = !hasInventory
+    ? MODULE_READ_ONLY_HINT
+    : !hasFeature
+      ? FEATURE_NOT_IN_PLAN_HINT
+      : undefined;
   const [products, setProducts] = useState<Product[]>([]);
   const [conversions, setConversions] = useState<UnitConversion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,8 +179,8 @@ export function Conversion() {
 
             <button
               type="submit"
-              disabled={submitting || !hasInventory}
-              title={hasInventory ? undefined : MODULE_READ_ONLY_HINT}
+              disabled={submitting || !hasInventory || !hasFeature}
+              title={writeHint}
               className="mt-1 flex h-10 cursor-pointer items-center justify-center rounded-xl bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? "Saving…" : "Add conversion"}
