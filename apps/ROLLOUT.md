@@ -485,6 +485,96 @@ is still null for BASIC, PRO and ENTERPRISE.
 
 ---
 
+## Phase 8 — enforcement, and the corrections that followed it
+
+Phase 7 covers the tier split. It is not the end of the batch: **twelve
+migrations are pending, and this phase is the other eight.** They are grouped
+here because they share one property — this is the first time the platform ever
+*refuses* a tenant's write on entitlement grounds, and five of them change what
+happens on the money path.
+
+| migration | what it does | what changes for a tenant |
+|---|---|---|
+| `107000` | pre-login feature flags readable again | nothing; fixes a fresh-environment regression |
+| `110000` | contracts: `my_store_features()`, `platform_*` feature RPCs | nothing; read-only surface |
+| `111000` | **enforces** features: 13 policies, utang + void triggers | first refusals; all tenants grandfathered, so none should see one |
+| `112000` | enforces `inventory.transfers` | as above |
+| `114000` | gates suppliers + receiving — module, feature **and grace ladder** | a SUSPENDED tenant can no longer receive stock. It could before. |
+| `115000` | `platform_plans()` returns features; **drops and recreates** the function | console only; grants restored explicitly |
+| `116000` | un-gates `credit_payments` | a store without utang can collect existing debts again |
+| `117000` | un-gates UPDATE/DELETE on purchase orders + stock counts | in-flight work can reach a terminal state |
+| `118000` | offline replay of a credit sale made before withdrawal | a queued sale can land after the capability is gone |
+
+### Why none of this should be visible on the day
+
+Every tenant alive is grandfathered by Phase 7 and holds all fifteen
+capabilities. `111000`–`114000` refuse only what a tenant does not hold, so on a
+correctly grandfathered database **nobody meets a refusal at all**. If support
+hears about one in the first days, that is evidence the backfill did not do what
+Phase 7's audit claimed — go back and check `enabled_grants`, not the
+enforcement.
+
+The one exception is `114000`'s grace-ladder conjunct: suppliers and receiving
+had never carried it, so a tenant who is **already SUSPENDED** at push time
+loses the ability to add a supplier or receive stock. That is the intended
+behaviour and matches every other table; it is called out because it is the only
+change here that alters what an existing tenant can do today.
+
+### Verify
+
+```sql
+-- 1. Every grandfathered grant is actually taking effect. Expect 0.
+--
+--    NOT "every tenant holds all fifteen" -- that is true the morning after the
+--    push and false the moment somebody signs up, because a new tenant is on
+--    BASIC and legitimately holds nine. Measured against a local database, the
+--    naive version returns 272 and would send you into a false abort on the
+--    most alarming criterion here. This asks the question that stays true: is
+--    anything the backfill granted failing to apply?
+select count(*)
+from core.organization_features f
+join core.organizations o on o.id = f.organization_id
+where f.source = 'GRANDFATHERED' and f.enabled
+  and not core.feature_enabled(o.id, f.feature_code);
+
+-- 2. The un-gatings actually landed — none of these three may carry a feature
+--    check. Expect 0 rows.
+select c.relname, pol.polname
+from pg_policy pol join pg_class c on c.oid = pol.polrelid
+where c.relname in ('credit_payments', 'purchase_orders', 'inventory_counts')
+  and pol.polcmd in ('w', 'd')
+  and coalesce(pg_get_expr(pol.polqual, pol.polrelid), '') like '%has_feature%';
+
+-- 3. The console RPC kept its narrow grant after being dropped and recreated.
+--    Expect exactly: postgres and authenticated. Never PUBLIC.
+select array_to_string(proacl, ', ') from pg_proc where proname = 'platform_plans';
+```
+
+Then run the security surface, which asserts (3) and seven other properties and
+exits non-zero on any of them:
+
+```bash
+psql "$STAGING_URL" -v ON_ERROR_STOP=1 -f apps/tindahan-pos/supabase/snippets/security-surface.sql
+```
+
+### Abort criteria
+
+- Query 1 returns anything but **0** — a grant the backfill made is not taking
+  effect, so a tenant is being refused something they hold. Stop; the
+  grandfather is wrong and enforcement is merely the messenger. (Verified to
+  catch it: disabling a grandfathered tenant's module makes this return 9.)
+- Query 3 shows `PUBLIC` — `115000`'s drop-and-recreate lost its grants and the
+  plan catalogue is readable by every signed-in shopkeeper.
+- Support reports a `FEATURE_NOT_ENABLED` from a paying tenant in the first
+  48 hours.
+
+Rolling back one of these individually is not sensible — `116000`, `117000` and
+`118000` exist to undo traps that `111000` created, so reverting the corrections
+without reverting the enforcement is strictly worse than either state. If this
+phase has to come out, take `111000` onward out together.
+
+---
+
 ## The security surface, before and after every push
 
 ```bash
