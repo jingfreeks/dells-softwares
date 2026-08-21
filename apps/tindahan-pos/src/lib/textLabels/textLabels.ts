@@ -1272,6 +1272,21 @@ export const ERROR_INVALID_OR_EXPIRED_CODE = "That code is invalid or has expire
 export const ERROR_COULD_NOT_PAIR_DEVICE = "Could not pair this device. Please try again.";
 export const BUTTON_PAIRING = "Pairing…";
 export const NAV_LABEL_DEVICES = "Devices";
+export const NAV_LABEL_YOUR_PLAN = "Your plan";
+export const PAGE_HEADING_YOUR_PLAN = "Your plan";
+export const TEXT_PLAN_DESCRIPTION =
+  "What your store can do today, and what it cannot yet.";
+export const TEXT_PLAN_INCLUDED = "Included in your plan";
+export const TEXT_PLAN_NOT_INCLUDED = "Not in your plan";
+export const TEXT_PLAN_ALL_INCLUDED =
+  "Your store holds every capability the platform sells.";
+export const TEXT_PLAN_LOCKED_HINT =
+  "Talk to us if you need one of these — they can be switched on without moving your data.";
+export const TEXT_PLAN_WRITES_PAUSED =
+  "New records are paused while billing is unsettled. Everything you have recorded is still here, and still yours to read and export.";
+export const MODULE_LABEL_POS = "Selling";
+export const MODULE_LABEL_INVENTORY = "Stock and suppliers";
+export const MODULE_LABEL_ACCOUNTING = "Accounting";
 export const PAGE_HEADING_DEVICES = "Devices";
 export const TEXT_DEVICES_DESCRIPTION = "Registers paired to this store.";
 export const BUTTON_GENERATE_PAIRING_CODE = "Generate pairing code";

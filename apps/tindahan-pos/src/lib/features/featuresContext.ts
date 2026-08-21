@@ -1,8 +1,26 @@
 import { createContext, useContext } from "react";
 
+/** One row of my_store_features() — the whole catalogue, held or not. */
+export interface StoreFeature {
+  code: string;
+  moduleCode: string;
+  name: string;
+  held: boolean;
+}
+
 export interface FeaturesContextValue {
   /** Codes from my_store_features() that this store actually holds, e.g. "pos.utang". */
   features: Set<string>;
+  /**
+   * Every capability the platform sells, with whether this store holds it.
+   *
+   * my_store_features() deliberately returns the whole catalogue rather than
+   * only what is held, so a tenant can see what they are missing instead of
+   * it being invisible. useFeature() only ever needs the held half; the
+   * settings page needs both, which is why this sits beside the Set rather
+   * than replacing it.
+   */
+  catalogue: StoreFeature[];
   /** True until the first fetch resolves for the current staff member. */
   loading: boolean;
 }
