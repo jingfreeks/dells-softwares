@@ -22,6 +22,7 @@ import {
   type Plan,
   type SubscriptionStatus,
   outranksPlan,
+  featuresLostByPlanChange,
 } from "../lib/platform";
 
 export function OrganizationDetail() {
@@ -202,19 +203,31 @@ export function OrganizationDetail() {
       <div className="mt-4 max-w-2xl rounded-2xl border border-slate-200 bg-white p-4">
         <p className="text-sm font-medium text-slate-800">Plan</p>
         <p className="mt-0.5 text-xs text-slate-500">
-          Changing the plan re-derives this tenant&apos;s modules. Prefer it over toggling modules
-          one by one — a manual toggle opts that module out of plan control until it is handed back.
+          Changing the plan re-derives this tenant&apos;s modules <em>and features</em>. Prefer it
+          over toggling them one by one — a manual toggle opts that module or feature out of plan
+          control until it is handed back.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {plans.map((p) => {
             const current = p.planCode === org?.planCode;
+            // What this button would actually take away. Only SUBSCRIPTION
+            // grants are at risk -- comped and grandfathered ones outrank the
+            // plan and survive, so counting them here would frighten an
+            // operator out of a safe action.
+            const lost = current ? [] : featuresLostByPlanChange(features, p);
             return (
               <button
                 key={p.planCode}
                 type="button"
                 onClick={() => handleSetPlan(p.planCode)}
                 disabled={busyPlan || current || !p.isActive}
-                title={p.modules.filter((m) => m !== "CORE").join(", ") || "No modules"}
+                title={
+                  `Modules: ${p.modules.filter((m) => m !== "CORE").join(", ") || "none"}\n` +
+                  `Features: ${p.features.length}` +
+                  (lost.length > 0
+                    ? `\n\nSwitches off: ${lost.map((f) => f.name).join(", ")}`
+                    : "")
+                }
                 className={`cursor-pointer rounded-xl px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed ${
                   current
                     ? "bg-[var(--color-brand)] text-white disabled:opacity-100"
@@ -222,11 +235,24 @@ export function OrganizationDetail() {
                 }`}
               >
                 {p.name}
-                {current && " ·  current"}
+                {current ? " ·  current" : ` · ${p.features.length}`}
+                {lost.length > 0 && (
+                  <span className="ml-1 text-amber-600" title="">
+                    −{lost.length}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
+        {plans.some((p) => p.planCode !== org?.planCode &&
+                           featuresLostByPlanChange(features, p).length > 0) && (
+          <p className="mt-2 text-xs text-amber-700">
+            A number in amber is how many capabilities that plan would switch off for this tenant.
+            Comped and grandfathered features are not counted — those outrank the plan and survive
+            the change.
+          </p>
+        )}
       </div>
 
       <div className="mt-4 max-w-2xl rounded-2xl border border-slate-200 bg-white p-4">

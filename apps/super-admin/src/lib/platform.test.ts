@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { outranksPlan, blocksWrites } from "./platform";
+import {
+  outranksPlan,
+  blocksWrites,
+  featuresLostByPlanChange,
+  type OrganizationFeature,
+  type Plan,
+} from "./platform";
 
 describe("outranksPlan", () => {
   // The two sources that survive a plan change, and therefore need handing
@@ -43,5 +49,68 @@ describe("blocksWrites", () => {
   // A provisioning gap must not read as a suspension.
   it("does not treat an absent subscription as a suspension", () => {
     expect(blocksWrites(null)).toBe(false);
+  });
+});
+
+function feature(over: Partial<OrganizationFeature> = {}): OrganizationFeature {
+  return {
+    featureCode: "inventory.transfers",
+    moduleCode: "INVENTORY",
+    name: "Stock transfers",
+    enabled: true,
+    source: "SUBSCRIPTION",
+    moduleHeld: true,
+    ...over,
+  };
+}
+
+function plan(over: Partial<Plan> = {}): Plan {
+  return {
+    planCode: "BASIC",
+    name: "Basic",
+    description: null,
+    pricePhp: null,
+    billingInterval: null,
+    isActive: true,
+    modules: ["POS", "INVENTORY"],
+    features: ["pos.utang", "inventory.suppliers"],
+    ...over,
+  };
+}
+
+describe("featuresLostByPlanChange", () => {
+  it("names a plan-derived feature the target plan does not sell", () => {
+    const lost = featuresLostByPlanChange([feature()], plan());
+    expect(lost.map((f) => f.featureCode)).toEqual(["inventory.transfers"]);
+  });
+
+  it("says nothing about a feature the target plan does sell", () => {
+    const held = feature({ featureCode: "pos.utang", moduleCode: "POS" });
+    expect(featuresLostByPlanChange([held], plan())).toEqual([]);
+  });
+
+  // The point of the whole calculation. After the tier split every existing
+  // tenant is grandfathered, so if these counted, the console would warn
+  // loudly about a change that takes nothing away -- and an operator who
+  // learns the warning is wrong stops reading warnings.
+  it("does not count a grandfathered grant, which survives the change", () => {
+    expect(featuresLostByPlanChange([feature({ source: "GRANDFATHERED" })], plan())).toEqual([]);
+  });
+
+  it("nor a deliberate comp", () => {
+    expect(featuresLostByPlanChange([feature({ source: "MANUAL" })], plan())).toEqual([]);
+  });
+
+  it("nor one that is already switched off", () => {
+    expect(featuresLostByPlanChange([feature({ enabled: false })], plan())).toEqual([]);
+  });
+
+  // Holding a feature without its module is not holding it -- core.feature_enabled()
+  // requires the module, so a plan that drops INVENTORY takes its features too
+  // even if it somehow still lists them.
+  it("counts a feature whose module the target plan drops", () => {
+    const target = plan({ modules: ["POS"], features: ["inventory.transfers"] });
+    const lost = featuresLostByPlanChange([feature()], target);
+    expect(lost.map((f) => f.featureCode)).toEqual(["inventory.transfers"]);
   });
 });

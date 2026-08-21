@@ -58,6 +58,8 @@ export interface Plan {
   billingInterval: string | null;
   isActive: boolean;
   modules: string[];
+  /** Feature codes this plan grants. Empty until 20260815115000 is applied. */
+  features: string[];
 }
 
 export interface PlatformAuditEntry {
@@ -224,7 +226,33 @@ export async function listPlans(): Promise<Plan[]> {
     billingInterval: r.billing_interval,
     isActive: r.is_active,
     modules: r.modules ?? [],
+    features: r.features ?? [],
   }));
+}
+
+/**
+ * What moving this tenant onto `plan` would actually switch off.
+ *
+ * Only SUBSCRIPTION-sourced grants are at risk: MANUAL and GRANDFATHERED
+ * outrank the plan and survive the change untouched (see
+ * materialize_subscription_features). Showing those as "will be lost" would be
+ * a lie that makes operators afraid of a safe action -- and the tenants most
+ * likely to be moved are precisely the grandfathered ones, for whom the honest
+ * answer is usually "nothing".
+ *
+ * Features whose module the target plan does not grant are included: holding a
+ * feature without its module is not holding it.
+ */
+export function featuresLostByPlanChange(
+  current: OrganizationFeature[],
+  plan: Plan
+): OrganizationFeature[] {
+  return current.filter(
+    (f) =>
+      f.enabled &&
+      f.source === "SUBSCRIPTION" &&
+      (!plan.features.includes(f.featureCode) || !plan.modules.includes(f.moduleCode))
+  );
 }
 
 export async function setPlan(orgId: string, planCode: string, reason: string): Promise<void> {
