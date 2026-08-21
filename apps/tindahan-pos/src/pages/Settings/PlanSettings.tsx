@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   PAGE_HEADING_YOUR_PLAN,
   TEXT_PLAN_DESCRIPTION,
@@ -7,7 +8,9 @@ import {
   TEXT_PLAN_LOCKED_HINT,
   TEXT_PLAN_UPGRADE_PREFIX,
   TEXT_PLAN_WRITES_PAUSED,
+  ARIA_VIEW_UPGRADE_OPTIONS,
 } from "@/lib";
+import { UpgradeModal } from "@/components";
 import { SettingsLayout } from "./component";
 import { usePlanPage, type PlanGroup, type LockedByPlan } from "./usePlanPage";
 
@@ -59,15 +62,33 @@ function HeldList({ groups }: { groups: PlanGroup[] }) {
  * no next step; "Purchase orders — Upgrade to Business, ₱599/month" is a
  * decision a shopkeeper can actually make.
  */
-function LockedByPlanList({ groups }: { groups: LockedByPlan[] }) {
+function LockedByPlanList({ groups, onSelect }: { groups: LockedByPlan[]; onSelect: (group: LockedByPlan) => void }) {
   return (
     <>
       {groups.map((g) => (
         <div key={g.plan.planCode} style={{ marginBottom: 14 }}>
-          <p className="tpl-sub" style={{ marginBottom: 6, fontWeight: 600 }}>
+          <button
+            type="button"
+            onClick={() => onSelect(g)}
+            aria-label={`${ARIA_VIEW_UPGRADE_OPTIONS}: ${g.plan.name}`}
+            className="tpl-sub"
+            style={{
+              marginBottom: 6,
+              fontWeight: 600,
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              textAlign: "left",
+            }}
+          >
             {TEXT_PLAN_UPGRADE_PREFIX}
             {g.plan.name} — {g.priceLabel}
-          </p>
+            <i className="ti ti-chevron-right" aria-hidden style={{ fontSize: 13 }} />
+          </button>
           <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {g.features.map((f) => (
               <FeatureRow key={f.code} name={f.name} held={false} />
@@ -96,6 +117,7 @@ function LockedByPlanList({ groups }: { groups: LockedByPlan[] }) {
  */
 export function PlanSettings() {
   const { loading, held, lockedByPlan, holdsEverything, writesPaused } = usePlanPage();
+  const [upgradeTarget, setUpgradeTarget] = useState<LockedByPlan | null>(null);
 
   return (
     <SettingsLayout>
@@ -133,7 +155,7 @@ export function PlanSettings() {
                 <p className="tpl-h3" style={{ marginBottom: 10 }}>
                   {TEXT_PLAN_NOT_INCLUDED}
                 </p>
-                <LockedByPlanList groups={lockedByPlan} />
+                <LockedByPlanList groups={lockedByPlan} onSelect={setUpgradeTarget} />
                 <p className="tpl-sub" style={{ marginTop: 8 }}>
                   {TEXT_PLAN_LOCKED_HINT}
                 </p>
@@ -142,6 +164,8 @@ export function PlanSettings() {
           )}
         </>
       )}
+
+      <UpgradeModal group={upgradeTarget} onClose={() => setUpgradeTarget(null)} />
     </SettingsLayout>
   );
 }

@@ -110,4 +110,58 @@ test.describe('Your plan', () => {
     await page.getByRole('link', { name: 'Your plan' }).click()
     await expect(page.getByText('Included in your plan')).toBeVisible()
   })
+
+  // 20260815125000: a locked group is now a real upgrade interstitial, not
+  // just a static list entry -- clicking it should say what the feature is
+  // for and offer a next step, instead of "Not in your plan" being a dead end.
+  test('clicking a locked group opens the upgrade modal for that plan', async ({ page }) => {
+    await login(page, email, 'testpass123')
+    await page.goto('/settings/plan')
+
+    await page.getByRole('button', { name: /view upgrade options: business/i }).click()
+
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByText(/Upgrade to Business/)).toBeVisible()
+    await expect(dialog.getByText('Purchase orders')).toBeVisible()
+  })
+
+  test('Maybe later closes the modal without navigating away', async ({ page }) => {
+    await login(page, email, 'testpass123')
+    await page.goto('/settings/plan')
+
+    await page.getByRole('button', { name: /view upgrade options: business/i }).click()
+    await page.getByRole('button', { name: /maybe later/i }).click()
+
+    await expect(page.getByRole('dialog')).not.toBeVisible()
+    await expect(page).toHaveURL(/\/settings\/plan/)
+  })
+})
+
+test.describe('Dashboard subscription widget', () => {
+  test.skip(!canCreateTestAccountsDirectly, 'SUPABASE_SERVICE_ROLE_KEY not set')
+
+  test('shows the store\'s current plan and links to Settings, right from the dashboard', async ({ page, request }) => {
+    const account = await createTestStoreAccount(request, { storeName: `Dash Plan ${Date.now()}` })
+    await login(page, account.email, 'testpass123')
+    await page.goto('/admin')
+
+    // A new store provisions onto BASIC.
+    await expect(page.getByText(/Basic.*₱299\/monthly/)).toBeVisible()
+
+    await page.getByRole('link', { name: /manage subscription/i }).click()
+    await expect(page).toHaveURL(/\/settings\/plan/)
+  })
+
+  test('offers Upgrade plan on the dashboard itself, opening the same modal', async ({ page, request }) => {
+    const account = await createTestStoreAccount(request, { storeName: `Dash Upgrade ${Date.now()}` })
+    await login(page, account.email, 'testpass123')
+    await page.goto('/admin')
+
+    await page.getByRole('button', { name: /upgrade plan/i }).click()
+
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByText(/Upgrade to Business/)).toBeVisible()
+  })
 })
