@@ -340,13 +340,22 @@ a human can supply.
   word. The console labels them *comped* and *grandfathered* and offers **Follow
   plan** on both.
 
-  **The grandfather step cannot be verified locally.** A fresh local database
-  has no organizations at the moment the migration runs, so the backfill
-  updates zero rows; in production it re-sources roughly 9,915 grants across
-  661 tenants. `250_tier_split` pins the *mechanism* it depends on, and
-  `supabase/snippets/tier-split-audit.sql` is what proves the backfill itself
-  — run it on staging, before and after, and check that no tenant's count of
-  enabled grants falls.
+  **The grandfather step is not exercised by an ordinary local reset**, because
+  a fresh database has no organizations at the moment the migration runs — the
+  backfill updates zero rows, while in production it re-sources roughly 9,915
+  grants across 661 tenants. Three things cover it:
+
+  - `250_tier_split` pins the *mechanism* the backfill depends on — that a
+    grant outranking the plan survives `materialize_subscription_features()`.
+  - `supabase/tests/rehearse-tier-split.sh` rebuilds a local database into the
+    pre-split state at production scale and runs **the actual migration file**
+    against it, then re-materialises every tenant. That last step is the one
+    that matters: nothing re-materialises during the migration, so every tenant
+    looks fine the moment it finishes even if the grandfather did nothing —
+    with it deliberately disabled, the immediate counts are unchanged and then
+    1,200 of 3,000 grants vanish on the next materialize.
+  - `supabase/snippets/tier-split-audit.sql` proves the real backfill on
+    staging, before and after.
 - ~~**`suppliers` / `receiving` module ownership**~~ **Decided** in
   `20260815113000` and enforced in `20260815114000` — both are BASIC features
   of INVENTORY. See above.
