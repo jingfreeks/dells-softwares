@@ -2,7 +2,7 @@ import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useMemo, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
 import {
   useHasModule,
   useHasFeature,
@@ -22,7 +22,7 @@ import type { InventoryCount, InventoryCountLine, Product, Warehouse } from "../
 
 export function ActualInventory() {
   const { user } = useAuth();
-  const canManage = useCan("inventory.stock.count");
+  const accessDenied = useAccessDenied("inventory.stock.count");
   const hasInventory = useHasModule("INVENTORY");
   const hasFeature = useHasFeature("inventory.stock_count");
   // The module hint wins when both are off: core.feature_enabled()
@@ -115,7 +115,7 @@ export function ActualInventory() {
     };
   }, [selectedCount, selectedWarehouse, products]);
 
-  if (user && !canManage) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 

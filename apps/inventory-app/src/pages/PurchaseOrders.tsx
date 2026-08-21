@@ -2,7 +2,7 @@ import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
 import {
   useHasModule,
   useHasFeature,
@@ -45,7 +45,7 @@ const STATUS_COLOR: Record<PurchaseOrder["status"], string> = {
 
 export function PurchaseOrders() {
   const { user } = useAuth();
-  const canManage = useCan("inventory.purchase_order.manage");
+  const accessDenied = useAccessDenied("inventory.purchase_order.manage");
   const hasInventory = useHasModule("INVENTORY");
   const hasFeature = useHasFeature("inventory.purchase_orders");
   // The module hint wins when both are off: core.feature_enabled()
@@ -119,7 +119,7 @@ export function PurchaseOrders() {
     };
   }, [user]);
 
-  if (user && !canManage) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 

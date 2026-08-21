@@ -64,3 +64,27 @@ export function useCan(code: string): boolean {
 export function Can({ do: code, children }: { do: string; children: ReactNode }) {
   return useCan(code) ? <>{children}</> : null;
 }
+
+/**
+ * Has this staff member been established NOT to hold `code`?
+ *
+ * The distinction from `!useCan(code)` is the whole point, and it is the
+ * difference between a working page and a page nobody can open. `useCan` fails
+ * closed while permissions are in flight, which is right for hiding a button —
+ * showing one that turns out not to work is worse than a button arriving a
+ * moment late. It is wrong for a redirect, because a redirect is not
+ * recoverable: the page is gone before the answer lands.
+ *
+ * That is exactly what happened here. Every guarded page in this app read
+ * `if (user && !canManage) return <Navigate/>`, so an owner opening
+ * /purchase-orders directly — from a bookmark, or just a refresh — was thrown
+ * to the dashboard before their own permissions had finished loading. Clicking
+ * through from inside the app worked, because by then they were cached, which
+ * is why it survived this long.
+ *
+ * An unloaded answer is not a negative answer.
+ */
+export function useAccessDenied(code: string): boolean {
+  const { permissions, loading } = usePermissions();
+  return !loading && !permissions.has(code);
+}

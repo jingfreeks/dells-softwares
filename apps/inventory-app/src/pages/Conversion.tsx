@@ -2,7 +2,7 @@ import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
 import {
   useHasModule,
   useHasFeature,
@@ -15,7 +15,7 @@ import type { Product, UnitConversion } from "../lib/types";
 
 export function Conversion() {
   const { user } = useAuth();
-  const canManage = useCan("inventory.product.manage");
+  const accessDenied = useAccessDenied("inventory.product.manage");
   const hasInventory = useHasModule("INVENTORY");
   const hasFeature = useHasFeature("inventory.conversions");
   // The module hint wins when both are off: core.feature_enabled()
@@ -65,7 +65,7 @@ export function Conversion() {
     };
   }, [user]);
 
-  if (user && !canManage) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 

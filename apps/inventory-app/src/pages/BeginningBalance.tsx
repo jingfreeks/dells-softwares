@@ -2,7 +2,7 @@ import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
 import { useHasModule, MODULE_READ_ONLY_HINT } from "../lib/modules";
 import { listWarehouses } from "../lib/warehouses";
 import { listProducts } from "../lib/products";
@@ -13,7 +13,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export function BeginningBalance() {
   const { user } = useAuth();
-  const canManage = useCan("inventory.stock.adjust");
+  const accessDenied = useAccessDenied("inventory.stock.adjust");
   const hasInventory = useHasModule("INVENTORY");
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -71,7 +71,7 @@ export function BeginningBalance() {
     };
   }, [warehouseId]);
 
-  if (user && !canManage) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 

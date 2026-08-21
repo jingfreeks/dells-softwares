@@ -2,7 +2,7 @@ import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
 import {
   useHasModule,
   useHasFeature,
@@ -18,7 +18,7 @@ const emptyForm = { fromWarehouseId: "", toWarehouseId: "", productId: "", quant
 
 export function Transfers() {
   const { user } = useAuth();
-  const canManage = useCan("inventory.transfer.manage");
+  const accessDenied = useAccessDenied("inventory.transfer.manage");
   const hasInventory = useHasModule("INVENTORY");
   const hasFeature = useHasFeature("inventory.transfers");
   // The module hint wins when both are off: core.feature_enabled()
@@ -75,7 +75,7 @@ export function Transfers() {
     };
   }, [user]);
 
-  if (user && !canManage) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 

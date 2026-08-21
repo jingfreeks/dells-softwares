@@ -2,7 +2,7 @@ import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
 import { listWarehouses } from "../lib/warehouses";
 import { listSuppliers } from "../lib/suppliers";
 import { listProducts } from "../lib/products";
@@ -21,7 +21,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export function Receiving() {
   const { user } = useAuth();
-  const canReceive = useCan("inventory.stock.receive");
+  const accessDenied = useAccessDenied("inventory.stock.receive");
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -81,7 +81,7 @@ export function Receiving() {
     };
   }, [user]);
 
-  if (user && !canReceive) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 
