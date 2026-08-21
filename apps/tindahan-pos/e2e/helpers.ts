@@ -32,6 +32,31 @@ export async function setStoreFeature(storeName: string, featureCode: string, en
          and organization_id = (select id from stores where name = '${storeName}')`
   )
 }
+/** Enable or disable a whole module for a store, the way the console does. */
+export async function setStoreModule(storeName: string, moduleCode: string, enabled: boolean) {
+  await sql(
+    `update core.organization_modules set enabled = ${enabled}, source = 'MANUAL'
+       where module_code = '${moduleCode}'
+         and organization_id = (select id from stores where name = '${storeName}')`
+  )
+}
+
+/** Move a store along the §08 ladder. SUSPENDED and CANCELLED withdraw writes. */
+export async function setSubscriptionStatus(storeName: string, status: string) {
+  await sql(
+    `update core.organization_subscriptions set status = '${status}'
+       where organization_id = (select id from stores where name = '${storeName}')`
+  )
+}
+
+/** Seed a row directly, so a read-survives assertion has something real to find. */
+export async function seedSupplier(storeName: string, name: string) {
+  await sql(
+    `insert into suppliers (store_id, name)
+     select id, '${name}' from stores where name = '${storeName}'`
+  )
+}
+
 // Imported from the app's own label module rather than retyped as string
 // literals. Every one of these selectors had rotted: the login page was
 // redesigned into Sign in / Create account tabs, its submit button stopped
