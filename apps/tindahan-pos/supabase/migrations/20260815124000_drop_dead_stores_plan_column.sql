@@ -1,0 +1,51 @@
+-- =============================================================================
+-- stores.plan, its guard trigger, and _lock_store_plan() were never real
+-- -----------------------------------------------------------------------------
+-- Found while auditing _lock_store_plan() as a side effect of #205/#206 (the
+-- tenant-RPC anon/service_role overgrant fixes): it's a RETURNS TRIGGER
+-- function, so it was never itself reachable via direct RPC regardless of
+-- grants, but it -- and the column/trigger it guards -- are absent from
+-- every migration file in this repository. Confirmed schema drift: created
+-- directly against a database outside migration history, not by anything
+-- tracked here.
+--
+-- CONFIRMED STAGING-ONLY. Production has never had stores.plan, the trigger,
+-- or the function at all (`select proname from pg_proc where proname =
+-- '_lock_store_plan'` returns nothing there). So this is not a
+-- staging/production parity gap in the usual sense -- production is already
+-- in the state this migration produces; staging is the one with leftover
+-- debris.
+--
+-- CONFIRMED DEAD, not just untracked. On staging: all 661 stores.plan values
+-- are the column's own default ('free_trial') -- never once updated by
+-- anything, ever. `select proname from pg_proc where prosrc ilike
+-- '%new.plan%'` returns only _lock_store_plan itself -- no other function
+-- reads or writes it. No RLS policy references it (`pg_policies` where qual
+-- or with_check mentions .plan: zero rows). No client code in either
+-- tindahan-pos or inventory-app references a `plan` field on a store
+-- (`grep -rn "\.plan\b" src/` in both apps: nothing relevant). Real plan
+-- tracking lives entirely in core.subscription_plans /
+-- core.organization_features / core.organization_modules, built out across
+-- this session's rollout -- this column predates that architecture and was
+-- superseded by it, not integrated with it.
+--
+-- Dropped rather than adopted into a migration as-is: adopting it would mean
+-- writing a migration whose only purpose is to reproduce dead weight nothing
+-- uses, on the one environment that happens to still carry it. `IF EXISTS`
+-- throughout so this is a genuine no-op on production (and on a fresh local
+-- reset) -- it does not require staging and production to already agree on
+-- what exists before it runs.
+--
+-- Affected schemas : public (staging: 1 column, 1 trigger, 1 function
+--                    dropped; production/local: no-op, nothing to drop)
+-- Rollback         : re-create stores.plan text not null default
+--                    'free_trial', the lock_store_plan trigger, and
+--                    _lock_store_plan() -- though there is no reason to
+--                    want dead schema back
+-- Risk             : none -- confirmed nothing reads or writes this column
+--                    anywhere in the current architecture
+-- =============================================================================
+
+drop trigger if exists lock_store_plan on public.stores;
+drop function if exists public._lock_store_plan();
+alter table public.stores drop column if exists plan;
