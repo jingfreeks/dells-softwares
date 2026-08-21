@@ -62,13 +62,38 @@ where n.nspname = 'public' and pol.polcmd in ('a', 'w', 'd')
 union all
 
 -- 4 · platform_* functions read and write across every tenant. They are
---     granted to `authenticated` and gated inside on core.is_platform_admin();
---     a PUBLIC grant would widen that to anon as well.
-select '4 · console RPC reachable by PUBLIC', p.proname
-from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+--     meant to be granted to `authenticated` ONLY, gated inside on
+--     core.is_platform_admin() -- no Edge Function in this codebase calls a
+--     platform_* RPC (checked: `grep -rl platform_ supabase/functions/` finds
+--     nothing), so service_role has no legitimate reason to hold EXECUTE
+--     either, and neither does anon or a bare PUBLIC grant.
+--
+--     THIS CHECK USED TO ONLY LOOK FOR THE PUBLIC PSEUDO-GRANT (`a::text like
+--     '=%'`), string-matching the raw ACL array. That is real but narrow: it
+--     would never catch a NAMED role like anon or service_role holding
+--     EXECUTE, which is exactly what a hosted Supabase project's own
+--     schema-level default privileges hand out to every new function in
+--     `public` -- discovered on 2026-08-21 pushing 20260815115000, where
+--     `platform_plans()` (and, once checked, all fifteen platform_* functions,
+--     including several no migration in this push touched) carried EXECUTE for
+--     anon and service_role in addition to authenticated. Nothing was
+--     reachable -- core.is_platform_admin() held, pgTAP-verified -- but the
+--     defense-in-depth this check exists to guarantee was not actually there,
+--     and this exact check said "clean" the whole time because it was only
+--     asking about PUBLIC.
+--
+--     aclexplode() is used instead of string-matching for the same reason
+--     that mistake happened: raw ACL text is easy to parse wrong, and getting
+--     it wrong here means silently trusting a grant nobody checked.
+select '4 · console RPC executable by more than authenticated',
+       p.proname || ' -> ' || coalesce(r.rolname, 'PUBLIC')
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+left join pg_roles r on r.oid = a.grantee
 where n.nspname = 'public' and p.proname like 'platform\_%'
-  and (p.proacl is null
-       or exists (select 1 from unnest(p.proacl) a where a::text like '=%'))
+  and a.privilege_type = 'EXECUTE'
+  and coalesce(r.rolname, 'PUBLIC') not in ('authenticated', 'postgres')
 
 union all
 

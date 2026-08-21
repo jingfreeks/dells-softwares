@@ -287,8 +287,46 @@ a human can supply.
   organizations 661 = stores 661, one primary branch each, core.staff 666 =
   staff 666, one live subscription each, and organization_modules 1322 =
   661 x 2, meaning materialization ran for every organization without a gap.
+  **Then Phase 8 (12 more migrations — the tier split and its enforcement) on
+  2026-08-21.** `preflight.sh` was green before the push; every check in
+  ROLLOUT.md's Phase 7/8 verification section was run against staging itself
+  afterward, not inferred from local: 9,915 grandfathered feature grants
+  (matching the ~9,915 predicted almost exactly), `enabled_grants` unchanged
+  at 661 × 15, `manual_grants` still 0, the ladder reads 4/9/14/15, and the
+  structural counts above are bit-for-bit identical before and after. The
+  staff↔organization tenant-mapping join also came back 0.
   **Production has had nothing applied.** See [ROLLOUT.md](ROLLOUT.md), and
   note it is the *other* project — `DellsSoftware`, `zwjwbfzrfjhslyxpsxby`.
+- **Every `platform_*` function is executable by `anon` and `service_role`,
+  not just `authenticated`.** Found running `security-surface.sql` against
+  staging for real, immediately after the Phase 8 push, rather than trusting
+  the local-only "clean" result — the exact gap `security-surface.sql`'s own
+  header warns about: a hosted project carries grants applied outside this
+  repository, and local dev does not reproduce them.
+
+  Not caused by tonight's push, and not a live exposure. All 15 platform_*
+  functions carry the same grant, including several no migration in this
+  batch touched, so this is a pre-existing default-privilege characteristic of
+  the hosted project (`ALTER DEFAULT PRIVILEGES`-shaped, applied by Supabase's
+  own project bootstrapping, outside this repository). Every one of them
+  checks `core.is_platform_admin()` internally and `250_tier_split` already
+  pgTAP-verifies that a non-administrator sees zero rows through it, so
+  nothing is reachable today. No Edge Function in this codebase calls a
+  `platform_*` RPC (`grep -rl platform_ supabase/functions/` finds nothing), so
+  `service_role` has no legitimate reason to hold it either.
+
+  `security-surface.sql`'s check 4 used to only look for the bare `PUBLIC`
+  pseudo-grant, string-matching the raw ACL array — real, but narrow enough to
+  miss a NAMED role entirely, which is exactly what let this run "clean" on
+  every previous local and CI run. It now uses `aclexplode()` to check every
+  grantee explicitly, and running the corrected check against staging finds
+  exactly the 30 rows this describes (15 functions × anon and service_role).
+
+  Not fixed here on purpose. Revoking EXECUTE across every platform_*
+  function is a real privilege change to a live database that is mid-soak, and
+  deserves its own migration, its own verification pass and its own quiet
+  day — not something to bundle into a check-file fix. Its own change, once
+  staging has settled.
 - ~~**Two permission systems coexist.**~~ **Resolved** in `20260815106000`,
   adopting option A from [PERMISSIONS-DECISION.md](PERMISSIONS-DECISION.md).
   `core.is_org_wide_staff()` is gone; its 11 call sites now ask
