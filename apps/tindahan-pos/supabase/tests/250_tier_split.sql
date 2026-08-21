@@ -257,5 +257,70 @@ select is_empty(
   'no tenant holds an enabled SUBSCRIPTION grant their plan does not sell'
 );
 
+-- -----------------------------------------------------------------------------
+-- 6 · the console can see the ladder
+--
+-- platform_plans() used to return only the module list, which was a complete
+-- answer while every plan sold the same features. It is not one now: FREE and
+-- ENTERPRISE differ by eleven features, and an operator moving a live shop
+-- between plans has to be able to see that.
+-- -----------------------------------------------------------------------------
+insert into auth.users (id, email) values
+  ('fd400000-0000-4000-8000-000000000001', 'plans.admin@test.local');
+
+do $$
+begin
+  perform core.bootstrap_platform_admin('plans.admin@test.local', 'SUPERUSER');
+  update core.platform_admins set mfa_verified_at = now()
+   where user_id = 'fd400000-0000-4000-8000-000000000001';
+end $$;
+
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub', 'fd400000-0000-4000-8000-000000000001',
+                    'role', 'authenticated', 'aal', 'aal2')::text, true);
+
+select set_eq(
+  $$ select plan_code from public.platform_plans() $$,
+  array['FREE', 'BASIC', 'PRO', 'ENTERPRISE'],
+  'the console sees every plan'
+);
+
+select is(
+  (select array_length(features, 1) from public.platform_plans() where plan_code = 'FREE'),
+  4,
+  'and what FREE sells, not merely that it exists'
+);
+
+select is(
+  (select array_length(features, 1) from public.platform_plans() where plan_code = 'ENTERPRISE'),
+  (select count(*)::int from core.features),
+  'and that ENTERPRISE sells the whole catalogue'
+);
+
+select ok(
+  (select 'inventory.transfers' = any(features) from public.platform_plans()
+    where plan_code = 'ENTERPRISE')
+  and not (select 'inventory.transfers' = any(features) from public.platform_plans()
+    where plan_code = 'PRO'),
+  'so the difference between two plans is legible before an operator commits to it'
+);
+
+reset role;
+
+-- A shopkeeper must not be able to read the plan catalogue. The function is
+-- granted to `authenticated` as a whole, so the gate inside is what actually
+-- separates them -- worth an assertion rather than an assumption.
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub', gen_random_uuid(), 'role', 'authenticated')::text, true);
+
+select is_empty(
+  $$ select 1 from public.platform_plans() $$,
+  'a non-administrator sees no plans at all'
+);
+
+reset role;
+
 select * from finish();
 rollback;
