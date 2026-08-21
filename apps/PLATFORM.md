@@ -415,6 +415,28 @@ a human can supply.
   tenant already over the ceiling keeps everything and simply cannot add more.
 
   The trigger on `sales` stays; that is the half that withholds the capability.
+- **Two PRO capabilities are sold and not withheld.** Found by walking the
+  catalogue against what the database actually enforces. Seven of the fifteen
+  features are unenforced; five of those are held by *every* plan, so nothing is
+  given away. These two are not:
+
+  | capability | why nothing withholds it |
+  |---|---|
+  | `pos.multi_register` | Whether a store may run more than one till is already expressed — and genuinely enforced — by the `devices` **limit**, which BASIC sets to **3**. The plan says one thing and the limit says another. |
+  | `pos.bir_receipts` | `stores.bir_registered` is a boolean the owner toggles for themselves. Nothing consults the entitlement, so any store can issue official receipts. |
+
+  Both are pricing decisions rather than bugs, and both are deliberately left
+  alone here. `multi_register` needs the plan and the device limit reconciled —
+  either BASIC drops to one device, or the capability moves to BASIC and the
+  limit expresses the tier on its own. `bir_receipts` is compliance-shaped: a
+  shop registered with the BIR is legally required to issue receipts, so
+  withholding it is not obviously the right thing to sell.
+
+  `290_every_feature_is_decided` holds both on the record. It scans every
+  function body and policy expression for each feature code and fails if
+  anything is sold without being withheld, unless it is named in that file with
+  a reason — so a new capability cannot be added and quietly given away, and a
+  stale excuse cannot outlive the enforcement that replaced it.
 - **POS gating** — deliberately not built, above.
 - ~~**Limit enforcement.**~~ **Built** in `20260815102000`. Triggers rather
   than policies, because devices are inserted by the pair-device Edge
