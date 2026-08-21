@@ -94,6 +94,17 @@ export function describePlatformError(err: unknown, fallback = "Something went w
     return "You do not have permission to do this. Ask the store owner.";
   }
 
+  // void_sale() raises this bare, with no detail -- reachable in practice
+  // whenever the list an admin is looking at is stale: a second admin voided
+  // it first, or the page has been open since before someone else did.
+  if (raw.includes("ALREADY_VOIDED")) {
+    return "This sale has already been voided by someone else. Refresh to see the current list.";
+  }
+
+  if (raw.includes("VOID_REASON_REQUIRED")) {
+    return "A reason is required to void a sale.";
+  }
+
   // A bare policy denial. The cause is genuinely ambiguous -- a capability the
   // plan does not include, a module switched off, or a suspended subscription
   // -- so this deliberately does NOT say "you do not have permission". Since
