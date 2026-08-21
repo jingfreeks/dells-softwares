@@ -114,14 +114,28 @@ select throws_ok($$
 $$, 'P0001', 'FEATURE_NOT_ENABLED: pos.utang',
    'a credit sale is refused, naming the feature rather than an opaque denial');
 
--- The trigger covers every path into `sales`, not just checkout_sale -- which
--- is the reason it is a trigger and not a guard inside that function.
-select throws_ok($$
-  insert into credit_payments (store_id, customer_id, amount, created_by)
-  select pg_temp.org(), c.id, 10, 'ea200000-0000-4000-8000-000000000001'
-  from customers c where c.store_id = pg_temp.org() limit 1
-$$, 'P0001', 'FEATURE_NOT_ENABLED: pos.utang',
-   'and so is collecting against an utang balance -- the other half of the same capability');
+-- COLLECTING is deliberately still allowed, and this used to assert the
+-- opposite. 20260815111000 gated credit_payments too, reasoning that a store
+-- which cannot sell on credit cannot collect on it either. That traps a shop
+-- with money owed to it: the debts stay readable under §08 and no repayment
+-- can ever be recorded, so every neighbour who pays in cash makes the books
+-- further from the truth. §08 withdraws writes to stop new COMMITMENTS, not to
+-- lock a door from the inside. A credit sale creates an obligation; a payment
+-- discharges one. See 20260815116000.
+-- Through record_credit_payment(), which is the only way a payment is ever
+-- written: credit_payments has no INSERT policy at all, exactly like `sales`.
+-- Asserting against a direct insert would prove nothing about the path a
+-- shopkeeper actually takes, and would pass for the wrong reason.
+select lives_ok($$
+  select public.record_credit_payment(
+    (select id from customers where store_id = pg_temp.org() limit 1), 10, null)
+$$, 'but collecting an existing utang balance is still allowed -- winding down '
+   'is not using the feature, it is leaving it');
+
+-- And the wind-down has to actually land, not merely be permitted.
+select isnt_empty($$
+  select 1 from credit_payments where store_id = pg_temp.org()
+$$, 'and the payment is recorded, so the ledger can still be made true');
 
 -- -----------------------------------------------------------------------------
 -- 3. WRITES ONLY. §08: data is never destroyed on downgrade.
