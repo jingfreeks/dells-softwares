@@ -389,6 +389,28 @@ grandfather step updates zero rows. Staging has 661 tenants, and there the same
 step re-sources roughly 9,915 grants. Treat a green local run as saying nothing
 about it.
 
+### Rehearse it first — locally, at scale
+
+```bash
+bash apps/tindahan-pos/supabase/tests/rehearse-tier-split.sh 700
+```
+
+This rebuilds a local database into the state production is in the moment
+before the split — every tenant holding all fifteen features, every grant
+`SUBSCRIPTION`-sourced — and then runs **the actual migration file** against it,
+not a copy of its SQL. It takes about two seconds for 10,500 grants, so the push
+itself will not be slow.
+
+It ends by calling `materialize_subscription_features()` for every tenant, and
+that is the check that matters. Nothing re-materialises during the migration, so
+**every tenant looks fine the moment it finishes even if the grandfather step
+did nothing at all** — the loss lands later, the first time an operator changes
+a plan or a renewal runs. Measured with the grandfather deliberately disabled:
+counts unchanged immediately after, then 1,200 of 3,000 grants stripped on
+re-materialisation, with the worst-off tenant falling from 15 capabilities to 9.
+
+If this script fails, do not push.
+
 ### Before
 
 ```bash
