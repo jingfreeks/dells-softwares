@@ -359,6 +359,29 @@ a human can supply.
 - ~~**`suppliers` / `receiving` module ownership**~~ **Decided** in
   `20260815113000` and enforced in `20260815114000` — both are BASIC features
   of INVENTORY. See above.
+- **Entitlement decides what a tenant may START, never whether they may finish
+  what is already underway.** This has now bitten three times, so it is written
+  here once rather than rediscovered a fourth.
+
+  `20260815116000` settled it for utang — a shop that loses the capability keeps
+  its debts and must still record them being paid off. `20260815117000` settles
+  it for the two state machines with the same trap: a `purchase_orders` stuck at
+  `submitted` and an `inventory_counts` stuck at `open`, neither able to reach a
+  terminal state, neither even *cancellable* — and both failing **silently**,
+  because an `UPDATE` whose policy `USING` does not match matches zero rows and
+  reports success. `closeInventoryCount()` throws only on `error`, so the screen
+  said the count was closed while nothing had changed.
+
+  Creation stays gated; completion does not. Feature and module checks are on
+  INSERT only for those four tables.
+
+  **The grace ladder stays on all of them**, and the distinction is the point.
+  Losing a feature is a permanent change in what the tenant bought, so they must
+  be able to wind down. A suspension is a temporary billing state — they settle
+  up and carry on where they left off, and nothing is trapped by waiting.
+
+  When testing this class of bug, assert on **row count**, not on the absence of
+  an error. `lives_ok()` passes against a silent no-op, which is exactly the bug.
 - **Winding down is not using a feature.** `20260815111000` gated
   `credit_payments` alongside `sales`, reasoning that a store which cannot sell
   on credit cannot collect on it either. `20260815116000` undoes that half.
