@@ -39,6 +39,19 @@ create or replace function pg_temp.org2() returns uuid language sql as $$
   select id from stores where name = 'Enforce Two'
 $$;
 
+-- Both stores provision onto BASIC, which since 20260815113000 does not sell
+-- purchase orders -- those start at PRO. This file is about ENFORCEMENT
+-- mechanics, not about which tier owns what, so it grants the feature
+-- outright and then tests what happens when it is taken away again. Keeping
+-- the two concerns apart means a later pricing change edits 250_tier_split.sql
+-- and leaves this file alone.
+insert into core.organization_features (organization_id, feature_code, enabled, source)
+select o.id, 'inventory.purchase_orders', true, 'MANUAL'
+from core.organizations o
+where o.id in (pg_temp.org(), pg_temp.org2())
+on conflict (organization_id, feature_code)
+do update set enabled = true, source = 'MANUAL';
+
 -- Something to still be able to read after the feature is revoked, and
 -- something to actually sell -- checkout_sale refuses an empty catalogue
 -- before it ever reaches the entitlement check.
@@ -74,7 +87,7 @@ select lives_ok($$
   insert into purchase_orders (store_id, warehouse_id, status, created_by)
   select pg_temp.org(), w.id, 'draft', auth.uid()
   from warehouses w where w.store_id = pg_temp.org() and w.is_default limit 1
-$$, 'and so does a purchase order');
+$$, 'and so does a purchase order, for a store that holds the feature');
 
 reset role;
 
