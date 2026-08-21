@@ -17,6 +17,7 @@ import {
   Dailyreport,
   DailyTransactionDetailsCard,
   Dashboarddetails,
+  SubscriptionCard,
   SalesReportModal,
   LowStockReportModal,
   UtangReportModal,
@@ -85,6 +86,7 @@ export function Dashboard() {
 
       <DashboardError error={error ?? rangeError} />
       <ReportNotice notice={exportError} />
+      <SubscriptionCard />
 
       {loading || rangeLoading ? (
         <DashboardLoadingSkeleton />

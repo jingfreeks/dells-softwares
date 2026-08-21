@@ -1049,6 +1049,16 @@ export interface Database {
           features: string[];
         }[];
       };
+      my_store_plan: {
+        Args: Record<string, never>;
+        Returns: {
+          plan_code: string;
+          name: string;
+          price_php: number | null;
+          billing_interval: string;
+          features: string[];
+        }[];
+      };
       my_store_limits: {
         Args: Record<string, never>;
         Returns: {
