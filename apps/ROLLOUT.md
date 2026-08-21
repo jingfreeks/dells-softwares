@@ -268,6 +268,7 @@ design — it is the break-glass path that creates the first administrator when
 no administrator exists to create one.
 
 ```sql
+-- rollout-check: skip (placeholder email; errors by design until substituted)
 -- Run as service_role (SQL editor is fine; it connects with elevated rights).
 select core.bootstrap_platform_admin('you@yourdomain', 'SUPERUSER');
 ```
@@ -300,7 +301,9 @@ verification query returns zero.**
 select count(*) from core.organizations o
 where not core.org_writes_allowed(o.id);                          -- expect 0
 
--- Re-run the limit audit. Same expectation as before Phase 4.
+-- Re-run the limit audit. Same expectation as before Phase 4. The path is
+-- relative to the REPOSITORY ROOT, so run psql from there.
+-- rollout-check: skip (\i resolves on the client, not inside a container)
 \i apps/tindahan-pos/supabase/snippets/limit-audit.sql
 ```
 
