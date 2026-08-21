@@ -279,15 +279,51 @@ a human can supply.
     `trg_staff_sync_owner_role` keeps `staff.role = 'admin'` and the OWNER
     grant in step **in both directions** — a demotion that left OWNER behind
     would be a demotion in name only.
-- **Feature entitlement exists but is not enforced.** `20260815109000` adds
+- ~~**Feature entitlement exists but is not enforced.**~~ **Built**, in three
+  steps that were deliberately kept apart. `20260815109000` added
   `core.features` / `plan_features` / `organization_features` and
-  `core.feature_enabled()`, mirroring the module layer, so a capability can be
-  sold on its own — a sari-sari store and a convenience store can both hold
-  POS and get different POS products. **Nothing enforces it yet**, by design:
-  every plan currently grants every feature, so applying it changed nothing
-  for anyone. Which features belong to which tier is a pricing decision and is
-  deliberately not made in a migration — the console makes it a one-row change
-  with an audit entry.
+  `core.feature_enabled()`, mirroring the module layer, with every plan
+  granting every feature so that applying it changed nothing for anyone.
+  `20260815111000`/`112000` made policies and triggers actually consult it.
+  `20260815113000` is the pricing decision: the four plans now differ.
+
+  The ladder is **cumulative by construction** — each feature is stamped with
+  the lowest tier that includes it and a plan gets everything at or below its
+  rank. Four hand-written per-plan lists would drift, and the failure mode is
+  a paying tenant quietly missing something a cheaper tenant has.
+
+  | rank | plan | adds |
+  |---|---|---|
+  | 0 | FREE | shifts, void, discounts, pack pricing |
+  | 1 | BASIC | utang, e-load, held sales, suppliers, receiving |
+  | 2 | PRO | multi-register, BIR receipts, purchase orders, stock counts, unit conversions |
+  | 3 | ENTERPRISE | stock transfers |
+
+  Suppliers and receiving sit at BASIC rather than PRO because BASIC already
+  grants the INVENTORY *module*, and a module whose every feature is off is an
+  empty shell — the tenant sees the section and finds nothing in it. The
+  feature split has to agree with the module split; `250_tier_split` asserts
+  that no plan can ever grant a module while granting none of its features.
+
+  **Existing tenants are grandfathered.** Everyone alive before the split held
+  all fifteen features, so the migration re-sources every held grant from
+  SUBSCRIPTION to MANUAL *before* narrowing the plans. MANUAL outranks the
+  plan inside `materialize_subscription_features()`, so nobody loses a
+  capability they were already using and the split governs new subscriptions
+  only. An operator hands one back deliberately, per feature, through
+  `platform_reset_feature_to_plan()`, with the reason recorded.
+
+  Those MANUAL rows name no actor, because a migration has none — the one set
+  of manual grants in the system with no human behind it. That is the price of
+  not breaking live stores in a single push.
+
+  **The grandfather step cannot be verified locally.** A fresh local database
+  has no organizations at the moment the migration runs, so the backfill
+  updates zero rows; in production it re-sources roughly 9,915 grants across
+  661 tenants. `250_tier_split` pins the *mechanism* it depends on, and
+  `supabase/snippets/tier-split-audit.sql` is what proves the backfill itself
+  — run it on staging, before and after, and check that no tenant's count of
+  enabled grants falls.
 - **`suppliers` / `receiving` module ownership** — a pricing decision, above.
 - **POS gating** — deliberately not built, above.
 - ~~**Limit enforcement.**~~ **Built** in `20260815102000`. Triggers rather

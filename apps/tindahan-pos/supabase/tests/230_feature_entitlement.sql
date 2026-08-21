@@ -42,21 +42,31 @@ begin
 end $$;
 
 -- -----------------------------------------------------------------------------
--- Behaviour-preserving: everyone holds everything today
+-- A new tenant holds what their plan sells -- no more, no less
+--
+-- This block used to assert that everyone held everything, which is what
+-- 20260815109000 deliberately shipped so that adding the feature layer changed
+-- nothing for anyone. 20260815113000 ended that on purpose: new tenants
+-- provision onto BASIC, so BASIC is now what they get.
 -- -----------------------------------------------------------------------------
 
 select cmp_ok((select count(*) from core.features), '>', 0::bigint,
   'the catalogue is seeded');
 
-select is(
-  (select count(*)::int from core.features f
-   where not core.feature_enabled(pg_temp.org(), f.code)),
-  0, 'a new tenant holds EVERY feature -- applying this changes nothing for anyone');
+select set_eq(
+  $$ select f.code from core.features f
+     where core.feature_enabled(pg_temp.org(), f.code) $$,
+  $$ select pf.feature_code from core.plan_features pf
+     join core.subscription_plans p on p.id = pf.plan_id
+     where p.code = 'BASIC' $$,
+  'a new tenant holds exactly what BASIC sells -- the plan is the whole story'
+);
 
 select ok(core.feature_enabled(pg_temp.org(), 'pos.utang'),
   'including utang, which a sari-sari store lives on');
-select ok(core.feature_enabled(pg_temp.org(), 'inventory.purchase_orders'),
-  'and purchase orders, which a bigger store lives on');
+select ok(not core.feature_enabled(pg_temp.org(), 'inventory.purchase_orders'),
+  'but NOT purchase orders -- those start at PRO, and withholding them is the '
+  || 'reason the tiers exist');
 
 -- -----------------------------------------------------------------------------
 -- Fails closed on anything it does not know
@@ -101,8 +111,17 @@ select pg_temp.act_as('fa100000-0000-4000-8000-000000000001');
 
 select isnt_empty($$ select 1 from public.my_store_features() $$,
   'a tenant can see what they hold');
-select ok((select bool_and(enabled) from public.my_store_features()),
-  'and holds all of it today');
+-- my_store_features() lists the whole catalogue with a flag, not just what is
+-- held -- so a BASIC tenant sees the PRO capabilities sitting dark, which is
+-- exactly what makes an upgrade legible to them.
+select ok((select not bool_and(enabled) from public.my_store_features()),
+  'and can see the capabilities they do not hold, greyed rather than hidden');
+select set_eq(
+  $$ select feature_code from public.my_store_features() where enabled $$,
+  $$ select pf.feature_code from core.plan_features pf
+     join core.subscription_plans p on p.id = pf.plan_id where p.code = 'BASIC' $$,
+  'and the enabled half is precisely their plan'
+);
 select ok(public.current_store_has_feature('pos.utang'),
   'the gate agrees with the list');
 

@@ -379,6 +379,65 @@ from `20260815105000` to sweep them up. It is idempotent.
 
 ---
 
+## Phase 7 — the tier split (migration 33)
+
+`20260815113000`. The four plans stop being one plan with four names.
+
+**This is the only phase whose riskiest step a local reset cannot exercise.**
+A fresh local database has no organizations when the migration runs, so its
+grandfather step updates zero rows. Staging has 661 tenants, and there the same
+step re-sources roughly 9,915 grants. Treat a green local run as saying nothing
+about it.
+
+### Before
+
+```bash
+psql "$STAGING_URL" -f apps/tindahan-pos/supabase/snippets/tier-split-audit.sql \
+  > /tmp/tier-before.txt
+```
+
+Section 1 should show every tenant holding all 15 features, all
+`SUBSCRIPTION`.
+
+### After
+
+```bash
+psql "$STAGING_URL" -f apps/tindahan-pos/supabase/snippets/tier-split-audit.sql \
+  > /tmp/tier-after.txt
+diff /tmp/tier-before.txt /tmp/tier-after.txt
+```
+
+What must be true:
+
+- **`enabled_grants` has not fallen.** This is the whole promise. Every tenant
+  keeps every capability they were using; only the `source` column moves, from
+  `SUBSCRIPTION` to `MANUAL`.
+- Section 2 (tenants holding nothing) is **empty**.
+- Section 3 reads **4 / 9 / 14 / 15** for FREE / BASIC / PRO / ENTERPRISE.
+- Sections 4 and 5 are **empty** — the ladder is cumulative, and no plan grants
+  a module while granting none of its features. The migration itself raises on
+  both of these, so a successful push already implies them; the queries are
+  there to confirm on data the migration did not create.
+
+### Abort criteria
+
+If `enabled_grants` falls by even one, stop. A tenant has lost something they
+were using, which is a live-data regression, not a pricing change. The
+migration is a plain `update` plus a rewrite of `core.plan_features` — restore
+by re-running 109000's cross join, which puts every feature back on every plan;
+the MANUAL re-sourcing is harmless if left in place.
+
+### What this phase does NOT do
+
+It does not change anyone's bill, and it does not take anything from anyone
+alive today. It changes what a **new** sign-up gets, and it gives an operator a
+per-feature way to move an existing tenant onto plan terms deliberately, via
+`platform_reset_feature_to_plan()`. Actually charging differently per tier is a
+separate decision that has not been made — `core.subscription_plans.price_php`
+is still null for BASIC, PRO and ENTERPRISE.
+
+---
+
 ## After staging, before production
 
 1. **Leave it running.** A day of real use finds things a checklist cannot.
