@@ -188,6 +188,86 @@ select isnt_empty($$ select 1 from suppliers $$,
   'but still reads every supplier they had -- suspension withdraws writes, '
   'never data');
 
+-- -----------------------------------------------------------------------------
+-- POS is not gated by any of this. PLATFORM.md has said so since this
+-- migration shipped -- "A suspended tenant can still sell... 160_grace_ladder
+-- asserts the current boundary so it cannot move silently" -- but nothing
+-- here actually called checkout_sale(), void_sale() or record_credit_payment()
+-- against a suspended tenant. The claim was true (checked by hand while
+-- writing this), but a claim nothing re-checks is exactly the shape of gap
+-- that produced a false abort criterion in ROLLOUT.md two migrations ago.
+--
+-- This is not the POS-gating decision. It changes no enforcement. It makes an
+-- existing, deliberate, documented boundary something CI verifies instead of
+-- something the document merely asserts -- so if that boundary is ever adopted
+-- (POS gating) or regresses by accident, this fails instead of staying quiet.
+-- -----------------------------------------------------------------------------
+reset role;
+insert into categories (store_id, name)
+  select id, 'Grace Test Category' from stores
+  where name = 'Grace Test Store'
+  on conflict (store_id, name) do nothing;
+insert into products (store_id, name, price, stock, category_id)
+select s.id, 'Grace Test Sardinas', 22, 100, c.id
+from stores s join categories c on c.store_id = s.id
+where s.name = 'Grace Test Store' and c.name = 'Grace Test Category';
+insert into customers (store_id, name)
+  select id, 'Grace Test Customer' from stores where name = 'Grace Test Store';
+
+set local role authenticated;
+select pg_temp.act_as('da000000-0000-4000-8000-000000000001');
+
+select ok(not public.current_store_writes_allowed(),
+  'still suspended going into the POS assertions');
+
+select lives_ok($$
+  select public.checkout_sale(
+    jsonb_build_array(jsonb_build_object(
+      'product_id', (select id from products
+                      where store_id = (select id from stores where name = 'Grace Test Store')
+                        and name = 'Grace Test Sardinas'),
+      'quantity', 1)),
+    '[]'::jsonb, null, 'cash')
+$$, 'a suspended tenant can still ring up a cash sale -- the documented, '
+   || 'deliberate POS-gating boundary');
+
+select isnt_empty($$
+  select 1 from sales
+   where store_id = (select id from stores where name = 'Grace Test Store')
+     and status = 'completed'
+$$, 'and the sale actually landed, not merely raised no error');
+
+select lives_ok($$
+  select public.checkout_sale(
+    jsonb_build_array(jsonb_build_object(
+      'product_id', (select id from products
+                      where store_id = (select id from stores where name = 'Grace Test Store')
+                        and name = 'Grace Test Sardinas'),
+      'quantity', 1)),
+    '[]'::jsonb,
+    (select id from customers
+      where store_id = (select id from stores where name = 'Grace Test Store')),
+    'credit')
+$$, 'and a credit sale too -- suspension is orthogonal to entitlement, not a '
+   || 'second gate on top of it');
+
+select lives_ok($$
+  select public.void_sale(
+    (select id from sales
+      where store_id = (select id from stores where name = 'Grace Test Store')
+        and status = 'completed' limit 1),
+    'test: reversing while suspended')
+$$, 'voiding a sale is not blocked either -- it is a correction, not new risk, '
+   || 'same principle as 20260815116000''s credit_payments');
+
+select lives_ok($$
+  select public.record_credit_payment(
+    (select id from customers
+      where store_id = (select id from stores where name = 'Grace Test Store')),
+    10, 'test payment while suspended')
+$$, 'nor is collecting a debt -- confirmed directly rather than inferred from '
+   || 'reading the function twice');
+
 reset role;
 select pg_temp.set_sub('ACTIVE');
 set local role authenticated;
