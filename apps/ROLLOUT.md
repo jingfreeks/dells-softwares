@@ -411,7 +411,11 @@ What must be true:
 
 - **`enabled_grants` has not fallen.** This is the whole promise. Every tenant
   keeps every capability they were using; only the `source` column moves, from
-  `SUBSCRIPTION` to `MANUAL`.
+  `SUBSCRIPTION` to `GRANDFATHERED`.
+- **`manual_grants` stays at whatever it was before** (0 on a first push).
+  A deliberate comp and a grandfathered grant must not be confused — if the
+  backfill wrote `MANUAL`, this number would jump to ~9,915 and the word would
+  stop meaning anything.
 - Section 2 (tenants holding nothing) is **empty**.
 - Section 3 reads **4 / 9 / 14 / 15** for FREE / BASIC / PRO / ENTERPRISE.
 - Sections 4 and 5 are **empty** — the ladder is cumulative, and no plan grants

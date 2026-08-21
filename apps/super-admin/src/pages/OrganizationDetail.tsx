@@ -21,6 +21,7 @@ import {
   type OrganizationModule,
   type Plan,
   type SubscriptionStatus,
+  outranksPlan,
 } from "../lib/platform";
 
 export function OrganizationDetail() {
@@ -432,18 +433,23 @@ export function OrganizationDetail() {
                           <p className="text-sm text-slate-800">{f.name}</p>
                           <p className="text-xs text-slate-400">
                             {f.featureCode}
-                            {f.source === "MANUAL" && " · MANUAL"}
+                            {f.source === "MANUAL" && " · comped"}
+                            {f.source === "GRANDFATHERED" && " · grandfathered"}
                             {dark && " · off because " + moduleCode + " is disabled"}
                           </p>
                         </div>
 
                         <div className="flex shrink-0 items-center gap-1">
-                          {f.source === "MANUAL" && (
+                          {outranksPlan(f.source) && (
                             <button
                               type="button"
                               onClick={() => handleResetFeature(f)}
                               disabled={busyFeature === f.featureCode}
-                              title="Hand this feature back to the plan"
+                              title={
+                                f.source === "GRANDFATHERED"
+                                  ? "Held from before the plans were tiered. Hand it back to the plan."
+                                  : "Hand this feature back to the plan"
+                              }
                               className="cursor-pointer rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               Follow plan
@@ -472,6 +478,12 @@ export function OrganizationDetail() {
           <p className="mt-3 text-xs text-slate-400">
             Turning one off records a manual decision that survives the tenant&apos;s next plan
             change — use <span className="font-medium">Follow plan</span> to hand it back.
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            <span className="font-medium">Grandfathered</span> means the tenant held it before the
+            plans were tiered and kept it, rather than anyone choosing it for them. It outranks the
+            plan the same way a comp does, and <span className="font-medium">Follow plan</span>
+            &nbsp;hands it back the same way.
           </p>
         </div>
       )}

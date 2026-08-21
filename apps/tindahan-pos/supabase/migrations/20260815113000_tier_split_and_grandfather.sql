@@ -39,16 +39,25 @@
 -- change, and it is not what tiering is meant to do.
 --
 -- So before the plans are narrowed, every feature a tenant currently holds is
--- re-sourced from SUBSCRIPTION to MANUAL. MANUAL outranks the plan by design
--- (see materialize_subscription_features), so nobody loses anything they are
--- already using, and the split governs new subscriptions only. An operator
--- who wants a given tenant back on plan terms calls
--- public.platform_reset_feature_to_plan(), one feature at a time, deliberately
--- and with the reason recorded.
+-- re-sourced from SUBSCRIPTION to GRANDFATHERED, which outranks the plan
+-- exactly as MANUAL does. Nobody loses anything they are already using, and
+-- the split governs new subscriptions only. An operator who wants a given
+-- tenant back on plan terms calls public.platform_reset_feature_to_plan(),
+-- one feature at a time, deliberately and with the reason recorded.
 --
--- Note that these MANUAL rows name no actor, because a migration has none.
--- They are the one set of manual grants in the system with no human behind
--- them; that is the price of not breaking 661 live stores in a single push.
+-- WHY A FOURTH SOURCE RATHER THAN REUSING MANUAL. MANUAL means a human looked
+-- at one tenant and decided something. If this backfill wrote MANUAL, then
+-- every feature of every tenant would read MANUAL the morning after the push
+-- -- 15 x 661 of them -- and the word would stop carrying any information at
+-- all. The console says, in as many words, that MANUAL "records a manual
+-- decision"; that sentence has to stay true. GRANDFATHERED says the other
+-- thing honestly: nobody chose this for you, it is simply what you already
+-- had.
+--
+-- It is a distinction with real operational value. "Which tenants are we
+-- carrying on grandfathered terms, and which did we genuinely comp?" is a
+-- question the business will ask, and it is unanswerable if both write the
+-- same word.
 --
 -- Affected schemas : core (plan_features rewritten, organization_features
 --                    re-sourced)
@@ -57,6 +66,68 @@
 -- Risk             : medium -- it changes what plans mean. Mitigated by the
 --                    grandfather step, which is why that runs FIRST.
 -- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- Step 0 -- make room for the new source, and teach materialization to
+-- respect it.
+--
+-- Both must happen before a single row is re-sourced: the update would fail
+-- the check constraint, and a materialize call landing in between would strip
+-- exactly the tenants this migration exists to protect.
+-- -----------------------------------------------------------------------------
+alter table core.organization_features
+  drop constraint organization_features_source_valid;
+
+alter table core.organization_features
+  add constraint organization_features_source_valid
+  check (source in ('SUBSCRIPTION', 'MANUAL', 'TRIAL', 'GRANDFATHERED'));
+
+create or replace function core.materialize_subscription_features(p_org uuid)
+returns int
+language plpgsql
+security definer
+set search_path = core, pg_temp
+as $fn$
+declare
+  v_plan  uuid;
+  v_count int := 0;
+begin
+  select s.plan_id into v_plan
+  from core.organization_subscriptions s
+  where s.organization_id = p_org and s.status <> 'CANCELLED'
+  limit 1;
+
+  if v_plan is null then
+    return 0;
+  end if;
+
+  insert into core.organization_features (organization_id, feature_code, enabled, source)
+  select p_org, pf.feature_code, true, 'SUBSCRIPTION'
+  from core.plan_features pf
+  where pf.plan_id = v_plan
+  on conflict (organization_id, feature_code) do update
+    set enabled    = true,
+        updated_at = now()
+    -- A grant that outranks the plan must survive a plan change rather than
+    -- expiring on renewal: MANUAL because a human decided it, GRANDFATHERED
+    -- because the tenant already had it before the plans narrowed.
+    where core.organization_features.source not in ('MANUAL', 'GRANDFATHERED');
+
+  get diagnostics v_count = row_count;
+
+  update core.organization_features f
+     set enabled = false, updated_at = now()
+   where f.organization_id = p_org
+     and f.source = 'SUBSCRIPTION'
+     and f.enabled
+     and not exists (
+       select 1 from core.plan_features pf
+       where pf.plan_id = v_plan and pf.feature_code = f.feature_code
+     );
+
+  return v_count;
+end;
+$fn$;
 
 -- -----------------------------------------------------------------------------
 -- Step 1 -- grandfather, BEFORE anything about the plans changes.
@@ -70,13 +141,13 @@ declare
   v_grandfathered int;
 begin
   update core.organization_features
-     set source     = 'MANUAL',
+     set source     = 'GRANDFATHERED',
          updated_at = now()
    where enabled
      and source = 'SUBSCRIPTION';
 
   get diagnostics v_grandfathered = row_count;
-  raise notice 'tier split: grandfathered % feature grants to MANUAL', v_grandfathered;
+  raise notice 'tier split: grandfathered % feature grants', v_grandfathered;
 end;
 $$;
 

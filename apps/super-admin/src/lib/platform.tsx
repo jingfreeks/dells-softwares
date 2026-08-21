@@ -308,6 +308,20 @@ export async function setFeature(
   if (error) throw new Error(error.message);
 }
 
+/**
+ * Sources that beat the tenant's plan and therefore need handing back
+ * explicitly.
+ *
+ * MANUAL means a human looked at this tenant and decided. GRANDFATHERED means
+ * they simply already had it when 20260815113000 narrowed the plans
+ * underneath them -- nobody chose it, and the distinction is the difference
+ * between "we comped this" and "we are carrying them on old terms", which the
+ * business will want to ask about separately.
+ */
+export function outranksPlan(source: string | null): boolean {
+  return source === "MANUAL" || source === "GRANDFATHERED";
+}
+
 export async function resetFeatureToPlan(
   orgId: string,
   featureCode: string,
