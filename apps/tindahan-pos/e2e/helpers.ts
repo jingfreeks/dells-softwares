@@ -1,4 +1,37 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+
+const run = promisify(execFile)
+const DB_CONTAINER = process.env.DB_CONTAINER ?? 'supabase_db_tindahan-pos'
+
+/**
+ * Run SQL against the local database.
+ *
+ * The entitlement tables live in `core`, which is deliberately not exposed to
+ * PostgREST, and the RPCs that reach them require a platform-admin row that
+ * service_role does not have. So arranging "this tenant does not hold utang"
+ * has no HTTP route — psql in the local container is the only way.
+ *
+ * Fixture setup only. Whether those RPCs are correctly guarded is covered by
+ * 110_platform_admin and 230_feature_entitlement, not here. It is also one
+ * more reason this suite is local-only by design.
+ */
+export async function sql(text: string): Promise<string> {
+  const { stdout } = await run('docker', [
+    'exec', '-i', DB_CONTAINER, 'psql', '-U', 'postgres', '-d', 'postgres', '-At', '-c', text,
+  ])
+  return stdout.trim()
+}
+
+/** Grant or revoke one feature for a store, the way the console does. */
+export async function setStoreFeature(storeName: string, featureCode: string, enabled: boolean) {
+  await sql(
+    `update core.organization_features set enabled = ${enabled}, source = 'MANUAL'
+       where feature_code = '${featureCode}'
+         and organization_id = (select id from stores where name = '${storeName}')`
+  )
+}
 // Imported from the app's own label module rather than retyped as string
 // literals. Every one of these selectors had rotted: the login page was
 // redesigned into Sign in / Create account tabs, its submit button stopped
