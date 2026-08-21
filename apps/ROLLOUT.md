@@ -389,7 +389,28 @@ grandfather step updates zero rows. Staging has 661 tenants, and there the same
 step re-sources roughly 9,915 grants. Treat a green local run as saying nothing
 about it.
 
-### Rehearse it first — locally, at scale
+### Run preflight first — one command, one verdict
+
+```bash
+bash apps/tindahan-pos/supabase/tests/preflight.sh
+```
+
+Resets the local database, then runs every gate: the pgTAP suites, the
+tier-split rehearsal at production scale, and the security-surface assertion.
+It exits non-zero if any of them fails, and prints the exact staging commands to
+run next if they all pass.
+
+It exists because this phase previously asked you to remember four separate
+commands, and the one that catches the disaster — the rehearsal — is the only
+one that fails silently if you simply never type it. A rollout is run late, by
+someone who read this document once. "Remember to also run" is not a control.
+
+The reset is not optional politeness: the rehearsal invents hundreds of tenants
+and **cannot remove them afterwards**, because `core.audit_logs` is immutable by
+design and references them. Without a reset the numbers drift upward every run
+and two runs cannot be compared.
+
+The rehearsal can also be run alone:
 
 ```bash
 bash apps/tindahan-pos/supabase/tests/rehearse-tier-split.sh 700

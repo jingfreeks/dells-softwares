@@ -33,6 +33,19 @@ q()    { psql -tAc "$1"; }
 
 echo "→ rewinding to the pre-split world ($TENANTS tenants)"
 
+# NOTE: this script CANNOT clean up after itself, and does not pretend to.
+# core.audit_logs is immutable by design (core.reject_audit_mutation), every
+# tenant it invents writes audit rows, and core.organizations is referenced by
+# them -- so the invented tenants cannot be deleted once they exist. That
+# immutability is a property worth more than a tidy scratch database, so the
+# script works around it rather than weakening it.
+#
+# Consequence: tenants accumulate across runs. Every check below is written to
+# be correct anyway -- totals are measured before and after WITHIN a run, and
+# the newcomer is counted by id rather than by name. Run preflight.sh, which
+# resets the database first, if you want the numbers to be comparable
+# between runs.
+
 # Undo the split: every plan sells everything again, which is exactly what
 # 20260815109000 left behind and what every deployed environment still looks
 # like today.
@@ -159,9 +172,13 @@ check "and the least-entitled tenant still holds all 15" "$worst_after" "15"
 # exactly like the split having eaten the newcomer's entitlements.
 psql -q -c "insert into core.organizations (name, status)
             values ('Rehearsal Newcomer', 'ACTIVE');"
+# Counted against ONE organization id, not every row sharing the name. The
+# name-matching version silently summed across runs.
 newco=$(q "select count(*) from core.organization_features f
-           join core.organizations o on o.id = f.organization_id
-           where o.name = 'Rehearsal Newcomer' and f.enabled")
+           where f.organization_id = (select id from core.organizations
+                                      where name = 'Rehearsal Newcomer'
+                                      order by created_at desc limit 1)
+             and f.enabled")
 check "a tenant signing up after the split gets BASIC only" "$newco" "9"
 
 if [ $fail -ne 0 ]; then
