@@ -353,10 +353,18 @@ that is worth understanding before you move on.
 
 ---
 
-## Phase 6 — the rest (migrations 26–28)
+## Phase 6 — the rest, plus the permission unification (migrations 26–28, then `106000`)
 
-`20260815103000`, `104000`, `105000`. Console limit controls, the
-tenant-facing limits RPC, and the audit-partition isolation fix.
+`20260815103000`, `104000`, `105000`, `106000`. Console limit controls, the
+tenant-facing limits RPC, the audit-partition isolation fix, and retiring
+`core.is_org_wide_staff()`.
+
+This section did not name `106000` until now, even though it was applied to
+staging along with the rest of this phase back on 2026-08-16 (see "73
+applied, last `20260815106000`" near the top of this document) — a gap in
+this document, not in what was actually run. Found while planning the
+production push and fixed before relying on it, the same discipline this
+document has needed applied to itself a few times already.
 
 `105000` revokes direct grants on the partitions of `core.audit_logs` and
 enables RLS on them. Nothing legitimate reads a partition by name, so this is
@@ -379,6 +387,45 @@ select
 If either is non-zero on the hosted project, a partition was created there
 while the old `ensure_audit_partition()` was in place — re-run the `do` block
 from `20260815105000` to sweep them up. It is idempotent.
+
+### `106000` — one permission system, not two
+
+`core.is_org_wide_staff()` was Phase 2's own interim admin proxy, explicitly
+labeled in its own comment as something Phase 3 was supposed to replace and
+never was. `has_permission()` already existed in `public`, enforcing 78 live
+checkpoints on the money path; the interim proxy covered 11, none reachable
+from a browser. [PERMISSIONS-DECISION.md](PERMISSIONS-DECISION.md) is the
+record of that comparison. `106000` retires the proxy: every call site now
+asks `core.is_org_member(org) and has_permission('core.x.y')` — membership
+*and* permission, not one standing in for the other — and adds a trigger that
+keeps `staff.role` and the RBAC tables in sync in both directions, so a
+promotion or demotion actually takes effect both ways rather than looking
+correct from only one table.
+
+```sql
+-- Nobody lost a permission they had under the old proxy. Expect 0.
+--
+-- staff_roles/role_permissions live in `public`, not `core` -- core.staff
+-- only carries `user_id`, which is the same id as public.staff_roles.staff_id
+-- (both ultimately auth.users.id). Verified against a real fixture, not
+-- assumed: an owner correctly reads 0 here; stripping their RBAC grant flips
+-- it to 1.
+select count(*) from core.staff s
+where s.branch_scope = 'ALL' and s.status = 'ACTIVE'
+  and not exists (
+    select 1 from public.staff_roles sr
+    join public.role_permissions rp on rp.role_id = sr.role_id
+    where sr.staff_id = s.user_id
+  );
+```
+
+### Abort criteria
+
+Any of Phase 6's own abort conditions, plus: the query above returning
+anything. That would mean someone who could write under the old org-wide
+proxy cannot under the new permission check — an access regression, not a
+data one. Rollback: restore `core.is_org_wide_staff()` and revert its call
+sites from `20260815106000`'s own Rollback header.
 
 ---
 
