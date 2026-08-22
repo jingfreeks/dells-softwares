@@ -362,7 +362,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.functions.invoke("delete-account", {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) {
+      // A FunctionsHttpError's own .message is a generic "Edge Function
+      // returned a non-2xx status code" -- the real reason (e.g. "you're
+      // the only admin for this store") is in the response body instead.
+      const body: { error?: string } | null = await error.context?.json?.().catch(() => null);
+      return { ok: false, error: body?.error ?? error.message };
+    }
     if (data?.error) return { ok: false, error: data.error };
 
     await supabase.auth.signOut();
