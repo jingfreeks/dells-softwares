@@ -1059,6 +1059,10 @@ export interface Database {
           features: string[];
         }[];
       };
+      request_plan_upgrade: {
+        Args: { p_plan_code: string };
+        Returns: undefined;
+      };
       my_store_limits: {
         Args: Record<string, never>;
         Returns: {

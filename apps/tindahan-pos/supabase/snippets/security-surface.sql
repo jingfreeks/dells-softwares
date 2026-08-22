@@ -177,7 +177,8 @@ where n.nspname = 'public'
     'current_store_writes_allowed', 'end_cashier_session',
     'generate_pairing_code', 'has_permission', 'list_my_permissions',
     'list_pickable_cashiers', 'my_store_billing_state', 'my_store_features',
-    'my_store_limits', 'my_store_modules', 'record_credit_payment',
+    'my_store_limits', 'my_store_modules', 'my_store_plan',
+    'plan_prices', 'record_credit_payment', 'request_plan_upgrade',
     'set_own_pin', 'start_cashier_session', 'transfer_stock', 'void_sale',
     '_consume_pairing_code', '_validate_pairing_code'
   )
