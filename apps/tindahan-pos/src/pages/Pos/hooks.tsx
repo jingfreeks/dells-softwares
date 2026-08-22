@@ -1,3 +1,4 @@
+import { describePlatformError } from "@/lib/platformErrors";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   useAuth,
@@ -462,7 +463,7 @@ export function usePosPage() {
     try {
       await runCheckout();
     } catch (err) {
-      const message = err instanceof Error ? err.message : ERROR_COULD_NOT_COMPLETE_SALE;
+      const message = describePlatformError(err, ERROR_COULD_NOT_COMPLETE_SALE);
       if (message.includes("EXPIRED_CASHIER_SESSION")) {
         reportExpiredSession();
         setCheckoutError(TEXT_CASHIER_SESSION_EXPIRED);
@@ -492,7 +493,7 @@ export function usePosPage() {
       await runCheckout(pin);
       closeOwnerApproval();
     } catch (err) {
-      const message = err instanceof Error ? err.message : ERROR_COULD_NOT_COMPLETE_SALE;
+      const message = describePlatformError(err, ERROR_COULD_NOT_COMPLETE_SALE);
       if (message.includes("EXPIRED_CASHIER_SESSION")) {
         reportExpiredSession();
         closeOwnerApproval();

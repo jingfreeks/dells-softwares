@@ -8,6 +8,7 @@ import {
   BUTTON_SET_PIN,
   BUTTON_CHANGE_PIN,
   useCan,
+  usePermissions,
 } from "@/lib";
 import { SetPinModal } from "@/components";
 import {
@@ -76,9 +77,15 @@ export function Staff() {
   } = useStaffPage();
 
   const staffTableRef = useRef<HTMLDivElement>(null);
+  const { loading: permissionsLoading } = usePermissions();
   const canManageStaff = useCan("staff.manage");
 
-  if (user && !canManageStaff) {
+  // Wait for permissions before deciding. useCan() returns false while they
+  // are still loading, so redirecting on it bounced an authorised owner to
+  // /pos on any DIRECT navigation -- a deep link, a refresh, or anything that
+  // is not a client-side transition from a page where permissions had already
+  // resolved. Caught by the e2e suite navigating straight to this route.
+  if (user && !permissionsLoading && !canManageStaff) {
     return <Navigate to="/pos" replace />;
   }
 

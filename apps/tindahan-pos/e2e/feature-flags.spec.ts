@@ -1,5 +1,7 @@
 import { expect, test, type APIRequestContext } from '@playwright/test'
-import { loginAsFreshStore } from './helpers'
+import { loginAsFreshStore, primeCashierPin, startCashierSession } from './helpers'
+import { PAGE_HEADING_POS } from './helpers'
+import { LABEL_SCAN_OR_SEARCH_PRODUCTS } from '../src/lib/textLabels/textLabels'
 
 // Regression coverage for the feature-flags kill switch itself (migration
 // 0007) and the two features currently wired to it: pos_services and
@@ -51,8 +53,9 @@ test.describe('Feature flag kill switches', () => {
   })
 
   test('disabling pos_services hides the Services tab in POS', async ({ page, request }) => {
-    await loginAsFreshStore(request, page)
-    await page.goto('/pos')
+    const email = await loginAsFreshStore(request, page)
+    await primeCashierPin(request, email)
+    await startCashierSession(page)
     await expect(page.getByRole('button', { name: 'Services', exact: true })).toBeVisible()
 
     await setFlag(request, 'pos_services', false)
@@ -60,13 +63,17 @@ test.describe('Feature flag kill switches', () => {
 
     await expect(page.getByRole('button', { name: 'Services', exact: true })).toHaveCount(0)
     // Products browsing must be completely unaffected by the flag.
-    await expect(page.getByRole('heading', { name: 'POS Checkout' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: PAGE_HEADING_POS })).toBeVisible()
   })
 
   test('re-enabling pos_services (or removing the row) brings the tab back', async ({ page, request }) => {
-    await loginAsFreshStore(request, page)
+    const email = await loginAsFreshStore(request, page)
+    await primeCashierPin(request, email)
     await setFlag(request, 'pos_services', false)
-    await page.goto('/pos')
+    // Must open the register: /pos is the cashier picker until a session is
+    // started, and the picker has no Services tab either -- so asserting
+    // absence there would pass for the wrong reason.
+    await startCashierSession(page)
     await expect(page.getByRole('button', { name: 'Services', exact: true })).toHaveCount(0)
 
     await setFlag(request, 'pos_services', true)
@@ -78,15 +85,17 @@ test.describe('Feature flag kill switches', () => {
     // afterEach already clears both flags, but assert the precondition
     // explicitly so this test documents the fail-open contract on its own.
     await clearFlag(request, 'pos_services')
-    await loginAsFreshStore(request, page)
-    await page.goto('/pos')
+    const email = await loginAsFreshStore(request, page)
+    await primeCashierPin(request, email)
+    await startCashierSession(page)
     await expect(page.getByRole('button', { name: 'Services', exact: true })).toBeVisible()
   })
 
   test('disabling an unrelated flag does not affect pos_services', async ({ page, request }) => {
     await setFlag(request, 'some_unrelated_flag', false)
-    await loginAsFreshStore(request, page)
-    await page.goto('/pos')
+    const email = await loginAsFreshStore(request, page)
+    await primeCashierPin(request, email)
+    await startCashierSession(page)
     await expect(page.getByRole('button', { name: 'Services', exact: true })).toBeVisible()
     await clearFlag(request, 'some_unrelated_flag')
   })
@@ -95,14 +104,15 @@ test.describe('Feature flag kill switches', () => {
     page,
     request,
   }) => {
-    await loginAsFreshStore(request, page)
+    const email = await loginAsFreshStore(request, page)
+    await primeCashierPin(request, email)
 
     // Create a pack-priced product while the flag is still enabled
     // (default) — 3 pcs for ₱20, i.e. ~₱6.67/pc.
     await page.goto('/inventory')
     await page.getByRole('button', { name: 'Add product' }).click()
-    await page.getByLabel('Name').fill('Pack Priced Candy')
-    await page.getByLabel('Category').selectOption({ label: '+ New category…' })
+    await page.getByLabel('Name', { exact: true }).fill('Pack Priced Candy')
+    await page.getByLabel('Category', { exact: true }).selectOption({ label: '+ New category…' })
     await page.getByPlaceholder('New category name').fill('Pack Test')
     await page.getByRole('button', { name: 'Add', exact: true }).click()
     await page.getByLabel(/Sell by pack/).check()
@@ -110,13 +120,12 @@ test.describe('Feature flag kill switches', () => {
     await page.getByLabel('Pack price (₱)').fill('20')
     await page.getByLabel('Stock', { exact: true }).fill('30')
     await page.locator('form').getByRole('button', { name: 'Add product' }).click()
-    await expect(page.getByRole('cell', { name: 'Pack Priced Candy' })).toBeVisible()
+    await expect(page.getByRole('row', { name: 'Pack Priced Candy' })).toBeVisible()
 
     // With the flag on, POS shows the pack label and charges pack math.
-    await page.goto('/pos')
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    await page.getByPlaceholder('e.g. sardines').fill('Pack Priced Candy')
-    await page.getByRole('button', { name: /Pack Priced Candy/ }).click()
+    await startCashierSession(page)
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('Pack Priced Candy')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).press('Enter')
     await page.getByRole('button', { name: /Increase quantity/ }).click()
     await page.getByRole('button', { name: /Increase quantity/ }).click()
     // 3 pcs at pack price = exactly ₱20.00.
@@ -127,9 +136,15 @@ test.describe('Feature flag kill switches', () => {
     // of gating the RPC in migration 0008, not just the client.
     await setFlag(request, 'pack_pricing', false)
     await page.reload()
-    await page.getByRole('button', { name: 'Search by name' }).click()
-    await page.getByPlaceholder('e.g. sardines').fill('Pack Priced Candy')
-    await page.getByRole('button', { name: /Pack Priced Candy/ }).click()
+
+    // The cart survives a reload, so the three pieces from the pack-priced
+    // half are still in it. Clear them, or the second total is six pieces
+    // (₱40.02) and the assertion below measures the wrong thing.
+    await page.getByRole('button', { name: /Remove Pack Priced Candy/ }).click()
+    await expect(page.getByText('Cart is empty')).toBeVisible()
+
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).fill('Pack Priced Candy')
+    await page.getByLabel(LABEL_SCAN_OR_SEARCH_PRODUCTS).press('Enter')
     await page.getByRole('button', { name: /Increase quantity/ }).click()
     await page.getByRole('button', { name: /Increase quantity/ }).click()
     // Regular price is the rounded pack-unit price (₱6.67) × 3 = ₱20.01,

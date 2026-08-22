@@ -18,3 +18,23 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .vercel
+
+# Supabase CLI local state. .temp/ holds the linked project ref and pooler
+# URL — environment wiring, not source, and it points at whichever project
+# the last `supabase link` targeted.
+**/supabase/.temp/
+**/supabase/.branches/
+
+# Local database dumps. apps/tindahan-pos/.gitignore already excludes its
+# own; repeat it here so a `git add -A` from the repository root cannot
+# stage real customer data from any app.
+**/supabase/backups/
+
+# Test and tooling artefacts
+test-results/
+playwright-report/
+coverage/
+
+# Agent worktrees. These are nested git repositories; staging one from the
+# root turns it into a broken gitlink rather than committing its contents.
+**/.claude/worktrees/

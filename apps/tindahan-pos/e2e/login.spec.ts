@@ -7,6 +7,8 @@ import {
   uniqueEmail,
   TEST_PASSWORD,
 } from './helpers'
+import { PAGE_HEADING_POS } from './helpers'
+import { SEG_SIGN_IN, LABEL_CASHIER_PICKER_HEADING } from '../src/lib/textLabels/textLabels'
 
 test.describe('Login (stories D1-D3)', () => {
   test('unauthenticated visitor is redirected to login', async ({ page }) => {
@@ -18,7 +20,7 @@ test.describe('Login (stories D1-D3)', () => {
     await page.goto('/login')
     await page.getByLabel('Email address').fill(uniqueEmail('nobody'))
     await page.getByLabel('Password', { exact: true }).fill('wrongpass')
-    await page.getByRole('button', { name: 'Log in' }).click()
+    await page.getByRole('button', { name: SEG_SIGN_IN }).click()
 
     await expect(page.getByRole('alert')).toHaveText(/incorrect email or password/i)
     await expect(page).toHaveURL(/\/login/)
@@ -29,7 +31,12 @@ test.describe('Login (stories D1-D3)', () => {
     const { email, password } = await createTestStoreAccount(request)
 
     await login(page, email, password)
-    await expect(page.getByRole('heading', { name: 'POS Checkout' })).toBeVisible()
+    // "Lands on POS" is about login, not about opening the register: /pos
+    // shows the cashier picker until a session is started. Asserting the
+    // register heading here would be testing startCashierSession(), which
+    // pos-checkout.spec.ts already covers.
+    await expect(page).toHaveURL(/\/pos/)
+    await expect(page.getByText(LABEL_CASHIER_PICKER_HEADING)).toBeVisible()
   })
 
   test('forgot-password link is reachable and shows a confirmation', async ({ page }) => {
@@ -64,22 +71,20 @@ test.describe('Registration (story D1)', () => {
     // just because that setting changed since the test was written.
     const { email, outcome } = await registerFreshStore(page)
     if (outcome === 'confirmed') {
-      await expect(page).toHaveURL(/\/pos/)
+      // A brand-new store lands on the onboarding wizard, not the register:
+      // handle_new_user leaves onboarded_at unset and ProtectedRoute redirects
+      // on it. Tests that want a working store use createTestStoreAccount(),
+      // which stamps it; this one is exercising the real signup, so it sees
+      // what a real new customer sees.
+      await expect(page).toHaveURL(/\/onboarding/)
     } else {
       await expect(page.getByRole('status')).toContainText(email)
     }
   })
 
-  test('rejects mismatched passwords', async ({ page }) => {
-    await page.goto('/register')
-    await page.getByLabel('Store name').fill("Aling Nena's Store")
-    await page.getByLabel('Your name').fill('Nena Reyes')
-    await page.getByLabel('Email address').fill(uniqueEmail('nena'))
-    await page.getByLabel('Password', { exact: true }).fill(TEST_PASSWORD)
-    await page.getByLabel('Confirm password').fill('different')
-    await page.getByRole('button', { name: 'Create account' }).click()
-
-    await expect(page.getByRole('alert')).toHaveText(/do not match/i)
-    await expect(page).toHaveURL(/\/register/)
-  })
+  // A 'rejects mismatched passwords' test lived here. The register form has
+  // no confirm-password field any more, so it asserted behaviour the product
+  // does not have -- it was not a regression to fix but a test to retire.
+  // Password rules that DO still exist (minLength 8, required) are enforced
+  // by the browser and covered by the unit suite.
 })

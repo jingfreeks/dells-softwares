@@ -4,6 +4,7 @@ import { useAuth } from "../lib/auth";
 import { Sidebar } from "./Sidebar";
 import { MobileHeader } from "./MobileHeader";
 import { BottomNav } from "./BottomNav";
+import { ModuleBanner } from "./ModuleBanner";
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -31,6 +32,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
         <MobileHeader />
+        <ModuleBanner />
         <main className="flex-1 overflow-y-auto pb-16 lg:pb-0">{children}</main>
       </div>
       <BottomNav />

@@ -1019,6 +1019,76 @@ export interface Database {
         Args: { p_staff_id: string; p_role_code: string };
         Returns: undefined;
       };
+      // 20260815100000_grace_and_downgrade_ladder.sql -- the §08 ladder,
+      // reached through a public wrapper because `core` is not exposed to
+      // PostgREST.
+      // 20260815104000_my_store_limits.sql -- takes no argument on purpose:
+      // it can only ever answer for the caller's own store.
+      // 20260815110000_feature_contracts.sql -- no argument: answers only for
+      // auth_store_id().
+      my_store_features: {
+        Args: Record<string, never>;
+        Returns: {
+          feature_code: string;
+          module_code: string;
+          name: string;
+          enabled: boolean;
+        }[];
+      };
+      // 20260815120000_set_tier_pricing.sql -- authenticated-gated, not anon:
+      // there is no pre-login pricing surface in this app to need it.
+      plan_prices: {
+        Args: Record<string, never>;
+        Returns: {
+          plan_code: string;
+          name: string;
+          description: string | null;
+          price_php: number | null;
+          billing_interval: string;
+          sort_order: number;
+          features: string[];
+        }[];
+      };
+      my_store_plan: {
+        Args: Record<string, never>;
+        Returns: {
+          plan_code: string;
+          name: string;
+          price_php: number | null;
+          billing_interval: string;
+          features: string[];
+        }[];
+      };
+      request_plan_upgrade: {
+        Args: { p_plan_code: string };
+        Returns: undefined;
+      };
+      my_store_limits: {
+        Args: Record<string, never>;
+        Returns: {
+          module_code: string;
+          limit_key: string;
+          /** null means no ceiling. */
+          cap: number | null;
+          current_usage: number | null;
+        }[];
+      };
+      my_store_billing_state: {
+        Args: Record<string, never>;
+        Returns: {
+          organization_status: string;
+          subscription_status: string;
+          writes_allowed: boolean;
+          /** Only set while PAST_DUE. */
+          grace_ends_at: string | null;
+          /** Only set while TRIALING. */
+          trial_ends_at: string | null;
+        }[];
+      };
+      start_trial: {
+        Args: { p_plan_code: string };
+        Returns: undefined;
+      };
     };
     Enums: {
       staff_role: StaffRole;

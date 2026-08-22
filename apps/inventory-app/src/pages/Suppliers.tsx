@@ -1,7 +1,8 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
 import { createSupplier, deleteSupplier, listSuppliers } from "../lib/suppliers";
 import type { Supplier } from "../lib/types";
 
@@ -9,7 +10,7 @@ const emptyForm = { name: "", phone: "", address: "" };
 
 export function Suppliers() {
   const { user } = useAuth();
-  const canManage = useCan("inventory.supplier.manage");
+  const accessDenied = useAccessDenied("inventory.supplier.manage");
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +27,7 @@ export function Suppliers() {
         if (!cancelled) setSuppliers(rows);
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load suppliers.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load suppliers."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -36,7 +37,7 @@ export function Suppliers() {
     };
   }, [user]);
 
-  if (user && !canManage) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 
@@ -61,7 +62,7 @@ export function Suppliers() {
       setShowForm(false);
       setForm(emptyForm);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not save supplier.");
+      setFormError(describeWriteError(err, "Could not save supplier."));
     } finally {
       setSubmitting(false);
     }
@@ -72,7 +73,7 @@ export function Suppliers() {
       await deleteSupplier(id);
       setSuppliers((prev) => prev.filter((s) => s.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete supplier.");
+      setError(describeWriteError(err, "Could not delete supplier."));
     }
   }
 

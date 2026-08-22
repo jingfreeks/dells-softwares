@@ -33,6 +33,10 @@ const NAV_ITEMS_ALL = [
     label: NAV_LABEL_CUSTOMERS,
     icon: "customers" as const,
     roles: ["admin", "cashier"] as Role[],
+    // Customers exists to track utang balances. A store that does not sell on
+    // credit has no use for it -- which is exactly the sari-sari versus
+    // convenience-store difference the feature layer was built to express.
+    feature: "pos.utang",
   },
   {
     to: "/reports",
@@ -47,9 +51,26 @@ const NAV_ITEMS_ALL = [
 
 export type NavItem = (typeof NAV_ITEMS_ALL)[number];
 
-export function navItemsForRole(role: Role | undefined, permissions: Set<string> = new Set()): NavItem[] {
+/**
+ * `features` is what the STORE bought; `permissions` is what the PERSON may
+ * do. They are filtered separately and both must pass -- an owner still does
+ * not see a feature their store does not hold, which is why the admin
+ * shortcut below applies only to the role/permission half.
+ *
+ * Pass an empty set for `features` and nothing is filtered on that basis:
+ * callers that have not loaded them yet must not hide navigation. See
+ * useFeature() for why this side fails open.
+ */
+export function navItemsForRole(
+  role: Role | undefined,
+  permissions: Set<string> = new Set(),
+  features: Set<string> | null = null
+): NavItem[] {
   if (!role) return [];
   return NAV_ITEMS_ALL.filter((item) => {
+    const feature: string | undefined = "feature" in item ? item.feature : undefined;
+    if (feature && features && !features.has(feature)) return false;
+
     if (role === "admin") return item.roles.includes(role);
     if (!item.roles.includes(role)) return false;
     const permission: string | undefined = "permission" in item ? item.permission : undefined;

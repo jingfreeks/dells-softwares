@@ -4,6 +4,8 @@ import {
   CashierSessionProvider,
   FeatureFlagsProvider,
   PermissionsProvider,
+  BillingProvider,
+  FeaturesProvider,
   StoreDataProvider,
   EloadWalletProvider,
   DrawerFloatProvider,
@@ -33,6 +35,7 @@ import {
   AuditLogSettings,
   Onboarding,
   Reports,
+  PlanSettings,
 } from "@/pages";
 
 function App() {
@@ -41,6 +44,8 @@ function App() {
       <FeatureFlagsProvider>
         <AuthProvider>
           <PermissionsProvider>
+          <BillingProvider>
+          <FeaturesProvider>
           <CashierSessionProvider>
             <StoreDataProvider>
               <OfflineQueueProvider>
@@ -68,6 +73,7 @@ function App() {
                           <Route path="/settings/alerts" element={<AlertsSettings />} />
                           <Route path="/settings/backup" element={<BackupSettings />} />
                           <Route path="/settings/devices" element={<DevicesSettings />} />
+                          <Route path="/settings/plan" element={<PlanSettings />} />
                           <Route path="/settings/audit-log" element={<AuditLogSettings />} />
                         </Route>
                         <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
@@ -80,6 +86,13 @@ function App() {
                             </OnboardingRoute>
                           }
                         />
+                        {/* A fresh HTTP request for "/" never reaches this route at all --
+                            vite.config.ts's serveLandingAtRoot plugin (dev/preview) and
+                            vercel.json's rewrite (production) both intercept it and serve
+                            public/landing.html directly. This only handles CLIENT-SIDE
+                            navigation to "/" from inside the already-mounted SPA (e.g. a
+                            stale bookmark within app state, or code that still assumes "/"
+                            means "home") -- same plain redirect this route has always been. */}
                         <Route path="/" element={<Navigate to="/pos" replace />} />
                         <Route path="*" element={<Navigate to="/pos" replace />} />
                       </Routes>
@@ -89,6 +102,8 @@ function App() {
               </OfflineQueueProvider>
             </StoreDataProvider>
           </CashierSessionProvider>
+          </FeaturesProvider>
+          </BillingProvider>
           </PermissionsProvider>
         </AuthProvider>
       </FeatureFlagsProvider>

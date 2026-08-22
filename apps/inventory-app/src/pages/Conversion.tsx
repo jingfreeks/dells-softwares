@@ -1,14 +1,32 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
+import {
+  useHasModule,
+  useHasFeature,
+  MODULE_READ_ONLY_HINT,
+  FEATURE_NOT_IN_PLAN_HINT,
+} from "../lib/modules";
 import { listProducts } from "../lib/products";
 import { addConversion, listConversions, removeConversion } from "../lib/conversions";
 import type { Product, UnitConversion } from "../lib/types";
 
 export function Conversion() {
   const { user } = useAuth();
-  const canManage = useCan("inventory.product.manage");
+  const accessDenied = useAccessDenied("inventory.product.manage");
+  const hasInventory = useHasModule("INVENTORY");
+  const hasFeature = useHasFeature("inventory.conversions");
+  // The module hint wins when both are off: core.feature_enabled()
+  // requires the owning module, so a missing module is the true cause
+  // and saying "not in your plan" would send the owner after the wrong
+  // thing.
+  const writeHint = !hasInventory
+    ? MODULE_READ_ONLY_HINT
+    : !hasFeature
+      ? FEATURE_NOT_IN_PLAN_HINT
+      : undefined;
   const [products, setProducts] = useState<Product[]>([]);
   const [conversions, setConversions] = useState<UnitConversion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +55,7 @@ export function Conversion() {
         setProductId((prev) => prev || p[0]?.id || "");
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load conversions.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load conversions."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -47,7 +65,7 @@ export function Conversion() {
     };
   }, [user]);
 
-  if (user && !canManage) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 
@@ -76,7 +94,7 @@ export function Conversion() {
       setUnitName("");
       setBaseUnitFactor("");
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not save conversion.");
+      setFormError(describeWriteError(err, "Could not save conversion."));
     } finally {
       setSubmitting(false);
     }
@@ -89,7 +107,7 @@ export function Conversion() {
       await removeConversion(id);
       setConversions((prev) => prev.filter((c) => c.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not remove conversion.");
+      setError(describeWriteError(err, "Could not remove conversion."));
     } finally {
       setBusyId(null);
     }
@@ -161,7 +179,8 @@ export function Conversion() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !hasInventory || !hasFeature}
+              title={writeHint}
               className="mt-1 flex h-10 cursor-pointer items-center justify-center rounded-xl bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? "Saving…" : "Add conversion"}

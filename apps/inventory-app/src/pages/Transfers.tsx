@@ -1,7 +1,14 @@
+import { describeWriteError } from "../lib/platformErrors";
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { useCan } from "../lib/permissions";
+import { useAccessDenied } from "../lib/permissions";
+import {
+  useHasModule,
+  useHasFeature,
+  MODULE_READ_ONLY_HINT,
+  FEATURE_NOT_IN_PLAN_HINT,
+} from "../lib/modules";
 import { listWarehouses } from "../lib/warehouses";
 import { listProducts } from "../lib/products";
 import { listTransfers, transferStock } from "../lib/transfers";
@@ -11,7 +18,18 @@ const emptyForm = { fromWarehouseId: "", toWarehouseId: "", productId: "", quant
 
 export function Transfers() {
   const { user } = useAuth();
-  const canManage = useCan("inventory.transfer.manage");
+  const accessDenied = useAccessDenied("inventory.transfer.manage");
+  const hasInventory = useHasModule("INVENTORY");
+  const hasFeature = useHasFeature("inventory.transfers");
+  // The module hint wins when both are off: core.feature_enabled()
+  // requires the owning module, so a missing module is the true cause
+  // and saying "not in your plan" would send the owner after the wrong
+  // thing.
+  const writeHint = !hasInventory
+    ? MODULE_READ_ONLY_HINT
+    : !hasFeature
+      ? FEATURE_NOT_IN_PLAN_HINT
+      : undefined;
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [transfers, setTransfers] = useState<WarehouseTransfer[]>([]);
@@ -47,7 +65,7 @@ export function Transfers() {
         }));
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load transfers.");
+        if (!cancelled) setError(describeWriteError(err, "Could not load transfers."));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -57,7 +75,7 @@ export function Transfers() {
     };
   }, [user]);
 
-  if (user && !canManage) {
+  if (user && accessDenied) {
     return <Navigate to="/login" replace />;
   }
 
@@ -102,7 +120,7 @@ export function Transfers() {
       await reload(user.storeId);
       setForm((f) => ({ ...f, quantity: "", notes: "" }));
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Could not complete transfer.");
+      setFormError(describeWriteError(err, "Could not complete transfer."));
     } finally {
       setSubmitting(false);
     }
@@ -198,7 +216,8 @@ export function Transfers() {
           </div>
           <button
             type="submit"
-            disabled={submitting || warehouses.length < 2}
+            disabled={submitting || warehouses.length < 2 || !hasInventory || !hasFeature}
+            title={writeHint}
             className="h-10 cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60 sm:col-span-2"
           >
             {submitting ? "Transferring…" : "Transfer stock"}

@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { addProduct, canCreateTestAccountsDirectly, loginAsFreshStore, uniqueEmail } from './helpers'
+import { PAGE_HEADING_POS, ARIA_DASHBOARD_DATE } from './helpers'
+import { SEG_SIGN_IN } from '../src/lib/textLabels/textLabels'
 
 // These tests exercise the app's actual security boundaries — Row Level
 // Security policies and route guards — rather than just UI behavior.
@@ -42,12 +44,12 @@ test.describe('Multi-tenant data isolation (RLS)', () => {
     // the only thing standing between the two tenants.
     await storeBPage.goto('/inventory')
     await expect(storeBPage.getByText(/products tracked\./)).toBeVisible()
-    await expect(storeBPage.getByRole('cell', { name: 'Store A Secret Product' })).toHaveCount(0)
+    await expect(storeBPage.getByRole('row', { name: 'Store A Secret Product' })).toHaveCount(0)
 
     // Same for the admin dashboard's recent sales / stats — nothing from
     // Store A should leak into Store B's numbers.
     await storeBPage.goto('/admin')
-    await expect(storeBPage.getByRole('heading', { name: 'Admin dashboard' })).toBeVisible()
+    await expect(storeBPage.getByLabel(ARIA_DASHBOARD_DATE)).toBeVisible()
     await expect(storeBPage.getByText('Store A Secret Product')).toHaveCount(0)
 
     await storeAContext.close()
@@ -148,7 +150,10 @@ test.describe('Route guards', () => {
   test('logging out clears the session so a protected route redirects again', async ({ page, request }) => {
     test.skip(!canCreateTestAccountsDirectly, 'SUPABASE_SERVICE_ROLE_KEY not set')
     await loginAsFreshStore(request, page)
-    await expect(page.getByRole('heading', { name: 'POS Checkout' })).toBeVisible()
+    // Login lands on the cashier picker, not the register -- this test is
+    // about logging OUT clearing the session, so the URL is the right proof
+    // that we were signed in at all.
+    await expect(page).toHaveURL(/\/pos/)
 
     await page.getByRole('button', { name: 'Log out' }).click()
     await expect(page).toHaveURL(/\/login/)
@@ -164,7 +169,7 @@ test.describe('Route guards', () => {
     const email = uniqueEmail('security-probe')
     await page.getByLabel('Email address').fill(email)
     await page.getByLabel('Password', { exact: true }).fill('definitely-wrong')
-    await page.getByRole('button', { name: 'Log in' }).click()
+    await page.getByRole('button', { name: SEG_SIGN_IN }).click()
 
     // Same generic message for "no such user" and "wrong password" —
     // a distinct message for either would let an attacker enumerate
@@ -195,6 +200,6 @@ test.describe('Stored-input rendering safety (XSS)', () => {
     // …and that the literal markup is visible as plain text, not
     // silently stripped (which would mask a real escaping bug either
     // way — we want to see the raw string rendered inertly).
-    await expect(page.getByRole('cell', { name: hostileName })).toBeVisible()
+    await expect(page.getByRole('row', { name: hostileName })).toBeVisible()
   })
 })

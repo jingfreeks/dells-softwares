@@ -233,7 +233,7 @@ describe("Reports", () => {
     it("keeps the dialog open and shows an error when voiding fails", async () => {
       const user = userEvent.setup();
       const fetchSalesInRange = vi.fn().mockResolvedValue([makeSaleRecord({ id: "s1" })]);
-      const voidSale = vi.fn().mockRejectedValue(new Error("ADMIN_ONLY"));
+      const voidSale = vi.fn().mockRejectedValue(new Error("UNAUTHORIZED_ACTION"));
       vi.mocked(useStoreData).mockReturnValue(
         makeStoreDataValue({ products: [], fetchSalesInRange, voidSale })
       );
@@ -243,8 +243,41 @@ describe("Reports", () => {
       await user.type(screen.getByLabelText("Reason for voiding"), "test");
       await user.click(screen.getAllByRole("button", { name: "Void" }).at(-1)!);
 
-      expect(await screen.findByText("ADMIN_ONLY")).toBeInTheDocument();
+      // Translated, not the raw code -- this test used to assert the opposite:
+      // that the literal string "ADMIN_ONLY" appeared on screen. It passed,
+      // because that IS what an owner saw. The raw code happened to be an
+      // Error instance, so it slipped past `err instanceof Error ? err.message
+      // : fallback` untranslated; the real bug this PR fixes is one layer
+      // down, where void_sale()'s actual failures are PostgrestErrors -- plain
+      // objects, not Error instances -- which fell all the way through to the
+      // generic fallback instead.
+      expect(await screen.findByText(/do not have permission/i)).toBeInTheDocument();
+      expect(screen.queryByText("UNAUTHORIZED_ACTION")).not.toBeInTheDocument();
       expect(screen.getByLabelText("Reason for voiding")).toBeInTheDocument();
+    });
+
+    it("translates the real shape of a void failure, not just an Error instance", async () => {
+      // What void_sale() actually rejects with via supabase.rpc(): a plain
+      // object carrying `message`, never an Error. Before this PR,
+      // `err instanceof Error` was false for this shape, so ANY void failure
+      // -- ALREADY_VOIDED, FEATURE_NOT_ENABLED, all of them -- fell through to
+      // the generic "Could not void this sale.", discarding the real reason.
+      const user = userEvent.setup();
+      const fetchSalesInRange = vi.fn().mockResolvedValue([makeSaleRecord({ id: "s1" })]);
+      const voidSale = vi
+        .fn()
+        .mockRejectedValue({ message: "ALREADY_VOIDED", code: "P0001" });
+      vi.mocked(useStoreData).mockReturnValue(
+        makeStoreDataValue({ products: [], fetchSalesInRange, voidSale })
+      );
+
+      renderPage();
+      await user.click(await screen.findByRole("button", { name: "Void" }));
+      await user.type(screen.getByLabelText("Reason for voiding"), "test");
+      await user.click(screen.getAllByRole("button", { name: "Void" }).at(-1)!);
+
+      expect(await screen.findByText(/already.*voided/i)).toBeInTheDocument();
+      expect(screen.queryByText("Could not void this sale.")).not.toBeInTheDocument();
     });
   });
 });

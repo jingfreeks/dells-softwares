@@ -6,6 +6,14 @@
  */
 const KNOWN_BUSINESS_RULE_MESSAGES = [
   "CREDIT_LIMIT_EXCEEDED",
+  // Raised by enforce_utang_feature() (20260815111000), a BEFORE INSERT
+  // trigger on `sales` -- so it comes back out of checkout_sale() like any
+  // other business-rule rejection. Without it here, a credit sale from a
+  // store that does not hold pos.utang falls through to the default and is
+  // treated as a CONNECTIVITY failure: queued for replay, retried against a
+  // server that will refuse it every time, and never shown to the cashier.
+  // A sale that cannot happen would look to them like a sale that did.
+  "FEATURE_NOT_ENABLED",
   "INVALID_OVERRIDE_PIN",
   "EXPIRED_CASHIER_SESSION",
   "INVALID_OCCURRED_AT",

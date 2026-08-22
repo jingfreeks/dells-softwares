@@ -8,6 +8,15 @@ import { ProtectedRoute } from "../ProtectedRoute";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/lib/permissions", () => ({ usePermissions: () => ({ permissions: new Set(), loading: false }) }));
+vi.mock("@/lib/features", () => ({
+  // loading:false with a full set — these suites are about nav rendering,
+  // not entitlement; useFeature() failing open is covered in features.test.ts.
+  useFeatures: () => ({ features: new Set(["pos.utang"]), loading: false }),
+  useFeature: () => true,
+}));
+// Null reads as "nothing to warn about" — this file is about the shell
+// chrome, not the billing banner, which has its own tests.
+vi.mock("@/lib/billing", () => ({ useBillingState: () => null }));
 
 function renderProtected(initialEntry = "/pos") {
   return render(

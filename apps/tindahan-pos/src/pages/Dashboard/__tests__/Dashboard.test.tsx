@@ -20,6 +20,32 @@ vi.mock("@/lib/excelExport", () => ({
 const printReport = vi.fn();
 vi.mock("@/lib/printReport", () => ({ printReport: (...args: unknown[]) => printReport(...args) }));
 
+// SubscriptionCard (via usePlanPage/useCurrentPlan) needs FeaturesProvider/
+// BillingProvider context and the plan_prices()/my_store_plan() RPCs -- none
+// of which Dashboard itself used before. Mocked at the same seam
+// PlanSettings.test.tsx already uses, with a "holds everything" catalogue so
+// the widget renders its plan name/price and nothing else -- these tests are
+// about the rest of the dashboard, not the subscription widget.
+vi.mock("@/lib/features/featuresContext", async (orig) => ({
+  ...(await orig<typeof import("@/lib/features/featuresContext")>()),
+  useFeatures: () => ({ features: new Set(), catalogue: [], loading: false }),
+}));
+vi.mock("@/lib/billing/billingContext", async (orig) => ({
+  ...(await orig<typeof import("@/lib/billing/billingContext")>()),
+  useBillingState: () => ({ organizationStatus: "ACTIVE", subscriptionStatus: "ACTIVE", writesAllowed: true, graceEndsAt: null }),
+}));
+vi.mock("@/lib/supabaseClient", () => ({
+  supabase: {
+    rpc: (name: string) =>
+      name === "my_store_plan"
+        ? Promise.resolve({
+            data: [{ plan_code: "BASIC", name: "Basic", price_php: 299, billing_interval: "MONTHLY", features: [] }],
+            error: null,
+          })
+        : Promise.resolve({ data: [], error: null }),
+  },
+}));
+
 /**
  * useDashboardReport always requests [day, previousDay] together via
  * `Promise.all`, which calls fetchSalesInRange for the day first and the
