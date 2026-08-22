@@ -36,7 +36,8 @@ import {
   TEXT_REGISTER_CHECKLIST_4,
   TEXT_REGISTER_CHECKLIST_PROGRESS,
   LINK_BACK_TO_HOME,
-  TEXT_REGISTER_PLAN_PREFIX,
+  TEXT_REGISTER_TRIAL_PREFIX,
+  TEXT_REGISTER_TRIAL_THEN_PREFIX,
 } from "@/lib";
 import { staticPlanPriceLabel } from "@/lib/plan/staticPlans";
 import { ConfirmationSentScreen,Header,Buttonsigninscreen,Googlebtnsignup } from "./component";
@@ -219,8 +220,10 @@ export function Register() {
         </span>
         {selectedPlan && (
           <p className="tpl-chip" style={{ alignSelf: "flex-start", marginBottom: 12 }}>
-            {TEXT_REGISTER_PLAN_PREFIX}
-            {selectedPlan.name} — {staticPlanPriceLabel(selectedPlan)}
+            {TEXT_REGISTER_TRIAL_PREFIX}
+            {selectedPlan.name}
+            {TEXT_REGISTER_TRIAL_THEN_PREFIX}
+            {staticPlanPriceLabel(selectedPlan)}
           </p>
         )}
         <p className="tpl-headline">{TEXT_REGISTER_PREVIEW_HEADLINE}</p>
