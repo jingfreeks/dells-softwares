@@ -106,4 +106,24 @@ test.describe('Landing page -> Register handoff', () => {
     await expect(page).toHaveURL('/')
     await expect(page.getByText(/one screen to run/i)).toBeVisible()
   })
+
+  test('the Annual toggle swaps the priced cards and leaves Enterprise untouched', async ({ page }) => {
+    await page.goto('/')
+
+    await expect(page.getByText(/₱299.*\/ month/)).toBeVisible()
+    await expect(page.getByText(/Save.*17%/)).not.toBeVisible()
+
+    await page.getByRole('button', { name: 'Annual' }).click()
+
+    await expect(page.getByText(/₱2,990.*\/ year/)).toBeVisible()
+    await expect(page.getByText(/₱5,990.*\/ year/)).toBeVisible()
+    await expect(page.getByText(/Save.*17%/)).toBeVisible()
+    await expect(page.getByText("Let's talk")).toBeVisible()
+
+    await page.getByRole('button', { name: 'Monthly' }).click()
+
+    await expect(page.getByText(/₱299.*\/ month/)).toBeVisible()
+    await expect(page.getByText(/₱599.*\/ month/)).toBeVisible()
+    await expect(page.getByText(/Save.*17%/)).not.toBeVisible()
+  })
 })
