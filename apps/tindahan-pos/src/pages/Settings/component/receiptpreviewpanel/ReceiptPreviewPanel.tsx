@@ -28,6 +28,8 @@ interface ReceiptPreviewPanelProps {
   contactNumber: string;
   includeLogo: boolean;
   includeTinAndPermit: boolean;
+  /** A BIR-registered store's TIN always shows, regardless of includeTinAndPermit. */
+  birRegistered: boolean;
   tin: string;
   includeCashierName: boolean;
   footerMessage: string;
@@ -44,6 +46,7 @@ export function ReceiptPreviewPanel({
   contactNumber,
   includeLogo,
   includeTinAndPermit,
+  birRegistered,
   tin,
   includeCashierName,
   footerMessage,
@@ -81,7 +84,7 @@ export function ReceiptPreviewPanel({
             </>
           )}
         </p>
-        {includeTinAndPermit && tin && (
+        {(birRegistered || includeTinAndPermit) && tin && (
           <p style={{ color: "#5F5E5A", fontSize: 9.5, textAlign: "center", marginTop: 4 }}>TIN {tin}</p>
         )}
         <p style={{ color: "#1A1A18", fontSize: 11, textAlign: "center", fontWeight: 500, marginTop: 4 }}>

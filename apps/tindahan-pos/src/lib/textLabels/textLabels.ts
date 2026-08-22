@@ -1093,6 +1093,7 @@ export const TEXT_RECEIPT_SEND_HINT = "Most sari-sari customers don't want paper
 export const LABEL_WHAT_TO_INCLUDE = "What to include";
 export const LABEL_INCLUDE_LOGO = "Logo";
 export const LABEL_INCLUDE_TIN_AND_PERMIT = "TIN and permit";
+export const TEXT_TIN_REQUIRED_HINT = "Your store is BIR registered, so your TIN always prints — this can't be turned off.";
 export const LABEL_INCLUDE_CASHIER_NAME = "Cashier name";
 export const LABEL_INCLUDE_UTANG_BALANCE = "Utang balance";
 export const LABEL_INCLUDE_QR_TO_PAY = "QR to pay";
@@ -1331,6 +1332,11 @@ export const LABEL_AUDIT_ACTOR_PREFIX = "By";
 export const LABEL_AUDIT_REASON_PREFIX = "Reason:";
 export const ERROR_COULD_NOT_LOAD_AUDIT_LOG = "Unable to load the audit log.";
 export const LABEL_AUDIT_ACTION_SALE_VOIDED = "Sale voided";
+export const LABEL_AUDIT_ACTION_SALE_CREATED = "Sale recorded";
+export const LABEL_AUDIT_ACTION_PRICE_CHANGED = "Price changed";
+export const LABEL_AUDIT_ACTION_STORE_CONFIG_CHANGED = "Store settings changed";
+export const LABEL_AUDIT_ACTION_CUSTOMER_DELETED = "Customer deleted";
+export const LABEL_AUDIT_ACTION_STAFF_ROLE_CHANGED = "Staff role changed";
 
 // Connection resilience (freeze/blank-screen fix)
 export const TEXT_SETTING_UP_CASHIER_SESSION = "Setting up your cashier session…";
