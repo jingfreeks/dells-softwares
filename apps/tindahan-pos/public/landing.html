@@ -182,6 +182,13 @@ h1 .grad{background:linear-gradient(96deg,#8AB6FF 10%,#3B82F6 60%);-webkit-backg
 .bar2 i.r{background:var(--bad)}
 
 /* ---------- pricing ---------- */
+.pricetoggle{display:inline-flex;background:var(--gl2);border:.5px solid var(--bd);border-radius:99px;
+  padding:4px;gap:2px;margin-bottom:12px}
+.pricetoggle button{border:none;background:none;color:var(--t6);font:inherit;font-size:13.5px;font-weight:600;
+  padding:8px 18px;border-radius:99px;cursor:pointer;transition:background .15s,color .15s}
+.pricetoggle button.on{background:linear-gradient(180deg,var(--a1),#1D4ED8);color:#fff}
+.pricesave{display:none;align-items:center;gap:6px;font-size:13px;color:var(--ok);font-weight:600;margin-bottom:20px}
+.pricesave.show{display:flex}
 .pricegrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
 .price{background:var(--gl2);border:.5px solid var(--bd);border-radius:16px;padding:26px;position:relative}
 .price.feat2{border:1.5px solid rgba(76,141,255,.5);background:rgba(76,141,255,.06)}
@@ -542,10 +549,17 @@ footer{border-top:.5px solid var(--bd2);padding:44px 0 30px;background:rgba(255,
    <h2>Priced for a shop, not an enterprise.</h2>
    <p class="lede">One store, one price. No setup fee, no lock-in, and you can export everything you've entered at any time.</p>
   </div>
+  <div style="text-align:center">
+   <div class="pricetoggle" id="pricetoggle" role="group" aria-label="Billing interval">
+    <button type="button" class="on" data-interval="monthly" aria-pressed="true">Monthly</button>
+    <button type="button" data-interval="annual" aria-pressed="false">Annual</button>
+   </div>
+   <p class="pricesave" id="pricesave"><span class="tick" style="width:16px;height:16px;font-size:10px">&#10003;</span>Save ~17% &mdash; 2 months free</p>
+  </div>
   <div class="pricegrid">
    <div class="price">
     <p class="pname">Basic</p>
-    <p class="pamt">&#8369;299<small> / month</small></p>
+    <p class="pamt" data-monthly="&#8369;299<small> / month</small>" data-annual="&#8369;2,990<small> / year</small>">&#8369;299<small> / month</small></p>
     <p class="pdesc">The full register: POS, inventory, and utang tracking.</p>
     <ul>
      <li><span class="tick">&#10003;</span>Unlimited products</li>
@@ -558,7 +572,7 @@ footer{border-top:.5px solid var(--bd2);padding:44px 0 30px;background:rgba(255,
    <div class="price feat2">
     <span class="ptag">Most shops pick this</span>
     <p class="pname">Business</p>
-    <p class="pamt">&#8369;599<small> / month</small></p>
+    <p class="pamt" data-monthly="&#8369;599<small> / month</small>" data-annual="&#8369;5,990<small> / year</small>">&#8369;599<small> / month</small></p>
     <p class="pdesc">Everything in Basic, plus real purchasing and stock control.</p>
     <ul>
      <li><span class="tick">&#10003;</span>Everything in Basic</li>
