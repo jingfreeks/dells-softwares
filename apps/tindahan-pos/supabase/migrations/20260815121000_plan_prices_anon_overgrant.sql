@@ -1,0 +1,39 @@
+-- =============================================================================
+-- plan_prices() stops being executable by anon and service_role
+-- -----------------------------------------------------------------------------
+-- Same overgrant class as 20260815119000_revoke_platform_rpc_overgrants.sql:
+-- the hosted project grants EXECUTE on every new public-schema function to
+-- anon and service_role at creation time via a project-level default ACL.
+-- "revoke all on function ... from public" (used by 20260815120000 when it
+-- created plan_prices()) only strips the PUBLIC pseudo-role grant, not the
+-- explicit per-role grants that default ACL hands out -- confirmed by
+-- comparing pg_proc.proacl on the hosted staging project against a fresh
+-- local reset, where the same "revoke from public" leaves no anon grant at
+-- all because the local reset carries no such default ACL.
+--
+-- plan_prices() is not platform_-prefixed, so it fell outside 119000's
+-- data-driven sweep (which only targeted platform_\_%) even though it was
+-- created after that migration ran. Fixing it individually here rather than
+-- widening 119000's pattern-match, since plan_prices() is core.plan_features
+-- surface (tenant pricing), not platform admin surface -- a different
+-- pattern match would risk catching something unrelated later.
+--
+-- WHY anon HAS NO LEGITIMATE REASON. plan_prices() is meant to answer "what
+-- would my store need to upgrade to" for a signed-in tenant; there is no
+-- pre-login caller of it anywhere in tindahan-pos's client code.
+--
+-- WHY service_role HAS NO LEGITIMATE REASON. No Edge Function in this
+-- codebase calls plan_prices() -- it exists purely for the authenticated
+-- browser client on the "Your plan" settings page.
+--
+-- Affected schemas : public (1 function, EXECUTE revoked from two roles)
+-- Rollback         : grant execute on public.plan_prices() back to anon,
+--                    service_role -- though there is no legitimate reason to
+--                    want that back
+-- Risk             : none -- plan_prices() only reads core.subscription_plans
+--                    and core.plan_features, both non-sensitive, plan-level
+--                    (not tenant-level) data; this closes an unintended
+--                    grant, it does not change what authenticated sees.
+-- =============================================================================
+
+revoke execute on function public.plan_prices() from anon, service_role;

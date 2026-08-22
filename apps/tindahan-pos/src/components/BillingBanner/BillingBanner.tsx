@@ -65,5 +65,21 @@ export function BillingBanner() {
     );
   }
 
+  if (billing.subscriptionStatus === "TRIALING") {
+    const until = billing.trialEndsAt
+      ? new Date(billing.trialEndsAt).toLocaleDateString()
+      : null;
+    return (
+      <div
+        role="status"
+        className="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900"
+      >
+        <span className="font-medium">You're on a free trial.</span>{" "}
+        {until ? `Ends ${until}. ` : ""}After that you'll move back to Basic —
+        everything you've recorded stays exactly where it is.
+      </div>
+    );
+  }
+
   return null;
 }

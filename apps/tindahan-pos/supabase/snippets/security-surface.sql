@@ -136,7 +136,56 @@ select '8 · audit partition unprotected', c.relname
 from pg_class c
 join pg_inherits i on i.inhrelid = c.oid
 where i.inhparent = 'core.audit_logs'::regclass
-  and (not c.relrowsecurity or has_table_privilege('authenticated', c.oid, 'SELECT'));
+  and (not c.relrowsecurity or has_table_privilege('authenticated', c.oid, 'SELECT'))
+
+union all
+
+-- 9 · Tenant-facing RPCs (checkout_sale, void_sale, my_store_features, ...)
+--     are meant for `authenticated` only, same reasoning as check 4 but for
+--     functions with no shared name prefix to pattern-match on. Found on
+--     2026-08-21 auditing plan_prices(): the hosted project's default ACL
+--     grants EXECUTE on every new public-schema function to anon and
+--     service_role at creation time, and 20260815122000 found ~24 tenant
+--     RPCs carrying it, none caught until then because check 4 only ever
+--     looked at platform\_%.
+--
+--     Hand-typed list, same trade-off check 4 already accepted for the same
+--     reason: a pattern match works for platform_* because every one of
+--     those functions shares a prefix by convention; these do not, so
+--     either this is a named list or every function in `public` is a
+--     violation by default, which would also flag the two functions that
+--     legitimately need anon (list below) and everything still mid-review.
+--     Revisit this list in the same breath as 20260815122000's own list --
+--     they must stay in sync, and both exist so the NEXT new tenant RPC is
+--     caught here even if its own migration forgets to revoke.
+--
+--     _validate_pairing_code and _consume_pairing_code legitimately need
+--     service_role (called from pair-device's admin client, before any user
+--     has a session) -- excluded from the service_role half of this check,
+--     not from the anon half.
+select '9 · tenant RPC executable by more than authenticated',
+       p.proname || ' -> ' || coalesce(r.rolname, 'PUBLIC')
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+left join pg_roles r on r.oid = a.grantee
+where n.nspname = 'public'
+  and p.proname in (
+    'admin_set_staff_pin', 'admin_unpair_device', 'assign_staff_role',
+    'auth_role', 'auth_store_id',
+    'checkout_sale', 'current_store_has_feature', 'current_store_has_module',
+    'current_store_writes_allowed', 'end_cashier_session',
+    'generate_pairing_code', 'has_permission', 'list_my_permissions',
+    'list_pickable_cashiers', 'my_store_billing_state', 'my_store_features',
+    'my_store_limits', 'my_store_modules', 'my_store_plan',
+    'plan_prices', 'record_credit_payment', 'request_plan_upgrade',
+    'set_own_pin', 'start_cashier_session', 'start_trial', 'transfer_stock', 'void_sale',
+    '_consume_pairing_code', '_validate_pairing_code'
+  )
+  and a.privilege_type = 'EXECUTE'
+  and coalesce(r.rolname, 'PUBLIC') not in ('authenticated', 'postgres')
+  and not (p.proname in ('_consume_pairing_code', '_validate_pairing_code')
+           and r.rolname = 'service_role');
 
 \echo ''
 \echo '== violations (nothing below this line means clean) ====================='

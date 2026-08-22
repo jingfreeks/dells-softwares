@@ -10,6 +10,7 @@ export * from "./auditLog";
 export * from "./excelExport";
 export * from "./featureFlags";
 export * from "./features";
+export * from "./plan";
 export * from "./heldSales";
 export * from "./imageUpload";
 export * from "./inventory";

@@ -41,6 +41,7 @@ export function BillingProvider({ children }: { children: ReactNode }) {
               subscriptionStatus: row.subscription_status,
               writesAllowed: row.writes_allowed,
               graceEndsAt: row.grace_ends_at,
+              trialEndsAt: row.trial_ends_at,
             }
           : null
       );

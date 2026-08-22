@@ -2,12 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useFeatures, type StoreFeature } from "@/lib/features/featuresContext";
 import { useBillingState } from "@/lib/billing/billingContext";
 import { supabase } from "@/lib/supabaseClient";
-import {
-  MODULE_LABEL_POS,
-  MODULE_LABEL_INVENTORY,
-  MODULE_LABEL_ACCOUNTING,
-  TEXT_PLAN_CONTACT_US,
-} from "@/lib";
+import { type PlanPrice, type LockedByPlan, priceLabel } from "@/lib/plan/plan";
+import { MODULE_LABEL_POS, MODULE_LABEL_INVENTORY, MODULE_LABEL_ACCOUNTING } from "@/lib";
+
+export type { PlanPrice, LockedByPlan };
 
 const MODULE_LABELS: Record<string, string> = {
   POS: MODULE_LABEL_POS,
@@ -19,36 +17,6 @@ export interface PlanGroup {
   moduleCode: string;
   label: string;
   features: StoreFeature[];
-}
-
-/** One plan from plan_prices() -- what upgrading to it costs and includes. */
-export interface PlanPrice {
-  planCode: string;
-  name: string;
-  /** null means custom/contact us (ENTERPRISE today), never "unset". */
-  pricePhp: number | null;
-  billingInterval: string;
-  features: Set<string>;
-}
-
-/** A locked capability, with the cheapest plan that would unlock it. */
-export interface LockedByPlan {
-  plan: PlanPrice;
-  /** How the price reads on screen -- "₱999/month" or "Contact us". */
-  priceLabel: string;
-  features: StoreFeature[];
-}
-
-const PESO = new Intl.NumberFormat("en-PH", {
-  style: "currency",
-  currency: "PHP",
-  minimumFractionDigits: 0,
-});
-
-function priceLabel(plan: PlanPrice): string {
-  return plan.pricePhp === null
-    ? TEXT_PLAN_CONTACT_US
-    : `${PESO.format(plan.pricePhp)}/${plan.billingInterval.toLowerCase()}`;
 }
 
 /**
@@ -89,6 +57,7 @@ export function usePlanPage() {
                 pricePhp: row.price_php,
                 billingInterval: row.billing_interval,
                 features: new Set(row.features),
+                sortOrder: row.sort_order,
               }))
       );
       setPlansLoading(false);
@@ -130,7 +99,9 @@ export function usePlanPage() {
       if (existing) existing.features.push(feature);
       else groups.set(target.planCode, { plan: target, priceLabel: priceLabel(target), features: [feature] });
     }
-    return [...groups.values()];
+    // Cheapest first -- both this page and the dashboard widget want "the
+    // very next tier to consider" to be first without re-deriving it.
+    return [...groups.values()].sort((a, b) => a.plan.sortOrder - b.plan.sortOrder);
   }, [catalogue, plans]);
 
   return {

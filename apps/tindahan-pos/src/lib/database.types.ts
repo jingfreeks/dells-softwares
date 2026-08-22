@@ -1049,6 +1049,20 @@ export interface Database {
           features: string[];
         }[];
       };
+      my_store_plan: {
+        Args: Record<string, never>;
+        Returns: {
+          plan_code: string;
+          name: string;
+          price_php: number | null;
+          billing_interval: string;
+          features: string[];
+        }[];
+      };
+      request_plan_upgrade: {
+        Args: { p_plan_code: string };
+        Returns: undefined;
+      };
       my_store_limits: {
         Args: Record<string, never>;
         Returns: {
@@ -1067,7 +1081,13 @@ export interface Database {
           writes_allowed: boolean;
           /** Only set while PAST_DUE. */
           grace_ends_at: string | null;
+          /** Only set while TRIALING. */
+          trial_ends_at: string | null;
         }[];
+      };
+      start_trial: {
+        Args: { p_plan_code: string };
+        Returns: undefined;
       };
     };
     Enums: {

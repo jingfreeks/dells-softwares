@@ -13,6 +13,8 @@ export interface BillingState {
   writesAllowed: boolean;
   /** Only set while PAST_DUE: when grace runs out. */
   graceEndsAt: string | null;
+  /** Only set while TRIALING: when the self-serve trial reverts to BASIC. */
+  trialEndsAt: string | null;
 }
 
 interface BillingContextValue {
