@@ -1063,6 +1063,14 @@ export interface Database {
         Args: { p_plan_code: string };
         Returns: undefined;
       };
+      request_addon: {
+        Args: { p_module_code: string };
+        Returns: undefined;
+      };
+      current_store_has_module: {
+        Args: { p_module: string };
+        Returns: boolean;
+      };
       my_store_limits: {
         Args: Record<string, never>;
         Returns: {
