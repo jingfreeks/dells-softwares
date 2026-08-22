@@ -27,15 +27,15 @@ test.describe('Landing page -> Register handoff', () => {
     await planCard(page, 'Basic').getByRole('link', { name: 'Get started' }).click()
 
     await expect(page).toHaveURL(/\/register$/)
-    await expect(page.getByText(/Starting on/)).not.toBeVisible()
+    await expect(page.getByText(/free trial/i)).not.toBeVisible()
   })
 
-  test('Business\'s "Get started" carries the plan through, and signing up records the request', async ({ page }) => {
+  test('Business\'s "Get started" carries the plan through, and signing up starts a real trial', async ({ page }) => {
     await page.goto('/')
     await planCard(page, 'Business').getByRole('link', { name: 'Get started' }).click()
 
     await expect(page).toHaveURL(/\/register\?plan=BUSINESS/)
-    await expect(page.getByText(/Starting on Business.*₱599/)).toBeVisible()
+    await expect(page.getByText(/14-day free trial of Business.*₱599/)).toBeVisible()
 
     const storeName = `Landing Flow ${Date.now()}`
     const email = uniqueEmail('landing')
@@ -50,9 +50,9 @@ test.describe('Landing page -> Register handoff', () => {
     // depends on the project's current "Confirm email" Auth setting --
     // e2e/login.spec.ts's own registration test already covers that fork
     // in general. Only the 'confirmed' path has a session to call
-    // request_plan_upgrade() with (hooks.tsx documents that the request is
-    // not persisted across the confirm-email gap), so that's the only
-    // outcome this test has anything further to check.
+    // start_trial() with (hooks.tsx documents the trial isn't started
+    // across the confirm-email gap), so that's the only outcome this test
+    // has anything further to check.
     let confirmed = true
     try {
       await page.waitForURL(/\/onboarding/, { timeout: 15_000 })
@@ -61,20 +61,38 @@ test.describe('Landing page -> Register handoff', () => {
     }
     test.skip(!confirmed, 'this project requires email confirmation right now -- nothing further to check here')
 
-    // request_plan_upgrade() is fire-and-forget from hooks.tsx (deliberately
-    // -- it must never block the new owner from reaching their store), so
-    // the note can still be in flight the instant /onboarding resolves.
-    // Poll rather than reading once.
+    // start_trial() is fire-and-forget from hooks.tsx (deliberately -- it
+    // must never block the new owner from reaching their store), so the
+    // write can still be in flight the instant /onboarding resolves. Poll
+    // rather than reading once. Checks the real subscription row AND that
+    // entitlements were actually materialized -- not just a status label.
     await expect
       .poll(
         async () =>
           sql(
-            `select notes from core.organization_subscriptions
-               where organization_id = (select id from stores where name = '${storeName}')`
+            `select s.status from core.organization_subscriptions s
+               join stores st on st.id = s.organization_id
+               where st.name = '${storeName}'`
           ),
         { timeout: 10_000 }
       )
-      .toContain('Requested upgrade to BUSINESS')
+      .toBe('TRIALING')
+
+    const trialEndsAt = await sql(
+      `select s.trial_ends_at::date - now()::date from core.organization_subscriptions s
+         join stores st on st.id = s.organization_id
+         where st.name = '${storeName}'`
+    )
+    expect(Number(trialEndsAt)).toBeGreaterThanOrEqual(13)
+
+    const hasBusinessFeature = await sql(
+      `select exists(
+         select 1 from core.organization_features f
+         join stores st on st.id = f.organization_id
+         where st.name = '${storeName}' and f.feature_code = 'inventory.purchase_orders' and f.enabled
+       )`
+    )
+    expect(hasBusinessFeature).toBe('t')
   })
 
   test('Back to home from Login and Register is a real navigation to the landing page', async ({ page }) => {

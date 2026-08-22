@@ -144,20 +144,20 @@ describe("Register", () => {
     expect(screen.getByText("Login page")).toBeInTheDocument();
   });
 
-  it("acknowledges a valid plan carried in via ?plan=, and requests it after signup succeeds", async () => {
+  it("acknowledges a valid plan carried in via ?plan=, and starts a real trial after signup succeeds", async () => {
     rpc.mockClear();
     const user = userEvent.setup();
     const register = vi.fn().mockResolvedValue({ ok: true, needsEmailConfirmation: false });
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, register }));
     renderRegister("/register?plan=BUSINESS");
 
-    expect(screen.getByText(/Starting on Business.*₱599\/monthly/)).toBeInTheDocument();
+    expect(screen.getByText(/14-day free trial of Business.*₱599\/monthly/)).toBeInTheDocument();
 
     await fillForm(user);
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
     expect(await screen.findByText("POS page")).toBeInTheDocument();
-    expect(rpc).toHaveBeenCalledWith("request_plan_upgrade", { p_plan_code: "BUSINESS" });
+    expect(rpc).toHaveBeenCalledWith("start_trial", { p_plan_code: "BUSINESS" });
   });
 
   it("ignores an unknown or missing plan param -- no acknowledgment, no RPC call", async () => {
@@ -167,7 +167,7 @@ describe("Register", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, register }));
     renderRegister("/register?plan=NOT_A_REAL_PLAN");
 
-    expect(screen.queryByText(/Starting on/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/free trial/)).not.toBeInTheDocument();
 
     await fillForm(user);
     await user.click(screen.getByRole("button", { name: "Create account" }));
@@ -176,7 +176,7 @@ describe("Register", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  it("does not request a plan when email confirmation is still pending -- there is no session yet", async () => {
+  it("does not start a trial when email confirmation is still pending -- there is no session yet", async () => {
     rpc.mockClear();
     const user = userEvent.setup();
     const register = vi.fn().mockResolvedValue({ ok: true, needsEmailConfirmation: true });

@@ -1081,7 +1081,13 @@ export interface Database {
           writes_allowed: boolean;
           /** Only set while PAST_DUE. */
           grace_ends_at: string | null;
+          /** Only set while TRIALING. */
+          trial_ends_at: string | null;
         }[];
+      };
+      start_trial: {
+        Args: { p_plan_code: string };
+        Returns: undefined;
       };
     };
     Enums: {

@@ -23,6 +23,7 @@ const ACTIVE = {
   subscriptionStatus: "ACTIVE",
   writesAllowed: true,
   graceEndsAt: null,
+  trialEndsAt: null,
 };
 const SUSPENDED = { ...ACTIVE, subscriptionStatus: "SUSPENDED", writesAllowed: false };
 const CANCELLED = { ...ACTIVE, subscriptionStatus: "CANCELLED", writesAllowed: false };
@@ -30,6 +31,11 @@ const PAST_DUE = {
   ...ACTIVE,
   subscriptionStatus: "PAST_DUE",
   graceEndsAt: "2026-08-30T05:40:41Z",
+};
+const TRIALING = {
+  ...ACTIVE,
+  subscriptionStatus: "TRIALING",
+  trialEndsAt: "2026-09-05T05:40:41Z",
 };
 
 beforeEach(() => {
@@ -87,6 +93,35 @@ describe("BillingBanner", () => {
     useBillingState.mockReturnValue({ ...PAST_DUE, graceEndsAt: null });
     render(<BillingBanner />);
     expect(screen.getByRole("status")).toHaveTextContent(/Everything still works\. After that/i);
+  });
+
+  it("tells an admin they're on a trial, and names the deadline", () => {
+    useBillingState.mockReturnValue(TRIALING);
+    render(<BillingBanner />);
+    const banner = screen.getByRole("status");
+    expect(banner).toHaveTextContent(/free trial/i);
+    expect(banner).toHaveTextContent(new Date(TRIALING.trialEndsAt).toLocaleDateString());
+  });
+
+  it("says the trial reverts to Basic, not that anything is lost", () => {
+    useBillingState.mockReturnValue(TRIALING);
+    render(<BillingBanner />);
+    const banner = screen.getByRole("status");
+    expect(banner).toHaveTextContent(/move back to Basic/i);
+    expect(banner).toHaveTextContent(/stays exactly where it is/i);
+  });
+
+  it("stays coherent when the trial deadline is missing", () => {
+    useBillingState.mockReturnValue({ ...TRIALING, trialEndsAt: null });
+    render(<BillingBanner />);
+    expect(screen.getByRole("status")).toHaveTextContent(/free trial\. After that/i);
+  });
+
+  it("shows nothing to a cashier during a trial either", () => {
+    useAuth.mockReturnValue(CASHIER);
+    useBillingState.mockReturnValue(TRIALING);
+    const { container } = render(<BillingBanner />);
+    expect(container).toBeEmptyDOMElement();
   });
 
   // The judgement call this component exists to encode.
