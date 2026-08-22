@@ -200,17 +200,20 @@ export async function listOrganizationModules(orgId: string): Promise<Organizati
   }));
 }
 
+/** source defaults to "MANUAL" (a support comp) -- pass "ADDON" when fulfilling a paid add-on request, so it reads distinctly from a comp in the data, not just in this UI. */
 export async function setModule(
   orgId: string,
   moduleCode: string,
   enabled: boolean,
-  reason: string
+  reason: string,
+  source: "MANUAL" | "ADDON" = "MANUAL"
 ): Promise<void> {
   const { error } = await supabase.rpc("platform_set_module", {
     p_org: orgId,
     p_module: moduleCode,
     p_enabled: enabled,
     p_reason: reason || null,
+    p_source: source,
   });
   if (error) throw new Error(error.message);
 }
@@ -362,7 +365,7 @@ export function planPriceLabel(plan: Plan): string {
 }
 
 export function outranksPlan(source: string | null): boolean {
-  return source === "MANUAL" || source === "GRANDFATHERED";
+  return source === "MANUAL" || source === "GRANDFATHERED" || source === "ADDON";
 }
 
 export async function resetFeatureToPlan(

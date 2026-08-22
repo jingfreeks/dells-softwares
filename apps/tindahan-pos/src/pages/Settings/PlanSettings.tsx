@@ -9,10 +9,16 @@ import {
   TEXT_PLAN_UPGRADE_PREFIX,
   TEXT_PLAN_WRITES_PAUSED,
   ARIA_VIEW_UPGRADE_OPTIONS,
+  TEXT_ADDONS_HEADING,
+  TEXT_ADDON_ACCOUNTING_NAME,
+  TEXT_ADDON_ACCOUNTING_DESC,
+  BUTTON_REQUEST_ADDON,
+  BUTTON_REQUESTED,
+  TEXT_ADDON_REQUESTED_HINT,
 } from "@/lib";
 import { UpgradeModal } from "@/components";
 import { SettingsLayout } from "./component";
-import { usePlanPage, type PlanGroup, type LockedByPlan } from "./usePlanPage";
+import { usePlanPage, useAddons, type PlanGroup, type LockedByPlan } from "./usePlanPage";
 
 function FeatureRow({ name, held }: { name: string; held: boolean }) {
   return (
@@ -101,6 +107,47 @@ function LockedByPlanList({ groups, onSelect }: { groups: LockedByPlan[]; onSele
 }
 
 /**
+ * Add-ons: get a capability independent of plan tier, instead of upgrading
+ * the whole plan for it. Console-granted, not self-serve -- no checkout in
+ * this app, so the button records a request rather than turning anything
+ * on. Only shown while the store doesn't already hold it.
+ */
+function AddonsCard() {
+  const { hasAccounting, requested, requestAccounting } = useAddons();
+  if (hasAccounting !== false) return null;
+
+  return (
+    <div className="tpl-card" style={{ marginBottom: 14 }}>
+      <p className="tpl-h3" style={{ marginBottom: 10 }}>
+        {TEXT_ADDONS_HEADING}
+      </p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+        <div>
+          <p className="tpl-sub" style={{ fontWeight: 600, margin: 0 }}>
+            {TEXT_ADDON_ACCOUNTING_NAME}
+          </p>
+          <p className="tpl-sub" style={{ margin: 0 }}>
+            {TEXT_ADDON_ACCOUNTING_DESC}
+          </p>
+        </div>
+        {requested ? (
+          <span className="tpl-chip tpl-g">{BUTTON_REQUESTED}</span>
+        ) : (
+          <button type="button" onClick={requestAccounting} className="tpl-btn" style={{ marginBottom: 0, whiteSpace: "nowrap" }}>
+            {BUTTON_REQUEST_ADDON}
+          </button>
+        )}
+      </div>
+      {requested && (
+        <p className="tpl-sub" style={{ marginTop: 8 }}>
+          {TEXT_ADDON_REQUESTED_HINT}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
  * What this store can do, what it cannot, and what getting the rest would
  * cost.
  *
@@ -164,6 +211,8 @@ export function PlanSettings() {
           )}
         </>
       )}
+
+      <AddonsCard />
 
       <UpgradeModal group={upgradeTarget} onClose={() => setUpgradeTarget(null)} />
     </SettingsLayout>

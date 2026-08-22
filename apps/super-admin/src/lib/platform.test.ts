@@ -1,12 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
   outranksPlan,
   blocksWrites,
   featuresLostByPlanChange,
   planPriceLabel,
+  setModule,
   type OrganizationFeature,
   type Plan,
 } from "./platform";
+
+const rpc = vi.fn();
+vi.mock("./supabaseClient", () => ({ supabase: { rpc: (name: string, args?: unknown) => rpc(name, args) } }));
 
 describe("outranksPlan", () => {
   // The two sources that survive a plan change, and therefore need handing
@@ -31,6 +35,46 @@ describe("outranksPlan", () => {
   // source is nullable: a feature the tenant has no row for at all.
   it("handles a missing source without claiming it outranks anything", () => {
     expect(outranksPlan(null)).toBe(false);
+  });
+
+  // Added alongside request_addon(): a paid add-on grant must survive a
+  // plan change and materialize_subscription_modules()'s re-derivation the
+  // same way a MANUAL comp does, so the console needs a "Follow plan" reset
+  // button for it too.
+  it("treats a paid add-on grant as outranking the plan too", () => {
+    expect(outranksPlan("ADDON")).toBe(true);
+  });
+});
+
+describe("setModule", () => {
+  beforeEach(() => {
+    rpc.mockReset().mockResolvedValue({ error: null });
+  });
+
+  it("defaults to MANUAL when no source is given, matching every existing caller", async () => {
+    await setModule("org-1", "ACCOUNTING", true, "support comp");
+    expect(rpc).toHaveBeenCalledWith("platform_set_module", {
+      p_org: "org-1",
+      p_module: "ACCOUNTING",
+      p_enabled: true,
+      p_reason: "support comp",
+      p_source: "MANUAL",
+    });
+  });
+
+  // The console's "Grant as paid add-on" checkbox passes this through --
+  // this is what tags the grant as revenue rather than a comp in the data.
+  it("passes ADDON through when the caller asks for it", async () => {
+    await setModule("org-1", "ACCOUNTING", true, "fulfilling add-on request", "ADDON");
+    expect(rpc).toHaveBeenCalledWith(
+      "platform_set_module",
+      expect.objectContaining({ p_source: "ADDON" })
+    );
+  });
+
+  it("throws when the RPC reports an error", async () => {
+    rpc.mockResolvedValue({ error: { message: "UNAUTHORIZED_ACTION" } });
+    await expect(setModule("org-1", "ACCOUNTING", true, "")).rejects.toThrow("UNAUTHORIZED_ACTION");
   });
 });
 

@@ -1299,6 +1299,13 @@ export const ARIA_VIEW_UPGRADE_OPTIONS = "View upgrade options";
 export const LINK_BACK_TO_HOME = "← Back to home";
 export const TEXT_REGISTER_TRIAL_PREFIX = "14-day free trial of ";
 export const TEXT_REGISTER_TRIAL_THEN_PREFIX = ", then ";
+export const TEXT_ADDONS_HEADING = "Add-ons";
+export const TEXT_ADDON_ACCOUNTING_NAME = "Accounting";
+export const TEXT_ADDON_ACCOUNTING_DESC =
+  "Track expenses and see real profit, independent of your plan tier.";
+export const BUTTON_REQUEST_ADDON = "Request add-on";
+export const BUTTON_REQUESTED = "Requested";
+export const TEXT_ADDON_REQUESTED_HINT = "We'll be in touch to set this up.";
 export const PAGE_HEADING_DEVICES = "Devices";
 export const TEXT_DEVICES_DESCRIPTION = "Registers paired to this store.";
 export const BUTTON_GENERATE_PAIRING_CODE = "Generate pairing code";

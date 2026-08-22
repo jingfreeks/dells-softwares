@@ -41,6 +41,7 @@ export function OrganizationDetail() {
   const [error, setError] = useState<string | null>(null);
   const [busyModule, setBusyModule] = useState<string | null>(null);
   const [reason, setReason] = useState("");
+  const [grantAsAddon, setGrantAsAddon] = useState(false);
 
   const load = useCallback(async () => {
     const [orgs, mods, planList, limitList, featureList] = await Promise.all([
@@ -157,7 +158,7 @@ export function OrganizationDetail() {
     setBusyModule(module.moduleCode);
     setError(null);
     try {
-      await setModule(orgId, module.moduleCode, !module.enabled, reason);
+      await setModule(orgId, module.moduleCode, !module.enabled, reason, grantAsAddon ? "ADDON" : "MANUAL");
       await load();
       setReason("");
     } catch (err) {
@@ -199,6 +200,16 @@ export function OrganizationDetail() {
           placeholder="e.g. pilot customer, paid upgrade, ticket #42"
           className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
         />
+        <label className="mt-2 flex items-center gap-2 text-xs text-slate-600">
+          <input
+            type="checkbox"
+            checked={grantAsAddon}
+            onChange={(e) => setGrantAsAddon(e.target.checked)}
+            className="rounded border-slate-300"
+          />
+          Grant the next module toggle as a paid add-on, not a comp — tagged
+          distinctly (ADDON, not MANUAL) so it reads as revenue, not a favor.
+        </label>
       </div>
 
       <div className="mt-4 max-w-2xl rounded-2xl border border-slate-200 bg-white p-4">
@@ -329,12 +340,12 @@ export function OrganizationDetail() {
                 </span>
               ) : (
                 <div className="flex shrink-0 items-center gap-2">
-                {m.source === "MANUAL" && (
+                {outranksPlan(m.source) && (
                   <button
                     type="button"
                     onClick={() => handleReset(m)}
                     disabled={busyModule === m.moduleCode}
-                    title="Drop the manual override so this tenant's plan governs the module again"
+                    title="Drop the manual/add-on override so this tenant's plan governs the module again"
                     className="cursor-pointer rounded-xl px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Follow plan
