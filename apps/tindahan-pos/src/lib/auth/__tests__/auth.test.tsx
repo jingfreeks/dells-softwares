@@ -1090,4 +1090,76 @@ describe("AuthProvider", () => {
     screen.getByText("go").click();
     await waitFor(() => expect(result).toEqual({ ok: false, error: "network down" }));
   });
+
+  // A FunctionsHttpError's own .message is always the generic "Edge
+  // Function returned a non-2xx status code" -- the actual reason (the sole-
+  // admin block, or any other 4xx/5xx the function raises) lives in the
+  // response body on error.context instead, which the client must read
+  // itself. Without this, a real, specific server error surfaced as that
+  // one meaningless sentence in the modal.
+  it("reads the real reason out of a FunctionsHttpError's response body", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" }, access_token: "tok-1" } },
+    });
+    mockedSupabase.from.mockReturnValue(
+      staffSelectChain({ id: "u1", store_id: "s1", name: "Nena", email: "nena@example.com", role: "admin" })
+    );
+    mockedSupabase.functions.invoke.mockResolvedValue({
+      data: null,
+      error: {
+        message: "Edge Function returned a non-2xx status code",
+        context: { json: async () => ({ error: "You're the only admin for this store." }) },
+      },
+    });
+
+    let result: unknown;
+    function Capture() {
+      const { deleteAccount } = useAuth();
+      return <button onClick={async () => (result = await deleteAccount())}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => screen.getByText("go"));
+    screen.getByText("go").click();
+    await waitFor(() =>
+      expect(result).toEqual({ ok: false, error: "You're the only admin for this store." })
+    );
+  });
+
+  // A malformed or unreadable body must not crash the flow -- fall back to
+  // the generic message rather than throwing out of deleteAccount().
+  it("falls back to the generic message when the error body cannot be read", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" }, access_token: "tok-1" } },
+    });
+    mockedSupabase.from.mockReturnValue(
+      staffSelectChain({ id: "u1", store_id: "s1", name: "Nena", email: "nena@example.com", role: "cashier" })
+    );
+    mockedSupabase.functions.invoke.mockResolvedValue({
+      data: null,
+      error: {
+        message: "Edge Function returned a non-2xx status code",
+        context: { json: async () => { throw new Error("not json"); } },
+      },
+    });
+
+    let result: unknown;
+    function Capture() {
+      const { deleteAccount } = useAuth();
+      return <button onClick={async () => (result = await deleteAccount())}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => screen.getByText("go"));
+    screen.getByText("go").click();
+    await waitFor(() =>
+      expect(result).toEqual({ ok: false, error: "Edge Function returned a non-2xx status code" })
+    );
+  });
 });
