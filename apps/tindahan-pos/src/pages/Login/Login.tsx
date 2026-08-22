@@ -25,6 +25,7 @@ import {
   TEXT_LOGIN_PREVIEW_RECENT_SALES,
   LABEL_SET_UP_THIS_DEVICE,
   TEXT_SET_UP_THIS_DEVICE_DESC,
+  LINK_BACK_TO_HOME,
 } from "@/lib";
 import { useLoginForm } from "./hooks";
 import { Titleheader, SalesItem,Salesheader } from "./component";
@@ -83,6 +84,15 @@ export function Login() {
     <div className="tpl-root tpl-shell">
       <div className="tpl-form-pane">
         <div className="tpl-form-inner">
+          {/* A plain <a>, not react-router's <Link>: "/" is the static
+              public/landing.html, served by vite.config.ts's
+              serveLandingAtRoot plugin / vercel.json's rewrite -- both only
+              intercept a real HTTP request. A client-side route change
+              would land on the SPA's own bare "/" redirect instead and never
+              show the actual marketing page. */}
+          <a href="/" className="tpl-lnk" style={{ display: "inline-block", marginBottom: 12, fontSize: 13 }}>
+            {LINK_BACK_TO_HOME}
+          </a>
           <Titleheader />
 
           <div className="tpl-seg" role="tablist">

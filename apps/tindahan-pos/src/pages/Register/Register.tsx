@@ -35,7 +35,10 @@ import {
   TEXT_REGISTER_CHECKLIST_3,
   TEXT_REGISTER_CHECKLIST_4,
   TEXT_REGISTER_CHECKLIST_PROGRESS,
+  LINK_BACK_TO_HOME,
+  TEXT_REGISTER_PLAN_PREFIX,
 } from "@/lib";
+import { staticPlanPriceLabel } from "@/lib/plan/staticPlans";
 import { ConfirmationSentScreen,Header,Buttonsigninscreen,Googlebtnsignup } from "./component";
 import { useRegisterForm } from "./hooks";
 import "../authTheme.css";
@@ -45,6 +48,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function Register() {
   const {
     user,
+    selectedPlan,
     storeName,
     setStoreName,
     ownerName,
@@ -74,6 +78,10 @@ export function Register() {
     <div className="tpl-root tpl-shell">
       <div className="tpl-form-pane">
         <div className="tpl-form-inner">
+          {/* A plain <a>, not react-router's <Link> -- see Login.tsx for why. */}
+          <a href="/" className="tpl-lnk" style={{ display: "inline-block", marginBottom: 12, fontSize: 13 }}>
+            {LINK_BACK_TO_HOME}
+          </a>
           <Header />
 
           <Buttonsigninscreen />
@@ -209,6 +217,12 @@ export function Register() {
         <span className="tpl-chip tpl-on" style={{ alignSelf: "flex-start", marginBottom: 20 }}>
           {APP_NAME}
         </span>
+        {selectedPlan && (
+          <p className="tpl-chip" style={{ alignSelf: "flex-start", marginBottom: 12 }}>
+            {TEXT_REGISTER_PLAN_PREFIX}
+            {selectedPlan.name} — {staticPlanPriceLabel(selectedPlan)}
+          </p>
+        )}
         <p className="tpl-headline">{TEXT_REGISTER_PREVIEW_HEADLINE}</p>
         <p className="tpl-tagline">{TEXT_REGISTER_PREVIEW_TAGLINE}</p>
 

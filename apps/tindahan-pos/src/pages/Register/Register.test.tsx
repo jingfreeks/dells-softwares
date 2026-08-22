@@ -8,9 +8,12 @@ import { Register } from "./Register";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 
-function renderRegister() {
+const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
+vi.mock("@/lib/supabaseClient", () => ({ supabase: { rpc: (...args: unknown[]) => rpc(...args) } }));
+
+function renderRegister(initialEntry = "/register") {
   return render(
-    <MemoryRouter initialEntries={["/register"]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/register" element={<Register />} />
         <Route path="/pos" element={<p>POS page</p>} />
@@ -39,6 +42,12 @@ async function fillForm(
 }
 
 describe("Register", () => {
+  it("links back to home with a plain href, not a client-side route", () => {
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null }));
+    renderRegister();
+    expect(screen.getByRole("link", { name: /back to home/i })).toHaveAttribute("href", "/");
+  });
+
   it("redirects to /pos when already signed in", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue());
     renderRegister();
@@ -133,5 +142,51 @@ describe("Register", () => {
     renderRegister();
     await user.click(screen.getByRole("tab", { name: "Sign in" }));
     expect(screen.getByText("Login page")).toBeInTheDocument();
+  });
+
+  it("acknowledges a valid plan carried in via ?plan=, and requests it after signup succeeds", async () => {
+    rpc.mockClear();
+    const user = userEvent.setup();
+    const register = vi.fn().mockResolvedValue({ ok: true, needsEmailConfirmation: false });
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, register }));
+    renderRegister("/register?plan=BUSINESS");
+
+    expect(screen.getByText(/Starting on Business.*₱599\/monthly/)).toBeInTheDocument();
+
+    await fillForm(user);
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(await screen.findByText("POS page")).toBeInTheDocument();
+    expect(rpc).toHaveBeenCalledWith("request_plan_upgrade", { p_plan_code: "BUSINESS" });
+  });
+
+  it("ignores an unknown or missing plan param -- no acknowledgment, no RPC call", async () => {
+    rpc.mockClear();
+    const user = userEvent.setup();
+    const register = vi.fn().mockResolvedValue({ ok: true, needsEmailConfirmation: false });
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, register }));
+    renderRegister("/register?plan=NOT_A_REAL_PLAN");
+
+    expect(screen.queryByText(/Starting on/)).not.toBeInTheDocument();
+
+    await fillForm(user);
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(await screen.findByText("POS page")).toBeInTheDocument();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("does not request a plan when email confirmation is still pending -- there is no session yet", async () => {
+    rpc.mockClear();
+    const user = userEvent.setup();
+    const register = vi.fn().mockResolvedValue({ ok: true, needsEmailConfirmation: true });
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, register }));
+    renderRegister("/register?plan=PRO");
+
+    await fillForm(user);
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(await screen.findByText("Check your email")).toBeInTheDocument();
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

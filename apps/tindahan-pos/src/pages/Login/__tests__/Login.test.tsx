@@ -22,6 +22,15 @@ function renderLogin() {
 }
 
 describe("Login", () => {
+  // A plain href, not a react-router route match -- "/" is served by
+  // public/landing.html at the HTTP layer (vite.config.ts's
+  // serveLandingAtRoot / vercel.json), which only a real navigation reaches.
+  it("links back to home with a plain href, not a client-side route", () => {
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null }));
+    renderLogin();
+    expect(screen.getByRole("link", { name: /back to home/i })).toHaveAttribute("href", "/");
+  });
+
   it("redirects to / when already signed in", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue());
     renderLogin();
