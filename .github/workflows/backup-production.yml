@@ -5,19 +5,25 @@ name: Backup production database
 # `pg_dump` runs (see supabase/backups/ — gitignored, never had a script
 # behind it).
 #
-# Requires these repo secrets, following the TINDAHAN_SUPABASE_* naming
-# convention already used by tindahan-pos-ci.yml:
+# Requires these repo secrets. Deliberately NOT the existing
+# TINDAHAN_SUPABASE_URL/TINDAHAN_SUPABASE_SERVICE_ROLE_KEY -- despite the
+# name, tindahan-pos-ci.yml's own header comment documents those as
+# STAGING credentials (used for e2e tests). Reusing them here was tried
+# first and confirmed the hard way: the dump itself was really
+# production's data (via TINDAHAN_PROD_SUPABASE_DB_URL below), but it
+# uploaded into staging's `backups` bucket instead of production's, since
+# the Storage client was built from staging's URL/key.
 #
-#   TINDAHAN_SUPABASE_URL              production project REST URL
-#   TINDAHAN_SUPABASE_SERVICE_ROLE_KEY production service_role key --
+#   TINDAHAN_PROD_SUPABASE_URL              production project REST URL
+#   TINDAHAN_PROD_SUPABASE_SERVICE_ROLE_KEY production service_role key --
 #     used only here, server-side, to upload into the backups Storage
 #     bucket (which has no client-facing RLS policy at all)
-#   TINDAHAN_SUPABASE_DB_URL           production's Postgres connection
-#     string -- NOT obtainable via `supabase projects api-keys`; pull it
-#     from the Supabase dashboard's Connection string page for the
-#     production project. Use the SESSION POOLER string specifically
-#     (not "Direct connection" -- that hostname is IPv6-only and
-#     unreachable from GitHub's runners; not "Transaction pooler" --
+#   TINDAHAN_SUPABASE_DB_URL                production's Postgres
+#     connection string -- NOT obtainable via `supabase projects
+#     api-keys`; pull it from the Supabase dashboard's Connection string
+#     page for the production project. Use the SESSION POOLER string
+#     specifically (not "Direct connection" -- that hostname is IPv6-only
+#     and unreachable from GitHub's runners; not "Transaction pooler" --
 #     that mode doesn't support the session-level features pg_dump/
 #     pg_dumpall need). Add it here manually as a repo secret.
 
@@ -68,5 +74,5 @@ jobs:
         run: node scripts/backup-database.mjs
         env:
           DATABASE_URL: ${{ secrets.TINDAHAN_SUPABASE_DB_URL }}
-          SUPABASE_URL: ${{ secrets.TINDAHAN_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TINDAHAN_SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_URL: ${{ secrets.TINDAHAN_PROD_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TINDAHAN_PROD_SUPABASE_SERVICE_ROLE_KEY }}
