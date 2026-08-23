@@ -27,9 +27,12 @@ exists (it replaces a set of manual, unscripted `pg_dump` runs and an in-app
 
 ## One-time setup (required before the workflow can run)
 
-The workflow needs a Postgres connection string, which nothing else in this
-repo stores (the CLI's `supabase projects api-keys` only returns the REST
-API keys, not this). Add it once as a GitHub repo secret:
+Three repo secrets are needed. Add each under **Settings → Secrets and
+variables → Actions → New repository secret**.
+
+**`TINDAHAN_SUPABASE_DB_URL`** — production's Postgres connection string,
+which nothing else in this repo stores (the CLI's `supabase projects
+api-keys` only returns the REST API keys, not this):
 
 1. Supabase dashboard → the production project → **Connect** → **Connection
    string**. Switch to the **Session pooler** tab specifically — not
@@ -37,13 +40,21 @@ API keys, not this). Add it once as a GitHub repo secret:
    GitHub's runners, confirmed the hard way) and not "Transaction pooler"
    (that mode doesn't support the session-level features `pg_dump`/
    `pg_dumpall` need). Copy the URI and fill in the real database password.
-2. Repo → **Settings → Secrets and variables → Actions** → **New repository
-   secret**:
-   - Name: `TINDAHAN_SUPABASE_DB_URL`
-   - Value: the connection string from step 1.
 
-`TINDAHAN_SUPABASE_URL` and `TINDAHAN_SUPABASE_SERVICE_ROLE_KEY` already
-exist as repo secrets (used by `tindahan-pos-ci.yml`) and are reused as-is.
+**`TINDAHAN_PROD_SUPABASE_URL`** and **`TINDAHAN_PROD_SUPABASE_SERVICE_ROLE_KEY`**
+— production's REST URL and service_role key, used to upload into the
+`backups` Storage bucket:
+
+2. Supabase dashboard → the production project → **Project Settings → API**.
+   Copy the **Project URL** and the **service_role** secret key.
+
+Deliberately **not** the existing `TINDAHAN_SUPABASE_URL`/
+`TINDAHAN_SUPABASE_SERVICE_ROLE_KEY` secrets — despite the name, those are
+**staging** credentials (`tindahan-pos-ci.yml`'s own header comment says so;
+used for e2e tests). This was tried first and confirmed the hard way: the
+dump itself was genuinely production's data (via `TINDAHAN_SUPABASE_DB_URL`
+above), but it uploaded into staging's `backups` bucket instead of
+production's, since the Storage client was built from staging's URL/key.
 
 Also confirmed the hard way: `workflow_dispatch` and `schedule` triggers
 only fire for a workflow file that exists on the repo's actual GitHub
