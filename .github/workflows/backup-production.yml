@@ -12,11 +12,14 @@ name: Backup production database
 #   TINDAHAN_SUPABASE_SERVICE_ROLE_KEY production service_role key --
 #     used only here, server-side, to upload into the backups Storage
 #     bucket (which has no client-facing RLS policy at all)
-#   TINDAHAN_SUPABASE_DB_URL           production's direct Postgres
-#     connection string -- NOT obtainable via `supabase projects
-#     api-keys`; pull it from the Supabase dashboard's Connection
-#     string page for the production project and add it here manually.
-#     pg_dump/pg_dumpall need a real Postgres connection, not the REST API.
+#   TINDAHAN_SUPABASE_DB_URL           production's Postgres connection
+#     string -- NOT obtainable via `supabase projects api-keys`; pull it
+#     from the Supabase dashboard's Connection string page for the
+#     production project. Use the SESSION POOLER string specifically
+#     (not "Direct connection" -- that hostname is IPv6-only and
+#     unreachable from GitHub's runners; not "Transaction pooler" --
+#     that mode doesn't support the session-level features pg_dump/
+#     pg_dumpall need). Add it here manually as a repo secret.
 
 on:
   schedule:
@@ -36,8 +39,18 @@ jobs:
         with:
           node-version: 22
 
+      # Ubuntu's default `postgresql-client` package tracks an older major
+      # version (16 as of this writing) than the production database (17),
+      # and pg_dump refuses to dump from a newer server than itself. Pull
+      # the matching major version from the official PGDG apt repo instead.
       - name: Install PostgreSQL client tools
-        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo $VERSION_CODENAME)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client-17
 
       - name: Install dependencies
         run: npm ci
