@@ -70,6 +70,12 @@ export interface StoreDataContextValue {
   ) => Promise<SaleRecord>;
   /** Admin-only — voids a completed sale via void_sale(), reversing its stock/utang-balance effects. Throws ADMIN_ONLY / VOID_REASON_REQUIRED / ALREADY_VOIDED as raised by the RPC. */
   voidSale: (sale: SaleRecord, reason: string) => Promise<void>;
+  /** Append-only partial reversal via refund_sale_items() — never touches the original sale. Returns the new refund id. Throws UNAUTHORIZED_ACTION / REFUND_REASON_REQUIRED / SALE_ALREADY_VOIDED / ONLY_PRODUCT_LINES_REFUNDABLE / REFUND_EXCEEDS_SOLD_QUANTITY as raised by the RPC. */
+  refundSale: (
+    sale: SaleRecord,
+    reason: string,
+    items: { saleItemId: string; quantity: number }[]
+  ) => Promise<string>;
   refresh: () => Promise<void>;
   addCategory: (name: string) => Promise<Category>;
   renameCategory: (id: string, name: string) => Promise<void>;

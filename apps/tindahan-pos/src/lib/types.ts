@@ -89,6 +89,8 @@ export interface CartLine {
 }
 
 export interface SaleItem {
+  /** sale_items.id — the specific line, needed to reference it for a partial refund. */
+  id: string;
   productId: string;
   name: string;
   quantity: number;

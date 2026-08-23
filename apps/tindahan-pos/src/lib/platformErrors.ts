@@ -30,6 +30,9 @@ const LIMIT = /^LIMIT_EXCEEDED:\s*(\w+)\s*\(max (\d+)\)/;
 /** `FEATURE_NOT_ENABLED: pos.utang` — raised by the entitlement triggers. */
 const FEATURE = /FEATURE_NOT_ENABLED:\s*([a-z_]+\.[a-z_]+)/;
 
+/** `REFUND_EXCEEDS_SOLD_QUANTITY: Sardines` — raised by refund_sale_items(). */
+const REFUND_EXCEEDS = /REFUND_EXCEEDS_SOLD_QUANTITY:\s*(.+)/;
+
 /**
  * Named per capability rather than answered generically, because the useful
  * half of the sentence is what the cashier should do INSTEAD. "Not part of
@@ -103,6 +106,25 @@ export function describePlatformError(err: unknown, fallback = "Something went w
 
   if (raw.includes("VOID_REASON_REQUIRED")) {
     return "A reason is required to void a sale.";
+  }
+
+  // refund_sale_items() (BIR compliance §39, Phase 2b) raises this same
+  // "someone else already changed it" shape as ALREADY_VOIDED above.
+  if (raw.includes("SALE_ALREADY_VOIDED")) {
+    return "This sale has already been voided, so it can't be refunded. Refresh to see the current list.";
+  }
+
+  if (raw.includes("REFUND_REASON_REQUIRED")) {
+    return "A reason is required to refund a sale.";
+  }
+
+  if (raw.includes("ONLY_PRODUCT_LINES_REFUNDABLE")) {
+    return "Only product lines can be refunded, not services.";
+  }
+
+  const refundExceeds = REFUND_EXCEEDS.exec(raw);
+  if (refundExceeds) {
+    return `You're trying to refund more ${refundExceeds[1]} than was actually sold on this transaction.`;
   }
 
   // A bare policy denial. The cause is genuinely ambiguous -- a capability the

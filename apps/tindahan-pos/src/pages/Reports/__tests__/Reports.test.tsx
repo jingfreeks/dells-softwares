@@ -18,7 +18,11 @@ const order = vi.fn().mockResolvedValue({
     { id: "c2", name: "Mang Jose" },
   ],
 });
-const select = vi.fn(() => ({ order }));
+// RefundModal's own "how much of this sale has already been refunded?"
+// query uses .select().eq() instead of .order() — same chain object
+// supports both so one shared mock covers staff/devices and refund_items.
+const eq = vi.fn().mockResolvedValue({ data: [], error: null });
+const select = vi.fn(() => ({ order, eq }));
 const from = vi.fn(() => ({ select }));
 const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
 
@@ -34,6 +38,7 @@ describe("Reports", () => {
   beforeEach(() => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue());
     order.mockClear();
+    eq.mockReset().mockResolvedValue({ data: [], error: null });
     rpc.mockClear();
     rpc.mockResolvedValue({ data: null, error: null });
     order.mockResolvedValue({
@@ -324,6 +329,68 @@ describe("Reports", () => {
       await user.click(await screen.findByRole("button", { name: "Reprint" }));
 
       expect(await screen.findByText("*** REPRINT ***")).toBeInTheDocument();
+    });
+  });
+
+  // BIR Compliance Audit, Phase 2b: refund_sale_items() is append-only, so
+  // unlike Void there's no sale row to patch here on success.
+  describe("refunding items from a sale", () => {
+    it("opens the refund dialog, submits the selected quantity, and closes on success", async () => {
+      const user = userEvent.setup();
+      const sale = makeSaleRecord({
+        id: "s1",
+        items: [
+          { id: "si-1", productId: "p1", name: "Sardines", quantity: 3, price: 25, itemType: "product", fee: 0, lineTotal: 75 },
+        ],
+      });
+      const fetchSalesInRange = vi.fn().mockResolvedValue([sale]);
+      const refundSale = vi.fn().mockResolvedValue("refund-1");
+      vi.mocked(useStoreData).mockReturnValue(
+        makeStoreDataValue({ products: [], fetchSalesInRange, refundSale })
+      );
+
+      renderPage();
+      await user.click(await screen.findByRole("button", { name: "Refund" }));
+
+      const qtyInput = await screen.findByLabelText("Qty to refund");
+      await user.clear(qtyInput);
+      await user.type(qtyInput, "1");
+      await user.type(screen.getByLabelText("Reason for the refund"), "Wrong size");
+      await user.click(screen.getAllByRole("button", { name: "Refund" }).at(-1)!);
+
+      await waitFor(() =>
+        expect(refundSale).toHaveBeenCalledWith(sale, "Wrong size", [{ saleItemId: "si-1", quantity: 1 }])
+      );
+      await waitFor(() => expect(screen.queryByText("Reason for the refund")).not.toBeInTheDocument());
+    });
+
+    it("surfaces a friendly error and keeps the dialog open when the refund fails", async () => {
+      const user = userEvent.setup();
+      const sale = makeSaleRecord({
+        id: "s1",
+        items: [
+          { id: "si-1", productId: "p1", name: "Sardines", quantity: 3, price: 25, itemType: "product", fee: 0, lineTotal: 75 },
+        ],
+      });
+      const fetchSalesInRange = vi.fn().mockResolvedValue([sale]);
+      const refundSale = vi.fn().mockRejectedValue({ message: "REFUND_EXCEEDS_SOLD_QUANTITY: Sardines" });
+      vi.mocked(useStoreData).mockReturnValue(
+        makeStoreDataValue({ products: [], fetchSalesInRange, refundSale })
+      );
+
+      renderPage();
+      await user.click(await screen.findByRole("button", { name: "Refund" }));
+
+      const qtyInput = await screen.findByLabelText("Qty to refund");
+      await user.clear(qtyInput);
+      await user.type(qtyInput, "1");
+      await user.type(screen.getByLabelText("Reason for the refund"), "test");
+      await user.click(screen.getAllByRole("button", { name: "Refund" }).at(-1)!);
+
+      expect(
+        await screen.findByText(/You're trying to refund more Sardines than was actually sold/)
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText("Reason for the refund")).toBeInTheDocument();
     });
   });
 });
