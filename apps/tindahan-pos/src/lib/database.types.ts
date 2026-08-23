@@ -1056,6 +1056,12 @@ export interface Database {
         };
         Returns: undefined;
       };
+      log_staff_auth_event: {
+        Args: {
+          p_action: string;
+        };
+        Returns: undefined;
+      };
       refund_sale_items: {
         Args: {
           p_sale_id: string;

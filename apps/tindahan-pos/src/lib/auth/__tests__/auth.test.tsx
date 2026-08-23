@@ -7,6 +7,7 @@ import { supabase } from "../../supabaseClient";
 vi.mock("../../supabaseClient", () => ({
   supabase: {
     from: vi.fn(),
+    rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
     functions: { invoke: vi.fn() },
     auth: {
       getSession: vi.fn(),
@@ -21,6 +22,7 @@ vi.mock("../../supabaseClient", () => ({
 
 const mockedSupabase = supabase as unknown as {
   from: ReturnType<typeof vi.fn>;
+  rpc: ReturnType<typeof vi.fn>;
   functions: { invoke: ReturnType<typeof vi.fn> };
   auth: Record<string, ReturnType<typeof vi.fn>>;
 };
@@ -391,6 +393,27 @@ describe("AuthProvider", () => {
         password: "secret",
       })
     );
+    await waitFor(() =>
+      expect(mockedSupabase.rpc).toHaveBeenCalledWith("log_staff_auth_event", { p_action: "login" })
+    );
+  });
+
+  it("does not block a successful login when the auth-event RPC fails", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({ data: { session: null } });
+    mockedSupabase.auth.signInWithPassword.mockResolvedValue({ error: null });
+    mockedSupabase.rpc.mockRejectedValueOnce(new Error("network down"));
+    let result: unknown;
+    function Capture() {
+      const { login } = useAuth();
+      return <button onClick={async () => (result = await login("nena@example.com", "secret"))}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    screen.getByText("go").click();
+    await waitFor(() => expect(result).toEqual({ ok: true }));
   });
 
   it("returns a friendly error for invalid login credentials", async () => {
@@ -585,6 +608,13 @@ describe("AuthProvider", () => {
 
     screen.getByText("do-logout").click();
     await waitFor(() => expect(screen.getByTestId("user")).toHaveTextContent("none"));
+    expect(mockedSupabase.rpc).toHaveBeenCalledWith("log_staff_auth_event", { p_action: "logout" });
+    // The audit call must be made before the session is torn down, not after
+    // — mock.calls/invocationCallOrder accumulate across tests (no clearMocks
+    // here), so compare each mock's own most recent invocation.
+    const rpcOrder = mockedSupabase.rpc.mock.invocationCallOrder.at(-1)!;
+    const signOutOrder = mockedSupabase.auth.signOut.mock.invocationCallOrder.at(-1)!;
+    expect(rpcOrder).toBeLessThan(signOutOrder);
   });
 
   it("requests a password reset", async () => {

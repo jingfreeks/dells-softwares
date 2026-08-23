@@ -1362,6 +1362,10 @@ export const LABEL_AUDIT_ACTION_CUSTOMER_DELETED = "Customer deleted";
 export const LABEL_AUDIT_ACTION_STAFF_ROLE_CHANGED = "Staff role changed";
 export const LABEL_AUDIT_ACTION_RECEIPT_REPRINTED = "Receipt reprinted";
 export const LABEL_AUDIT_ACTION_SALE_REFUNDED = "Sale refunded";
+export const LABEL_AUDIT_ACTION_STAFF_LOGGED_IN = "Staff signed in";
+export const LABEL_AUDIT_ACTION_STAFF_LOGGED_OUT = "Staff signed out";
+export const LABEL_AUDIT_ACTION_CASHIER_SESSION_STARTED = "Cashier shift started";
+export const LABEL_AUDIT_ACTION_CASHIER_SESSION_ENDED = "Cashier shift ended";
 
 // Connection resilience (freeze/blank-screen fix)
 export const TEXT_SETTING_UP_CASHIER_SESSION = "Setting up your cashier session…";
