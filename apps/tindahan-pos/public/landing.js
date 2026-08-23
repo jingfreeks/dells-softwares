@@ -51,3 +51,29 @@
     });
   }
 })();
+
+// Separate IIFE (not folded into the one above, which early-returns if
+// #demoform is ever missing) -- monthly/annual pricing toggle. No state
+// persisted: a reload always starts on Monthly, same "no card, no
+// commitment" framing as the rest of this page.
+(function () {
+  var toggle = document.getElementById("pricetoggle"),
+    save = document.getElementById("pricesave");
+  if (!toggle) return;
+  var buttons = toggle.querySelectorAll("button"),
+    amounts = document.querySelectorAll(".pamt[data-monthly]");
+  toggle.addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-interval]");
+    if (!btn) return;
+    var interval = btn.getAttribute("data-interval");
+    buttons.forEach(function (b) {
+      var on = b === btn;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", String(on));
+    });
+    amounts.forEach(function (el) {
+      el.innerHTML = el.getAttribute("data-" + interval);
+    });
+    if (save) save.classList.toggle("show", interval === "annual");
+  });
+})();

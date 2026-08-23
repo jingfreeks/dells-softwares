@@ -1,5 +1,5 @@
 import { lowStockProducts, computeRestockSuggestions, type RestockSuggestion } from "@/lib/inventory";
-import type { Customer, Product, SaleRecord } from "@/lib/types";
+import type { Customer, PaymentType, Product, SaleRecord } from "@/lib/types";
 
 /**
  * A voided sale (BIR compliance §39) had its stock/utang effects reversed
@@ -37,6 +37,51 @@ export function vatSummary(sales: SaleRecord[]): VatSummary {
     }),
     { vatableSales: 0, vatAmount: 0, vatExemptSales: 0, zeroRatedSales: 0 }
   );
+}
+
+export interface VoidSummary {
+  count: number;
+  totalAmount: number;
+}
+
+/**
+ * BIR compliance §39: a dedicated void/cancelled-transactions report, not
+ * just a per-row status badge. Deliberately reads the raw, unfiltered
+ * `sales` array (not `completedSales()`) — a void report is specifically
+ * about the voided rows, the one place that exclusion is the wrong filter.
+ */
+export function voidSummary(sales: SaleRecord[]): VoidSummary {
+  const voided = sales.filter((sale) => sale.status === "voided");
+  return {
+    count: voided.length,
+    totalAmount: voided.reduce((sum, sale) => sum + sale.total, 0),
+  };
+}
+
+export interface ReceiptNumberRange {
+  beginning: string | null;
+  ending: string | null;
+}
+
+/**
+ * Beginning/ending receipt number for a Z-reading — the modern equivalent
+ * of a mechanical register's grand-total counters, since this app assigns
+ * a real sequential receipt number per store (document_series) rather
+ * than a running GT figure. Reads the raw, unfiltered `sales` array — a
+ * voided sale still consumed a receipt number that day, so it must still
+ * count toward the range. Receipt numbers are same-length zero-padded per
+ * store, so a plain lexicographic min/max is safe.
+ */
+export function receiptNumberRange(sales: SaleRecord[]): ReceiptNumberRange {
+  const numbers = sales.map((sale) => sale.receiptNumber).filter((n): n is string => n !== null);
+  if (numbers.length === 0) return { beginning: null, ending: null };
+  return { beginning: numbers.reduce((a, b) => (a < b ? a : b)), ending: numbers.reduce((a, b) => (a > b ? a : b)) };
+}
+
+/** Sum of discount amounts across completed sales — a Z-reading needs
+ * this as its own total; every other report surfaces it only per-row. */
+export function totalDiscounts(sales: SaleRecord[]): number {
+  return completedSales(sales).reduce((sum, sale) => sum + sale.discountAmount, 0);
 }
 
 export interface CategoryTotal {
@@ -193,10 +238,39 @@ export interface RangeReport {
   transactionCount: number;
   averageSale: number;
   byCashier: CashierTotal[];
+  byPaymentType: PaymentTypeTotal[];
+  voidSummary: VoidSummary;
   bestSellers: BestSeller[];
   categoryTotals: SalesByCategory;
   vatSummary: VatSummary;
   sales: SaleRecord[];
+}
+
+export interface PaymentTypeTotal {
+  paymentType: PaymentType;
+  total: number;
+  transactionCount: number;
+}
+
+/** Per-payment-method sales totals for the given (already-completed) sales, highest total first. */
+export function salesByPaymentType(sales: SaleRecord[]): PaymentTypeTotal[] {
+  const totals = new Map<PaymentType, PaymentTypeTotal>();
+
+  for (const sale of sales) {
+    const current = totals.get(sale.paymentType);
+    if (current) {
+      current.total += sale.total;
+      current.transactionCount += 1;
+    } else {
+      totals.set(sale.paymentType, {
+        paymentType: sale.paymentType,
+        total: sale.total,
+        transactionCount: 1,
+      });
+    }
+  }
+
+  return Array.from(totals.values()).sort((a, b) => b.total - a.total);
 }
 
 /** Per-cashier sales totals for the given sales, highest total first. */
@@ -238,6 +312,8 @@ export function buildRangeReport(sales: SaleRecord[], products: Product[]): Rang
     transactionCount,
     averageSale: transactionCount > 0 ? totalSales / transactionCount : 0,
     byCashier: salesByCashier(completed),
+    byPaymentType: salesByPaymentType(completed),
+    voidSummary: voidSummary(sales),
     bestSellers: bestSellers(completed, products),
     categoryTotals: salesByCategory(completed, products),
     vatSummary: vatSummary(completed),

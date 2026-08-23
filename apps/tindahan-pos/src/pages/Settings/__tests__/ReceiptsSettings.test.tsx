@@ -57,6 +57,44 @@ describe("ReceiptsSettings", () => {
     expect(screen.getByRole("button", { name: "QR to pay" })).toHaveAttribute("aria-pressed", "false");
   });
 
+  // BIR Compliance Audit, Phase 1: a BIR-registered store's TIN can't be
+  // hidden by this toggle -- the chip must read as locked-on and clicking
+  // it must not turn it off, so the settings UI never implies something
+  // that won't actually happen on the printed receipt.
+  it("locks the TIN and permit toggle on for a BIR-registered store", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        user: makeStaffAccount({ storeId: "store-9" }),
+        store: makeStore({ birRegistered: true }),
+      })
+    );
+    renderPage();
+
+    const chip = screen.getByRole("button", { name: /TIN and permit/ });
+    expect(chip).toHaveAttribute("aria-pressed", "true");
+    expect(chip).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByText(/can't be turned off/)).toBeInTheDocument();
+
+    await user.click(chip);
+    expect(chip).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByText("Unsaved changes")).not.toBeInTheDocument();
+  });
+
+  it("leaves the TIN and permit toggle interactive for a store that isn't BIR-registered", async () => {
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        user: makeStaffAccount({ storeId: "store-9" }),
+        store: makeStore({ birRegistered: false }),
+      })
+    );
+    renderPage();
+
+    const chip = screen.getByRole("button", { name: /TIN and permit/ });
+    expect(chip).not.toHaveAttribute("aria-disabled", "true");
+    expect(screen.queryByText(/can't be turned off/)).not.toBeInTheDocument();
+  });
+
   it("shows an 'Unsaved changes' chip only after an edit, and Save changes persists it to localStorage", async () => {
     const user = userEvent.setup();
     vi.mocked(useAuth).mockReturnValue(

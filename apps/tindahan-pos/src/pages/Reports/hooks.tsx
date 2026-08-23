@@ -4,15 +4,23 @@ import {
   useStoreData,
   supabase,
   salesToCsv,
+  vatSalesToCsv,
+  voidsToCsv,
+  paymentBreakdownToCsv,
   downloadTextFile,
   computeOldestDebtDays,
   buildDebtAgingSummary,
   ERROR_COULD_NOT_VOID_SALE,
+  ERROR_COULD_NOT_REFUND_SALE,
   type SaleRecord,
 } from "@/lib";
 import { buildRangeReport } from "@/lib/reports";
 import { describePlatformError } from "@/lib/platformErrors";
 import { DEFAULT_ALERTS_MOCK, loadAlertsMock } from "@/pages/Settings/alertsMock";
+import {
+  DEFAULT_RECEIPT_SETTINGS_MOCK,
+  loadReceiptSettingsMock,
+} from "@/pages/Settings/receiptSettingsMock";
 import { dateRangeForPreset, toDateInputValue, type DateRangePreset } from "./lib";
 
 interface CashierOption {
@@ -26,7 +34,7 @@ interface DeviceOption {
 }
 
 export function useReportsPage() {
-  const { products, customers, sales: allSales, fetchSalesInRange, voidSale } = useStoreData();
+  const { products, customers, sales: allSales, fetchSalesInRange, voidSale, refundSale } = useStoreData();
   const { store } = useAuth();
   const thresholdDays = useMemo(
     () => (store ? loadAlertsMock(store.id).utangAgingThresholdDays : DEFAULT_ALERTS_MOCK.utangAgingThresholdDays),
@@ -44,6 +52,11 @@ export function useReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [voidError, setVoidError] = useState<string | null>(null);
+  const [reprintingSale, setReprintingSale] = useState<SaleRecord | null>(null);
+  const receiptSettings = useMemo(
+    () => (store ? loadReceiptSettingsMock(store.id) : DEFAULT_RECEIPT_SETTINGS_MOCK),
+    [store]
+  );
 
   const { startDate, endDate } = useMemo(
     () => dateRangeForPreset(preset, customStart, customEnd),
@@ -106,6 +119,21 @@ export function useReportsPage() {
     downloadTextFile(filename, salesToCsv(sales), "text/csv");
   }
 
+  function exportVatCsv() {
+    const filename = `vat-report-${startDate.slice(0, 10)}-to-${endDate.slice(0, 10)}.csv`;
+    downloadTextFile(filename, vatSalesToCsv(sales), "text/csv");
+  }
+
+  function exportVoidsCsv() {
+    const filename = `voids-report-${startDate.slice(0, 10)}-to-${endDate.slice(0, 10)}.csv`;
+    downloadTextFile(filename, voidsToCsv(sales), "text/csv");
+  }
+
+  function exportPaymentBreakdownCsv() {
+    const filename = `payment-breakdown-${startDate.slice(0, 10)}-to-${endDate.slice(0, 10)}.csv`;
+    downloadTextFile(filename, paymentBreakdownToCsv(report.byPaymentType), "text/csv");
+  }
+
   // Reports' `sales` is its own range-scoped fetch, separate from the
   // capped 100-row cache StoreDataContext keeps for the Dashboard — so
   // once void_sale() succeeds (and voidSale() above has already patched
@@ -128,6 +156,38 @@ export function useReportsPage() {
     }
   }
 
+  // Reprinting itself is a pure read -- the sale is already sitting in this
+  // page's own `sales` state. The RPC call only records the audit entry, and
+  // is best-effort: a logging failure must never block the cashier from
+  // seeing the receipt they clicked to view (same instinct as
+  // request_plan_upgrade's post-signup call).
+  function handleReprintSale(sale: SaleRecord) {
+    setReprintingSale(sale);
+    supabase.rpc("log_receipt_reprint", { p_sale_id: sale.id }).then(
+      () => {},
+      () => {}
+    );
+  }
+
+  function closeReprint() {
+    setReprintingSale(null);
+  }
+
+  // Deliberately does not patch `sales` state on success (unlike void) --
+  // refund_sale_items() is append-only and never changes the original sale
+  // row itself, so there's nothing on the sale to update here.
+  async function handleRefundSale(
+    sale: SaleRecord,
+    reason: string,
+    items: { saleItemId: string; quantity: number }[]
+  ) {
+    try {
+      return await refundSale(sale, reason, items);
+    } catch (err) {
+      throw new Error(describePlatformError(err, ERROR_COULD_NOT_REFUND_SALE));
+    }
+  }
+
   return {
     preset,
     setPreset,
@@ -145,10 +205,19 @@ export function useReportsPage() {
     loading,
     error,
     exportCsv,
+    exportVatCsv,
+    exportVoidsCsv,
+    exportPaymentBreakdownCsv,
     onRetry: load,
     debtAging,
     thresholdDays,
     onVoidSale: handleVoidSale,
     voidError,
+    store,
+    receiptSettings,
+    reprintingSale,
+    onReprintSale: handleReprintSale,
+    closeReprint,
+    onRefundSale: handleRefundSale,
   };
 }

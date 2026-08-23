@@ -17,32 +17,41 @@ interface DeleteAccountModalProps {
 export function DeleteAccountModal({ open, deleteError, deleting, onCancel, onConfirm }: DeleteAccountModalProps) {
   if (!open) return null;
 
+  const headingId = "deleteAccountModalHeading";
+
   return (
-    <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
-        <h2 className="text-base font-semibold text-slate-900">{LABEL_DELETE_ACCOUNT_CONFIRM_HEADING}</h2>
-        <p className="mt-2 text-sm text-slate-600">{TEXT_DELETE_ACCOUNT_MODAL_BODY}</p>
+    <div className="tpl-modal-overlay" onClick={onCancel}>
+      <div
+        className="tpl-modal-panel tpl-card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={headingId}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p id={headingId} className="tpl-h3" style={{ marginBottom: 4 }}>
+          {LABEL_DELETE_ACCOUNT_CONFIRM_HEADING}
+        </p>
+        <p className="tpl-sub" style={{ margin: 0 }}>
+          {TEXT_DELETE_ACCOUNT_MODAL_BODY}
+        </p>
 
         {deleteError && (
-          <p role="alert" className="mt-3 text-sm text-red-600">
+          <p role="alert" className="tpl-emsg">
+            <i className="ti ti-alert-circle" aria-hidden />
             {deleteError}
           </p>
         )}
 
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={deleting}
-            className="cursor-pointer rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
+        <div className="tpl-row" style={{ marginTop: 18, marginBottom: 0 }}>
+          <button type="button" onClick={onCancel} disabled={deleting} className="tpl-btn" style={{ flex: 1, marginBottom: 0 }}>
             {BUTTON_CANCEL}
           </button>
           <button
             type="button"
             onClick={onConfirm}
             disabled={deleting}
-            className="cursor-pointer rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="tpl-btnp tpl-bad"
+            style={{ flex: 1.3, marginBottom: 0 }}
           >
             {deleting ? BUTTON_DELETING : BUTTON_DELETE_MY_ACCOUNT}
           </button>

@@ -30,6 +30,15 @@ vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/lib/cashierSession", () => ({ useCashierSession: vi.fn() }));
 vi.mock("@/lib/storeData", () => ({ useStoreData: vi.fn() }));
 vi.mock("@/lib/featureFlags", () => ({ useFeatureFlag: vi.fn() }));
+// Existing tests here predate pos.discounts (Phase 2c) — held disabled so
+// none of them need to account for the new discount control. useFeature()
+// itself is mocked (not just useFeatures()) since it calls the module-private
+// useFeatures internally, which a partial vi.mock spread can't intercept.
+vi.mock("@/lib/features/featuresContext", async (orig) => ({
+  ...(await orig<typeof import("@/lib/features/featuresContext")>()),
+  useFeatures: () => ({ features: new Set(), catalogue: [], loading: false }),
+  useFeature: () => false,
+}));
 
 vi.mock("@/lib/supabaseClient", () => {
   const order = vi.fn();
@@ -212,6 +221,7 @@ describe("Pos", () => {
       expect.any(Array),
       "Aling Nena",
       { type: "cash", customerId: null },
+      null,
       null
     );
     expect(await screen.findByRole("status")).toHaveTextContent("Sale recorded");
@@ -223,6 +233,7 @@ describe("Pos", () => {
       makeSaleRecord({
         items: [
           {
+            id: "si-1",
             productId: "p1",
             name: "Sardines",
             quantity: 2,
@@ -337,6 +348,7 @@ describe("Pos", () => {
       expect.any(Array),
       "Aling Nena",
       { type: "credit", customerId: "c1" },
+      null,
       null
     );
   });
@@ -380,6 +392,7 @@ describe("Pos", () => {
       expect.any(Array),
       "Aling Nena",
       expect.objectContaining({ type: "credit", customerId: "c1", overridePin: "1234" }),
+      null,
       null
     );
   });
@@ -622,6 +635,7 @@ describe("Pos", () => {
       expect.any(Array),
       "Aling Nena",
       { type: "qr", customerId: null, referenceNo: "0123456789012" },
+      null,
       null
     );
   });

@@ -4,9 +4,12 @@ import {
   BUTTON_EXPORT_CSV,
   LABEL_LOADING,
   BUTTON_TRY_AGAIN,
+  BUTTON_CLOSE,
   useCan,
+  useAuth,
 } from "@/lib";
 import { DebtAgeCard } from "@/components";
+import { ReceiptModal } from "@/pages/Pos/component/receiptmodal";
 import {
   DateRangeFilter,
   CashierFilter,
@@ -15,6 +18,9 @@ import {
   CashierBreakdownTable,
   SalesTable,
   VatSummaryCard,
+  VoidSummaryCard,
+  PaymentBreakdownTable,
+  ZReadingCard,
 } from "./component";
 import { useReportsPage } from "./hooks";
 import "../authTheme.css";
@@ -37,18 +43,29 @@ export function Reports() {
     loading,
     error,
     exportCsv,
+    exportVatCsv,
+    exportVoidsCsv,
+    exportPaymentBreakdownCsv,
     onRetry,
     debtAging,
     thresholdDays,
     onVoidSale,
     voidError,
+    store,
+    receiptSettings,
+    reprintingSale,
+    onReprintSale,
+    closeReprint,
+    onRefundSale,
   } = useReportsPage();
+  const { user } = useAuth();
 
   // void_sale() is now permission-gated (0045_rbac_enforce_checkpoints.sql)
   // rather than unconditionally admin-only — hide the action entirely
   // (SalesTable's existing convention) when the signed-in staff member
   // doesn't hold it, instead of letting them hit a server rejection.
   const canVoidSale = useCan("pos.sale.void");
+  const canRefundSale = useCan("pos.sale.refund");
 
   return (
     <div className="tpl-root">
@@ -62,7 +79,7 @@ export function Reports() {
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3" style={{ marginBottom: 18 }}>
+      <div className="flex flex-wrap items-center gap-3" style={{ marginBottom: 18 }} data-testid="report-filters">
         <DateRangeFilter
           preset={preset}
           onPresetChange={setPreset}
@@ -95,14 +112,43 @@ export function Reports() {
           <div style={{ marginBottom: 14 }}>
             <DebtAgeCard aging={debtAging} thresholdDays={thresholdDays} />
           </div>
-          {(report.vatSummary.vatableSales > 0 ||
-            report.vatSummary.vatAmount > 0 ||
-            report.vatSummary.vatExemptSales > 0 ||
-            report.vatSummary.zeroRatedSales > 0) && <VatSummaryCard summary={report.vatSummary} />}
+          <VatSummaryCard summary={report.vatSummary} vatStatus={store?.vatStatus ?? null} onExport={exportVatCsv} />
+          <VoidSummaryCard summary={report.voidSummary} onExport={exportVoidsCsv} />
           <CashierBreakdownTable rows={report.byCashier} grandTotal={report.totalSales} />
-          <SalesTable sales={report.sales} onVoidSale={canVoidSale ? onVoidSale : undefined} voidError={voidError} />
+          <PaymentBreakdownTable
+            rows={report.byPaymentType}
+            grandTotal={report.totalSales}
+            onExport={exportPaymentBreakdownCsv}
+          />
+          <SalesTable
+            sales={report.sales}
+            onVoidSale={canVoidSale ? onVoidSale : undefined}
+            voidError={voidError}
+            onReprintSale={onReprintSale}
+            onRefundSale={canRefundSale ? onRefundSale : undefined}
+          />
+          <ZReadingCard
+            storeName={store?.name ?? ""}
+            storeAddress={store?.address ?? null}
+            printedByName={user?.name ?? ""}
+            cashiers={cashiers}
+            devices={devices}
+          />
         </>
       )}
+
+      <ReceiptModal
+        open={!!reprintingSale}
+        sale={reprintingSale}
+        store={store}
+        settings={receiptSettings}
+        tin={store?.tin ?? undefined}
+        businessPermitNo={store?.businessPermitNo ?? undefined}
+        autoPrint={false}
+        onClose={closeReprint}
+        isReprint
+        closeLabel={BUTTON_CLOSE}
+      />
     </div>
   );
 }

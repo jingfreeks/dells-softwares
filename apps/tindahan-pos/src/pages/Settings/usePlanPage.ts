@@ -114,3 +114,36 @@ export function usePlanPage() {
     writesPaused: billing ? !billing.writesAllowed : false,
   };
 }
+
+/**
+ * Add-ons live on a different axis than the plan ladder above -- "get just
+ * Accounting" instead of "upgrade the whole tier" -- so this is deliberately
+ * its own small hook rather than folded into usePlanPage's held/locked
+ * split. request_addon() never activates anything itself (no self-serve
+ * checkout in this app); `requested` just remembers the click succeeded so
+ * the button doesn't invite a second identical request in the same visit.
+ */
+export function useAddons() {
+  const [hasAccounting, setHasAccounting] = useState<boolean | null>(null);
+  const [requested, setRequested] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase.rpc("current_store_has_module", { p_module: "ACCOUNTING" }).then(({ data, error }) => {
+      if (cancelled) return;
+      setHasAccounting(error ? null : (data ?? false));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function requestAccounting() {
+    supabase.rpc("request_addon", { p_module_code: "ACCOUNTING" }).then(
+      () => setRequested(true),
+      () => {}
+    );
+  }
+
+  return { hasAccounting, requested, requestAccounting };
+}

@@ -48,6 +48,7 @@ export function ReceiptsSettings() {
               onToggleIncludeLogo={() => toggle("includeLogo")}
               includeTinAndPermit={settings.includeTinAndPermit}
               onToggleIncludeTinAndPermit={() => toggle("includeTinAndPermit")}
+              birRegistered={store?.birRegistered ?? false}
               includeCashierName={settings.includeCashierName}
               onToggleIncludeCashierName={() => toggle("includeCashierName")}
               includeUtangBalance={settings.includeUtangBalance}
@@ -70,6 +71,7 @@ export function ReceiptsSettings() {
             contactNumber={store?.contactNumber ?? ""}
             includeLogo={settings.includeLogo}
             includeTinAndPermit={settings.includeTinAndPermit}
+            birRegistered={store?.birRegistered ?? false}
             tin={tin}
             includeCashierName={settings.includeCashierName}
             footerMessage={settings.footerMessage}

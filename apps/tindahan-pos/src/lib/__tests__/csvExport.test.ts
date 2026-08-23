@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { productsToCsv, salesToCsv, everythingToJson } from "../csvExport";
+import {
+  productsToCsv,
+  salesToCsv,
+  vatSalesToCsv,
+  voidsToCsv,
+  paymentBreakdownToCsv,
+  everythingToJson,
+} from "../csvExport";
 import { makeProduct, makeSaleRecord } from "../../test/testUtils";
 
 describe("productsToCsv", () => {
@@ -22,7 +29,9 @@ describe("salesToCsv", () => {
   it("includes a header row and joins item names with quantities", () => {
     const csv = salesToCsv([makeSaleRecord({ cashierName: "Aling Nena", total: 50 })]);
     const lines = csv.split("\r\n");
-    expect(lines[0]).toBe("Sale ID,Date,Cashier,Payment type,Reference no.,Items,Total,Status,Void reason");
+    expect(lines[0]).toBe(
+      "Sale ID,Date,Receipt No.,Cashier,Payment type,Reference no.,Items,Total,Status,Void reason,VAT status,Vatable sales,VAT amount,VAT-exempt sales,Zero-rated sales,Discount type,Discount value,Discount amount"
+    );
     expect(lines[1]).toContain("Aling Nena");
     expect(lines[1]).toContain("Sardines x2");
     expect(lines[1]).toContain("50");
@@ -33,6 +42,83 @@ describe("salesToCsv", () => {
     const lines = csv.split("\r\n");
     expect(lines[1]).toContain("voided");
     expect(lines[1]).toContain("Wrong quantity");
+  });
+
+  it("includes VAT and discount fields, confirming the export gap is closed", () => {
+    const csv = salesToCsv([
+      makeSaleRecord({
+        receiptNumber: "000042",
+        vatStatus: "vat_registered",
+        vatableSales: 100,
+        vatAmount: 12,
+        discountType: "flat",
+        discountValue: 10,
+        discountAmount: 10,
+      }),
+    ]);
+    const lines = csv.split("\r\n");
+    expect(lines[1]).toContain("000042");
+    expect(lines[1]).toContain("vat_registered");
+    expect(lines[1]).toContain("flat");
+  });
+});
+
+describe("vatSalesToCsv", () => {
+  it("includes a header row and one row per completed sale's VAT breakdown", () => {
+    const csv = vatSalesToCsv([
+      makeSaleRecord({ receiptNumber: "000001", vatStatus: "vat_registered", vatableSales: 100, vatAmount: 12 }),
+    ]);
+    const lines = csv.split("\r\n");
+    expect(lines[0]).toBe("Sale ID,Date,Receipt No.,VAT status,Vatable sales,VAT amount,VAT-exempt sales,Zero-rated sales,Total");
+    expect(lines[1]).toContain("000001");
+    expect(lines[1]).toContain("vat_registered");
+  });
+
+  it("excludes a voided sale", () => {
+    const csv = vatSalesToCsv([makeSaleRecord({ status: "voided" })]);
+    expect(csv.split("\r\n")).toHaveLength(1);
+  });
+});
+
+describe("voidsToCsv", () => {
+  it("includes only voided sales, with voided-at/by fields", () => {
+    const csv = voidsToCsv([
+      makeSaleRecord({ status: "completed" }),
+      makeSaleRecord({
+        id: "s2",
+        status: "voided",
+        voidedAt: "2026-08-01T00:00:00Z",
+        voidedByName: "Owner",
+        voidReason: "Wrong item",
+      }),
+    ]);
+    const lines = csv.split("\r\n");
+    expect(lines).toHaveLength(2);
+    expect(lines[1]).toContain("Owner");
+    expect(lines[1]).toContain("Wrong item");
+  });
+
+  it("is empty (header only) with no voided sales", () => {
+    const csv = voidsToCsv([makeSaleRecord({ status: "completed" })]);
+    expect(csv.split("\r\n")).toHaveLength(1);
+  });
+});
+
+describe("paymentBreakdownToCsv", () => {
+  it("includes a header row and a percent-of-total column", () => {
+    const csv = paymentBreakdownToCsv([
+      { paymentType: "cash", total: 75, transactionCount: 3 },
+      { paymentType: "qr", total: 25, transactionCount: 1 },
+    ]);
+    const lines = csv.split("\r\n");
+    expect(lines[0]).toBe("Payment type,Transactions,Total,% of total");
+    expect(lines[1]).toBe("cash,3,75,75%");
+    expect(lines[2]).toBe("qr,1,25,25%");
+  });
+
+  it("shows 0% for every row when the grand total is zero", () => {
+    const csv = paymentBreakdownToCsv([{ paymentType: "cash", total: 0, transactionCount: 0 }]);
+    expect(csv.split("\r\n")[1]).toBe("cash,0,0,0%");
   });
 });
 

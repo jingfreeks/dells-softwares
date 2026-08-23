@@ -1320,6 +1320,11 @@
   color: var(--tpl-bad);
 }
 
+.tpl-btnp.tpl-bad {
+  background: linear-gradient(180deg, #ef4444, #b91c1c);
+  box-shadow: 0 6px 22px rgba(220, 38, 38, 0.38);
+}
+
 .tpl-thead {
   display: grid;
   gap: 11px;
