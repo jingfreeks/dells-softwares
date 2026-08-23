@@ -64,6 +64,14 @@ export function useFeesLimitsPage() {
     }));
   }
 
+  function updateBracketMax(kind: BracketKind, index: number, max: number) {
+    setJustSaved(false);
+    setBrackets((prev) => ({
+      ...prev,
+      [kind]: prev[kind].map((b, i) => (i === index ? { ...b, max } : b)),
+    }));
+  }
+
   function addBracket(kind: BracketKind) {
     setJustSaved(false);
     setBrackets((prev) => {
@@ -131,6 +139,7 @@ export function useFeesLimitsPage() {
     cashInBrackets: brackets.cashIn,
     cashOutBrackets: brackets.cashOut,
     updateBracketFee,
+    updateBracketMax,
     addBracket,
     removeBracket,
     mock,
