@@ -26,11 +26,17 @@ select * from no_plan();
 -- -----------------------------------------------------------------------------
 -- Deliberately not enforced in the database, and why.
 --
--- The first five are held by EVERY plan, so nothing is being given away: the
+-- The first four are held by EVERY plan, so nothing is being given away: the
 -- tiers do not differ on them and non-enforcement costs nothing today. They
 -- are also the ones with no unambiguous "off" -- you cannot half-open a
--- register, and refusing to let a shop apply a discount mid-queue is not a
--- downgrade, it is a broken till.
+-- register.
+--
+-- pos.discounts USED to be on this list for the same reason (refusing one
+-- mid-queue breaks the till, not the plan) until BIR Compliance Audit Phase
+-- 2c actually built the discount feature -- checkout_sale() now checks
+-- current_store_has_feature('pos.discounts') before applying one, so it
+-- moved off this list into real enforcement instead of leaving a stale
+-- excuse behind (see test 2 below).
 --
 -- THE LAST TWO ARE DIFFERENT, and are recorded here as a known gap rather than
 -- a decision. Both are PRO-only, so the tier split sells them, and neither is
@@ -52,7 +58,6 @@ select * from no_plan();
 create temp table not_enforced (code text primary key);
 insert into not_enforced values
   ('pos.shifts'),        -- opening a register REQUIRES counting the drawer
-  ('pos.discounts'),     -- refusing one mid-queue breaks the till, not the plan
   ('pos.pack_pricing'),  -- tingi selling; also has a separate global kill switch
   ('pos.held_sales'),    -- a parked cart has no meaningful "off"
   ('pos.eload'),         -- gated in the client only, and held by every plan

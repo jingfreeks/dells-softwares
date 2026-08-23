@@ -295,4 +295,32 @@ describe("Receipt", () => {
       expect(screen.getByText("This invoice is NOT VAT Registered.")).toBeInTheDocument();
     });
   });
+
+  describe("discount (BIR compliance, Phase 2c)", () => {
+    it("shows Subtotal and Discount rows when a discount was applied", () => {
+      render(
+        <Receipt
+          sale={makeSaleRecord({ total: 450, discountType: "flat", discountValue: 50, discountAmount: 50 })}
+          store={makeStore()}
+          settings={baseSettings}
+          tendered={450}
+          change={0}
+        />
+      );
+
+      expect(screen.getByText("Subtotal")).toBeInTheDocument();
+      expect(screen.getByText("₱500.00")).toBeInTheDocument();
+      expect(screen.getByText("Discount")).toBeInTheDocument();
+      expect(screen.getByText("-₱50.00")).toBeInTheDocument();
+    });
+
+    it("shows no Subtotal/Discount rows for a sale with no discount", () => {
+      render(
+        <Receipt sale={makeSaleRecord({ discountAmount: 0 })} store={makeStore()} settings={baseSettings} tendered={100} change={50} />
+      );
+
+      expect(screen.queryByText("Subtotal")).not.toBeInTheDocument();
+      expect(screen.queryByText("Discount")).not.toBeInTheDocument();
+    });
+  });
 });

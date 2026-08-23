@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
 import type { ReceivingLine } from "@/lib/inventory";
+import type { Discount } from "@/lib/discount";
 import type {
   CartLine,
   Category,
@@ -66,7 +67,9 @@ export interface StoreDataContextValue {
     cashierName: string,
     payment?: CheckoutPayment,
     /** The quick-switched cashier's session token (see useCashierSession) — attributes the sale to them, not the signed-in admin. */
-    cashierToken?: string | null
+    cashierToken?: string | null,
+    /** Generic transaction-level discount — requires the pos.discounts feature (enforced server-side). */
+    discount?: Discount | null
   ) => Promise<SaleRecord>;
   /** Admin-only — voids a completed sale via void_sale(), reversing its stock/utang-balance effects. Throws ADMIN_ONLY / VOID_REASON_REQUIRED / ALREADY_VOIDED as raised by the RPC. */
   voidSale: (sale: SaleRecord, reason: string) => Promise<void>;

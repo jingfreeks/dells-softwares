@@ -230,6 +230,9 @@ export interface Database {
           vat_exempt_sales: number;
           zero_rated_sales: number;
           device_id: string | null;
+          discount_type: "percentage" | "flat" | null;
+          discount_value: number | null;
+          discount_amount: number;
         };
         Insert: {
           id?: string;
@@ -255,6 +258,9 @@ export interface Database {
           vat_exempt_sales?: number;
           zero_rated_sales?: number;
           device_id?: string | null;
+          discount_type?: "percentage" | "flat" | null;
+          discount_value?: number | null;
+          discount_amount?: number;
         };
         Update: {
           id?: string;
@@ -280,6 +286,9 @@ export interface Database {
           vat_exempt_sales?: number;
           zero_rated_sales?: number;
           device_id?: string | null;
+          discount_type?: "percentage" | "flat" | null;
+          discount_value?: number | null;
+          discount_amount?: number;
         };
         Relationships: [
           {
@@ -1029,6 +1038,8 @@ export interface Database {
           p_client_request_id?: string | null;
           p_occurred_at?: string | null;
           p_is_offline_replay?: boolean;
+          p_discount_type?: string | null;
+          p_discount_value?: number | null;
         };
         Returns: { sale_id: string; total: number; receipt_number: string | null }[];
       };

@@ -134,6 +134,10 @@ export interface SaleRecord {
   /** BIR compliance §49: which paired POS device rang this up, if any — null when a staff member checked out directly (not via a paired device). */
   deviceId: string | null;
   deviceName: string | null;
+  /** Generic transaction-level discount applied at checkout — null/0 when none. */
+  discountType: "percentage" | "flat" | null;
+  discountValue: number | null;
+  discountAmount: number;
 }
 
 export interface ServiceLine {

@@ -8,6 +8,8 @@ import {
   useDrawerFloat,
   packPriceLabel,
   useFeatureFlag,
+  useFeature,
+  computeDiscountAmount,
   wouldExceedCreditLimit,
   ERROR_PRODUCT_NOT_FOUND_BARCODE_PREFIX,
   ERROR_COULD_NOT_ADD_CUSTOMER,
@@ -30,6 +32,7 @@ import {
   type Product,
   type SaleRecord,
   type HeldSale,
+  type Discount,
 } from "@/lib";
 import {
   addToCart,
@@ -75,6 +78,13 @@ export function usePosPage() {
   const { balance: drawerBalance, add: addToDrawer, deduct: deductFromDrawer } = useDrawerFloat();
   const packPricingEnabled = useFeatureFlag("pack_pricing");
   const posServicesEnabled = useFeatureFlag("pos_services");
+  // useFeature() fails open while loading/on error — a UX gate only, since
+  // checkout_sale() itself enforces pos.discounts server-side (the real
+  // boundary), so a stale "enabled" read here can never actually apply an
+  // unpaid discount.
+  const discountsEnabled = useFeature("pos.discounts");
+  const [discountType, setDiscountType] = useState<Discount["type"] | null>(null);
+  const [discountValue, setDiscountValue] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [productQuery, setProductQuery] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -190,10 +200,18 @@ export function usePosPage() {
     void listHeldSales(store.id).then(setHeldSales);
   }, [store]);
 
-  const total = useMemo(
+  const subtotal = useMemo(
     () => cartTotal(cart, packPricingEnabled) + serviceLines.reduce((sum, l) => sum + l.amount + l.fee, 0),
     [cart, serviceLines, packPricingEnabled]
   );
+  const discount: Discount | null = useMemo(() => {
+    if (!discountsEnabled || !discountType) return null;
+    const value = Number(discountValue);
+    if (!value || value <= 0) return null;
+    return { type: discountType, value };
+  }, [discountsEnabled, discountType, discountValue]);
+  const discountAmount = useMemo(() => computeDiscountAmount(subtotal, discount), [subtotal, discount]);
+  const total = subtotal - discountAmount;
   const categories = useMemo(() => Array.from(new Set(products.map((p) => p.category))).sort(), [products]);
   const visibleProducts = useMemo(() => {
     const byCategory = activeCategory === "All" ? products : products.filter((p) => p.category === activeCategory);
@@ -392,6 +410,8 @@ export function usePosPage() {
     setPaymentType("cash");
     setReferenceNo("");
     clearCustomer();
+    setDiscountType(null);
+    setDiscountValue("");
   }
 
   async function runCheckout(overridePinValue?: string) {
@@ -405,7 +425,8 @@ export function usePosPage() {
         ...(paymentType === "qr" ? { referenceNo: referenceNo.trim() } : {}),
         ...(overridePinValue ? { overridePin: overridePinValue } : {}),
       },
-      cashierToken
+      cashierToken,
+      discount
     );
     // Capture tendered/change before resetSaleState() clears them — the
     // receipt needs both, and neither is part of SaleRecord.
@@ -625,7 +646,14 @@ export function usePosPage() {
     selectedService,
     setSelectedService,
     productInputRef,
+    subtotal,
     total,
+    discountsEnabled,
+    discountType,
+    setDiscountType,
+    discountValue,
+    setDiscountValue,
+    discountAmount,
     categories,
     products,
     visibleProducts,

@@ -30,6 +30,9 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     zeroRatedSales: 0,
     deviceId: null,
     deviceName: null,
+    discountType: null,
+    discountValue: null,
+    discountAmount: 0,
     ...overrides,
   };
 }
