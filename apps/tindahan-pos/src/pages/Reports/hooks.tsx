@@ -8,6 +8,7 @@ import {
   computeOldestDebtDays,
   buildDebtAgingSummary,
   ERROR_COULD_NOT_VOID_SALE,
+  ERROR_COULD_NOT_REFUND_SALE,
   type SaleRecord,
 } from "@/lib";
 import { buildRangeReport } from "@/lib/reports";
@@ -30,7 +31,7 @@ interface DeviceOption {
 }
 
 export function useReportsPage() {
-  const { products, customers, sales: allSales, fetchSalesInRange, voidSale } = useStoreData();
+  const { products, customers, sales: allSales, fetchSalesInRange, voidSale, refundSale } = useStoreData();
   const { store } = useAuth();
   const thresholdDays = useMemo(
     () => (store ? loadAlertsMock(store.id).utangAgingThresholdDays : DEFAULT_ALERTS_MOCK.utangAgingThresholdDays),
@@ -154,6 +155,21 @@ export function useReportsPage() {
     setReprintingSale(null);
   }
 
+  // Deliberately does not patch `sales` state on success (unlike void) --
+  // refund_sale_items() is append-only and never changes the original sale
+  // row itself, so there's nothing on the sale to update here.
+  async function handleRefundSale(
+    sale: SaleRecord,
+    reason: string,
+    items: { saleItemId: string; quantity: number }[]
+  ) {
+    try {
+      return await refundSale(sale, reason, items);
+    } catch (err) {
+      throw new Error(describePlatformError(err, ERROR_COULD_NOT_REFUND_SALE));
+    }
+  }
+
   return {
     preset,
     setPreset,
@@ -181,5 +197,6 @@ export function useReportsPage() {
     reprintingSale,
     onReprintSale: handleReprintSale,
     closeReprint,
+    onRefundSale: handleRefundSale,
   };
 }

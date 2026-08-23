@@ -528,6 +528,19 @@ export const PLACEHOLDER_VOID_REASON = "e.g. Incorrect quantity entered";
 export const TEXT_VOID_REASON_PREFIX = "Reason:";
 export const TEXT_VOIDED_BY_PREFIX = "Voided by";
 export const ERROR_COULD_NOT_VOID_SALE = "Could not void this sale.";
+export const BUTTON_REFUND_SALE = "Refund";
+export const TEXT_REFUND_SALE_TITLE = "Refund or return items";
+export const TEXT_REFUND_SALE_BODY_PREFIX =
+  "Restores stock for the quantity returned and, for a credit sale, reduces the customer's utang balance by the refunded amount. The original sale is never changed.";
+export const LABEL_REFUND_REASON = "Reason for the refund";
+export const PLACEHOLDER_REFUND_REASON = "e.g. Customer returned 1 unit, wrong size";
+export const LABEL_QUANTITY_SOLD_PREFIX = "Sold";
+export const LABEL_QUANTITY_ALREADY_REFUNDED_PREFIX = "Already refunded";
+export const LABEL_QUANTITY_TO_REFUND = "Qty to refund";
+export const BUTTON_SUBMIT_REFUND = "Refund";
+export const ERROR_COULD_NOT_REFUND_SALE = "Could not refund this sale.";
+export const TEXT_NO_ITEMS_TO_REFUND = "Select at least one item to refund.";
+export const TEXT_NOTHING_LEFT_TO_REFUND = "Everything on this sale has already been refunded.";
 export const LABEL_VAT_SUMMARY = "VAT summary";
 export const LABEL_VATABLE_SALES = "VATable sales";
 export const LABEL_VAT_AMOUNT = "VAT amount";
@@ -1340,6 +1353,7 @@ export const LABEL_AUDIT_ACTION_STORE_CONFIG_CHANGED = "Store settings changed";
 export const LABEL_AUDIT_ACTION_CUSTOMER_DELETED = "Customer deleted";
 export const LABEL_AUDIT_ACTION_STAFF_ROLE_CHANGED = "Staff role changed";
 export const LABEL_AUDIT_ACTION_RECEIPT_REPRINTED = "Receipt reprinted";
+export const LABEL_AUDIT_ACTION_SALE_REFUNDED = "Sale refunded";
 
 // Connection resilience (freeze/blank-screen fix)
 export const TEXT_SETTING_UP_CASHIER_SESSION = "Setting up your cashier session…";

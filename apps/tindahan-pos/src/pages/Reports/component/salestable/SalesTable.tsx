@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ConfirmDialog } from "@/components";
+import { RefundModal } from "../refundmodal";
 import {
   PESO,
   LABEL_SALES_LIST,
@@ -13,6 +14,7 @@ import {
   LABEL_STATUS_VOIDED,
   BUTTON_VOID_SALE,
   BUTTON_REPRINT_RECEIPT,
+  BUTTON_REFUND_SALE,
   TEXT_VOID_SALE_TITLE,
   TEXT_VOID_SALE_BODY_PREFIX,
   LABEL_VOID_REASON,
@@ -63,12 +65,19 @@ interface SalesTableProps {
   /** Reprinting needs no extra permission beyond seeing this table in the
    * first place, so unlike onVoidSale this is always present. */
   onReprintSale?: (sale: SaleRecord) => void;
+  /** Omit to hide the refund action entirely (e.g. a staff member without pos.sale.refund). */
+  onRefundSale?: (
+    sale: SaleRecord,
+    reason: string,
+    items: { saleItemId: string; quantity: number }[]
+  ) => Promise<unknown>;
 }
 
-export function SalesTable({ sales, onVoidSale, voidError, onReprintSale }: SalesTableProps) {
+export function SalesTable({ sales, onVoidSale, voidError, onReprintSale, onRefundSale }: SalesTableProps) {
   const [voidingSale, setVoidingSale] = useState<SaleRecord | null>(null);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [refundingSale, setRefundingSale] = useState<SaleRecord | null>(null);
 
   function closeVoidDialog() {
     setVoidingSale(null);
@@ -142,16 +151,28 @@ export function SalesTable({ sales, onVoidSale, voidError, onReprintSale }: Sale
                 <SaleStatusChip />
               </span>
             ) : (
-              onVoidSale && (
-                <button
-                  type="button"
-                  className="tpl-lnk"
-                  style={{ fontSize: 12 }}
-                  onClick={() => setVoidingSale(sale)}
-                >
-                  {BUTTON_VOID_SALE}
-                </button>
-              )
+              <>
+                {onRefundSale && (
+                  <button
+                    type="button"
+                    className="tpl-lnk"
+                    style={{ fontSize: 12 }}
+                    onClick={() => setRefundingSale(sale)}
+                  >
+                    {BUTTON_REFUND_SALE}
+                  </button>
+                )}
+                {onVoidSale && (
+                  <button
+                    type="button"
+                    className="tpl-lnk"
+                    style={{ fontSize: 12 }}
+                    onClick={() => setVoidingSale(sale)}
+                  >
+                    {BUTTON_VOID_SALE}
+                  </button>
+                )}
+              </>
             )}
           </span>
         </div>
@@ -189,6 +210,15 @@ export function SalesTable({ sales, onVoidSale, voidError, onReprintSale }: Sale
           </div>
         }
       />
+
+      {onRefundSale && (
+        <RefundModal
+          open={!!refundingSale}
+          sale={refundingSale}
+          onSubmit={(sale, refundReason, items) => onRefundSale(sale, refundReason, items)}
+          onClose={() => setRefundingSale(null)}
+        />
+      )}
     </div>
   );
 }

@@ -78,6 +78,7 @@ describe("salesByCategory (story E5)", () => {
       makeSale({
         items: [
           {
+            id: "si-chips",
             productId: "chips",
             name: "Chips",
             quantity: 2,
@@ -87,6 +88,7 @@ describe("salesByCategory (story E5)", () => {
             lineTotal: 40,
           },
           {
+            id: "si-soda",
             productId: "soda",
             name: "Soda",
             quantity: 1,
@@ -111,6 +113,7 @@ describe("salesByCategory (story E5)", () => {
       makeSale({
         items: [
           {
+            id: "si-eload",
             productId: "",
             name: "E-Load ₱100",
             quantity: 1,
@@ -131,6 +134,7 @@ describe("salesByCategory (story E5)", () => {
       makeSale({
         items: [
           {
+            id: "si-gone",
             productId: "deleted",
             name: "Gone",
             quantity: 1,
@@ -154,8 +158,8 @@ describe("salesByCategory (story E5)", () => {
     const sales = [
       makeSale({
         items: [
-          { productId: "a", name: "A", quantity: 1, price: 10, itemType: "product", fee: 0, lineTotal: 10 },
-          { productId: "b", name: "B", quantity: 1, price: 50, itemType: "product", fee: 0, lineTotal: 50 },
+          { id: "si-a", productId: "a", name: "A", quantity: 1, price: 10, itemType: "product", fee: 0, lineTotal: 10 },
+          { id: "si-b", productId: "b", name: "B", quantity: 1, price: 50, itemType: "product", fee: 0, lineTotal: 50 },
         ],
       }),
     ];
@@ -169,6 +173,7 @@ describe("salesByCategory (story E5)", () => {
       makeSale({
         items: [
           {
+            id: "si-candy",
             productId: "candy",
             name: "Candy",
             quantity: 3,
@@ -194,6 +199,7 @@ describe("salesByCategory (story E5)", () => {
       makeSale({
         items: [
           {
+            id: "si-a2",
             productId: "a",
             name: "A",
             quantity: 2,
@@ -212,6 +218,7 @@ describe("salesByCategory (story E5)", () => {
 
 function makeSaleItem(overrides: Partial<SaleRecord["items"][number]> = {}): SaleRecord["items"][number] {
   return {
+    id: "sale-item-1",
     productId: "p1",
     name: "Item",
     quantity: 1,
@@ -389,7 +396,7 @@ describe("buildRangeReport", () => {
         cashierName: "Aling Nena",
         total: 20,
         items: [
-          { productId: "p1", name: "Chips", quantity: 2, price: 10, itemType: "product", fee: 0, lineTotal: 20 },
+          { id: "si-chips2", productId: "p1", name: "Chips", quantity: 2, price: 10, itemType: "product", fee: 0, lineTotal: 20 },
         ],
       }),
     ];
@@ -410,7 +417,7 @@ describe("void support (BIR compliance §39) — a voided sale is never counted,
     total: 30,
     status: "voided",
     items: [
-      { productId: "p1", name: "Chips", quantity: 3, price: 10, itemType: "product", fee: 0, lineTotal: 30 },
+      { id: "si-chips3", productId: "p1", name: "Chips", quantity: 3, price: 10, itemType: "product", fee: 0, lineTotal: 30 },
     ],
   });
 

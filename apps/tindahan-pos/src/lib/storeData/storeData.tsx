@@ -126,7 +126,7 @@ function friendlyProductError(err: { code?: string; message: string }): Error {
 }
 
 const SALE_SELECT =
-  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, receipt_number, status, voided_at, void_reason, vat_status, vat_rate, vatable_sales, vat_amount, vat_exempt_sales, zero_rated_sales, device_id, staff:cashier_id(id, name), voided_by_staff:voided_by(id, name), device:device_id(id, name), sale_items(product_id, name, quantity, price, item_type, fee, line_total)";
+  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, receipt_number, status, voided_at, void_reason, vat_status, vat_rate, vatable_sales, vat_amount, vat_exempt_sales, zero_rated_sales, device_id, staff:cashier_id(id, name), voided_by_staff:voided_by(id, name), device:device_id(id, name), sale_items(id, product_id, name, quantity, price, item_type, fee, line_total)";
 
 function mapSaleRow(row: {
   id: string;
@@ -151,6 +151,7 @@ function mapSaleRow(row: {
   device: { id: string; name: string } | { id: string; name: string }[] | null;
   sale_items:
     | {
+        id: string;
         product_id: string | null;
         name: string;
         quantity: number;
@@ -190,6 +191,7 @@ function mapSaleRow(row: {
     deviceId: device?.id ?? null,
     deviceName: device?.name ?? null,
     items: (row.sale_items ?? []).map((item) => ({
+      id: item.id,
       productId: item.product_id ?? "",
       name: item.name,
       quantity: item.quantity,
@@ -556,8 +558,15 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     const saleRecord: SaleRecord = {
       id: saleId,
       timestamp: occurredAt,
+      // id is a placeholder here — this optimistic record is built before the
+      // RPC round trip returns real sale_items rows, so there's no real id
+      // yet. Only used for the Dashboard's recent-sales list and the receipt
+      // shown right after checkout, neither of which needs to reference a
+      // specific line back for a refund (Reports fetches its own copy with
+      // real ids via fetchSalesInRange).
       items: [
         ...cart.map((line) => ({
+          id: "",
           productId: line.product.id,
           name: line.product.name,
           quantity: line.quantity,
@@ -567,6 +576,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
           lineTotal: lineTotal(line.product, line.quantity),
         })),
         ...services.map((line) => ({
+          id: "",
           productId: "",
           name: line.label,
           quantity: 1,
@@ -661,6 +671,50 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
           : s
       )
     );
+  }
+
+  // BIR compliance §39 (Phase 2b): refund_sale_items() is deliberately
+  // append-only — unlike void_sale(), it never touches the original
+  // sales/sale_items rows, so there's no `sales` status to patch here.
+  // Only the side effects it actually performs get mirrored into local
+  // state: the stock restoration and (for a credit sale) the balance
+  // reversal, same rationale as checkout()/voidSale() above.
+  async function refundSale(
+    sale: SaleRecord,
+    reason: string,
+    items: { saleItemId: string; quantity: number }[]
+  ): Promise<string> {
+    const { data, error: err } = await supabase.rpc("refund_sale_items", {
+      p_sale_id: sale.id,
+      p_reason: reason,
+      p_items: items.map((i) => ({ sale_item_id: i.saleItemId, quantity: i.quantity })),
+    });
+    if (err) throw err;
+
+    let refundTotal = 0;
+    const restockByProductId = new Map<string, number>();
+    for (const { saleItemId, quantity } of items) {
+      const item = sale.items.find((si) => si.id === saleItemId);
+      if (!item) continue;
+      refundTotal += item.price * quantity;
+      if (item.itemType === "product") {
+        restockByProductId.set(item.productId, (restockByProductId.get(item.productId) ?? 0) + quantity);
+      }
+    }
+    setProducts((prev) =>
+      prev.map((p) => {
+        const restocked = restockByProductId.get(p.id);
+        return restocked ? { ...p, stock: p.stock + restocked } : p;
+      })
+    );
+    if (sale.paymentType === "credit" && sale.customerId) {
+      const customerId = sale.customerId;
+      setCustomers((prev) =>
+        prev.map((c) => (c.id === customerId ? { ...c, balance: c.balance - refundTotal } : c))
+      );
+    }
+
+    return data as unknown as string;
   }
 
   async function addCategory(name: string): Promise<Category> {
@@ -944,6 +998,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         restock,
         checkout,
         voidSale,
+        refundSale,
         refresh,
         addCategory,
         renameCategory,

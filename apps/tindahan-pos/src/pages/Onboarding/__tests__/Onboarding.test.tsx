@@ -445,7 +445,7 @@ describe("Onboarding", () => {
         makeSaleRecord({
           id: "sale-1",
           timestamp: now,
-          items: [{ productId: "prod-1", name: "Sardines", quantity: 2, price: 25, itemType: "product", fee: 0, lineTotal: 50 }],
+          items: [{ id: "si-1", productId: "prod-1", name: "Sardines", quantity: 2, price: 25, itemType: "product", fee: 0, lineTotal: 50 }],
         }),
       ];
       vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, sales }));

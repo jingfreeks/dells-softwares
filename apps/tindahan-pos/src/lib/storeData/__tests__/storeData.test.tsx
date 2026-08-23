@@ -4,7 +4,7 @@ import { useAuth } from "../../auth";
 import { supabase } from "../../supabaseClient";
 import { StoreDataProvider } from "../storeData";
 import { useStoreData } from "../storeDataContext";
-import { makeAuthValue, makeStaffAccount } from "../../../test/testUtils";
+import { makeAuthValue, makeStaffAccount, makeSaleRecord } from "../../../test/testUtils";
 
 vi.mock("../../auth", () => ({ useAuth: vi.fn() }));
 
@@ -729,6 +729,89 @@ describe("StoreDataProvider", () => {
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
     await expect(captured!.checkout([], [], "Aling Nena")).rejects.toEqual({ message: "insufficient stock" });
+  });
+
+  // BIR Compliance Audit, Phase 2b — refund_sale_items() is append-only, so
+  // unlike voidSale() there's no sales row to patch; only the side effects
+  // it actually performs (stock restoration, credit balance reversal) get
+  // mirrored into local state.
+  describe("refundSale", () => {
+    it("issues the RPC with sale_item_id/quantity pairs and returns the new refund id", async () => {
+      mockedSupabase.rpc.mockResolvedValue({ data: "refund-1", error: null });
+      renderProvider(<Capture />);
+      await waitFor(() => expect(captured?.loading).toBe(false));
+
+      const sale = makeSaleRecord({ id: "sale-1" });
+      const refundId = await captured!.refundSale(sale, "Customer returned 1 unit", [
+        { saleItemId: sale.items[0].id, quantity: 1 },
+      ]);
+
+      expect(refundId).toBe("refund-1");
+      expect(mockedSupabase.rpc).toHaveBeenCalledWith("refund_sale_items", {
+        p_sale_id: "sale-1",
+        p_reason: "Customer returned 1 unit",
+        p_items: [{ sale_item_id: sale.items[0].id, quantity: 1 }],
+      });
+    });
+
+    it("restores product stock locally for the refunded quantity, without refetching", async () => {
+      tableResults.products.list = {
+        data: [
+          {
+            id: "prod-1",
+            barcode: null,
+            name: "Sardines",
+            price: 25,
+            stock: 18,
+            low_stock_threshold: 5,
+            category_id: "cat1",
+            pack_quantity: null,
+            pack_price: null,
+            image_url: null,
+            categories: { name: "Canned" },
+          },
+        ],
+        error: null,
+      };
+      mockedSupabase.rpc.mockResolvedValue({ data: "refund-1", error: null });
+      renderProvider(<Capture />);
+      await waitFor(() => expect(captured?.loading).toBe(false));
+      const fromCallsBefore = mockedSupabase.from.mock.calls.filter((c) => c[0] === "products").length;
+
+      const sale = makeSaleRecord({ id: "sale-1" }); // items[0]: productId "prod-1", quantity 2
+      await captured!.refundSale(sale, "return", [{ saleItemId: sale.items[0].id, quantity: 1 }]);
+
+      await waitFor(() => expect(captured!.products.find((p) => p.id === "prod-1")?.stock).toBe(19));
+      const fromCallsAfter = mockedSupabase.from.mock.calls.filter((c) => c[0] === "products").length;
+      expect(fromCallsAfter).toBe(fromCallsBefore);
+    });
+
+    it("reduces the customer's utang balance locally for a credit sale's refund", async () => {
+      tableResults.customers.list = {
+        data: [{ id: "c1", name: "Mang Jose", phone: null, credit_limit: null, balance: 100 }],
+        error: null,
+      };
+      mockedSupabase.rpc.mockResolvedValue({ data: "refund-1", error: null });
+      renderProvider(<Capture />);
+      await waitFor(() => expect(captured?.loading).toBe(false));
+
+      const sale = makeSaleRecord({ id: "sale-1", paymentType: "credit", customerId: "c1" });
+      await captured!.refundSale(sale, "return", [{ saleItemId: sale.items[0].id, quantity: 1 }]);
+
+      // items[0] is 2 x ₱25 — refunding 1 unit reduces the balance by ₱25.
+      await waitFor(() => expect(captured!.customers.find((c) => c.id === "c1")?.balance).toBe(75));
+    });
+
+    it("propagates a refund RPC error", async () => {
+      mockedSupabase.rpc.mockResolvedValue({ data: null, error: { message: "REFUND_EXCEEDS_SOLD_QUANTITY: Sardines" } });
+      renderProvider(<Capture />);
+      await waitFor(() => expect(captured?.loading).toBe(false));
+
+      const sale = makeSaleRecord({ id: "sale-1" });
+      await expect(
+        captured!.refundSale(sale, "too much", [{ saleItemId: sale.items[0].id, quantity: 99 }])
+      ).rejects.toEqual({ message: "REFUND_EXCEEDS_SOLD_QUANTITY: Sardines" });
+    });
   });
 
   it("adds, renames, and removes a category, with friendly duplicate/FK errors", async () => {

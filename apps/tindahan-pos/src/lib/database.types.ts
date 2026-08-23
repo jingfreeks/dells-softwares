@@ -842,6 +842,99 @@ export interface Database {
           },
         ];
       };
+      // 20260815131000_refund_return.sql
+      refunds: {
+        Row: {
+          id: string;
+          store_id: string;
+          sale_id: string;
+          actor_id: string | null;
+          reason: string;
+          total_amount: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          sale_id: string;
+          actor_id?: string | null;
+          reason: string;
+          total_amount?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          sale_id?: string;
+          actor_id?: string | null;
+          reason?: string;
+          total_amount?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "refunds_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "refunds_sale_id_fkey";
+            columns: ["sale_id"];
+            referencedRelation: "sales";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      refund_items: {
+        Row: {
+          id: string;
+          store_id: string;
+          refund_id: string;
+          sale_id: string;
+          sale_item_id: string;
+          quantity: number;
+          amount: number;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          refund_id: string;
+          sale_id: string;
+          sale_item_id: string;
+          quantity: number;
+          amount: number;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          refund_id?: string;
+          sale_id?: string;
+          sale_item_id?: string;
+          quantity?: number;
+          amount?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "refund_items_refund_id_fkey";
+            columns: ["refund_id"];
+            referencedRelation: "refunds";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "refund_items_sale_id_fkey";
+            columns: ["sale_id"];
+            referencedRelation: "sales";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "refund_items_sale_item_id_fkey";
+            columns: ["sale_item_id"];
+            referencedRelation: "sale_items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       // 0044_rbac_foundation.sql
       permissions: {
         Row: { code: string; module_code: string; description: string };
@@ -951,6 +1044,14 @@ export interface Database {
           p_sale_id: string;
         };
         Returns: undefined;
+      };
+      refund_sale_items: {
+        Args: {
+          p_sale_id: string;
+          p_reason: string;
+          p_items: Json;
+        };
+        Returns: string;
       };
       record_credit_payment: {
         Args: {

@@ -223,6 +223,7 @@ describe("Pos", () => {
       makeSaleRecord({
         items: [
           {
+            id: "si-1",
             productId: "p1",
             name: "Sardines",
             quantity: 2,

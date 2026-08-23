@@ -226,7 +226,7 @@ function saleOf(productId: string, quantity: number, timestamp: string): SaleRec
   return makeSale({
     timestamp,
     items: [
-      { productId, name: "x", quantity, price: 10, itemType: "product", fee: 0, lineTotal: quantity * 10 },
+      { id: "si-x", productId, name: "x", quantity, price: 10, itemType: "product", fee: 0, lineTotal: quantity * 10 },
     ],
   });
 }
@@ -265,7 +265,7 @@ describe("computeRestockSuggestions", () => {
     const sales = [
       makeSale({
         timestamp: now.toISOString(),
-        items: [{ productId: "", name: "E-Load", quantity: 1, price: 50, itemType: "service", fee: 0, lineTotal: 50 }],
+        items: [{ id: "si-eload", productId: "", name: "E-Load", quantity: 1, price: 50, itemType: "service", fee: 0, lineTotal: 50 }],
       }),
     ];
     expect(computeRestockSuggestions(products, sales, { now })).toEqual([]);

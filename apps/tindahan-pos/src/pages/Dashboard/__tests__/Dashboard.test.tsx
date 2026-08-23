@@ -159,7 +159,7 @@ describe("Dashboard", () => {
     const daySales = [
       makeSaleRecord({
         timestamp: "2026-07-27T09:00:00",
-        items: [{ productId: "p1", name: "Sardines", quantity: 10, price: 25, itemType: "product", fee: 0, lineTotal: 250 }],
+        items: [{ id: "si-1", productId: "p1", name: "Sardines", quantity: 10, price: 25, itemType: "product", fee: 0, lineTotal: 250 }],
       }),
     ];
     vi.mocked(useStoreData).mockReturnValue(
@@ -221,7 +221,7 @@ describe("Dashboard", () => {
       makeSaleRecord({
         timestamp: "2026-07-27T09:00:00",
         paymentType: "qr",
-        items: [{ productId: "p1", name: "Coke Sakto", quantity: 2, price: 15, itemType: "product", fee: 0, lineTotal: 30 }],
+        items: [{ id: "si-2", productId: "p1", name: "Coke Sakto", quantity: 2, price: 15, itemType: "product", fee: 0, lineTotal: 30 }],
       }),
     ];
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ fetchSalesInRange: makeFetchSalesInRange(daySales) }));

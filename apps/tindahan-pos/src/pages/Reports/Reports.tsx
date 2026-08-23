@@ -49,6 +49,7 @@ export function Reports() {
     reprintingSale,
     onReprintSale,
     closeReprint,
+    onRefundSale,
   } = useReportsPage();
 
   // void_sale() is now permission-gated (0045_rbac_enforce_checkpoints.sql)
@@ -56,6 +57,7 @@ export function Reports() {
   // (SalesTable's existing convention) when the signed-in staff member
   // doesn't hold it, instead of letting them hit a server rejection.
   const canVoidSale = useCan("pos.sale.void");
+  const canRefundSale = useCan("pos.sale.refund");
 
   return (
     <div className="tpl-root">
@@ -112,6 +114,7 @@ export function Reports() {
             onVoidSale={canVoidSale ? onVoidSale : undefined}
             voidError={voidError}
             onReprintSale={onReprintSale}
+            onRefundSale={canRefundSale ? onRefundSale : undefined}
           />
         </>
       )}
