@@ -79,6 +79,37 @@ describe("useAuditLog", () => {
     ]);
   });
 
+  // BIR Compliance Audit, Phase 1: audit_log now records four more action
+  // types beyond sale_voided (sale creation, price changes, store config
+  // changes, customer deletion, staff role changes) -- each needs a
+  // friendly label, not the raw action string, in the viewer.
+  it.each([
+    ["sale_created", "Sale recorded"],
+    ["price_changed", "Price changed"],
+    ["store_config_changed", "Store settings changed"],
+    ["customer_deleted", "Customer deleted"],
+    ["staff_role_changed", "Staff role changed"],
+  ])("labels %s as %s", async (action, label) => {
+    mockedSupabase.__mocks.auditLogSelect.mockReturnValue(
+      chain([
+        {
+          id: "log-1",
+          actor_id: "staff-1",
+          action,
+          entity_type: "product",
+          entity_id: "product-1",
+          reason: null,
+          created_at: "2026-08-15T08:54:57Z",
+        },
+      ])
+    );
+
+    const { result } = renderHook(() => useAuditLog());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.entries[0].actionLabel).toBe(label);
+  });
+
   it("passes a custom limit through to the query", async () => {
     mockedSupabase.__mocks.auditLogSelect.mockReturnValue(chain([]));
 

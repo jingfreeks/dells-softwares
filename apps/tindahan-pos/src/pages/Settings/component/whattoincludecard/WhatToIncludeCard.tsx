@@ -5,6 +5,7 @@ import {
   LABEL_INCLUDE_CASHIER_NAME,
   LABEL_INCLUDE_UTANG_BALANCE,
   LABEL_INCLUDE_QR_TO_PAY,
+  TEXT_TIN_REQUIRED_HINT,
 } from "@/lib";
 
 interface WhatToIncludeCardProps {
@@ -12,6 +13,8 @@ interface WhatToIncludeCardProps {
   onToggleIncludeLogo: () => void;
   includeTinAndPermit: boolean;
   onToggleIncludeTinAndPermit: () => void;
+  /** A BIR-registered store always prints its TIN — the toggle can't turn that off. */
+  birRegistered: boolean;
   includeCashierName: boolean;
   onToggleIncludeCashierName: () => void;
   includeUtangBalance: boolean;
@@ -25,6 +28,7 @@ export function WhatToIncludeCard({
   onToggleIncludeLogo,
   includeTinAndPermit,
   onToggleIncludeTinAndPermit,
+  birRegistered,
   includeCashierName,
   onToggleIncludeCashierName,
   includeUtangBalance,
@@ -32,9 +36,14 @@ export function WhatToIncludeCard({
   includeQrToPay,
   onToggleIncludeQrToPay,
 }: WhatToIncludeCardProps) {
-  const chips: { label: string; on: boolean; onToggle: () => void }[] = [
+  const chips: { label: string; on: boolean; onToggle: () => void; locked?: boolean }[] = [
     { label: LABEL_INCLUDE_LOGO, on: includeLogo, onToggle: onToggleIncludeLogo },
-    { label: LABEL_INCLUDE_TIN_AND_PERMIT, on: includeTinAndPermit, onToggle: onToggleIncludeTinAndPermit },
+    {
+      label: LABEL_INCLUDE_TIN_AND_PERMIT,
+      on: birRegistered || includeTinAndPermit,
+      onToggle: onToggleIncludeTinAndPermit,
+      locked: birRegistered,
+    },
     { label: LABEL_INCLUDE_CASHIER_NAME, on: includeCashierName, onToggle: onToggleIncludeCashierName },
     { label: LABEL_INCLUDE_UTANG_BALANCE, on: includeUtangBalance, onToggle: onToggleIncludeUtangBalance },
     { label: LABEL_INCLUDE_QR_TO_PAY, on: includeQrToPay, onToggle: onToggleIncludeQrToPay },
@@ -51,15 +60,21 @@ export function WhatToIncludeCard({
             key={chip.label}
             type="button"
             aria-pressed={chip.on}
-            onClick={chip.onToggle}
+            aria-disabled={chip.locked}
+            onClick={chip.locked ? undefined : chip.onToggle}
             className={`tpl-chip${chip.on ? " tpl-on" : ""}`}
-            style={{ cursor: "pointer", font: "inherit" }}
+            style={{ cursor: chip.locked ? "default" : "pointer", font: "inherit" }}
           >
             {chip.on && <i className="ti ti-check" aria-hidden />}
             {chip.label}
           </button>
         ))}
       </div>
+      {birRegistered && (
+        <p className="tpl-hint" style={{ marginTop: 8 }}>
+          {TEXT_TIN_REQUIRED_HINT}
+        </p>
+      )}
     </div>
   );
 }

@@ -72,6 +72,27 @@ describe("Receipt", () => {
     expect(screen.queryByText("Salamat po! Balik kayo ulit.")).not.toBeInTheDocument();
   });
 
+  // BIR Compliance Audit, Phase 1: a BIR-registered store's TIN must never
+  // be suppressible by the receipt-preference toggle -- a fully-configured,
+  // registered store printing a TIN-less receipt is exactly the gap this
+  // closes.
+  it("shows TIN/permit for a BIR-registered store even when the toggle is off", () => {
+    render(
+      <Receipt
+        sale={makeSaleRecord()}
+        store={makeStore({ birRegistered: true })}
+        settings={{ ...baseSettings, includeTinAndPermit: false }}
+        tin="123-456-789-000"
+        businessPermitNo="BP-2026-001"
+        tendered={100}
+        change={50}
+      />
+    );
+
+    expect(screen.getByText("TIN: 123-456-789-000")).toBeInTheDocument();
+    expect(screen.getByText("Permit: BP-2026-001")).toBeInTheDocument();
+  });
+
   it("shows tendered and change only for a cash sale", () => {
     const { rerender } = render(
       <Receipt

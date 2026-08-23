@@ -55,8 +55,10 @@ export function Receipt({ sale, store, settings, tin, businessPermitNo, tendered
       <div className="tpl-receipt-center">
         <p className="tpl-receipt-store">{store.name}</p>
         {store.address && <p className="tpl-receipt-line">{store.address}</p>}
-        {settings.includeTinAndPermit && tin && <p className="tpl-receipt-line">TIN: {tin}</p>}
-        {settings.includeTinAndPermit && businessPermitNo && (
+        {(store.birRegistered || settings.includeTinAndPermit) && tin && (
+          <p className="tpl-receipt-line">TIN: {tin}</p>
+        )}
+        {(store.birRegistered || settings.includeTinAndPermit) && businessPermitNo && (
           <p className="tpl-receipt-line">Permit: {businessPermitNo}</p>
         )}
         <p className="tpl-receipt-heading">{store.invoiceType}</p>
