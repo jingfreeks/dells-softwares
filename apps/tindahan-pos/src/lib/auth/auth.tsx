@@ -214,6 +214,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
     });
     if (error) return { ok: false, error: friendlyAuthError(error.message) };
+    // Best-effort: a logging failure must never block a successful sign-in.
+    supabase.rpc("log_staff_auth_event", { p_action: "login" }).then(
+      () => {},
+      () => {}
+    );
     return { ok: true };
   }
 
@@ -252,6 +257,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
+    // Must run before signOut() -- once the session is gone there's no
+    // authenticated caller left for the RPC to attribute the event to.
+    // Best-effort: awaited so it has a chance to land, but never blocks
+    // sign-out on its own success/failure.
+    await supabase.rpc("log_staff_auth_event", { p_action: "logout" }).then(
+      () => {},
+      () => {}
+    );
     await supabase.auth.signOut();
     togglablePersistenceStorage.setPersistenceEnabled(true);
     setUser(null);
