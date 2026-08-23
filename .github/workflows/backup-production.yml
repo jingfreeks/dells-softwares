@@ -51,6 +51,15 @@ jobs:
           sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo $VERSION_CODENAME)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           sudo apt-get update
           sudo apt-get install --yes postgresql-client-17
+          # ubuntu-latest ships a preinstalled v16 pg_dump directly on PATH
+          # (not managed through postgresql-common's version-selection
+          # wrapper) -- installing v17 alongside it does not repoint
+          # /usr/bin/pg_dump, confirmed the hard way. Put v17's own bin
+          # directory ahead of it explicitly.
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Confirm pg_dump is the right version
+        run: pg_dump --version
 
       - name: Install dependencies
         run: npm ci
