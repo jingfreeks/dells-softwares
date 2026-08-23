@@ -6,6 +6,7 @@ import {
   BUTTON_TRY_AGAIN,
   BUTTON_CLOSE,
   useCan,
+  useAuth,
 } from "@/lib";
 import { DebtAgeCard } from "@/components";
 import { ReceiptModal } from "@/pages/Pos/component/receiptmodal";
@@ -19,6 +20,7 @@ import {
   VatSummaryCard,
   VoidSummaryCard,
   PaymentBreakdownTable,
+  ZReadingCard,
 } from "./component";
 import { useReportsPage } from "./hooks";
 import "../authTheme.css";
@@ -56,6 +58,7 @@ export function Reports() {
     closeReprint,
     onRefundSale,
   } = useReportsPage();
+  const { user } = useAuth();
 
   // void_sale() is now permission-gated (0045_rbac_enforce_checkpoints.sql)
   // rather than unconditionally admin-only — hide the action entirely
@@ -76,7 +79,7 @@ export function Reports() {
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3" style={{ marginBottom: 18 }}>
+      <div className="flex flex-wrap items-center gap-3" style={{ marginBottom: 18 }} data-testid="report-filters">
         <DateRangeFilter
           preset={preset}
           onPresetChange={setPreset}
@@ -123,6 +126,13 @@ export function Reports() {
             voidError={voidError}
             onReprintSale={onReprintSale}
             onRefundSale={canRefundSale ? onRefundSale : undefined}
+          />
+          <ZReadingCard
+            storeName={store?.name ?? ""}
+            storeAddress={store?.address ?? null}
+            printedByName={user?.name ?? ""}
+            cashiers={cashiers}
+            devices={devices}
           />
         </>
       )}

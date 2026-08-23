@@ -1062,6 +1062,13 @@ export interface Database {
         };
         Returns: undefined;
       };
+      report_reconciliation: {
+        Args: {
+          p_start: string;
+          p_end: string;
+        };
+        Returns: { total: number; transaction_count: number }[];
+      };
       refund_sale_items: {
         Args: {
           p_sale_id: string;
