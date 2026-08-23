@@ -1217,9 +1217,8 @@ export const TEXT_CUSTOMERS_COUNT_SUFFIX = "customers";
 export const BUTTON_REFRESH_NOW = "Refresh now";
 export const BUTTON_REFRESHING = "Refreshing…";
 export const LABEL_AUTOMATIC_BACKUP = "Automatic backup";
-export const LABEL_BACK_UP_TO_CLOUD = "Back up to the cloud";
-export const LABEL_HOW_OFTEN = "How often";
-export const LABEL_ONLY_ON_WIFI = "Only on wi-fi";
+export const TEXT_AUTOMATIC_BACKUP_DESC =
+  "Backups run automatically every day and are stored securely, separate from what any store can access. There's nothing to configure here.";
 export const LABEL_WHEN_INTERNET_DROPS = "When the internet drops";
 export const TEXT_OFFLINE_QUEUE_DESC =
   "If the connection drops mid-sale, checkout keeps working — sales are saved on this device and upload automatically once you're back online.";
@@ -1248,7 +1247,6 @@ export const TEXT_EXPORT_EVERYTHING_DESC = "Full backup file";
 export const LABEL_RESTORE_FROM_BACKUP = "Restore from a backup";
 export const TEXT_RESTORE_DESC = "Not available yet — this would replace everything currently in the app";
 export const BUTTON_RESTORE = "Restore";
-export const TEXT_BACKUP_SETTINGS_UPDATED = "Backup settings updated.";
 
 // Owner PIN override (POS credit-limit approval)
 export const LABEL_NEEDS_OWNER_PIN = "Needs owner's PIN";

@@ -1,0 +1,50 @@
+name: Backup production database
+
+# BIR Compliance Audit, Phase 5: real, scheduled backups of the
+# production tindahan-pos database, replacing the previous ad hoc manual
+# `pg_dump` runs (see supabase/backups/ — gitignored, never had a script
+# behind it).
+#
+# Requires these repo secrets, following the TINDAHAN_SUPABASE_* naming
+# convention already used by tindahan-pos-ci.yml:
+#
+#   TINDAHAN_SUPABASE_URL              production project REST URL
+#   TINDAHAN_SUPABASE_SERVICE_ROLE_KEY production service_role key --
+#     used only here, server-side, to upload into the backups Storage
+#     bucket (which has no client-facing RLS policy at all)
+#   TINDAHAN_SUPABASE_DB_URL           production's direct Postgres
+#     connection string -- NOT obtainable via `supabase projects
+#     api-keys`; pull it from the Supabase dashboard's Connection
+#     string page for the production project and add it here manually.
+#     pg_dump/pg_dumpall need a real Postgres connection, not the REST API.
+
+on:
+  schedule:
+    # 19:00 UTC daily -- off the top of the hour and outside GitHub's
+    # documented peak scheduling window (00:00 UTC), so this isn't queued
+    # behind a pile of other repos' midnight-triggered jobs.
+    - cron: "0 19 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  backup:
+    name: Dump and upload
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install PostgreSQL client tools
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run backup
+        run: node scripts/backup-database.mjs
+        env:
+          DATABASE_URL: ${{ secrets.TINDAHAN_SUPABASE_DB_URL }}
+          SUPABASE_URL: ${{ secrets.TINDAHAN_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TINDAHAN_SUPABASE_SERVICE_ROLE_KEY }}
