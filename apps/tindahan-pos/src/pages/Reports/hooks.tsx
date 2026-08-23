@@ -4,6 +4,9 @@ import {
   useStoreData,
   supabase,
   salesToCsv,
+  vatSalesToCsv,
+  voidsToCsv,
+  paymentBreakdownToCsv,
   downloadTextFile,
   computeOldestDebtDays,
   buildDebtAgingSummary,
@@ -116,6 +119,21 @@ export function useReportsPage() {
     downloadTextFile(filename, salesToCsv(sales), "text/csv");
   }
 
+  function exportVatCsv() {
+    const filename = `vat-report-${startDate.slice(0, 10)}-to-${endDate.slice(0, 10)}.csv`;
+    downloadTextFile(filename, vatSalesToCsv(sales), "text/csv");
+  }
+
+  function exportVoidsCsv() {
+    const filename = `voids-report-${startDate.slice(0, 10)}-to-${endDate.slice(0, 10)}.csv`;
+    downloadTextFile(filename, voidsToCsv(sales), "text/csv");
+  }
+
+  function exportPaymentBreakdownCsv() {
+    const filename = `payment-breakdown-${startDate.slice(0, 10)}-to-${endDate.slice(0, 10)}.csv`;
+    downloadTextFile(filename, paymentBreakdownToCsv(report.byPaymentType), "text/csv");
+  }
+
   // Reports' `sales` is its own range-scoped fetch, separate from the
   // capped 100-row cache StoreDataContext keeps for the Dashboard — so
   // once void_sale() succeeds (and voidSale() above has already patched
@@ -187,6 +205,9 @@ export function useReportsPage() {
     loading,
     error,
     exportCsv,
+    exportVatCsv,
+    exportVoidsCsv,
+    exportPaymentBreakdownCsv,
     onRetry: load,
     debtAging,
     thresholdDays,

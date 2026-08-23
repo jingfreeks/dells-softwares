@@ -46,6 +46,7 @@ function addRecentSalesSheet(workbook: ExcelJS.Workbook, sales: SaleRecord[], cu
   const customerNameById = new Map(customers.map((c) => [c.id, c.name]));
   worksheet.columns = [
     { header: "Transaction ID", key: "transactionId", width: 14 },
+    { header: "Receipt No.", key: "receiptNumber", width: 14 },
     { header: "Date", key: "date", width: 20, style: { numFmt: DATE_FORMAT } },
     { header: "Cashier", key: "cashier", width: 16 },
     { header: "Customer", key: "customer", width: 18 },
@@ -56,39 +57,47 @@ function addRecentSalesSheet(workbook: ExcelJS.Workbook, sales: SaleRecord[], cu
     { header: "Payment Method", key: "paymentMethod", width: 15 },
     { header: "Total", key: "total", width: 12, style: { numFmt: CURRENCY_FORMAT } },
     { header: "Status", key: "status", width: 12 },
+    { header: "VAT Status", key: "vatStatus", width: 14 },
+    { header: "Vatable Sales", key: "vatableSales", width: 14, style: { numFmt: CURRENCY_FORMAT } },
+    { header: "VAT Amount", key: "vatAmount", width: 12, style: { numFmt: CURRENCY_FORMAT } },
+    { header: "VAT-Exempt Sales", key: "vatExemptSales", width: 16, style: { numFmt: CURRENCY_FORMAT } },
+    { header: "Zero-Rated Sales", key: "zeroRatedSales", width: 16, style: { numFmt: CURRENCY_FORMAT } },
+    { header: "Discount Type", key: "discountType", width: 14 },
+    { header: "Discount Value", key: "discountValue", width: 14 },
+    { header: "Discount Amount", key: "discountAmount", width: 16, style: { numFmt: CURRENCY_FORMAT } },
   ];
 
   for (const sale of sales) {
     const customerName = sale.customerId ? (customerNameById.get(sale.customerId) ?? "") : "";
+    const saleFields = {
+      transactionId: sale.id.slice(0, 8).toUpperCase(),
+      receiptNumber: sale.receiptNumber,
+      date: new Date(sale.timestamp),
+      cashier: sale.cashierName,
+      customer: customerName,
+      paymentMethod: sale.paymentType,
+      total: sale.total,
+      status: sale.status,
+      vatStatus: sale.vatStatus,
+      vatableSales: sale.vatableSales,
+      vatAmount: sale.vatAmount,
+      vatExemptSales: sale.vatExemptSales,
+      zeroRatedSales: sale.zeroRatedSales,
+      discountType: sale.discountType,
+      discountValue: sale.discountValue,
+      discountAmount: sale.discountAmount,
+    };
     if (sale.items.length === 0) {
-      worksheet.addRow({
-        transactionId: sale.id.slice(0, 8).toUpperCase(),
-        date: new Date(sale.timestamp),
-        cashier: sale.cashierName,
-        customer: customerName,
-        item: "",
-        quantity: "",
-        unitPrice: "",
-        subtotal: "",
-        paymentMethod: sale.paymentType,
-        total: sale.total,
-        status: sale.status,
-      });
+      worksheet.addRow({ ...saleFields, item: "", quantity: "", unitPrice: "", subtotal: "" });
       continue;
     }
     for (const item of sale.items) {
       worksheet.addRow({
-        transactionId: sale.id.slice(0, 8).toUpperCase(),
-        date: new Date(sale.timestamp),
-        cashier: sale.cashierName,
-        customer: customerName,
+        ...saleFields,
         item: item.name,
         quantity: item.quantity,
         unitPrice: item.price,
         subtotal: item.lineTotal ?? item.quantity * item.price + item.fee,
-        paymentMethod: sale.paymentType,
-        total: sale.total,
-        status: sale.status,
       });
     }
   }

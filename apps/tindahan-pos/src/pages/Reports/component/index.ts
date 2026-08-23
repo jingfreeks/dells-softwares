@@ -5,4 +5,6 @@ export * from "./summarycards";
 export * from "./cashierbreakdowntable";
 export * from "./salestable";
 export * from "./vatsummarycard";
+export * from "./voidsummarycard";
+export * from "./paymentbreakdowntable";
 export * from "./refundmodal";

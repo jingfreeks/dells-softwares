@@ -7,7 +7,7 @@ interface SummaryCardsProps {
 
 export function SummaryCards({ report }: SummaryCardsProps) {
   return (
-    <div className="tpl-g4">
+    <div className="tpl-g4" data-testid="summary-cards">
       <div className="tpl-metric">
         <p className="tpl-mlbl">{LABEL_TOTAL_SALES.toUpperCase()}</p>
         <p className="tpl-mval">{PESO.format(report.totalSales)}</p>

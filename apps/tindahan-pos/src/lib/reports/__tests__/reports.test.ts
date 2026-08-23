@@ -7,7 +7,9 @@ import {
   isToday,
   salesByCategory,
   salesByCashier,
+  salesByPaymentType,
   vatSummary,
+  voidSummary,
 } from "../reports";
 import type { Customer, Product, SaleRecord } from "../../types";
 
@@ -483,5 +485,39 @@ describe("vatSummary", () => {
 
   it("is all zeroes when there are no sales", () => {
     expect(vatSummary([])).toEqual({ vatableSales: 0, vatAmount: 0, vatExemptSales: 0, zeroRatedSales: 0 });
+  });
+});
+
+describe("voidSummary (BIR compliance §39)", () => {
+  it("counts and sums voided sales only, ignoring completed ones", () => {
+    const sales = [
+      makeSale({ id: "s1", status: "completed", total: 100 }),
+      makeSale({ id: "s2", status: "voided", total: 30 }),
+      makeSale({ id: "s3", status: "voided", total: 45 }),
+    ];
+    expect(voidSummary(sales)).toEqual({ count: 2, totalAmount: 75 });
+  });
+
+  it("is zero when there are no voided sales", () => {
+    expect(voidSummary([makeSale({ status: "completed" })])).toEqual({ count: 0, totalAmount: 0 });
+    expect(voidSummary([])).toEqual({ count: 0, totalAmount: 0 });
+  });
+});
+
+describe("salesByPaymentType", () => {
+  it("groups sales by payment type, highest total first", () => {
+    const sales = [
+      makeSale({ id: "s1", paymentType: "cash", total: 100 }),
+      makeSale({ id: "s2", paymentType: "qr", total: 50 }),
+      makeSale({ id: "s3", paymentType: "cash", total: 30 }),
+    ];
+    expect(salesByPaymentType(sales)).toEqual([
+      { paymentType: "cash", total: 130, transactionCount: 2 },
+      { paymentType: "qr", total: 50, transactionCount: 1 },
+    ]);
+  });
+
+  it("returns an empty list for no sales", () => {
+    expect(salesByPaymentType([])).toEqual([]);
   });
 });
