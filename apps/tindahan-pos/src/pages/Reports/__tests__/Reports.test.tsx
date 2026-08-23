@@ -58,10 +58,11 @@ describe("Reports", () => {
       makeStoreDataValue({ products: [makeProduct()], fetchSalesInRange })
     );
 
-    const { container } = renderPage();
+    renderPage();
 
-    await waitFor(() => expect(container.querySelectorAll(".tpl-mval")).toHaveLength(3));
-    const values = Array.from(container.querySelectorAll(".tpl-mval")).map((el) => el.textContent);
+    const summaryCards = await screen.findByTestId("summary-cards");
+    await waitFor(() => expect(summaryCards.querySelectorAll(".tpl-mval")).toHaveLength(3));
+    const values = Array.from(summaryCards.querySelectorAll(".tpl-mval")).map((el) => el.textContent);
     expect(values).toEqual(["₱150.00", "2", "₱75.00"]);
   });
 

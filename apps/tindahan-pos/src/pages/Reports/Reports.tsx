@@ -17,6 +17,8 @@ import {
   CashierBreakdownTable,
   SalesTable,
   VatSummaryCard,
+  VoidSummaryCard,
+  PaymentBreakdownTable,
 } from "./component";
 import { useReportsPage } from "./hooks";
 import "../authTheme.css";
@@ -39,6 +41,9 @@ export function Reports() {
     loading,
     error,
     exportCsv,
+    exportVatCsv,
+    exportVoidsCsv,
+    exportPaymentBreakdownCsv,
     onRetry,
     debtAging,
     thresholdDays,
@@ -104,11 +109,14 @@ export function Reports() {
           <div style={{ marginBottom: 14 }}>
             <DebtAgeCard aging={debtAging} thresholdDays={thresholdDays} />
           </div>
-          {(report.vatSummary.vatableSales > 0 ||
-            report.vatSummary.vatAmount > 0 ||
-            report.vatSummary.vatExemptSales > 0 ||
-            report.vatSummary.zeroRatedSales > 0) && <VatSummaryCard summary={report.vatSummary} />}
+          <VatSummaryCard summary={report.vatSummary} vatStatus={store?.vatStatus ?? null} onExport={exportVatCsv} />
+          <VoidSummaryCard summary={report.voidSummary} onExport={exportVoidsCsv} />
           <CashierBreakdownTable rows={report.byCashier} grandTotal={report.totalSales} />
+          <PaymentBreakdownTable
+            rows={report.byPaymentType}
+            grandTotal={report.totalSales}
+            onExport={exportPaymentBreakdownCsv}
+          />
           <SalesTable
             sales={report.sales}
             onVoidSale={canVoidSale ? onVoidSale : undefined}
