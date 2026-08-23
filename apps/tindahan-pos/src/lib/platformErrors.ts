@@ -48,6 +48,8 @@ const FEATURE_MESSAGES: Record<string, string> = {
     "return instead.",
   "inventory.transfers":
     "Stock transfers aren’t part of this store’s plan. Existing stock is unaffected.",
+  "pos.discounts":
+    "Applying a discount isn’t part of this store’s plan. Ask the owner, or complete the sale at full price.",
 };
 
 const GENERIC_FEATURE_MESSAGE =
@@ -125,6 +127,14 @@ export function describePlatformError(err: unknown, fallback = "Something went w
   const refundExceeds = REFUND_EXCEEDS.exec(raw);
   if (refundExceeds) {
     return `You're trying to refund more ${refundExceeds[1]} than was actually sold on this transaction.`;
+  }
+
+  if (raw.includes("INVALID_DISCOUNT_VALUE")) {
+    return "Enter a valid discount amount — a percentage between 1 and 100, or a flat amount above zero.";
+  }
+
+  if (raw.includes("INVALID_DISCOUNT_TYPE")) {
+    return "Choose a valid discount type — percentage or flat amount.";
   }
 
   // A bare policy denial. The cause is genuinely ambiguous -- a capability the

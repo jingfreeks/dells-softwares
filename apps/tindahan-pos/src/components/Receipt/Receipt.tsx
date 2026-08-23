@@ -19,6 +19,8 @@ import {
   LABEL_ZERO_RATED_SALES,
   TEXT_NOT_VAT_REGISTERED,
   TEXT_REPRINT_MARKER,
+  LABEL_SUBTOTAL,
+  LABEL_DISCOUNT,
 } from "@/lib/textLabels";
 
 const PAYMENT_LABEL: Record<SaleRecord["paymentType"], string> = {
@@ -115,6 +117,19 @@ export function Receipt({
       ))}
 
       <div className="tpl-receipt-hr" />
+
+      {sale.discountAmount > 0 && (
+        <>
+          <div className="tpl-receipt-row">
+            <span>{LABEL_SUBTOTAL}</span>
+            <span>{PESO.format(sale.total + sale.discountAmount)}</span>
+          </div>
+          <div className="tpl-receipt-row">
+            <span>{LABEL_DISCOUNT}</span>
+            <span>-{PESO.format(sale.discountAmount)}</span>
+          </div>
+        </>
+      )}
 
       {sale.vatStatus === "vat_registered" && (
         <>

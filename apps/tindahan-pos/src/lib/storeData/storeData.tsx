@@ -4,6 +4,7 @@ import { cartTotal, lineTotal } from "@/lib/pos";
 import { supabase } from "@/lib/supabaseClient";
 import { enqueueSale, isConnectivityFailure } from "@/lib/offlineQueue";
 import { computeVatBreakdown } from "@/lib/vat";
+import { computeDiscountAmount, type Discount } from "@/lib/discount";
 import type { ReceivingLine } from "@/lib/inventory";
 import type {
   CartLine,
@@ -126,7 +127,7 @@ function friendlyProductError(err: { code?: string; message: string }): Error {
 }
 
 const SALE_SELECT =
-  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, receipt_number, status, voided_at, void_reason, vat_status, vat_rate, vatable_sales, vat_amount, vat_exempt_sales, zero_rated_sales, device_id, staff:cashier_id(id, name), voided_by_staff:voided_by(id, name), device:device_id(id, name), sale_items(id, product_id, name, quantity, price, item_type, fee, line_total)";
+  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, receipt_number, status, voided_at, void_reason, vat_status, vat_rate, vatable_sales, vat_amount, vat_exempt_sales, zero_rated_sales, device_id, discount_type, discount_value, discount_amount, staff:cashier_id(id, name), voided_by_staff:voided_by(id, name), device:device_id(id, name), sale_items(id, product_id, name, quantity, price, item_type, fee, line_total)";
 
 function mapSaleRow(row: {
   id: string;
@@ -146,6 +147,9 @@ function mapSaleRow(row: {
   vat_amount: number;
   vat_exempt_sales: number;
   zero_rated_sales: number;
+  discount_type: SaleRecord["discountType"];
+  discount_value: number | null;
+  discount_amount: number;
   staff: { id: string; name: string } | { id: string; name: string }[] | null;
   voided_by_staff: { id: string; name: string } | { id: string; name: string }[] | null;
   device: { id: string; name: string } | { id: string; name: string }[] | null;
@@ -190,6 +194,9 @@ function mapSaleRow(row: {
     zeroRatedSales: row.zero_rated_sales,
     deviceId: device?.id ?? null,
     deviceName: device?.name ?? null,
+    discountType: row.discount_type,
+    discountValue: row.discount_value,
+    discountAmount: row.discount_amount,
     items: (row.sale_items ?? []).map((item) => ({
       id: item.id,
       productId: item.product_id ?? "",
@@ -463,7 +470,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     services: ServiceLine[],
     cashierName: string,
     payment: CheckoutPayment = { type: "cash" },
-    cashierToken: string | null = null
+    cashierToken: string | null = null,
+    discount: Discount | null = null
   ): Promise<SaleRecord> {
     if (payment.type === "credit" && !payment.customerId) {
       throw new Error("A customer is required for a credit sale.");
@@ -488,9 +496,12 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       p_cashier_token: cashierToken,
       p_client_request_id: clientRequestId,
       p_occurred_at: occurredAt,
+      p_discount_type: discount?.type ?? null,
+      p_discount_value: discount?.value ?? null,
     };
 
     let total: number;
+    let discountAmount = 0;
     let saleId: string;
     let receiptNumber: string | null;
     let queued = false;
@@ -519,7 +530,9 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       // Only a real connectivity failure reaches here. The sale is queued
       // for replay instead of blocked, since it already looks "done" from
       // the cashier's side.
-      total = cartTotal(cart) + services.reduce((sum, line) => sum + line.amount + line.fee, 0);
+      const subtotal = cartTotal(cart) + services.reduce((sum, line) => sum + line.amount + line.fee, 0);
+      discountAmount = computeDiscountAmount(subtotal, discount);
+      total = subtotal - discountAmount;
       saleId = clientRequestId;
       // No server round trip happened yet, so there's genuinely no
       // receipt/OR number yet — checkout_sale() assigns one atomically only
@@ -553,6 +566,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       total = rpcResult.total;
       saleId = rpcResult.sale_id;
       receiptNumber = rpcResult.receipt_number;
+      const subtotal = cartTotal(cart) + services.reduce((sum, line) => sum + line.amount + line.fee, 0);
+      discountAmount = computeDiscountAmount(subtotal, discount);
     }
 
     const saleRecord: SaleRecord = {
@@ -614,6 +629,9 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       // paired device (see AuthProvider), so this needs no RPC round trip.
       deviceId: deviceSession?.id ?? null,
       deviceName: deviceSession?.name ?? null,
+      discountType: discount?.type ?? null,
+      discountValue: discount?.value ?? null,
+      discountAmount,
       ...(queued ? { syncStatus: "pending" as const } : {}),
     };
 
