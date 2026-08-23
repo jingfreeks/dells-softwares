@@ -4,11 +4,12 @@ interface FeeBracketCardProps {
   title: string;
   brackets: FeeBracket[];
   onFeeChange: (index: number, fee: number) => void;
+  onMaxChange: (index: number, max: number) => void;
   onAdd: () => void;
   onRemove: (index: number) => void;
 }
 
-export function FeeBracketCard({ title, brackets, onFeeChange, onAdd, onRemove }: FeeBracketCardProps) {
+export function FeeBracketCard({ title, brackets, onFeeChange, onMaxChange, onAdd, onRemove }: FeeBracketCardProps) {
   return (
     <div className="tpl-card">
       <div className="tpl-sp" style={{ marginBottom: 11 }}>
@@ -34,6 +35,18 @@ export function FeeBracketCard({ title, brackets, onFeeChange, onAdd, onRemove }
               {rangeLabel}
             </span>
             <div className="tpl-row" style={{ gap: 6 }}>
+              {!isLast && (
+                <div className="tpl-fld tpl-mono" style={{ height: 28, padding: "0 11px", width: 70, justifyContent: "center" }}>
+                  <input
+                    type="number"
+                    min={min}
+                    value={bracket.max}
+                    onChange={(e) => onMaxChange(index, Number(e.target.value) || 0)}
+                    aria-label={`${TEXT_BRACKET_UP_TO_PREFIX} ${rangeLabel}`}
+                    style={{ textAlign: "center" }}
+                  />
+                </div>
+              )}
               <div className="tpl-fld tpl-mono" style={{ height: 28, padding: "0 11px", width: 70, justifyContent: "center" }}>
                 <input
                   type="number"
