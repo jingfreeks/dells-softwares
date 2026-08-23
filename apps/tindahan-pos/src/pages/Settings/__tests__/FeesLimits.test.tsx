@@ -48,7 +48,8 @@ describe("FeesLimits", () => {
     );
     renderPage();
 
-    const firstEloadFeeInput = screen.getAllByRole("spinbutton")[0];
+    // Index 0 is the first bracket's editable "max" input; index 1 is its fee.
+    const firstEloadFeeInput = screen.getAllByRole("spinbutton")[1];
     await user.clear(firstEloadFeeInput);
     await user.type(firstEloadFeeInput, "9");
 
@@ -76,11 +77,38 @@ describe("FeesLimits", () => {
     const eloadFeeCountBefore = screen.getAllByRole("spinbutton").length;
 
     await user.click(addBracketButtons[0]);
-    expect(screen.getAllByRole("spinbutton").length).toBe(eloadFeeCountBefore + 1);
+    // The new bracket adds a fee input, and the bracket before it (now no
+    // longer the last, open-ended one) gains an editable "max" input too.
+    expect(screen.getAllByRole("spinbutton").length).toBe(eloadFeeCountBefore + 2);
 
     const removeButtons = screen.getAllByRole("button", { name: /^Remove/ });
     await user.click(removeButtons[removeButtons.length - 1]);
     expect(screen.getAllByRole("spinbutton").length).toBe(eloadFeeCountBefore);
+  });
+
+  it("edits a fee bracket's range (max) amount and saves it via updateStore", async () => {
+    const user = userEvent.setup();
+    const updateStore = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }), store: makeStore({ id: "store-9" }), updateStore })
+    );
+    renderPage();
+
+    // Index 0 is the first e-load bracket's editable "max" input.
+    const firstEloadMaxInput = screen.getAllByRole("spinbutton")[0];
+    await user.clear(firstEloadMaxInput);
+    await user.type(firstEloadMaxInput, "25");
+
+    expect(await screen.findByText("Unsaved changes")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(updateStore).toHaveBeenCalledWith(
+      expect.objectContaining({
+        feeConfig: expect.objectContaining({
+          eload: expect.arrayContaining([expect.objectContaining({ max: 25 })]),
+        }),
+      })
+    );
   });
 
   it("shows an error when saving fails", async () => {
@@ -91,7 +119,7 @@ describe("FeesLimits", () => {
     );
     renderPage();
 
-    const firstEloadFeeInput = screen.getAllByRole("spinbutton")[0];
+    const firstEloadFeeInput = screen.getAllByRole("spinbutton")[1];
     await user.clear(firstEloadFeeInput);
     await user.type(firstEloadFeeInput, "9");
     await user.click(screen.getByRole("button", { name: "Save changes" }));
@@ -130,7 +158,7 @@ describe("FeesLimits", () => {
     );
     renderPage();
 
-    const firstEloadFeeInput = screen.getAllByRole("spinbutton")[0] as HTMLInputElement;
+    const firstEloadFeeInput = screen.getAllByRole("spinbutton")[1] as HTMLInputElement;
     await user.clear(firstEloadFeeInput);
     await user.type(firstEloadFeeInput, "9");
     expect(await screen.findByText("Unsaved changes")).toBeInTheDocument();

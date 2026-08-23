@@ -19,6 +19,7 @@ export function FeesLimits() {
     cashInBrackets,
     cashOutBrackets,
     updateBracketFee,
+    updateBracketMax,
     addBracket,
     removeBracket,
     mock,
@@ -50,6 +51,7 @@ export function FeesLimits() {
             title={LABEL_ELOAD_FEE}
             brackets={eloadBrackets}
             onFeeChange={(index, fee) => updateBracketFee("eload", index, fee)}
+            onMaxChange={(index, max) => updateBracketMax("eload", index, max)}
             onAdd={() => addBracket("eload")}
             onRemove={(index) => removeBracket("eload", index)}
           />
@@ -57,6 +59,7 @@ export function FeesLimits() {
             title={LABEL_CASH_IN_FEE}
             brackets={cashInBrackets}
             onFeeChange={(index, fee) => updateBracketFee("cashIn", index, fee)}
+            onMaxChange={(index, max) => updateBracketMax("cashIn", index, max)}
             onAdd={() => addBracket("cashIn")}
             onRemove={(index) => removeBracket("cashIn", index)}
           />
@@ -64,6 +67,7 @@ export function FeesLimits() {
             title={LABEL_CASH_OUT_FEE}
             brackets={cashOutBrackets}
             onFeeChange={(index, fee) => updateBracketFee("cashOut", index, fee)}
+            onMaxChange={(index, max) => updateBracketMax("cashOut", index, max)}
             onAdd={() => addBracket("cashOut")}
             onRemove={(index) => removeBracket("cashOut", index)}
           />
