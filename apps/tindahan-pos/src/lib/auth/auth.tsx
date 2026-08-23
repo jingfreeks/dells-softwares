@@ -214,6 +214,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
     });
     if (error) return { ok: false, error: friendlyAuthError(error.message) };
+    // Best-effort: a logging failure must never block a successful sign-in.
+    supabase.rpc("log_staff_auth_event", { p_action: "login" }).then(
+      () => {},
+      () => {}
+    );
     return { ok: true };
   }
 
@@ -252,6 +257,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
+    // Must run before signOut() -- once the session is gone there's no
+    // authenticated caller left for the RPC to attribute the event to.
+    // Best-effort: awaited so it has a chance to land, but never blocks
+    // sign-out on its own success/failure.
+    await supabase.rpc("log_staff_auth_event", { p_action: "logout" }).then(
+      () => {},
+      () => {}
+    );
     await supabase.auth.signOut();
     togglablePersistenceStorage.setPersistenceEnabled(true);
     setUser(null);
@@ -362,7 +375,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.functions.invoke("delete-account", {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) {
+      // A FunctionsHttpError's own .message is a generic "Edge Function
+      // returned a non-2xx status code" -- the real reason (e.g. "you're
+      // the only admin for this store") is in the response body instead.
+      const body: { error?: string } | null = await error.context?.json?.().catch(() => null);
+      return { ok: false, error: body?.error ?? error.message };
+    }
     if (data?.error) return { ok: false, error: data.error };
 
     await supabase.auth.signOut();

@@ -176,9 +176,9 @@ where n.nspname = 'public'
     'checkout_sale', 'current_store_has_feature', 'current_store_has_module',
     'current_store_writes_allowed', 'end_cashier_session',
     'generate_pairing_code', 'has_permission', 'list_my_permissions',
-    'list_pickable_cashiers', 'my_store_billing_state', 'my_store_features',
+    'list_pickable_cashiers', 'log_staff_auth_event', 'my_store_billing_state', 'my_store_features',
     'my_store_limits', 'my_store_modules', 'my_store_plan',
-    'plan_prices', 'record_credit_payment', 'request_plan_upgrade',
+    'plan_prices', 'record_credit_payment', 'report_reconciliation', 'request_addon', 'request_plan_upgrade',
     'set_own_pin', 'start_cashier_session', 'start_trial', 'transfer_stock', 'void_sale',
     '_consume_pairing_code', '_validate_pairing_code'
   )

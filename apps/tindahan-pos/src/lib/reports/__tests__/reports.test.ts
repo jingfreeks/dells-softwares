@@ -5,9 +5,13 @@ import {
   buildRangeReport,
   completedSales,
   isToday,
+  receiptNumberRange,
   salesByCategory,
   salesByCashier,
+  salesByPaymentType,
+  totalDiscounts,
   vatSummary,
+  voidSummary,
 } from "../reports";
 import type { Customer, Product, SaleRecord } from "../../types";
 
@@ -64,6 +68,9 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     zeroRatedSales: 0,
     deviceId: null,
     deviceName: null,
+    discountType: null,
+    discountValue: null,
+    discountAmount: 0,
     ...overrides,
   };
 }
@@ -78,6 +85,7 @@ describe("salesByCategory (story E5)", () => {
       makeSale({
         items: [
           {
+            id: "si-chips",
             productId: "chips",
             name: "Chips",
             quantity: 2,
@@ -87,6 +95,7 @@ describe("salesByCategory (story E5)", () => {
             lineTotal: 40,
           },
           {
+            id: "si-soda",
             productId: "soda",
             name: "Soda",
             quantity: 1,
@@ -111,6 +120,7 @@ describe("salesByCategory (story E5)", () => {
       makeSale({
         items: [
           {
+            id: "si-eload",
             productId: "",
             name: "E-Load ₱100",
             quantity: 1,
@@ -131,6 +141,7 @@ describe("salesByCategory (story E5)", () => {
       makeSale({
         items: [
           {
+            id: "si-gone",
             productId: "deleted",
             name: "Gone",
             quantity: 1,
@@ -154,8 +165,8 @@ describe("salesByCategory (story E5)", () => {
     const sales = [
       makeSale({
         items: [
-          { productId: "a", name: "A", quantity: 1, price: 10, itemType: "product", fee: 0, lineTotal: 10 },
-          { productId: "b", name: "B", quantity: 1, price: 50, itemType: "product", fee: 0, lineTotal: 50 },
+          { id: "si-a", productId: "a", name: "A", quantity: 1, price: 10, itemType: "product", fee: 0, lineTotal: 10 },
+          { id: "si-b", productId: "b", name: "B", quantity: 1, price: 50, itemType: "product", fee: 0, lineTotal: 50 },
         ],
       }),
     ];
@@ -169,6 +180,7 @@ describe("salesByCategory (story E5)", () => {
       makeSale({
         items: [
           {
+            id: "si-candy",
             productId: "candy",
             name: "Candy",
             quantity: 3,
@@ -194,6 +206,7 @@ describe("salesByCategory (story E5)", () => {
       makeSale({
         items: [
           {
+            id: "si-a2",
             productId: "a",
             name: "A",
             quantity: 2,
@@ -212,6 +225,7 @@ describe("salesByCategory (story E5)", () => {
 
 function makeSaleItem(overrides: Partial<SaleRecord["items"][number]> = {}): SaleRecord["items"][number] {
   return {
+    id: "sale-item-1",
     productId: "p1",
     name: "Item",
     quantity: 1,
@@ -389,7 +403,7 @@ describe("buildRangeReport", () => {
         cashierName: "Aling Nena",
         total: 20,
         items: [
-          { productId: "p1", name: "Chips", quantity: 2, price: 10, itemType: "product", fee: 0, lineTotal: 20 },
+          { id: "si-chips2", productId: "p1", name: "Chips", quantity: 2, price: 10, itemType: "product", fee: 0, lineTotal: 20 },
         ],
       }),
     ];
@@ -410,7 +424,7 @@ describe("void support (BIR compliance §39) — a voided sale is never counted,
     total: 30,
     status: "voided",
     items: [
-      { productId: "p1", name: "Chips", quantity: 3, price: 10, itemType: "product", fee: 0, lineTotal: 30 },
+      { id: "si-chips3", productId: "p1", name: "Chips", quantity: 3, price: 10, itemType: "product", fee: 0, lineTotal: 30 },
     ],
   });
 
@@ -473,5 +487,74 @@ describe("vatSummary", () => {
 
   it("is all zeroes when there are no sales", () => {
     expect(vatSummary([])).toEqual({ vatableSales: 0, vatAmount: 0, vatExemptSales: 0, zeroRatedSales: 0 });
+  });
+});
+
+describe("voidSummary (BIR compliance §39)", () => {
+  it("counts and sums voided sales only, ignoring completed ones", () => {
+    const sales = [
+      makeSale({ id: "s1", status: "completed", total: 100 }),
+      makeSale({ id: "s2", status: "voided", total: 30 }),
+      makeSale({ id: "s3", status: "voided", total: 45 }),
+    ];
+    expect(voidSummary(sales)).toEqual({ count: 2, totalAmount: 75 });
+  });
+
+  it("is zero when there are no voided sales", () => {
+    expect(voidSummary([makeSale({ status: "completed" })])).toEqual({ count: 0, totalAmount: 0 });
+    expect(voidSummary([])).toEqual({ count: 0, totalAmount: 0 });
+  });
+});
+
+describe("salesByPaymentType", () => {
+  it("groups sales by payment type, highest total first", () => {
+    const sales = [
+      makeSale({ id: "s1", paymentType: "cash", total: 100 }),
+      makeSale({ id: "s2", paymentType: "qr", total: 50 }),
+      makeSale({ id: "s3", paymentType: "cash", total: 30 }),
+    ];
+    expect(salesByPaymentType(sales)).toEqual([
+      { paymentType: "cash", total: 130, transactionCount: 2 },
+      { paymentType: "qr", total: 50, transactionCount: 1 },
+    ]);
+  });
+
+  it("returns an empty list for no sales", () => {
+    expect(salesByPaymentType([])).toEqual([]);
+  });
+});
+
+describe("receiptNumberRange (Z-reading beginning/ending)", () => {
+  it("finds the min and max receipt number, including a voided sale's", () => {
+    const sales = [
+      makeSale({ id: "s1", receiptNumber: "000005" }),
+      makeSale({ id: "s2", receiptNumber: "000002", status: "voided" }),
+      makeSale({ id: "s3", receiptNumber: "000009" }),
+    ];
+    expect(receiptNumberRange(sales)).toEqual({ beginning: "000002", ending: "000009" });
+  });
+
+  it("ignores a sale with no receipt number yet (still offline-queued)", () => {
+    const sales = [makeSale({ id: "s1", receiptNumber: "000005" }), makeSale({ id: "s2", receiptNumber: null })];
+    expect(receiptNumberRange(sales)).toEqual({ beginning: "000005", ending: "000005" });
+  });
+
+  it("is null/null with no sales", () => {
+    expect(receiptNumberRange([])).toEqual({ beginning: null, ending: null });
+  });
+});
+
+describe("totalDiscounts", () => {
+  it("sums discount amounts across completed sales, excluding a voided one", () => {
+    const sales = [
+      makeSale({ id: "s1", discountAmount: 10 }),
+      makeSale({ id: "s2", discountAmount: 5 }),
+      makeSale({ id: "s3", discountAmount: 50, status: "voided" }),
+    ];
+    expect(totalDiscounts(sales)).toBe(15);
+  });
+
+  it("is zero with no discounts", () => {
+    expect(totalDiscounts([makeSale({ discountAmount: 0 })])).toBe(0);
   });
 });

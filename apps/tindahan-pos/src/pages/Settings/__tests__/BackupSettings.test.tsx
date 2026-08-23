@@ -84,29 +84,17 @@ describe("BackupSettings", () => {
     expect(clickSpy).toHaveBeenCalled();
   });
 
-  it("shows the automatic-backup toggles and cycles the frequency", async () => {
-    const user = userEvent.setup();
+  // BIR compliance, Phase 5: real, scheduled backups run outside this app
+  // now — there's nothing left to configure, so this is a static status
+  // card, not a settings form (no toggle, no frequency, no Save/Discard).
+  it("shows the automatic-backup card as a static status message, with no controls", () => {
     renderPage();
 
-    const cloudToggle = screen.getByRole("switch", { name: "Back up to the cloud" });
-    expect(cloudToggle).toHaveAttribute("aria-checked", "true");
-
-    const frequencyButton = screen.getByRole("button", { name: "Every hour" });
-    await user.click(frequencyButton);
-    expect(screen.getByRole("button", { name: "Every 6 hours" })).toBeInTheDocument();
-  });
-
-  it("persists automatic-backup settings on save", async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    await user.click(screen.getByRole("switch", { name: "Only on wi-fi" }));
-    expect(await screen.findByText("Unsaved changes")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Save changes" }));
-
-    expect(await screen.findByRole("status")).toHaveTextContent("Backup settings updated.");
-    const raw = window.localStorage.getItem("tindahan-pos:backup:store-9");
-    expect(JSON.parse(raw as string)).toMatchObject({ wifiOnly: true });
+    expect(screen.getByText("Automatic backup")).toBeInTheDocument();
+    expect(screen.getByText(/Backups run automatically every day/)).toBeInTheDocument();
+    expect(screen.queryByRole("switch", { name: "Back up to the cloud" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("switch", { name: "Only on wi-fi" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save changes" })).not.toBeInTheDocument();
   });
 
   it("shows the offline queue as empty when nothing is pending, and the restore button as inert", () => {

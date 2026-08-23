@@ -72,6 +72,74 @@ describe("Receipt", () => {
     expect(screen.queryByText("Salamat po! Balik kayo ulit.")).not.toBeInTheDocument();
   });
 
+  // BIR Compliance Audit, Phase 1: a BIR-registered store's TIN must never
+  // be suppressible by the receipt-preference toggle -- a fully-configured,
+  // registered store printing a TIN-less receipt is exactly the gap this
+  // closes.
+  it("shows TIN/permit for a BIR-registered store even when the toggle is off", () => {
+    render(
+      <Receipt
+        sale={makeSaleRecord()}
+        store={makeStore({ birRegistered: true })}
+        settings={{ ...baseSettings, includeTinAndPermit: false }}
+        tin="123-456-789-000"
+        businessPermitNo="BP-2026-001"
+        tendered={100}
+        change={50}
+      />
+    );
+
+    expect(screen.getByText("TIN: 123-456-789-000")).toBeInTheDocument();
+    expect(screen.getByText("Permit: BP-2026-001")).toBeInTheDocument();
+  });
+
+  // BIR Compliance Audit, Phase 2a: tendered/change are checkout-session-
+  // only values, never persisted on the sale itself -- a reprint has no
+  // session to read them from, and must not fabricate a cash breakdown.
+  it("omits the cash-tendered block when tendered/change are not provided", () => {
+    render(
+      <Receipt
+        sale={makeSaleRecord({ paymentType: "cash" })}
+        store={makeStore()}
+        settings={baseSettings}
+      />
+    );
+
+    expect(screen.queryByText("Cash tendered")).not.toBeInTheDocument();
+    expect(screen.queryByText("Change")).not.toBeInTheDocument();
+  });
+
+  it("shows the cash-tendered block when tendered/change are provided", () => {
+    render(
+      <Receipt
+        sale={makeSaleRecord({ paymentType: "cash" })}
+        store={makeStore()}
+        settings={baseSettings}
+        tendered={100}
+        change={50}
+      />
+    );
+
+    expect(screen.getByText("Cash tendered")).toBeInTheDocument();
+    expect(screen.getByText("Change")).toBeInTheDocument();
+  });
+
+  it("shows an explicit REPRINT marker when isReprint is true", () => {
+    render(
+      <Receipt sale={makeSaleRecord()} store={makeStore()} settings={baseSettings} isReprint />
+    );
+
+    expect(screen.getByText("*** REPRINT ***")).toBeInTheDocument();
+  });
+
+  it("shows no REPRINT marker for a normal receipt", () => {
+    render(
+      <Receipt sale={makeSaleRecord()} store={makeStore()} settings={baseSettings} tendered={100} change={50} />
+    );
+
+    expect(screen.queryByText("*** REPRINT ***")).not.toBeInTheDocument();
+  });
+
   it("shows tendered and change only for a cash sale", () => {
     const { rerender } = render(
       <Receipt
@@ -225,6 +293,34 @@ describe("Receipt", () => {
       );
 
       expect(screen.getByText("This invoice is NOT VAT Registered.")).toBeInTheDocument();
+    });
+  });
+
+  describe("discount (BIR compliance, Phase 2c)", () => {
+    it("shows Subtotal and Discount rows when a discount was applied", () => {
+      render(
+        <Receipt
+          sale={makeSaleRecord({ total: 450, discountType: "flat", discountValue: 50, discountAmount: 50 })}
+          store={makeStore()}
+          settings={baseSettings}
+          tendered={450}
+          change={0}
+        />
+      );
+
+      expect(screen.getByText("Subtotal")).toBeInTheDocument();
+      expect(screen.getByText("₱500.00")).toBeInTheDocument();
+      expect(screen.getByText("Discount")).toBeInTheDocument();
+      expect(screen.getByText("-₱50.00")).toBeInTheDocument();
+    });
+
+    it("shows no Subtotal/Discount rows for a sale with no discount", () => {
+      render(
+        <Receipt sale={makeSaleRecord({ discountAmount: 0 })} store={makeStore()} settings={baseSettings} tendered={100} change={50} />
+      );
+
+      expect(screen.queryByText("Subtotal")).not.toBeInTheDocument();
+      expect(screen.queryByText("Discount")).not.toBeInTheDocument();
     });
   });
 });

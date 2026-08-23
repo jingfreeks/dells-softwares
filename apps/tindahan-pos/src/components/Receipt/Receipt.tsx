@@ -18,6 +18,9 @@ import {
   LABEL_VAT_EXEMPT_SALES,
   LABEL_ZERO_RATED_SALES,
   TEXT_NOT_VAT_REGISTERED,
+  TEXT_REPRINT_MARKER,
+  LABEL_SUBTOTAL,
+  LABEL_DISCOUNT,
 } from "@/lib/textLabels";
 
 const PAYMENT_LABEL: Record<SaleRecord["paymentType"], string> = {
@@ -43,20 +46,42 @@ interface ReceiptProps {
   /** TIN / business permit number, when known and `settings.includeTinAndPermit` is on. */
   tin?: string;
   businessPermitNo?: string;
-  tendered: number;
-  change: number;
+  /** Checkout-session-only values -- never persisted on the sale itself, so a
+   * reprint (which has no session to read from) omits both rather than
+   * showing a fabricated cash breakdown. */
+  tendered?: number;
+  change?: number;
+  /** True when this render is a reprint of a past sale, not the original
+   * receipt shown right after checkout -- shows an explicit on-screen marker. */
+  isReprint?: boolean;
 }
 
-export function Receipt({ sale, store, settings, tin, businessPermitNo, tendered, change }: ReceiptProps) {
+export function Receipt({
+  sale,
+  store,
+  settings,
+  tin,
+  businessPermitNo,
+  tendered,
+  change,
+  isReprint,
+}: ReceiptProps) {
   const timestamp = new Date(sale.timestamp);
 
   return (
     <div className="print-area tpl-receipt">
+      {isReprint && (
+        <p className="tpl-receipt-center tpl-receipt-line" style={{ fontWeight: 600 }}>
+          {TEXT_REPRINT_MARKER}
+        </p>
+      )}
       <div className="tpl-receipt-center">
         <p className="tpl-receipt-store">{store.name}</p>
         {store.address && <p className="tpl-receipt-line">{store.address}</p>}
-        {settings.includeTinAndPermit && tin && <p className="tpl-receipt-line">TIN: {tin}</p>}
-        {settings.includeTinAndPermit && businessPermitNo && (
+        {(store.birRegistered || settings.includeTinAndPermit) && tin && (
+          <p className="tpl-receipt-line">TIN: {tin}</p>
+        )}
+        {(store.birRegistered || settings.includeTinAndPermit) && businessPermitNo && (
           <p className="tpl-receipt-line">Permit: {businessPermitNo}</p>
         )}
         <p className="tpl-receipt-heading">{store.invoiceType}</p>
@@ -92,6 +117,19 @@ export function Receipt({ sale, store, settings, tin, businessPermitNo, tendered
       ))}
 
       <div className="tpl-receipt-hr" />
+
+      {sale.discountAmount > 0 && (
+        <>
+          <div className="tpl-receipt-row">
+            <span>{LABEL_SUBTOTAL}</span>
+            <span>{PESO.format(sale.total + sale.discountAmount)}</span>
+          </div>
+          <div className="tpl-receipt-row">
+            <span>{LABEL_DISCOUNT}</span>
+            <span>-{PESO.format(sale.discountAmount)}</span>
+          </div>
+        </>
+      )}
 
       {sale.vatStatus === "vat_registered" && (
         <>
@@ -134,7 +172,7 @@ export function Receipt({ sale, store, settings, tin, businessPermitNo, tendered
         <span>{PAYMENT_LABEL[sale.paymentType]}</span>
         <span />
       </div>
-      {sale.paymentType === "cash" && (
+      {sale.paymentType === "cash" && tendered !== undefined && change !== undefined && (
         <>
           <div className="tpl-receipt-row">
             <span>{LABEL_CASH_TENDERED}</span>

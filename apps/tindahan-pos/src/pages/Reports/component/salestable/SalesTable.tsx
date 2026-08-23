@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ConfirmDialog } from "@/components";
+import { RefundModal } from "../refundmodal";
 import {
   PESO,
   LABEL_SALES_LIST,
@@ -12,6 +13,8 @@ import {
   COLUMN_STATUS,
   LABEL_STATUS_VOIDED,
   BUTTON_VOID_SALE,
+  BUTTON_REPRINT_RECEIPT,
+  BUTTON_REFUND_SALE,
   TEXT_VOID_SALE_TITLE,
   TEXT_VOID_SALE_BODY_PREFIX,
   LABEL_VOID_REASON,
@@ -59,12 +62,22 @@ interface SalesTableProps {
   /** Omit to hide the void action entirely (e.g. a non-admin view). */
   onVoidSale?: (sale: SaleRecord, reason: string) => Promise<void>;
   voidError?: string | null;
+  /** Reprinting needs no extra permission beyond seeing this table in the
+   * first place, so unlike onVoidSale this is always present. */
+  onReprintSale?: (sale: SaleRecord) => void;
+  /** Omit to hide the refund action entirely (e.g. a staff member without pos.sale.refund). */
+  onRefundSale?: (
+    sale: SaleRecord,
+    reason: string,
+    items: { saleItemId: string; quantity: number }[]
+  ) => Promise<unknown>;
 }
 
-export function SalesTable({ sales, onVoidSale, voidError }: SalesTableProps) {
+export function SalesTable({ sales, onVoidSale, voidError, onReprintSale, onRefundSale }: SalesTableProps) {
   const [voidingSale, setVoidingSale] = useState<SaleRecord | null>(null);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [refundingSale, setRefundingSale] = useState<SaleRecord | null>(null);
 
   function closeVoidDialog() {
     setVoidingSale(null);
@@ -115,7 +128,17 @@ export function SalesTable({ sales, onVoidSale, voidError }: SalesTableProps) {
           <span className="tpl-ts">{formatItems(sale)}</span>
           <span className="tpl-tp">{PAYMENT_LABEL[sale.paymentType]}</span>
           <span className="tpl-ts tpl-right">{PESO.format(sale.total)}</span>
-          <span className="tpl-right">
+          <span className="tpl-right" style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+            {onReprintSale && (
+              <button
+                type="button"
+                className="tpl-lnk"
+                style={{ fontSize: 12 }}
+                onClick={() => onReprintSale(sale)}
+              >
+                {BUTTON_REPRINT_RECEIPT}
+              </button>
+            )}
             {sale.status === "voided" ? (
               <span
                 title={[
@@ -128,16 +151,28 @@ export function SalesTable({ sales, onVoidSale, voidError }: SalesTableProps) {
                 <SaleStatusChip />
               </span>
             ) : (
-              onVoidSale && (
-                <button
-                  type="button"
-                  className="tpl-lnk"
-                  style={{ fontSize: 12 }}
-                  onClick={() => setVoidingSale(sale)}
-                >
-                  {BUTTON_VOID_SALE}
-                </button>
-              )
+              <>
+                {onRefundSale && (
+                  <button
+                    type="button"
+                    className="tpl-lnk"
+                    style={{ fontSize: 12 }}
+                    onClick={() => setRefundingSale(sale)}
+                  >
+                    {BUTTON_REFUND_SALE}
+                  </button>
+                )}
+                {onVoidSale && (
+                  <button
+                    type="button"
+                    className="tpl-lnk"
+                    style={{ fontSize: 12 }}
+                    onClick={() => setVoidingSale(sale)}
+                  >
+                    {BUTTON_VOID_SALE}
+                  </button>
+                )}
+              </>
             )}
           </span>
         </div>
@@ -175,6 +210,15 @@ export function SalesTable({ sales, onVoidSale, voidError }: SalesTableProps) {
           </div>
         }
       />
+
+      {onRefundSale && (
+        <RefundModal
+          open={!!refundingSale}
+          sale={refundingSale}
+          onSubmit={(sale, refundReason, items) => onRefundSale(sale, refundReason, items)}
+          onClose={() => setRefundingSale(null)}
+        />
+      )}
     </div>
   );
 }

@@ -56,7 +56,14 @@ export function Pos() {
     selectedService,
     setSelectedService,
     productInputRef,
+    subtotal,
     total,
+    discountsEnabled,
+    discountType,
+    setDiscountType,
+    discountValue,
+    setDiscountValue,
+    discountAmount,
     categories,
     products,
     visibleProducts,
@@ -199,7 +206,14 @@ export function Pos() {
         onIncrement={incrementLine}
         onRemove={removeLine}
         onRemoveService={removeServiceLine}
+        subtotal={subtotal}
         total={total}
+        discountsEnabled={discountsEnabled}
+        discountType={discountType}
+        onDiscountTypeChange={setDiscountType}
+        discountValue={discountValue}
+        onDiscountValueChange={setDiscountValue}
+        discountAmount={discountAmount}
         paymentType={paymentType}
         onSelectPaymentType={selectPaymentType}
         tendered={tendered}

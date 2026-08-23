@@ -1,5 +1,17 @@
-import type { CartLine, Customer, PaymentType, Product, ServiceLine } from "@/lib";
-import { PESO, wouldExceedCreditLimit, LABEL_CURRENT_SALE, TABLE_HEADER_TOTAL } from "@/lib";
+import type { CartLine, Customer, Discount, PaymentType, Product, ServiceLine } from "@/lib";
+import {
+  PESO,
+  wouldExceedCreditLimit,
+  LABEL_CURRENT_SALE,
+  TABLE_HEADER_TOTAL,
+  BUTTON_ADD_DISCOUNT,
+  LABEL_SUBTOTAL,
+  LABEL_DISCOUNT,
+  LABEL_DISCOUNT_TYPE,
+  LABEL_DISCOUNT_VALUE,
+  LABEL_DISCOUNT_TYPE_FLAT,
+  LABEL_DISCOUNT_TYPE_PERCENTAGE,
+} from "@/lib";
 import { CartItemsList } from "./CartItemsList";
 import { PaymentMethodTabs } from "./PaymentMethodTabs";
 import { CashPaymentFields } from "./CashPaymentFields";
@@ -16,7 +28,14 @@ interface CartPanelProps {
   onIncrement: (productId: string, quantity: number) => void;
   onRemove: (productId: string) => void;
   onRemoveService: (id: string) => void;
+  subtotal: number;
   total: number;
+  discountsEnabled: boolean;
+  discountType: Discount["type"] | null;
+  onDiscountTypeChange: (type: Discount["type"] | null) => void;
+  discountValue: string;
+  onDiscountValueChange: (value: string) => void;
+  discountAmount: number;
   paymentType: PaymentType;
   onSelectPaymentType: (type: PaymentType) => void;
   tendered: string;
@@ -52,7 +71,14 @@ export function CartPanel({
   onIncrement,
   onRemove,
   onRemoveService,
+  subtotal,
   total,
+  discountsEnabled,
+  discountType,
+  onDiscountTypeChange,
+  discountValue,
+  onDiscountValueChange,
+  discountAmount,
   paymentType,
   onSelectPaymentType,
   tendered,
@@ -116,6 +142,62 @@ export function CartPanel({
       </div>
 
       <div style={{ padding: 14 }}>
+        {discountsEnabled && (
+          <div style={{ marginBottom: 14 }}>
+            {discountType === null ? (
+              <button
+                type="button"
+                className="tpl-lnk"
+                style={{ fontSize: 12 }}
+                onClick={() => onDiscountTypeChange("percentage")}
+              >
+                {BUTTON_ADD_DISCOUNT}
+              </button>
+            ) : (
+              <div className="tpl-fld" style={{ gap: 8, alignItems: "center" }}>
+                <label className="tpl-lbl" htmlFor="discount-type">
+                  {LABEL_DISCOUNT_TYPE}
+                </label>
+                <select
+                  id="discount-type"
+                  value={discountType}
+                  onChange={(e) => onDiscountTypeChange(e.target.value as Discount["type"])}
+                >
+                  <option value="percentage">{LABEL_DISCOUNT_TYPE_PERCENTAGE}</option>
+                  <option value="flat">{LABEL_DISCOUNT_TYPE_FLAT}</option>
+                </select>
+                <label className="tpl-lbl" htmlFor="discount-value">
+                  {LABEL_DISCOUNT_VALUE}
+                </label>
+                <input
+                  id="discount-value"
+                  type="number"
+                  min={0}
+                  value={discountValue}
+                  onChange={(e) => onDiscountValueChange(e.target.value)}
+                  style={{ width: 72 }}
+                />
+                <button type="button" className="tpl-lnk" style={{ fontSize: 12 }} onClick={() => onDiscountTypeChange(null)}>
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {discountAmount > 0 && (
+          <>
+            <div className="tpl-sp" style={{ marginBottom: 4 }}>
+              <span className="tpl-ts">{LABEL_SUBTOTAL}</span>
+              <span className="tpl-ts">{PESO.format(subtotal)}</span>
+            </div>
+            <div className="tpl-sp" style={{ marginBottom: 4 }}>
+              <span className="tpl-ts">{LABEL_DISCOUNT}</span>
+              <span className="tpl-ts">-{PESO.format(discountAmount)}</span>
+            </div>
+          </>
+        )}
+
         <div className="tpl-sp" style={{ marginBottom: 14 }}>
           <span className="tpl-h3">{TABLE_HEADER_TOTAL}</span>
           <span data-testid="cart-total" style={{ color: "var(--tpl-t1)", fontSize: 28, fontWeight: 500 }}>

@@ -1,4 +1,6 @@
 import type { Product, SaleRecord, Customer } from "./types";
+import { completedSales } from "./reports";
+import type { PaymentTypeTotal } from "./reports";
 
 /** Wraps a field in double quotes (doubling any embedded quotes) if it contains a comma, quote, or newline. */
 function csvField(value: string | number | null | undefined): string {
@@ -23,10 +25,30 @@ export function productsToCsv(products: Product[]): string {
 
 export function salesToCsv(sales: SaleRecord[]): string {
   return toCsv(
-    ["Sale ID", "Date", "Cashier", "Payment type", "Reference no.", "Items", "Total", "Status", "Void reason"],
+    [
+      "Sale ID",
+      "Date",
+      "Receipt No.",
+      "Cashier",
+      "Payment type",
+      "Reference no.",
+      "Items",
+      "Total",
+      "Status",
+      "Void reason",
+      "VAT status",
+      "Vatable sales",
+      "VAT amount",
+      "VAT-exempt sales",
+      "Zero-rated sales",
+      "Discount type",
+      "Discount value",
+      "Discount amount",
+    ],
     sales.map((s) => [
       s.id,
       s.timestamp,
+      s.receiptNumber,
       s.cashierName,
       s.paymentType,
       s.referenceNo,
@@ -34,6 +56,55 @@ export function salesToCsv(sales: SaleRecord[]): string {
       s.total,
       s.status,
       s.voidReason,
+      s.vatStatus,
+      s.vatableSales,
+      s.vatAmount,
+      s.vatExemptSales,
+      s.zeroRatedSales,
+      s.discountType,
+      s.discountValue,
+      s.discountAmount,
+    ])
+  );
+}
+
+/** BIR compliance §50: a standalone VAT sales report, not just the summary
+ * tiles — one row per completed sale with its VAT breakdown. */
+export function vatSalesToCsv(sales: SaleRecord[]): string {
+  return toCsv(
+    ["Sale ID", "Date", "Receipt No.", "VAT status", "Vatable sales", "VAT amount", "VAT-exempt sales", "Zero-rated sales", "Total"],
+    completedSales(sales).map((s) => [
+      s.id,
+      s.timestamp,
+      s.receiptNumber,
+      s.vatStatus,
+      s.vatableSales,
+      s.vatAmount,
+      s.vatExemptSales,
+      s.zeroRatedSales,
+      s.total,
+    ])
+  );
+}
+
+/** BIR compliance §39: a standalone void/cancelled-transactions report. */
+export function voidsToCsv(sales: SaleRecord[]): string {
+  const voided = sales.filter((s) => s.status === "voided");
+  return toCsv(
+    ["Sale ID", "Date", "Receipt No.", "Cashier", "Total", "Voided at", "Voided by", "Void reason"],
+    voided.map((s) => [s.id, s.timestamp, s.receiptNumber, s.cashierName, s.total, s.voidedAt, s.voidedByName, s.voidReason])
+  );
+}
+
+export function paymentBreakdownToCsv(rows: PaymentTypeTotal[]): string {
+  const grandTotal = rows.reduce((sum, row) => sum + row.total, 0);
+  return toCsv(
+    ["Payment type", "Transactions", "Total", "% of total"],
+    rows.map((row) => [
+      row.paymentType,
+      row.transactionCount,
+      row.total,
+      grandTotal > 0 ? `${Math.round((row.total / grandTotal) * 100)}%` : "0%",
     ])
   );
 }

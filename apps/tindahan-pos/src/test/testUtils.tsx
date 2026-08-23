@@ -76,6 +76,7 @@ export function makeSaleRecord(overrides: Partial<SaleRecord> = {}): SaleRecord 
     timestamp: "2026-07-27T10:00:00Z",
     items: [
       {
+        id: "sale-item-1",
         productId: "prod-1",
         name: "Sardines",
         quantity: 2,
@@ -104,6 +105,9 @@ export function makeSaleRecord(overrides: Partial<SaleRecord> = {}): SaleRecord 
     zeroRatedSales: 0,
     deviceId: null,
     deviceName: null,
+    discountType: null,
+    discountValue: null,
+    discountAmount: 0,
     ...overrides,
   };
 }
@@ -208,6 +212,7 @@ function baseStoreDataValue() {
     restock: vi.fn().mockResolvedValue(undefined),
     checkout: vi.fn().mockResolvedValue(makeSaleRecord()),
     voidSale: vi.fn().mockResolvedValue(undefined),
+    refundSale: vi.fn().mockResolvedValue("refund-1"),
     refresh: vi.fn().mockResolvedValue(undefined),
     addCategory: vi.fn().mockResolvedValue({ id: "cat-new", name: "New" }),
     renameCategory: vi.fn().mockResolvedValue(undefined),

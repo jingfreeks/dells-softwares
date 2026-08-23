@@ -230,6 +230,9 @@ export interface Database {
           vat_exempt_sales: number;
           zero_rated_sales: number;
           device_id: string | null;
+          discount_type: "percentage" | "flat" | null;
+          discount_value: number | null;
+          discount_amount: number;
         };
         Insert: {
           id?: string;
@@ -255,6 +258,9 @@ export interface Database {
           vat_exempt_sales?: number;
           zero_rated_sales?: number;
           device_id?: string | null;
+          discount_type?: "percentage" | "flat" | null;
+          discount_value?: number | null;
+          discount_amount?: number;
         };
         Update: {
           id?: string;
@@ -280,6 +286,9 @@ export interface Database {
           vat_exempt_sales?: number;
           zero_rated_sales?: number;
           device_id?: string | null;
+          discount_type?: "percentage" | "flat" | null;
+          discount_value?: number | null;
+          discount_amount?: number;
         };
         Relationships: [
           {
@@ -842,6 +851,99 @@ export interface Database {
           },
         ];
       };
+      // 20260815131000_refund_return.sql
+      refunds: {
+        Row: {
+          id: string;
+          store_id: string;
+          sale_id: string;
+          actor_id: string | null;
+          reason: string;
+          total_amount: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          sale_id: string;
+          actor_id?: string | null;
+          reason: string;
+          total_amount?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          sale_id?: string;
+          actor_id?: string | null;
+          reason?: string;
+          total_amount?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "refunds_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "refunds_sale_id_fkey";
+            columns: ["sale_id"];
+            referencedRelation: "sales";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      refund_items: {
+        Row: {
+          id: string;
+          store_id: string;
+          refund_id: string;
+          sale_id: string;
+          sale_item_id: string;
+          quantity: number;
+          amount: number;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          refund_id: string;
+          sale_id: string;
+          sale_item_id: string;
+          quantity: number;
+          amount: number;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          refund_id?: string;
+          sale_id?: string;
+          sale_item_id?: string;
+          quantity?: number;
+          amount?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "refund_items_refund_id_fkey";
+            columns: ["refund_id"];
+            referencedRelation: "refunds";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "refund_items_sale_id_fkey";
+            columns: ["sale_id"];
+            referencedRelation: "sales";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "refund_items_sale_item_id_fkey";
+            columns: ["sale_item_id"];
+            referencedRelation: "sale_items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       // 0044_rbac_foundation.sql
       permissions: {
         Row: { code: string; module_code: string; description: string };
@@ -936,6 +1038,8 @@ export interface Database {
           p_client_request_id?: string | null;
           p_occurred_at?: string | null;
           p_is_offline_replay?: boolean;
+          p_discount_type?: string | null;
+          p_discount_value?: number | null;
         };
         Returns: { sale_id: string; total: number; receipt_number: string | null }[];
       };
@@ -945,6 +1049,33 @@ export interface Database {
           p_reason: string;
         };
         Returns: undefined;
+      };
+      log_receipt_reprint: {
+        Args: {
+          p_sale_id: string;
+        };
+        Returns: undefined;
+      };
+      log_staff_auth_event: {
+        Args: {
+          p_action: string;
+        };
+        Returns: undefined;
+      };
+      report_reconciliation: {
+        Args: {
+          p_start: string;
+          p_end: string;
+        };
+        Returns: { total: number; transaction_count: number }[];
+      };
+      refund_sale_items: {
+        Args: {
+          p_sale_id: string;
+          p_reason: string;
+          p_items: Json;
+        };
+        Returns: string;
       };
       record_credit_payment: {
         Args: {
@@ -1062,6 +1193,14 @@ export interface Database {
       request_plan_upgrade: {
         Args: { p_plan_code: string };
         Returns: undefined;
+      };
+      request_addon: {
+        Args: { p_module_code: string };
+        Returns: undefined;
+      };
+      current_store_has_module: {
+        Args: { p_module: string };
+        Returns: boolean;
       };
       my_store_limits: {
         Args: Record<string, never>;

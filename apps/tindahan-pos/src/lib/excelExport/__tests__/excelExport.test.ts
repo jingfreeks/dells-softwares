@@ -12,7 +12,7 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     cashierName: "Maricel",
     cashierId: "staff-1",
     items: [
-      { productId: "p1", name: "Ajinomoto Sachet", quantity: 2, price: 5, itemType: "product", fee: 0, lineTotal: 10 },
+      { id: "si-1", productId: "p1", name: "Ajinomoto Sachet", quantity: 2, price: 5, itemType: "product", fee: 0, lineTotal: 10 },
     ],
     paymentType: "cash",
     customerId: null,
@@ -30,6 +30,9 @@ function makeSale(overrides: Partial<SaleRecord> = {}): SaleRecord {
     zeroRatedSales: 0,
     deviceId: null,
     deviceName: null,
+    discountType: null,
+    discountValue: null,
+    discountAmount: 0,
     ...overrides,
   };
 }
@@ -108,8 +111,8 @@ describe("buildDashboardWorkbook", () => {
     const sale = makeSale({
       customerId: "c1",
       items: [
-        { productId: "p1", name: "Ajinomoto Sachet", quantity: 2, price: 5, itemType: "product", fee: 0, lineTotal: 10 },
-        { productId: "p2", name: "555 Sardines", quantity: 1, price: 22, itemType: "product", fee: 0, lineTotal: 22 },
+        { id: "si-2", productId: "p1", name: "Ajinomoto Sachet", quantity: 2, price: 5, itemType: "product", fee: 0, lineTotal: 10 },
+        { id: "si-3", productId: "p2", name: "555 Sardines", quantity: 1, price: 22, itemType: "product", fee: 0, lineTotal: 22 },
       ],
       total: 32,
     });

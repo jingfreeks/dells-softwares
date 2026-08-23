@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { PlanSettings } from "../PlanSettings";
 import type { StoreFeature } from "@/lib/features/featuresContext";
@@ -31,9 +32,11 @@ vi.mock("@/lib/billing/billingContext", async (orig) => ({
 
 // usePlanPage() calls plan_prices() directly through the client, rather than
 // through a context -- it is page-specific, one-shot data, not something the
-// whole app needs to gate on. Mocked here at the same seam.
+// whole app needs to gate on. useAddons() calls two more RPCs by name at the
+// same seam. Routed by name here since the three calls need independent
+// resolved values in the tests below.
 const rpc = vi.fn();
-vi.mock("@/lib/supabaseClient", () => ({ supabase: { rpc: (name: string) => rpc(name) } }));
+vi.mock("@/lib/supabaseClient", () => ({ supabase: { rpc: (name: string, args?: unknown) => rpc(name, args) } }));
 
 const PLANS = [
   { plan_code: "FREE", name: "Free", price_php: 0, billing_interval: "MONTHLY", sort_order: 0, features: [] },
@@ -89,7 +92,12 @@ beforeEach(() => {
   state.catalogue = BASIC;
   state.loading = false;
   state.writesAllowed = true;
-  rpc.mockReset().mockResolvedValue({ data: PLANS, error: null });
+  rpc.mockReset().mockImplementation((name: string) => {
+    if (name === "plan_prices") return Promise.resolve({ data: PLANS, error: null });
+    if (name === "current_store_has_module") return Promise.resolve({ data: true, error: null });
+    if (name === "request_addon") return Promise.resolve({ data: null, error: null });
+    return Promise.resolve({ data: null, error: null });
+  });
 });
 
 describe("PlanSettings", () => {
@@ -170,5 +178,47 @@ describe("PlanSettings", () => {
     renderPage();
     await screen.findByText("Utang (customer credit)");
     expect(screen.queryByText(/New records are paused/)).not.toBeInTheDocument();
+  });
+});
+
+// Add-ons live on a different axis than the plan ladder -- get just
+// Accounting, without upgrading the whole tier. Console-granted, not
+// self-serve: the button records a request rather than turning anything on.
+describe("PlanSettings add-ons card", () => {
+  function mockHasAccounting(has: boolean) {
+    rpc.mockImplementation((name: string) => {
+      if (name === "plan_prices") return Promise.resolve({ data: PLANS, error: null });
+      if (name === "current_store_has_module") return Promise.resolve({ data: has, error: null });
+      if (name === "request_addon") return Promise.resolve({ data: null, error: null });
+      return Promise.resolve({ data: null, error: null });
+    });
+  }
+
+  it("stays hidden once the store already holds the module", async () => {
+    mockHasAccounting(true);
+    renderPage();
+    await screen.findByText("Utang (customer credit)");
+    expect(screen.queryByText("Add-ons")).not.toBeInTheDocument();
+  });
+
+  it("offers the module once the store does not hold it", async () => {
+    mockHasAccounting(false);
+    renderPage();
+    expect(await screen.findByText("Add-ons")).toBeInTheDocument();
+    expect(screen.getByText("Accounting")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Request add-on" })).toBeInTheDocument();
+  });
+
+  it("requests the add-on on click and shows it was requested, without touching entitlements itself", async () => {
+    mockHasAccounting(false);
+    const user = userEvent.setup();
+    renderPage();
+
+    const button = await screen.findByRole("button", { name: "Request add-on" });
+    await user.click(button);
+
+    expect(rpc).toHaveBeenCalledWith("request_addon", { p_module_code: "ACCOUNTING" });
+    expect(await screen.findByText("Requested")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Request add-on" })).not.toBeInTheDocument();
   });
 });
