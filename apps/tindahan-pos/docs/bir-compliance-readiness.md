@@ -14,6 +14,12 @@ Five phases of this work have shipped, each as its own migration and PR:
 | 4 | VAT computation and breakdown per sale | `0040_vat_computation.sql` | #121 |
 | 5 | POS device traceability | `0041_sale_device_traceability.sql` | #122 |
 
+A later, separately-numbered audit (Phases 1-4, PRs #216-222) extended this into audit-trail coverage beyond `void_sale()`, receipt reprint/refund/discount support, and a Reports page VAT/void/payment-method/Z-reading breakdown — not itemized row-by-row here to keep this table to its original scope; see each PR's own description. This document's own "Phase 5" below continues that audit's numbering, distinct from the "5" row above.
+
+| # | What it does | Migration | PR |
+|---|---|---|---|
+| Phase 5 | Real, scheduled backups (`pg_dump`/`pg_dumpall` to a private Storage bucket, 30-day retention) — replaces the previous manual, unscripted dumps and the decorative in-app "Automatic backup" controls | `20260815135000_backups_bucket.sql` | (this PR) |
+
 ## System overview
 
 Tindahan POS is a React/Vite single-page app backed by Supabase (Postgres + Auth + Storage + Edge Functions). A store's staff sign in with email/password (admins) or a device-scoped cashier PIN (cashiers, via a paired tablet); every write that matters for tax/audit purposes — checking out a sale, voiding a sale, changing store tax config — goes through a Postgres function (`security definer` RPC) rather than a raw client-side `insert`/`update`, so business rules and row-locking are enforced in one place the client cannot bypass.
@@ -168,7 +174,7 @@ The Dashboard (day-to-day operational view, distinct from Reports) only ever sho
 
 - No client-side delete path exists for a completed sale, a customer, or an audit-log entry (no DELETE RLS policy on any of these tables for a normal client).
 - Historical `sales`/`sale_items`/`audit_log` rows are retained indefinitely by default — this app does not implement automatic data purging.
-- Database backups are Supabase's platform-level responsibility for the hosted project this app points at (point-in-time recovery / scheduled backups, configured in the Supabase dashboard, outside this repo's scope). Confirm the specific project's backup retention meets the taxpayer's applicable record-retention period before relying on it for compliance purposes.
+- Database backups are also taken independently of Supabase's own platform-level point-in-time recovery: a scheduled GitHub Actions workflow (`.github/workflows/backup-production.yml`, daily) runs `pg_dump`/`pg_dumpall --roles-only` against production (`scripts/backup-database.mjs`) and uploads both files to a private Storage bucket (`backups`, no client-facing RLS policy — only the workflow's `service_role` key can read or write it). Backups older than 30 days are deleted automatically. **That 30-day figure is an operational/storage-cost default, not the taxpayer's statutory record-retention period** — confirm the applicable period with an accountant/BIR and adjust `RETENTION_DAYS` in the script accordingly before relying on this for compliance purposes. Restoring from a backup is an operator-run `pg_restore`/`psql` action (see `docs/backups.md`), not a self-service action in the app — the in-app "Restore" control is deliberately inert (`RestoreNote.tsx`) for exactly this reason.
 - Important transaction data does not depend on `localStorage`/`sessionStorage` — those are used only for UI convenience state (a cashier's active PIN session, a pending-sale crash-recovery snapshot, non-BIR-relevant display preferences), never as the source of truth for a completed transaction.
 
 ## Electronic invoicing readiness
