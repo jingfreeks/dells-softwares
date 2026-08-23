@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useAuth, useStoreData } from "@/lib";
 import { makeAuthValue, makeCustomer, makeProduct, makeSaleRecord, makeStoreDataValue } from "../../../test/testUtils";
@@ -77,7 +77,8 @@ describe("Reports", () => {
     await waitFor(() => expect(fetchSalesInRange).toHaveBeenCalled());
     fetchSalesInRange.mockClear();
 
-    await user.selectOptions(await screen.findByRole("combobox", { name: "All cashiers" }), "Aling Nena");
+    const filters = within(await screen.findByTestId("report-filters"));
+    await user.selectOptions(filters.getByRole("combobox", { name: "All cashiers" }), "Aling Nena");
 
     await waitFor(() =>
       expect(fetchSalesInRange).toHaveBeenCalledWith(
@@ -97,7 +98,8 @@ describe("Reports", () => {
     await waitFor(() => expect(fetchSalesInRange).toHaveBeenCalled());
     fetchSalesInRange.mockClear();
 
-    await user.selectOptions(await screen.findByRole("combobox", { name: "All devices" }), "Aling Nena");
+    const filters = within(await screen.findByTestId("report-filters"));
+    await user.selectOptions(filters.getByRole("combobox", { name: "All devices" }), "Aling Nena");
 
     await waitFor(() =>
       expect(fetchSalesInRange).toHaveBeenCalledWith(
@@ -120,9 +122,17 @@ describe("Reports", () => {
 
     await user.click(screen.getByRole("button", { name: "This month" }));
 
-    await waitFor(() => expect(fetchSalesInRange).toHaveBeenCalled());
-    const monthCall = fetchSalesInRange.mock.calls.at(-1)![0];
-    expect(new Date(monthCall.startDate).getTime()).toBeLessThan(new Date(todayCall.startDate).getTime());
+    // The page's own ZReadingCard is an independent fetchSalesInRange
+    // consumer (its own business-date selector, default "today") — find
+    // the call with a genuinely wider range rather than assuming the last
+    // call is the main page's, since the two can interleave.
+    await waitFor(() =>
+      expect(
+        fetchSalesInRange.mock.calls.some(
+          ([call]) => new Date(call.startDate).getTime() < new Date(todayCall.startDate).getTime()
+        )
+      ).toBe(true)
+    );
   });
 
   it("exports the filtered sales as a CSV download", async () => {
@@ -303,7 +313,9 @@ describe("Reports", () => {
       await user.click(await screen.findByRole("button", { name: "Reprint" }));
 
       expect(await screen.findByText("*** REPRINT ***")).toBeInTheDocument();
-      expect(screen.getByText(/000042/)).toBeInTheDocument();
+      // Also shown in the page's ZReadingCard (same sale is its only one
+      // for the day too), so there can be more than one match.
+      expect(screen.getAllByText(/000042/).length).toBeGreaterThan(0);
       await waitFor(() => expect(rpc).toHaveBeenCalledWith("log_receipt_reprint", { p_sale_id: "s1" }));
     });
 

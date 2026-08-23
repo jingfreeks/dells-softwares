@@ -58,6 +58,32 @@ export function voidSummary(sales: SaleRecord[]): VoidSummary {
   };
 }
 
+export interface ReceiptNumberRange {
+  beginning: string | null;
+  ending: string | null;
+}
+
+/**
+ * Beginning/ending receipt number for a Z-reading — the modern equivalent
+ * of a mechanical register's grand-total counters, since this app assigns
+ * a real sequential receipt number per store (document_series) rather
+ * than a running GT figure. Reads the raw, unfiltered `sales` array — a
+ * voided sale still consumed a receipt number that day, so it must still
+ * count toward the range. Receipt numbers are same-length zero-padded per
+ * store, so a plain lexicographic min/max is safe.
+ */
+export function receiptNumberRange(sales: SaleRecord[]): ReceiptNumberRange {
+  const numbers = sales.map((sale) => sale.receiptNumber).filter((n): n is string => n !== null);
+  if (numbers.length === 0) return { beginning: null, ending: null };
+  return { beginning: numbers.reduce((a, b) => (a < b ? a : b)), ending: numbers.reduce((a, b) => (a > b ? a : b)) };
+}
+
+/** Sum of discount amounts across completed sales — a Z-reading needs
+ * this as its own total; every other report surfaces it only per-row. */
+export function totalDiscounts(sales: SaleRecord[]): number {
+  return completedSales(sales).reduce((sum, sale) => sum + sale.discountAmount, 0);
+}
+
 export interface CategoryTotal {
   category: string;
   total: number;

@@ -5,9 +5,11 @@ import {
   buildRangeReport,
   completedSales,
   isToday,
+  receiptNumberRange,
   salesByCategory,
   salesByCashier,
   salesByPaymentType,
+  totalDiscounts,
   vatSummary,
   voidSummary,
 } from "../reports";
@@ -519,5 +521,40 @@ describe("salesByPaymentType", () => {
 
   it("returns an empty list for no sales", () => {
     expect(salesByPaymentType([])).toEqual([]);
+  });
+});
+
+describe("receiptNumberRange (Z-reading beginning/ending)", () => {
+  it("finds the min and max receipt number, including a voided sale's", () => {
+    const sales = [
+      makeSale({ id: "s1", receiptNumber: "000005" }),
+      makeSale({ id: "s2", receiptNumber: "000002", status: "voided" }),
+      makeSale({ id: "s3", receiptNumber: "000009" }),
+    ];
+    expect(receiptNumberRange(sales)).toEqual({ beginning: "000002", ending: "000009" });
+  });
+
+  it("ignores a sale with no receipt number yet (still offline-queued)", () => {
+    const sales = [makeSale({ id: "s1", receiptNumber: "000005" }), makeSale({ id: "s2", receiptNumber: null })];
+    expect(receiptNumberRange(sales)).toEqual({ beginning: "000005", ending: "000005" });
+  });
+
+  it("is null/null with no sales", () => {
+    expect(receiptNumberRange([])).toEqual({ beginning: null, ending: null });
+  });
+});
+
+describe("totalDiscounts", () => {
+  it("sums discount amounts across completed sales, excluding a voided one", () => {
+    const sales = [
+      makeSale({ id: "s1", discountAmount: 10 }),
+      makeSale({ id: "s2", discountAmount: 5 }),
+      makeSale({ id: "s3", discountAmount: 50, status: "voided" }),
+    ];
+    expect(totalDiscounts(sales)).toBe(15);
+  });
+
+  it("is zero with no discounts", () => {
+    expect(totalDiscounts([makeSale({ discountAmount: 0 })])).toBe(0);
   });
 });

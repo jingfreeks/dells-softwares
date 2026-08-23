@@ -7,4 +7,5 @@ export * from "./salestable";
 export * from "./vatsummarycard";
 export * from "./voidsummarycard";
 export * from "./paymentbreakdowntable";
+export * from "./zreadingcard";
 export * from "./refundmodal";
