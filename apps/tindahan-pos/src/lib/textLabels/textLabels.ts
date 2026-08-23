@@ -518,6 +518,8 @@ export const COLUMN_ITEMS = "Items";
 export const COLUMN_PAYMENT = "Payment";
 export const LABEL_STATUS_VOIDED = "Voided";
 export const BUTTON_VOID_SALE = "Void";
+export const BUTTON_REPRINT_RECEIPT = "Reprint";
+export const TEXT_REPRINT_MARKER = "*** REPRINT ***";
 export const TEXT_VOID_SALE_TITLE = "Void this sale?";
 export const TEXT_VOID_SALE_BODY_PREFIX =
   "This restores the product stock and, for a credit sale, reverses the customer's utang balance. The receipt/invoice number is not reissued to another sale. This cannot be undone.";
@@ -1337,6 +1339,7 @@ export const LABEL_AUDIT_ACTION_PRICE_CHANGED = "Price changed";
 export const LABEL_AUDIT_ACTION_STORE_CONFIG_CHANGED = "Store settings changed";
 export const LABEL_AUDIT_ACTION_CUSTOMER_DELETED = "Customer deleted";
 export const LABEL_AUDIT_ACTION_STAFF_ROLE_CHANGED = "Staff role changed";
+export const LABEL_AUDIT_ACTION_RECEIPT_REPRINTED = "Receipt reprinted";
 
 // Connection resilience (freeze/blank-screen fix)
 export const TEXT_SETTING_UP_CASHIER_SESSION = "Setting up your cashier session…";

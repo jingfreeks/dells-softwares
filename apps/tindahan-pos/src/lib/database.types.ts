@@ -946,6 +946,12 @@ export interface Database {
         };
         Returns: undefined;
       };
+      log_receipt_reprint: {
+        Args: {
+          p_sale_id: string;
+        };
+        Returns: undefined;
+      };
       record_credit_payment: {
         Args: {
           p_customer_id: string;

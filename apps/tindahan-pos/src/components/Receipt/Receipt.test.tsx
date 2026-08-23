@@ -93,6 +93,53 @@ describe("Receipt", () => {
     expect(screen.getByText("Permit: BP-2026-001")).toBeInTheDocument();
   });
 
+  // BIR Compliance Audit, Phase 2a: tendered/change are checkout-session-
+  // only values, never persisted on the sale itself -- a reprint has no
+  // session to read them from, and must not fabricate a cash breakdown.
+  it("omits the cash-tendered block when tendered/change are not provided", () => {
+    render(
+      <Receipt
+        sale={makeSaleRecord({ paymentType: "cash" })}
+        store={makeStore()}
+        settings={baseSettings}
+      />
+    );
+
+    expect(screen.queryByText("Cash tendered")).not.toBeInTheDocument();
+    expect(screen.queryByText("Change")).not.toBeInTheDocument();
+  });
+
+  it("shows the cash-tendered block when tendered/change are provided", () => {
+    render(
+      <Receipt
+        sale={makeSaleRecord({ paymentType: "cash" })}
+        store={makeStore()}
+        settings={baseSettings}
+        tendered={100}
+        change={50}
+      />
+    );
+
+    expect(screen.getByText("Cash tendered")).toBeInTheDocument();
+    expect(screen.getByText("Change")).toBeInTheDocument();
+  });
+
+  it("shows an explicit REPRINT marker when isReprint is true", () => {
+    render(
+      <Receipt sale={makeSaleRecord()} store={makeStore()} settings={baseSettings} isReprint />
+    );
+
+    expect(screen.getByText("*** REPRINT ***")).toBeInTheDocument();
+  });
+
+  it("shows no REPRINT marker for a normal receipt", () => {
+    render(
+      <Receipt sale={makeSaleRecord()} store={makeStore()} settings={baseSettings} tendered={100} change={50} />
+    );
+
+    expect(screen.queryByText("*** REPRINT ***")).not.toBeInTheDocument();
+  });
+
   it("shows tendered and change only for a cash sale", () => {
     const { rerender } = render(
       <Receipt

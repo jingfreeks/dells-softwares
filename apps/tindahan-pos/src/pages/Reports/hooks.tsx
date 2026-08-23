@@ -13,6 +13,10 @@ import {
 import { buildRangeReport } from "@/lib/reports";
 import { describePlatformError } from "@/lib/platformErrors";
 import { DEFAULT_ALERTS_MOCK, loadAlertsMock } from "@/pages/Settings/alertsMock";
+import {
+  DEFAULT_RECEIPT_SETTINGS_MOCK,
+  loadReceiptSettingsMock,
+} from "@/pages/Settings/receiptSettingsMock";
 import { dateRangeForPreset, toDateInputValue, type DateRangePreset } from "./lib";
 
 interface CashierOption {
@@ -44,6 +48,11 @@ export function useReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [voidError, setVoidError] = useState<string | null>(null);
+  const [reprintingSale, setReprintingSale] = useState<SaleRecord | null>(null);
+  const receiptSettings = useMemo(
+    () => (store ? loadReceiptSettingsMock(store.id) : DEFAULT_RECEIPT_SETTINGS_MOCK),
+    [store]
+  );
 
   const { startDate, endDate } = useMemo(
     () => dateRangeForPreset(preset, customStart, customEnd),
@@ -128,6 +137,23 @@ export function useReportsPage() {
     }
   }
 
+  // Reprinting itself is a pure read -- the sale is already sitting in this
+  // page's own `sales` state. The RPC call only records the audit entry, and
+  // is best-effort: a logging failure must never block the cashier from
+  // seeing the receipt they clicked to view (same instinct as
+  // request_plan_upgrade's post-signup call).
+  function handleReprintSale(sale: SaleRecord) {
+    setReprintingSale(sale);
+    supabase.rpc("log_receipt_reprint", { p_sale_id: sale.id }).then(
+      () => {},
+      () => {}
+    );
+  }
+
+  function closeReprint() {
+    setReprintingSale(null);
+  }
+
   return {
     preset,
     setPreset,
@@ -150,5 +176,10 @@ export function useReportsPage() {
     thresholdDays,
     onVoidSale: handleVoidSale,
     voidError,
+    store,
+    receiptSettings,
+    reprintingSale,
+    onReprintSale: handleReprintSale,
+    closeReprint,
   };
 }

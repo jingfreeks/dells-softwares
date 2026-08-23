@@ -12,6 +12,7 @@ import {
   COLUMN_STATUS,
   LABEL_STATUS_VOIDED,
   BUTTON_VOID_SALE,
+  BUTTON_REPRINT_RECEIPT,
   TEXT_VOID_SALE_TITLE,
   TEXT_VOID_SALE_BODY_PREFIX,
   LABEL_VOID_REASON,
@@ -59,9 +60,12 @@ interface SalesTableProps {
   /** Omit to hide the void action entirely (e.g. a non-admin view). */
   onVoidSale?: (sale: SaleRecord, reason: string) => Promise<void>;
   voidError?: string | null;
+  /** Reprinting needs no extra permission beyond seeing this table in the
+   * first place, so unlike onVoidSale this is always present. */
+  onReprintSale?: (sale: SaleRecord) => void;
 }
 
-export function SalesTable({ sales, onVoidSale, voidError }: SalesTableProps) {
+export function SalesTable({ sales, onVoidSale, voidError, onReprintSale }: SalesTableProps) {
   const [voidingSale, setVoidingSale] = useState<SaleRecord | null>(null);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -115,7 +119,17 @@ export function SalesTable({ sales, onVoidSale, voidError }: SalesTableProps) {
           <span className="tpl-ts">{formatItems(sale)}</span>
           <span className="tpl-tp">{PAYMENT_LABEL[sale.paymentType]}</span>
           <span className="tpl-ts tpl-right">{PESO.format(sale.total)}</span>
-          <span className="tpl-right">
+          <span className="tpl-right" style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+            {onReprintSale && (
+              <button
+                type="button"
+                className="tpl-lnk"
+                style={{ fontSize: 12 }}
+                onClick={() => onReprintSale(sale)}
+              >
+                {BUTTON_REPRINT_RECEIPT}
+              </button>
+            )}
             {sale.status === "voided" ? (
               <span
                 title={[

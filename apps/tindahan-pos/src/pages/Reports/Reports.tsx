@@ -4,9 +4,11 @@ import {
   BUTTON_EXPORT_CSV,
   LABEL_LOADING,
   BUTTON_TRY_AGAIN,
+  BUTTON_CLOSE,
   useCan,
 } from "@/lib";
 import { DebtAgeCard } from "@/components";
+import { ReceiptModal } from "@/pages/Pos/component/receiptmodal";
 import {
   DateRangeFilter,
   CashierFilter,
@@ -42,6 +44,11 @@ export function Reports() {
     thresholdDays,
     onVoidSale,
     voidError,
+    store,
+    receiptSettings,
+    reprintingSale,
+    onReprintSale,
+    closeReprint,
   } = useReportsPage();
 
   // void_sale() is now permission-gated (0045_rbac_enforce_checkpoints.sql)
@@ -100,9 +107,27 @@ export function Reports() {
             report.vatSummary.vatExemptSales > 0 ||
             report.vatSummary.zeroRatedSales > 0) && <VatSummaryCard summary={report.vatSummary} />}
           <CashierBreakdownTable rows={report.byCashier} grandTotal={report.totalSales} />
-          <SalesTable sales={report.sales} onVoidSale={canVoidSale ? onVoidSale : undefined} voidError={voidError} />
+          <SalesTable
+            sales={report.sales}
+            onVoidSale={canVoidSale ? onVoidSale : undefined}
+            voidError={voidError}
+            onReprintSale={onReprintSale}
+          />
         </>
       )}
+
+      <ReceiptModal
+        open={!!reprintingSale}
+        sale={reprintingSale}
+        store={store}
+        settings={receiptSettings}
+        tin={store?.tin ?? undefined}
+        businessPermitNo={store?.businessPermitNo ?? undefined}
+        autoPrint={false}
+        onClose={closeReprint}
+        isReprint
+        closeLabel={BUTTON_CLOSE}
+      />
     </div>
   );
 }
