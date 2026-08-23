@@ -20,9 +20,10 @@ const order = vi.fn().mockResolvedValue({
 });
 const select = vi.fn(() => ({ order }));
 const from = vi.fn(() => ({ select }));
+const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
 
 vi.mock("@/lib/supabaseClient", () => ({
-  supabase: { from: () => from() },
+  supabase: { from: () => from(), rpc: (...args: unknown[]) => rpc(...args) },
 }));
 
 function renderPage() {
@@ -33,6 +34,8 @@ describe("Reports", () => {
   beforeEach(() => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue());
     order.mockClear();
+    rpc.mockClear();
+    rpc.mockResolvedValue({ data: null, error: null });
     order.mockResolvedValue({
       data: [
         { id: "c1", name: "Aling Nena" },
@@ -278,6 +281,49 @@ describe("Reports", () => {
 
       expect(await screen.findByText(/already.*voided/i)).toBeInTheDocument();
       expect(screen.queryByText("Could not void this sale.")).not.toBeInTheDocument();
+    });
+  });
+
+  // BIR Compliance Audit, Phase 2a: reprinting needs no extra permission
+  // beyond seeing this table in the first place, unlike Void.
+  describe("reprinting a receipt", () => {
+    it("opens the receipt with a REPRINT marker and logs the reprint, for any sale", async () => {
+      const user = userEvent.setup();
+      const sale = makeSaleRecord({ id: "s1", receiptNumber: "000042" });
+      const fetchSalesInRange = vi.fn().mockResolvedValue([sale]);
+      vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products: [], fetchSalesInRange }));
+
+      renderPage();
+      await user.click(await screen.findByRole("button", { name: "Reprint" }));
+
+      expect(await screen.findByText("*** REPRINT ***")).toBeInTheDocument();
+      expect(screen.getByText(/000042/)).toBeInTheDocument();
+      await waitFor(() => expect(rpc).toHaveBeenCalledWith("log_receipt_reprint", { p_sale_id: "s1" }));
+    });
+
+    it("still shows a Reprint button for an already-voided sale", async () => {
+      const user = userEvent.setup();
+      const sale = makeSaleRecord({ id: "s1", status: "voided" });
+      const fetchSalesInRange = vi.fn().mockResolvedValue([sale]);
+      vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products: [], fetchSalesInRange }));
+
+      renderPage();
+      await user.click(await screen.findByRole("button", { name: "Reprint" }));
+
+      expect(await screen.findByText("*** REPRINT ***")).toBeInTheDocument();
+    });
+
+    it("does not block showing the receipt when logging the reprint fails", async () => {
+      const user = userEvent.setup();
+      rpc.mockRejectedValue(new Error("network down"));
+      const sale = makeSaleRecord({ id: "s1" });
+      const fetchSalesInRange = vi.fn().mockResolvedValue([sale]);
+      vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products: [], fetchSalesInRange }));
+
+      renderPage();
+      await user.click(await screen.findByRole("button", { name: "Reprint" }));
+
+      expect(await screen.findByText("*** REPRINT ***")).toBeInTheDocument();
     });
   });
 });
