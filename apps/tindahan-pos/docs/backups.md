@@ -27,12 +27,16 @@ exists (it replaces a set of manual, unscripted `pg_dump` runs and an in-app
 
 ## One-time setup (required before the workflow can run)
 
-The workflow needs a direct Postgres connection string, which nothing else
-in this repo stores (the CLI's `supabase projects api-keys` only returns the
-REST API keys, not this). Add it once as a GitHub repo secret:
+The workflow needs a Postgres connection string, which nothing else in this
+repo stores (the CLI's `supabase projects api-keys` only returns the REST
+API keys, not this). Add it once as a GitHub repo secret:
 
 1. Supabase dashboard → the production project → **Connect** → **Connection
-   string** (URI). Copy it.
+   string**. Switch to the **Session pooler** tab specifically — not
+   "Direct connection" (that hostname is IPv6-only and unreachable from
+   GitHub's runners, confirmed the hard way) and not "Transaction pooler"
+   (that mode doesn't support the session-level features `pg_dump`/
+   `pg_dumpall` need). Copy the URI and fill in the real database password.
 2. Repo → **Settings → Secrets and variables → Actions** → **New repository
    secret**:
    - Name: `TINDAHAN_SUPABASE_DB_URL`
@@ -40,6 +44,12 @@ REST API keys, not this). Add it once as a GitHub repo secret:
 
 `TINDAHAN_SUPABASE_URL` and `TINDAHAN_SUPABASE_SERVICE_ROLE_KEY` already
 exist as repo secrets (used by `tindahan-pos-ci.yml`) and are reused as-is.
+
+Also confirmed the hard way: `workflow_dispatch` and `schedule` triggers
+only fire for a workflow file that exists on the repo's actual GitHub
+default branch (`main` here) — a workflow that only exists on `dev` is
+invisible to `gh workflow run`/the Actions "Run workflow" button and its
+cron never fires, even though the file is present and correct.
 
 ## Restoring from a backup
 
