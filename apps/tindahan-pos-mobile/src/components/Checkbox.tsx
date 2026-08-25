@@ -1,14 +1,18 @@
+import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, minTouchTarget } from "../theme/colors";
 
 interface CheckboxProps {
   checked: boolean;
   onToggle: () => void;
-  label: string;
+  /** Plain-text label (e.g. "Keep me signed in on this device"). */
+  label?: string;
+  /** Rich label content instead of `label`, e.g. a terms row with embedded LinkText (§5 M-003). */
+  children?: ReactNode;
 }
 
 /** Reusable labeled checkbox row, accessible as a checkbox with the label as its own tap target text. */
-export function Checkbox({ checked, onToggle, label }: CheckboxProps) {
+export function Checkbox({ checked, onToggle, label, children }: CheckboxProps) {
   return (
     <Pressable
       accessibilityRole="checkbox"
@@ -17,7 +21,7 @@ export function Checkbox({ checked, onToggle, label }: CheckboxProps) {
       style={styles.row}
     >
       <View style={[styles.box, checked && styles.boxChecked]}>{checked && <View style={styles.dot} />}</View>
-      <Text style={styles.label}>{label}</Text>
+      {children ?? <Text style={styles.label}>{label}</Text>}
     </Pressable>
   );
 }
@@ -25,7 +29,7 @@ export function Checkbox({ checked, onToggle, label }: CheckboxProps) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     minHeight: minTouchTarget,
   },
   box: {
@@ -37,8 +41,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
+    marginTop: 2,
   },
   boxChecked: { borderColor: colors.accent, backgroundColor: colors.accent },
   dot: { width: 8, height: 8, borderRadius: 2, backgroundColor: colors.textPrimary },
-  label: { fontSize: 13, fontWeight: "400", color: colors.textMuted },
+  label: { flex: 1, fontSize: 13, fontWeight: "400", color: colors.textMuted, lineHeight: 18 },
 });

@@ -14,7 +14,7 @@ describe("LoginScreen", () => {
     render(<LoginScreen />);
     fireEvent.changeText(screen.getByLabelText("Email"), "cashier@store.com");
     fireEvent.changeText(screen.getByLabelText("Password"), "wrong-password");
-    fireEvent.press(screen.getByText("Sign in"));
+    fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
 
     await waitFor(() => {
       expect(screen.getByText("Incorrect email or password.")).toBeTruthy();
@@ -30,7 +30,7 @@ describe("LoginScreen", () => {
     fireEvent.changeText(screen.getByLabelText("Email"), "owner@store.com");
     fireEvent.changeText(screen.getByLabelText("Password"), "correct-password");
     fireEvent.press(screen.getByText("Keep me signed in on this device"));
-    fireEvent.press(screen.getByText("Sign in"));
+    fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
 
     await waitFor(() => {
       expect(login).toHaveBeenCalledWith("owner@store.com", "correct-password", false);
@@ -42,7 +42,7 @@ describe("LoginScreen", () => {
     mockedUseAuth.mockReturnValue({ login });
 
     render(<LoginScreen />);
-    fireEvent.press(screen.getByText("Sign in"));
+    fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
 
     expect(login).not.toHaveBeenCalled();
   });
