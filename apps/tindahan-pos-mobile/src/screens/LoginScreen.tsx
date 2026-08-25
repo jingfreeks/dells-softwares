@@ -12,6 +12,7 @@ import { SecondaryButton } from "../components/SecondaryButton";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { TextField } from "../components/TextField";
 import { useAuth } from "../lib/auth";
+import { isValidEmail } from "../lib/validation";
 import { colors } from "../theme/colors";
 
 const SEGMENTS = ["Sign in", "Create account"] as const;
@@ -28,9 +29,14 @@ export function LoginScreen({ onSwitchToCreateAccount }: LoginScreenProps) {
   const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailTouched, setEmailTouched] = useState(false);
+
+  const emailError = emailTouched && email.length > 0 && !isValidEmail(email) ? "Enter a valid email address." : undefined;
 
   async function handleSubmit() {
     if (!email.trim() || !password) return;
+    setEmailTouched(true);
+    if (!isValidEmail(email)) return;
     setSubmitting(true);
     setError(null);
     const result = await login(email, password, keepSignedIn);
@@ -42,7 +48,7 @@ export function LoginScreen({ onSwitchToCreateAccount }: LoginScreenProps) {
     if (segment === "Create account") onSwitchToCreateAccount?.();
   }
 
-  const canSubmit = !submitting && !!email.trim() && !!password;
+  const canSubmit = !submitting && isValidEmail(email) && !!password;
 
   return (
     <ScreenContainer>
@@ -68,6 +74,8 @@ export function LoginScreen({ onSwitchToCreateAccount }: LoginScreenProps) {
         textContentType="username"
         value={email}
         onChangeText={setEmail}
+        onBlur={() => setEmailTouched(true)}
+        error={emailError}
       />
 
       <View style={styles.passwordLabelRow}>

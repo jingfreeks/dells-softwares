@@ -46,4 +46,23 @@ describe("LoginScreen", () => {
 
     expect(login).not.toHaveBeenCalled();
   });
+
+  it("shows a validation error for a malformed email after it's touched, and blocks submit", () => {
+    const login = jest.fn();
+    mockedUseAuth.mockReturnValue({ login });
+
+    render(<LoginScreen />);
+    const emailInput = screen.getByLabelText("Email");
+    fireEvent.changeText(emailInput, "not-an-email");
+    fireEvent(emailInput, "blur");
+
+    expect(screen.getByText("Enter a valid email address.")).toBeTruthy();
+
+    fireEvent.changeText(screen.getByLabelText("Password"), "some-password");
+    fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
+    expect(login).not.toHaveBeenCalled();
+
+    fireEvent.changeText(emailInput, "owner@store.com");
+    expect(screen.queryByText("Enter a valid email address.")).toBeNull();
+  });
 });
