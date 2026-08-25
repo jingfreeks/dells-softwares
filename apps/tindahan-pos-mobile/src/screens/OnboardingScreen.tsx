@@ -14,10 +14,13 @@ import {
 import {
   DEFAULT_OPENING_HOURS,
   DEFAULT_STOCK_ALERT_SETTINGS,
+  clearOnboardingStep,
   loadDenominationCounts,
+  loadOnboardingStep,
   loadOpeningHours,
   loadStockAlertSettings,
   saveDenominationCounts,
+  saveOnboardingStep,
   saveOpeningHours,
   saveStockAlertSettings,
 } from "../lib/onboardingSettings";
@@ -80,6 +83,23 @@ export function OnboardingScreen() {
   const hoursLoadedRef = useRef(false);
   const stockAlertsLoadedRef = useRef(false);
   const denominationsLoadedRef = useRef(false);
+  const stepResumedRef = useRef(false);
+
+  // Resumes mid-flow on reload instead of always restarting at "welcome" --
+  // same guard shape as the other loaded-refs above.
+  useEffect(() => {
+    if (!user) return;
+    loadOnboardingStep(user.storeId).then((savedStep) => {
+      if (savedStep) setStep(savedStep);
+      stepResumedRef.current = true;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.storeId]);
+
+  useEffect(() => {
+    if (!user || !stepResumedRef.current) return;
+    saveOnboardingStep(user.storeId, step);
+  }, [user, step]);
 
   useEffect(() => {
     if (!user) return;
@@ -249,7 +269,9 @@ export function OnboardingScreen() {
     if (!result.ok) {
       setFinishError(result.error);
       setFinishing(false);
+      return;
     }
+    if (user) await clearOnboardingStep(user.storeId);
   }
 
   if (step === "welcome") {
