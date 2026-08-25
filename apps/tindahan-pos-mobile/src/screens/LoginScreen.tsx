@@ -1,25 +1,17 @@
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../lib/auth";
-import { colors, minTouchTarget, radii } from "../theme/colors";
+import { Checkbox } from "../components/Checkbox";
+import { PrimaryButton } from "../components/PrimaryButton";
+import { TextField } from "../components/TextField";
+import { colors, radii } from "../theme/colors";
 
 export function LoginScreen() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [keepSignedIn, setKeepSignedIn] = useState(true);
-  const [focusedField, setFocusedField] = useState<"email" | "password" | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,31 +39,23 @@ export function LoginScreen() {
           <Text style={styles.title}>Tindahan POS</Text>
           <Text style={styles.subtitle}>Sign in to start a shift</Text>
 
-          <TextInput
+          <TextField
             accessibilityLabel="Email"
             placeholder="Email"
-            placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="email-address"
             textContentType="username"
             value={email}
             onChangeText={setEmail}
-            onFocus={() => setFocusedField("email")}
-            onBlur={() => setFocusedField(null)}
-            style={[styles.input, focusedField === "email" && styles.inputFocused]}
           />
-          <TextInput
+          <TextField
             accessibilityLabel="Password"
             placeholder="Password"
-            placeholderTextColor={colors.textMuted}
             secureTextEntry
             textContentType="password"
             value={password}
             onChangeText={setPassword}
-            onFocus={() => setFocusedField("password")}
-            onBlur={() => setFocusedField(null)}
-            style={[styles.input, focusedField === "password" && styles.inputFocused]}
           />
 
           {error && (
@@ -80,29 +64,15 @@ export function LoginScreen() {
             </Text>
           )}
 
-          <Pressable
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: keepSignedIn }}
-            onPress={() => setKeepSignedIn((v) => !v)}
-            style={styles.checkboxRow}
-          >
-            <View style={[styles.checkbox, keepSignedIn && styles.checkboxChecked]}>
-              {keepSignedIn && <View style={styles.checkboxDot} />}
-            </View>
-            <Text style={styles.checkboxLabel}>Keep me signed in on this device</Text>
-          </Pressable>
+          <View style={styles.checkboxRow}>
+            <Checkbox
+              checked={keepSignedIn}
+              onToggle={() => setKeepSignedIn((v) => !v)}
+              label="Keep me signed in on this device"
+            />
+          </View>
 
-          <TouchableOpacity
-            onPress={handleSubmit}
-            disabled={!canSubmit}
-            style={[styles.button, !canSubmit && styles.buttonDisabled]}
-          >
-            {submitting ? (
-              <ActivityIndicator color={colors.textPrimary} />
-            ) : (
-              <Text style={styles.buttonText}>Sign in</Text>
-            )}
-          </TouchableOpacity>
+          <PrimaryButton label="Sign in" onPress={handleSubmit} disabled={!canSubmit} loading={submitting} />
         </View>
       </KeyboardAvoidingView>
     </LinearGradient>
@@ -128,51 +98,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 28,
   },
-  input: {
-    minHeight: minTouchTarget,
-    borderWidth: 1,
-    borderColor: colors.hairline,
-    borderRadius: radii.control,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    fontWeight: "400",
-    color: colors.textPrimary,
-    backgroundColor: colors.panelStrong,
-    marginBottom: 12,
-    // @ts-expect-error RN Web-only property; suppresses the browser's
-    // default focus outline so our own focus border color is the only ring.
-    outlineStyle: "none",
-  },
-  inputFocused: { borderColor: colors.accent },
   error: { color: colors.error, fontSize: 13, marginBottom: 12 },
-  checkboxRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-    minHeight: minTouchTarget,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: colors.hairline,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-  },
-  checkboxChecked: { borderColor: colors.accent, backgroundColor: colors.accent },
-  checkboxDot: { width: 8, height: 8, borderRadius: 2, backgroundColor: colors.textPrimary },
-  checkboxLabel: { fontSize: 13, fontWeight: "400", color: colors.textMuted },
-  button: {
-    minHeight: minTouchTarget,
-    backgroundColor: colors.accent,
-    borderRadius: radii.control,
-    paddingVertical: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonDisabled: { opacity: 0.4 },
-  buttonText: { color: colors.textPrimary, fontSize: 16, fontWeight: "500" },
+  checkboxRow: { marginBottom: 20 },
 });
