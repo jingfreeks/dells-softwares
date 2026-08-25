@@ -7,6 +7,7 @@ import { CashierSessionProvider, useCashierSession } from "./src/lib/cashierSess
 import { StoreDataProvider } from "./src/lib/storeData";
 import { CashierPinScreen } from "./src/screens/CashierPinScreen";
 import { CreateAccountScreen } from "./src/screens/CreateAccountScreen";
+import { InsightsScreen } from "./src/screens/InsightsScreen";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { OwnerHomeScreen } from "./src/screens/OwnerHomeScreen";
@@ -71,16 +72,17 @@ function DeviceGate() {
 type OwnerTab = "home" | "sell" | "stock" | "utang";
 
 /**
- * The admin's real post-onboarding home: Owner Home plus its three actual
- * drill-downs (Today's Sales, Restock, Utang) and the register itself,
- * all sharing the same BottomTabBar those screens were already built
- * to accept. "More" has no destination yet (§5/§7 TBD) -- tapping it is a
+ * The admin's real post-onboarding home: Owner Home plus its drill-downs
+ * (Today's Sales -> Insights, Restock, Utang) and the register itself, all
+ * sharing the same BottomTabBar those screens were already built to
+ * accept. "More" has no destination yet (§5/§7 TBD) -- tapping it is a
  * no-op rather than navigating to a blank screen.
  */
 function AdminHome() {
   const { store } = useAuth();
   const [tab, setTab] = useState<OwnerTab>("home");
   const [showTodaysSales, setShowTodaysSales] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
   const [showSetupRegister, setShowSetupRegister] = useState(false);
 
   function handleChangeTab(next: string) {
@@ -92,8 +94,18 @@ function AdminHome() {
     return <SetupRegisterScreen onBack={() => setShowSetupRegister(false)} />;
   }
 
+  if (showInsights) {
+    return <InsightsScreen onBack={() => setShowInsights(false)} />;
+  }
+
   if (showTodaysSales) {
-    return <TodaysSalesScreen onBack={() => setShowTodaysSales(false)} storeName={store?.name ?? "Store"} />;
+    return (
+      <TodaysSalesScreen
+        onBack={() => setShowTodaysSales(false)}
+        storeName={store?.name ?? "Store"}
+        onOpenInsights={() => setShowInsights(true)}
+      />
+    );
   }
 
   if (tab === "sell") {

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { Card } from "../components/Card";
 import { DetailHeader } from "../components/DetailHeader";
 import { ListRow } from "../components/ListRow";
@@ -19,6 +20,7 @@ const PAYMENT_COLOR = { cash: colors.accent, qr: "#60A5FA", credit: colors.warni
 interface TodaysSalesScreenProps {
   onBack?: () => void;
   storeName: string;
+  onOpenInsights?: () => void;
 }
 
 /**
@@ -27,7 +29,7 @@ interface TodaysSalesScreenProps {
  * day is a real feature (needs a date picker + fetchSalesInRange call) left
  * for a follow-up rather than faked here.
  */
-export function TodaysSalesScreen({ onBack, storeName }: TodaysSalesScreenProps) {
+export function TodaysSalesScreen({ onBack, storeName, onOpenInsights }: TodaysSalesScreenProps) {
   const { sales, loading } = useStoreData();
   const now = useMemo(() => new Date(), []);
 
@@ -88,6 +90,13 @@ export function TodaysSalesScreen({ onBack, storeName }: TodaysSalesScreenProps)
         </Card>
       )}
 
+      {onOpenInsights && (
+        <Pressable accessibilityRole="button" onPress={onOpenInsights} style={styles.insightsLink}>
+          <Text style={styles.insightsLinkText}>See best sellers &amp; category breakdown</Text>
+          <Feather name="chevron-right" size={16} color={colors.accentSoft} />
+        </Pressable>
+      )}
+
       <View style={styles.sectionHeadRow}>
         <Text style={styles.sectionTitle}>Transactions</Text>
         <Text style={styles.countCaption}>
@@ -121,6 +130,8 @@ export function TodaysSalesScreen({ onBack, storeName }: TodaysSalesScreenProps)
 const styles = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 11, marginBottom: 12 },
   mt14: { marginBottom: 14 },
+  insightsLink: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 8 },
+  insightsLinkText: { fontSize: 13, color: colors.accentSoft, fontWeight: "500" },
   mt12: { marginTop: 12 },
   sumRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
   sumLabel: { fontSize: 13, color: colors.textDim },
