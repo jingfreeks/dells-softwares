@@ -48,9 +48,14 @@ interface AuthContextValue {
   register: (input: RegisterInput) => Promise<RegisterResult>;
   logout: () => Promise<void>;
   /** Mirrors the web app's updateProfile() -- patches the signed-in staff row. */
-  updateProfile: (patch: { name?: string; phone?: string | null; address?: string | null }) => Promise<AuthResult>;
+  updateProfile: (patch: {
+    name?: string;
+    phone?: string | null;
+    address?: string | null;
+    avatarUrl?: string | null;
+  }) => Promise<AuthResult>;
   /** Mirrors the web app's updateStore() -- patches the current store's row. */
-  updateStore: (patch: { name?: string; address?: string | null }) => Promise<AuthResult>;
+  updateStore: (patch: { name?: string; address?: string | null; photoUrl?: string | null }) => Promise<AuthResult>;
   /** Marks the onboarding wizard finished so it doesn't show again on next sign-in. */
   completeOnboarding: () => Promise<AuthResult>;
   /**
@@ -234,7 +239,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function updateProfile(patch: { name?: string; phone?: string | null; address?: string | null }): Promise<AuthResult> {
+  async function updateProfile(patch: {
+    name?: string;
+    phone?: string | null;
+    address?: string | null;
+    avatarUrl?: string | null;
+  }): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
     const { error } = await supabase
       .from("staff")
@@ -242,6 +252,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...(patch.name !== undefined && { name: patch.name }),
         ...(patch.phone !== undefined && { phone: patch.phone }),
         ...(patch.address !== undefined && { address: patch.address }),
+        ...(patch.avatarUrl !== undefined && { avatar_url: patch.avatarUrl }),
       })
       .eq("id", user.id);
     if (error) return { ok: false, error: error.message };
@@ -249,13 +260,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
-  async function updateStore(patch: { name?: string; address?: string | null }): Promise<AuthResult> {
+  async function updateStore(patch: { name?: string; address?: string | null; photoUrl?: string | null }): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
     const { error } = await supabase
       .from("stores")
       .update({
         ...(patch.name !== undefined && { name: patch.name }),
         ...(patch.address !== undefined && { address: patch.address }),
+        ...(patch.photoUrl !== undefined && { photo_url: patch.photoUrl }),
       })
       .eq("id", user.storeId);
     if (error) return { ok: false, error: error.message };

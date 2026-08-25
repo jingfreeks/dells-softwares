@@ -2,9 +2,14 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react-nativ
 import { OnboardingScreen } from "./OnboardingScreen";
 import { useAuth } from "../lib/auth";
 import { useStoreData } from "../lib/storeData";
+import { pickAndOptimizeImage, uploadImage } from "../lib/imageUpload";
 
 jest.mock("../lib/auth", () => ({ useAuth: jest.fn() }));
 jest.mock("../lib/storeData", () => ({ useStoreData: jest.fn() }));
+jest.mock("../lib/imageUpload", () => ({
+  pickAndOptimizeImage: jest.fn().mockResolvedValue(null),
+  uploadImage: jest.fn().mockResolvedValue("https://example.com/image.jpg"),
+}));
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn().mockResolvedValue(null),
   setItem: jest.fn().mockResolvedValue(undefined),
@@ -13,6 +18,8 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 
 const mockedUseAuth = useAuth as jest.Mock;
 const mockedUseStoreData = useStoreData as jest.Mock;
+const mockedPickAndOptimizeImage = pickAndOptimizeImage as jest.Mock;
+const mockedUploadImage = uploadImage as jest.Mock;
 const mockedAsyncStorage = jest.requireMock("@react-native-async-storage/async-storage") as {
   getItem: jest.Mock;
   setItem: jest.Mock;
@@ -51,6 +58,42 @@ describe("OnboardingScreen", () => {
     mockedAsyncStorage.getItem.mockResolvedValue(null);
     mockedAsyncStorage.setItem.mockClear();
     mockedAsyncStorage.removeItem.mockClear();
+    mockedPickAndOptimizeImage.mockReset().mockResolvedValue(null);
+    mockedUploadImage.mockReset().mockResolvedValue("https://example.com/image.jpg");
+  });
+
+  it("uploads a picked avatar and store photo and forwards their URLs to updateProfile/updateStore", async () => {
+    mockedPickAndOptimizeImage.mockResolvedValue({ uri: "file:///tmp/pic.jpg", base64: "abc", contentType: "image/jpeg" });
+    const { updateProfile, updateStore } = setup();
+
+    fireEvent.press(screen.getByRole("button", { name: "Start setup" }));
+    await screen.findByText("Tell us about you and your shop");
+
+    fireEvent.press(screen.getByRole("button", { name: "Add your photo" }));
+    fireEvent.press(screen.getByRole("button", { name: "Add store logo" }));
+    await waitFor(() => expect(mockedPickAndOptimizeImage).toHaveBeenCalledTimes(2));
+
+    fireEvent.press(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() =>
+      expect(mockedUploadImage).toHaveBeenCalledWith("avatars", "s1/u1/avatar.jpg", expect.objectContaining({ uri: "file:///tmp/pic.jpg" }))
+    );
+    expect(mockedUploadImage).toHaveBeenCalledWith("store-photos", "s1/store-photo.jpg", expect.objectContaining({ uri: "file:///tmp/pic.jpg" }));
+    await waitFor(() =>
+      expect(updateProfile).toHaveBeenCalledWith(expect.objectContaining({ avatarUrl: "https://example.com/image.jpg" }))
+    );
+    expect(updateStore).toHaveBeenCalledWith(expect.objectContaining({ photoUrl: "https://example.com/image.jpg" }));
+  });
+
+  it("shows a friendly error and does not block the rest of the form when picking a photo fails", async () => {
+    mockedPickAndOptimizeImage.mockRejectedValue(new Error("That image is too large (max 8MB)."));
+    setup();
+
+    fireEvent.press(screen.getByRole("button", { name: "Start setup" }));
+    await screen.findByText("Tell us about you and your shop");
+    fireEvent.press(screen.getByRole("button", { name: "Add your photo" }));
+
+    expect(await screen.findByText("That image is too large (max 8MB).")).toBeTruthy();
   });
 
   it("resumes at the saved step instead of restarting at Welcome", async () => {

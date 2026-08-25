@@ -24,6 +24,7 @@ import {
   saveOpeningHours,
   saveStockAlertSettings,
 } from "../lib/onboardingSettings";
+import { pickAndOptimizeImage, uploadImage, type OptimizedImage } from "../lib/imageUpload";
 import type { Category } from "../lib/types";
 import { WelcomeStep } from "./onboarding/WelcomeStep";
 import { ProfileStep } from "./onboarding/ProfileStep";
@@ -34,6 +35,9 @@ import { DoneStep } from "./onboarding/DoneStep";
 import { EMPTY_QUICK_ADD_FORM, type QuickAddForm } from "./onboarding/QuickAddProductModal";
 
 const UNCATEGORIZED = "Uncategorized";
+// Same caps as the web app's Onboarding/hooks.tsx (AVATAR_MAX_DIMENSION/STORE_PHOTO_MAX_DIMENSION).
+const AVATAR_MAX_DIMENSION = 512;
+const STORE_PHOTO_MAX_DIMENSION = 1024;
 
 export function OnboardingScreen() {
   const { user, store, updateProfile, updateStore, completeOnboarding } = useAuth();
@@ -48,6 +52,12 @@ export function OnboardingScreen() {
   const [storeName, setStoreName] = useState(store?.name ?? "");
   const [storeAddress, setStoreAddress] = useState(store?.address ?? "");
   const [sameAsProfile, setSameAsProfile] = useState(false);
+  const [avatarImage, setAvatarImage] = useState<OptimizedImage | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [storePhotoImage, setStorePhotoImage] = useState<OptimizedImage | null>(null);
+  const [storePhotoUploading, setStorePhotoUploading] = useState(false);
+  const [storePhotoError, setStorePhotoError] = useState<string | null>(null);
   const [openTime, setOpenTime] = useState(DEFAULT_OPENING_HOURS.openTime);
   const [closeTime, setCloseTime] = useState(DEFAULT_OPENING_HOURS.closeTime);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -156,6 +166,26 @@ export function OnboardingScreen() {
     return created.id;
   }
 
+  async function handlePickAvatar() {
+    setAvatarError(null);
+    try {
+      const picked = await pickAndOptimizeImage(AVATAR_MAX_DIMENSION);
+      if (picked) setAvatarImage(picked);
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : "Could not process the image.");
+    }
+  }
+
+  async function handlePickStorePhoto() {
+    setStorePhotoError(null);
+    try {
+      const picked = await pickAndOptimizeImage(STORE_PHOTO_MAX_DIMENSION);
+      if (picked) setStorePhotoImage(picked);
+    } catch (err) {
+      setStorePhotoError(err instanceof Error ? err.message : "Could not process the image.");
+    }
+  }
+
   async function handleProfileContinue() {
     if (!name.trim()) {
       setProfileError("Your name is required.");
@@ -168,19 +198,34 @@ export function OnboardingScreen() {
     setSavingProfile(true);
     setProfileError(null);
     try {
+      let avatarUrl: string | undefined;
+      if (avatarImage && user) {
+        setAvatarUploading(true);
+        avatarUrl = await uploadImage("avatars", `${user.storeId}/${user.id}/avatar.jpg`, avatarImage);
+        setAvatarUploading(false);
+      }
       const profileResult = await updateProfile({
         name: name.trim(),
         phone: phone.trim() || null,
         address: address.trim() || null,
+        ...(avatarUrl !== undefined && { avatarUrl }),
       });
       if (!profileResult.ok) {
         setProfileError(profileResult.error);
         return;
       }
+
+      let photoUrl: string | undefined;
+      if (storePhotoImage && user) {
+        setStorePhotoUploading(true);
+        photoUrl = await uploadImage("store-photos", `${user.storeId}/store-photo.jpg`, storePhotoImage);
+        setStorePhotoUploading(false);
+      }
       const effectiveAddress = sameAsProfile ? address : storeAddress;
       const storeResult = await updateStore({
         name: storeName.trim(),
         address: effectiveAddress.trim() || null,
+        ...(photoUrl !== undefined && { photoUrl }),
       });
       if (!storeResult.ok) {
         setProfileError(storeResult.error);
@@ -191,6 +236,8 @@ export function OnboardingScreen() {
       setProfileError(err instanceof Error ? err.message : "Could not save your profile.");
     } finally {
       setSavingProfile(false);
+      setAvatarUploading(false);
+      setStorePhotoUploading(false);
     }
   }
 
@@ -309,6 +356,10 @@ export function OnboardingScreen() {
           onNameChange={setName}
           phone={phone}
           onPhoneChange={setPhone}
+          avatarUri={avatarImage?.uri ?? user?.avatarUrl ?? null}
+          avatarUploading={avatarUploading}
+          avatarError={avatarError}
+          onPickAvatar={handlePickAvatar}
           storeName={storeName}
           onStoreNameChange={setStoreName}
           storeAddress={storeAddress}
@@ -317,6 +368,10 @@ export function OnboardingScreen() {
           onSameAsProfileChange={setSameAsProfile}
           address={address}
           onAddressChange={setAddress}
+          storePhotoUri={storePhotoImage?.uri ?? store?.photoUrl ?? null}
+          storePhotoUploading={storePhotoUploading}
+          storePhotoError={storePhotoError}
+          onPickStorePhoto={handlePickStorePhoto}
           openTime={openTime}
           onOpenTimeChange={setOpenTime}
           closeTime={closeTime}
