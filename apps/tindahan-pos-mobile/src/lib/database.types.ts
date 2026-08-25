@@ -468,6 +468,43 @@ export interface Database {
         Update: { key?: string; enabled?: boolean; description?: string; updated_at?: string };
         Relationships: [];
       };
+      devices: {
+        Row: {
+          id: string;
+          store_id: string;
+          name: string;
+          paired_by: string;
+          paired_at: string;
+          last_seen_at: string | null;
+          unpaired_at: string | null;
+        };
+        Insert: {
+          id: string;
+          store_id: string;
+          name: string;
+          paired_by: string;
+          paired_at?: string;
+          last_seen_at?: string | null;
+          unpaired_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          name?: string;
+          paired_by?: string;
+          paired_at?: string;
+          last_seen_at?: string | null;
+          unpaired_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "devices_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -480,6 +517,7 @@ export interface Database {
           p_reference_no?: string | null;
           p_discount_type?: "percentage" | "flat" | null;
           p_discount_value?: number | null;
+          p_cashier_token?: string | null;
         };
         Returns: { sale_id: string; total: number }[];
       };
@@ -490,6 +528,35 @@ export interface Database {
           p_note?: string | null;
         };
         Returns: { customer_id: string; new_balance: number }[];
+      };
+      generate_pairing_code: {
+        Args: Record<string, never>;
+        Returns: { code: string; expires_at: string }[];
+      };
+      admin_unpair_device: {
+        Args: { p_device_id: string; p_owner_pin: string };
+        Returns: undefined;
+      };
+      list_pickable_cashiers: {
+        Args: Record<string, never>;
+        Returns: { id: string; name: string; avatar_url: string | null }[];
+      };
+      start_cashier_session: {
+        Args: { p_staff_id: string; p_pin: string; p_opening_float: number };
+        Returns: {
+          ok: boolean;
+          error_code: string | null;
+          token: string | null;
+          staff_id: string | null;
+          name: string | null;
+          role: StaffRole | null;
+          avatar_url: string | null;
+          expires_at: string | null;
+        }[];
+      };
+      end_cashier_session: {
+        Args: { p_token: string; p_closing_float?: number | null };
+        Returns: undefined;
       };
     };
     Enums: {

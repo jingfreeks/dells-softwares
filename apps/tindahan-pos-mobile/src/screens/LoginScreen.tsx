@@ -18,11 +18,12 @@ import { colors } from "../theme/colors";
 const SEGMENTS = ["Sign in", "Create account"] as const;
 
 interface LoginScreenProps {
+  onSetupDevice?: () => void;
   /** Proposed per MOBILE_UI_DESIGN_SPECIFICATION.md §5 M-002 -- not wired to real routing yet (Phase 3). */
   onSwitchToCreateAccount?: () => void;
 }
 
-export function LoginScreen({ onSwitchToCreateAccount }: LoginScreenProps) {
+export function LoginScreen({ onSwitchToCreateAccount, onSetupDevice }: LoginScreenProps) {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -108,6 +109,11 @@ export function LoginScreen({ onSwitchToCreateAccount }: LoginScreenProps) {
       <Text style={styles.footer}>
         New here? <LinkText onPress={onSwitchToCreateAccount}>Create an account</LinkText>
       </Text>
+      {onSetupDevice && (
+        <Text style={styles.footer}>
+          On a shared counter device? <LinkText onPress={onSetupDevice}>Set it up as a register</LinkText>
+        </Text>
+      )}
       <Text style={styles.microCaption}>Protected by reCAPTCHA · Contact support</Text>
 
       <Divider />
