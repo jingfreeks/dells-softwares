@@ -25,6 +25,8 @@ import {
   saveStockAlertSettings,
 } from "../lib/onboardingSettings";
 import { pickAndOptimizeImage, uploadImage, type OptimizedImage } from "../lib/imageUpload";
+import { pickCsvFileText } from "../lib/documentPicker";
+import { parseProductsCsv } from "../lib/csv";
 import type { Category } from "../lib/types";
 import { WelcomeStep } from "./onboarding/WelcomeStep";
 import { ProfileStep } from "./onboarding/ProfileStep";
@@ -69,6 +71,8 @@ export function OnboardingScreen() {
   );
   const [importingStarter, setImportingStarter] = useState(false);
   const [starterError, setStarterError] = useState<string | null>(null);
+  const [importingCsv, setImportingCsv] = useState(false);
+  const [csvError, setCsvError] = useState<string | null>(null);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickAddForm, setQuickAddForm] = useState<QuickAddForm>(EMPTY_QUICK_ADD_FORM);
   const [quickAddError, setQuickAddError] = useState<string | null>(null);
@@ -269,6 +273,42 @@ export function OnboardingScreen() {
     }
   }
 
+  async function handleImportCsv() {
+    setImportingCsv(true);
+    setCsvError(null);
+    try {
+      const text = await pickCsvFileText();
+      if (text === null) return; // user cancelled
+      const { rows, error } = parseProductsCsv(text);
+      if (error === "empty") {
+        setCsvError("That file doesn't have any product rows.");
+        return;
+      }
+      if (error === "missing-columns") {
+        setCsvError("The file needs at least a name and price column.");
+        return;
+      }
+      for (const row of rows) {
+        const categoryId = await resolveCategoryId(row.category ?? UNCATEGORIZED);
+        await addProduct({
+          barcode: row.barcode,
+          name: row.name,
+          price: row.price,
+          stock: 0,
+          lowStockThreshold: DEFAULT_LOW_STOCK_THRESHOLD,
+          categoryId,
+          packQuantity: null,
+          packPrice: null,
+          imageUrl: null,
+        });
+      }
+    } catch (err) {
+      setCsvError(err instanceof Error ? err.message : "Could not import that file.");
+    } finally {
+      setImportingCsv(false);
+    }
+  }
+
   function handleScannedBarcode(code: string) {
     setShowQuickAdd(true);
     setQuickAddForm({ ...EMPTY_QUICK_ADD_FORM, barcode: code });
@@ -401,6 +441,9 @@ export function OnboardingScreen() {
           starterError={starterError}
           onImportStarterCatalog={handleImportStarterCatalog}
           onScannedBarcode={handleScannedBarcode}
+          importingCsv={importingCsv}
+          csvError={csvError}
+          onImportCsv={handleImportCsv}
           quickAddForm={quickAddForm}
           onQuickAddFormChange={setQuickAddForm}
           quickAddError={quickAddError}

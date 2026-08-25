@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Card } from "../../components/Card";
 import { PrimaryButton } from "../../components/PrimaryButton";
@@ -20,6 +20,9 @@ interface ProductsStepProps {
   starterError: string | null;
   onImportStarterCatalog: () => void;
   onScannedBarcode: (barcode: string) => void;
+  importingCsv: boolean;
+  csvError: string | null;
+  onImportCsv: () => void;
   quickAddForm: QuickAddForm;
   onQuickAddFormChange: (form: QuickAddForm) => void;
   quickAddError: string | null;
@@ -44,6 +47,9 @@ export function ProductsStep({
   starterError,
   onImportStarterCatalog,
   onScannedBarcode,
+  importingCsv,
+  csvError,
+  onImportCsv,
   quickAddForm,
   onQuickAddFormChange,
   quickAddError,
@@ -122,11 +128,24 @@ export function ProductsStep({
           <Feather name="camera" size={18} color={colors.textFaint} />
           <Text style={styles.methodLabel}>Scan the shelf</Text>
         </Pressable>
+        <Pressable accessibilityRole="button" onPress={onImportCsv} disabled={importingCsv} style={styles.methodTile}>
+          {importingCsv ? (
+            <ActivityIndicator color={colors.textFaint} />
+          ) : (
+            <Feather name="file-text" size={18} color={colors.textFaint} />
+          )}
+          <Text style={styles.methodLabel}>Import a file</Text>
+        </Pressable>
         <Pressable accessibilityRole="button" onPress={() => onShowQuickAddChange(true)} style={styles.methodTile}>
           <Feather name="edit-3" size={18} color={colors.textFaint} />
           <Text style={styles.methodLabel}>Type it in</Text>
         </Pressable>
       </View>
+      {csvError && (
+        <Text accessibilityRole="alert" style={styles.csvError}>
+          {csvError}
+        </Text>
+      )}
 
       <Card padding={14} style={styles.addedCard}>
         <View style={styles.addedHeaderRow}>
@@ -226,6 +245,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   methodLabel: { fontSize: 11.5, color: colors.textDim, marginTop: 7, textAlign: "center" },
+  csvError: { color: colors.error, fontSize: 12, marginTop: -6, marginBottom: 14 },
   addedCard: { marginBottom: 18 },
   addedHeaderRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 11 },
   addedHeading: { fontSize: 13.5, fontWeight: "500", color: colors.textPrimary },

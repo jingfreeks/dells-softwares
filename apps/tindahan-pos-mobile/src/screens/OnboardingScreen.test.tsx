@@ -3,6 +3,7 @@ import { OnboardingScreen } from "./OnboardingScreen";
 import { useAuth } from "../lib/auth";
 import { useStoreData } from "../lib/storeData";
 import { pickAndOptimizeImage, uploadImage } from "../lib/imageUpload";
+import { pickCsvFileText } from "../lib/documentPicker";
 
 jest.mock("../lib/auth", () => ({ useAuth: jest.fn() }));
 jest.mock("../lib/storeData", () => ({ useStoreData: jest.fn() }));
@@ -10,6 +11,7 @@ jest.mock("../lib/imageUpload", () => ({
   pickAndOptimizeImage: jest.fn().mockResolvedValue(null),
   uploadImage: jest.fn().mockResolvedValue("https://example.com/image.jpg"),
 }));
+jest.mock("../lib/documentPicker", () => ({ pickCsvFileText: jest.fn().mockResolvedValue(null) }));
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn().mockResolvedValue(null),
   setItem: jest.fn().mockResolvedValue(undefined),
@@ -20,16 +22,27 @@ const mockedUseAuth = useAuth as jest.Mock;
 const mockedUseStoreData = useStoreData as jest.Mock;
 const mockedPickAndOptimizeImage = pickAndOptimizeImage as jest.Mock;
 const mockedUploadImage = uploadImage as jest.Mock;
+const mockedPickCsvFileText = pickCsvFileText as jest.Mock;
 const mockedAsyncStorage = jest.requireMock("@react-native-async-storage/async-storage") as {
   getItem: jest.Mock;
   setItem: jest.Mock;
   removeItem: jest.Mock;
 };
 
-function setup(overrides: { updateProfile?: jest.Mock; updateStore?: jest.Mock; completeOnboarding?: jest.Mock } = {}) {
+function setup(
+  overrides: {
+    updateProfile?: jest.Mock;
+    updateStore?: jest.Mock;
+    completeOnboarding?: jest.Mock;
+    addProduct?: jest.Mock;
+    addCategory?: jest.Mock;
+  } = {}
+) {
   const updateProfile = overrides.updateProfile ?? jest.fn().mockResolvedValue({ ok: true });
   const updateStore = overrides.updateStore ?? jest.fn().mockResolvedValue({ ok: true });
   const completeOnboarding = overrides.completeOnboarding ?? jest.fn().mockResolvedValue({ ok: true });
+  const addProduct = overrides.addProduct ?? jest.fn().mockResolvedValue({});
+  const addCategory = overrides.addCategory ?? jest.fn().mockResolvedValue({ id: "c1", name: "Grocery" });
 
   mockedUseAuth.mockReturnValue({
     user: { id: "u1", storeId: "s1", name: "Lyndell", email: "a@b.com", role: "admin", avatarUrl: null, phone: null, address: null, onboardedAt: null },
@@ -45,12 +58,12 @@ function setup(overrides: { updateProfile?: jest.Mock; updateStore?: jest.Mock; 
     customers: [],
     loading: false,
     error: null,
-    addProduct: jest.fn().mockResolvedValue({}),
-    addCategory: jest.fn().mockResolvedValue({ id: "c1", name: "Grocery" }),
+    addProduct,
+    addCategory,
   });
 
   render(<OnboardingScreen />);
-  return { updateProfile, updateStore, completeOnboarding };
+  return { updateProfile, updateStore, completeOnboarding, addProduct, addCategory };
 }
 
 describe("OnboardingScreen", () => {
@@ -60,6 +73,62 @@ describe("OnboardingScreen", () => {
     mockedAsyncStorage.removeItem.mockClear();
     mockedPickAndOptimizeImage.mockReset().mockResolvedValue(null);
     mockedUploadImage.mockReset().mockResolvedValue("https://example.com/image.jpg");
+    mockedPickCsvFileText.mockReset().mockResolvedValue(null);
+  });
+
+  it("imports products from a picked CSV file, resolving categories and skipping bad rows", async () => {
+    mockedPickCsvFileText.mockResolvedValue(
+      "name,price,category\nRice 1kg,60,Grocery\n,999,Bad\nSardines,22,Canned"
+    );
+    const addCategory = jest
+      .fn()
+      .mockResolvedValueOnce({ id: "cat-grocery", name: "Grocery" })
+      .mockResolvedValueOnce({ id: "cat-canned", name: "Canned" });
+    const addProduct = jest.fn().mockResolvedValue({});
+    setup({ addProduct, addCategory });
+
+    fireEvent.press(screen.getByRole("button", { name: "Start setup" }));
+    await screen.findByText("Tell us about you and your shop");
+    fireEvent.press(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByText("What do you sell?");
+
+    fireEvent.press(screen.getByRole("button", { name: "Import a file" }));
+
+    await waitFor(() => expect(addProduct).toHaveBeenCalledTimes(2));
+    expect(addProduct).toHaveBeenCalledWith(expect.objectContaining({ name: "Rice 1kg", price: 60, categoryId: "cat-grocery" }));
+    expect(addProduct).toHaveBeenCalledWith(expect.objectContaining({ name: "Sardines", price: 22, categoryId: "cat-canned" }));
+  });
+
+  it("shows a friendly error for a CSV missing the required columns, without adding anything", async () => {
+    mockedPickCsvFileText.mockResolvedValue("foo,bar\n1,2");
+    const addProduct = jest.fn();
+    setup({ addProduct });
+
+    fireEvent.press(screen.getByRole("button", { name: "Start setup" }));
+    await screen.findByText("Tell us about you and your shop");
+    fireEvent.press(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByText("What do you sell?");
+
+    fireEvent.press(screen.getByRole("button", { name: "Import a file" }));
+
+    expect(await screen.findByText("The file needs at least a name and price column.")).toBeTruthy();
+    expect(addProduct).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when the user cancels the file picker", async () => {
+    mockedPickCsvFileText.mockResolvedValue(null);
+    const addProduct = jest.fn();
+    setup({ addProduct });
+
+    fireEvent.press(screen.getByRole("button", { name: "Start setup" }));
+    await screen.findByText("Tell us about you and your shop");
+    fireEvent.press(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByText("What do you sell?");
+
+    fireEvent.press(screen.getByRole("button", { name: "Import a file" }));
+
+    await waitFor(() => expect(mockedPickCsvFileText).toHaveBeenCalledTimes(1));
+    expect(addProduct).not.toHaveBeenCalled();
   });
 
   it("uploads a picked avatar and store photo and forwards their URLs to updateProfile/updateStore", async () => {
