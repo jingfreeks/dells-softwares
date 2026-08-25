@@ -25,9 +25,11 @@ const ALL_CATEGORY = "__all__";
 interface PosScreenProps {
   /** Admin-only entry point to the device-pairing settings screen (see App.tsx). */
   onOpenSetupRegister?: () => void;
+  /** Admin-only entry point back to the Owner Home dashboard (see App.tsx). */
+  onOpenHome?: () => void;
 }
 
-export function PosScreen({ onOpenSetupRegister }: PosScreenProps = {}) {
+export function PosScreen({ onOpenSetupRegister, onOpenHome }: PosScreenProps = {}) {
   const { user, device, store, logout } = useAuth();
   const { activeCashier, cashierToken, endCashierSession, reportExpiredSession } = useCashierSession();
   const { products, categories, customers, loading, error, checkout } = useStoreData();
@@ -179,6 +181,11 @@ export function PosScreen({ onOpenSetupRegister }: PosScreenProps = {}) {
             {store?.name ? ` · ${store.name}` : ""}
           </Text>
         </View>
+        {user?.role === "admin" && onOpenHome && (
+          <Pressable accessibilityRole="button" onPress={onOpenHome} hitSlop={8}>
+            <Text style={styles.headerLink}>Home</Text>
+          </Pressable>
+        )}
         {user?.role === "admin" && onOpenSetupRegister && (
           <Pressable accessibilityRole="button" onPress={onOpenSetupRegister} hitSlop={8}>
             <Text style={styles.headerLink}>Register</Text>
