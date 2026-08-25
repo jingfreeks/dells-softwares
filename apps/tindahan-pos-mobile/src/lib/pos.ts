@@ -70,3 +70,16 @@ export function searchProductsByName(products: Product[], query: string): Produc
   if (!q) return [];
   return products.filter((p) => p.name.toLowerCase().includes(q));
 }
+
+/**
+ * One-tap cash-tendered suggestions for the checkout sheet: the exact
+ * total plus the next ₱100/₱200/₱500/₱1,000 round figure above it, so a
+ * cashier can usually tap instead of typing. Deduped (a total that's
+ * already a round figure, e.g. ₱100, doesn't get itself listed twice) and
+ * capped at 4 to match the mockup's single row.
+ */
+export function quickCashAmounts(total: number): number[] {
+  if (total <= 0) return [];
+  const roundUps = [100, 200, 500, 1000].map((denom) => Math.ceil(total / denom) * denom);
+  return Array.from(new Set([total, ...roundUps])).slice(0, 4);
+}

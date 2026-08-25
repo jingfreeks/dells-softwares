@@ -1,5 +1,5 @@
 import { PESO, roundMoney } from "./money";
-import type { Product } from "./types";
+import type { Product, SaleRecord } from "./types";
 
 export type StockStatus = "out" | "low" | "in-stock";
 
@@ -86,6 +86,155 @@ export function findDuplicateBarcode(
   const trimmed = barcode.trim();
   if (!trimmed) return null;
   return products.find((p) => p.barcode === trimmed && p.id !== excludeId) ?? null;
+}
+
+const RESTOCK_LOOKBACK_DAYS = 30;
+const RESTOCK_LEAD_TIME_DAYS = 3;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+export interface RestockSuggestion {
+  productId: string;
+  productName: string;
+  currentStock: number;
+  avgDailySales: number;
+  daysOfStockLeft: number;
+  suggestedQuantity: number;
+}
+
+/**
+ * Reorder point = how fast a product actually sells x how long a restock
+ * takes to arrive, plus the product's own low-stock threshold as a safety
+ * buffer. A product below that point gets a suggested quantity to bring it
+ * back up to the point. Deliberately a plain formula, not a model — the
+ * formula itself is the explanation a store owner sees. Ported verbatim
+ * from apps/tindahan-pos/src/lib/inventory/inventory.ts.
+ *
+ * Only sales within `lookbackDays` count, and the average is taken over
+ * however many days those sales actually span (not the full lookback
+ * window) — a store with only a week of history shouldn't have its recent
+ * sales diluted across 30 days it doesn't have data for yet.
+ *
+ * Does not filter voided sales itself — matching the web app's own
+ * convention, callers pass `completedSales(sales)` (see lib/reports.ts).
+ */
+export function computeRestockSuggestions(
+  products: Product[],
+  sales: SaleRecord[],
+  options: { lookbackDays?: number; leadTimeDays?: number; now?: Date } = {}
+): RestockSuggestion[] {
+  const lookbackDays = options.lookbackDays ?? RESTOCK_LOOKBACK_DAYS;
+  const leadTimeDays = options.leadTimeDays ?? RESTOCK_LEAD_TIME_DAYS;
+  const now = options.now ?? new Date();
+  const windowStart = now.getTime() - lookbackDays * MS_PER_DAY;
+
+  const soldQuantityByProduct = new Map<string, number>();
+  let earliestSaleInWindow: number | null = null;
+
+  for (const sale of sales) {
+    const saleTime = new Date(sale.timestamp).getTime();
+    if (saleTime < windowStart) continue;
+    if (earliestSaleInWindow === null || saleTime < earliestSaleInWindow) {
+      earliestSaleInWindow = saleTime;
+    }
+    for (const item of sale.items) {
+      if (item.itemType !== "product" || !item.productId) continue;
+      soldQuantityByProduct.set(
+        item.productId,
+        (soldQuantityByProduct.get(item.productId) ?? 0) + item.quantity
+      );
+    }
+  }
+
+  const spanDays =
+    earliestSaleInWindow === null
+      ? lookbackDays
+      : Math.max(1, (now.getTime() - earliestSaleInWindow) / MS_PER_DAY);
+
+  const suggestions: RestockSuggestion[] = [];
+  for (const product of products) {
+    const soldQuantity = soldQuantityByProduct.get(product.id) ?? 0;
+    if (soldQuantity <= 0) continue;
+
+    const avgDailySales = soldQuantity / spanDays;
+    const reorderPoint = avgDailySales * leadTimeDays + product.lowStockThreshold;
+    if (product.stock >= reorderPoint) continue;
+
+    suggestions.push({
+      productId: product.id,
+      productName: product.name,
+      currentStock: product.stock,
+      avgDailySales: Math.round(avgDailySales * 100) / 100,
+      daysOfStockLeft: Math.round((product.stock / avgDailySales) * 10) / 10,
+      suggestedQuantity: Math.ceil(reorderPoint - product.stock),
+    });
+  }
+
+  return suggestions.sort((a, b) => a.daysOfStockLeft - b.daysOfStockLeft);
+}
+
+export type RestockSeverity = "out" | "critical" | "low";
+
+export interface RestockRow {
+  productId: string;
+  productName: string;
+  stock: number;
+  isOut: boolean;
+  avgDailySales: number | null;
+  daysOfStockLeft: number | null;
+  suggestedQuantity: number | null;
+  severity: RestockSeverity;
+}
+
+/**
+ * Merges `lowStockProducts()` (stock-status only, no sales dependency) with
+ * `computeRestockSuggestions()` (velocity-based, only available for a
+ * product with recent sales) into one row per low/out product, sorted
+ * most-urgent-first -- ported from apps/tindahan-pos's
+ * Dashboard/hooks.tsx buildRestockRows (minus its `supplier`/`cost`
+ * fields, since mobile doesn't fetch suppliers yet).
+ *
+ * The mockup's 3-way OUT/CRITICAL/LOW split isn't backed by an existing
+ * rule anywhere (web only has a 2-way isOut/not-out distinction) -- this
+ * is a judgment call, not a confirmed business rule: CRITICAL is a
+ * not-yet-out product whose velocity data says it'll run out within
+ * `leadTimeDays` (matching computeRestockSuggestions' own lead-time
+ * default); everything else low-stock, including a product with no
+ * recent-sales velocity data at all, is LOW.
+ */
+export function buildRestockRows(
+  lowStock: Product[],
+  suggestions: RestockSuggestion[],
+  leadTimeDays = RESTOCK_LEAD_TIME_DAYS
+): RestockRow[] {
+  const suggestionByProductId = new Map(suggestions.map((s) => [s.productId, s]));
+
+  return lowStock
+    .map((p): RestockRow => {
+      const suggestion = suggestionByProductId.get(p.id);
+      const isOut = p.stock <= 0;
+      const daysOfStockLeft = suggestion?.daysOfStockLeft ?? null;
+      const severity: RestockSeverity = isOut
+        ? "out"
+        : daysOfStockLeft !== null && daysOfStockLeft <= leadTimeDays
+          ? "critical"
+          : "low";
+      return {
+        productId: p.id,
+        productName: p.name,
+        stock: p.stock,
+        isOut,
+        avgDailySales: suggestion?.avgDailySales ?? null,
+        daysOfStockLeft,
+        suggestedQuantity: suggestion?.suggestedQuantity ?? null,
+        severity,
+      };
+    })
+    .sort((a, b) => {
+      if (a.isOut !== b.isOut) return a.isOut ? -1 : 1;
+      const aDays = a.daysOfStockLeft ?? Infinity;
+      const bDays = b.daysOfStockLeft ?? Infinity;
+      return aDays - bDays;
+    });
 }
 
 /** O(1) lookup index for findDuplicateBarcodeFast, memoize this per products list. */

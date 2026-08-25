@@ -13,6 +13,14 @@ export interface StaffAccount {
   onboardedAt: string | null;
 }
 
+/** The staff member currently verified as operating a shared register (see cashierSession.tsx) — a lighter shape than StaffAccount, all a PIN picker/keypad needs. */
+export interface CashierProfile {
+  id: string;
+  name: string;
+  role: Role;
+  avatarUrl: string | null;
+}
+
 export interface Store {
   id: string;
   name: string;
@@ -68,6 +76,8 @@ export interface SaleRecord {
   customerId: string | null;
   /** GCash/Maya transaction number the cashier entered — set only for a "qr" sale. */
   referenceNo: string | null;
+  /** A voided sale's stock/utang effects were reversed server-side — excluded from every reporting total (see lib/reports.ts's completedSales()), but the row itself is kept. */
+  status: "completed" | "voided";
 }
 
 export interface ServiceLine {

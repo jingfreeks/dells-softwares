@@ -1,49 +1,107 @@
 import { useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { useAuth } from "../lib/auth";
-import { useStoreData } from "../lib/storeData";
-import {
-  addToCart,
-  cartTotal,
-  computeChange,
-  findProductByBarcode,
-  lineTotal,
-  removeFromCart,
-  searchProductsByName,
-  setQuantity,
-} from "../lib/pos";
+import { useCashierSession } from "../lib/cashierSession";
+import { useStoreData, type CheckoutDiscount, type CheckoutPayment } from "../lib/storeData";
+import { addToCart, cartTotal, computeChange, findProductByBarcode, setQuantity } from "../lib/pos";
+import { computeDiscountAmount } from "../lib/discount";
+import { wouldExceedCreditLimit } from "../lib/customers";
 import { PESO } from "../lib/money";
-import type { CartLine } from "../lib/types";
+import { colors, radii } from "../theme/colors";
+import type { CartLine, Customer, PaymentType, Product } from "../lib/types";
 import { BarcodeScannerModal } from "../components/BarcodeScannerModal";
+import { CartSheet } from "./pos/CartSheet";
+import { ProductTile } from "./pos/ProductTile";
 
-export function PosScreen() {
-  const { user, store, logout } = useAuth();
-  const { products, loading, error, checkout } = useStoreData();
+const PAYMENT_SEGMENTS = ["Cash", "GCash", "Utang"] as const;
+const PAYMENT_TYPE_BY_SEGMENT: Record<(typeof PAYMENT_SEGMENTS)[number], PaymentType> = {
+  Cash: "cash",
+  GCash: "qr",
+  Utang: "credit",
+};
+const ALL_CATEGORY = "__all__";
+
+interface PosScreenProps {
+  /** Admin-only entry point to the device-pairing settings screen (see App.tsx). */
+  onOpenSetupRegister?: () => void;
+  /** Admin-only entry point back to the Owner Home dashboard (see App.tsx). */
+  onOpenHome?: () => void;
+}
+
+export function PosScreen({ onOpenSetupRegister, onOpenHome }: PosScreenProps = {}) {
+  const { user, device, store, logout } = useAuth();
+  const { activeCashier, cashierToken, endCashierSession, reportExpiredSession } = useCashierSession();
+  const { products, categories, customers, loading, error, checkout } = useStoreData();
+
   const [cart, setCart] = useState<CartLine[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(ALL_CATEGORY);
   const [showScanner, setShowScanner] = useState(false);
   const [barcodeError, setBarcodeError] = useState<string | null>(null);
+  const [showCart, setShowCart] = useState(false);
   const [tendered, setTendered] = useState("0");
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [lastReceiptTotal, setLastReceiptTotal] = useState<number | null>(null);
 
-  const total = useMemo(() => cartTotal(cart), [cart]);
-  const searchResults = useMemo(
-    () => searchProductsByName(products, searchQuery).slice(0, 8),
-    [products, searchQuery]
-  );
+  const [paymentSegment, setPaymentSegment] = useState<(typeof PAYMENT_SEGMENTS)[number]>("Cash");
+  const paymentType = PAYMENT_TYPE_BY_SEGMENT[paymentSegment];
+  const [referenceNo, setReferenceNo] = useState("");
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+
+  const [discountEnabled, setDiscountEnabled] = useState(false);
+  const [discountType, setDiscountType] = useState<CheckoutDiscount["type"]>("percentage");
+  const [discountValueText, setDiscountValueText] = useState("");
+
+  const subtotal = useMemo(() => cartTotal(cart), [cart]);
+  const discount: CheckoutDiscount | null = useMemo(() => {
+    if (!discountEnabled) return null;
+    const value = Number(discountValueText);
+    if (!discountValueText.trim() || Number.isNaN(value) || value <= 0) return null;
+    return { type: discountType, value };
+  }, [discountEnabled, discountType, discountValueText]);
+  const discountAmount = useMemo(() => computeDiscountAmount(subtotal, discount), [subtotal, discount]);
+  const total = subtotal - discountAmount;
+
+  const cartQuantityByProductId = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const line of cart) map.set(line.product.id, line.quantity);
+    return map;
+  }, [cart]);
+
+  const displayedProducts = useMemo(() => {
+    const base =
+      selectedCategoryId === ALL_CATEGORY ? products : products.filter((p) => p.categoryId === selectedCategoryId);
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return base;
+    return base.filter((p) => p.name.toLowerCase().includes(q));
+  }, [products, selectedCategoryId, searchQuery]);
+
+  const customerResults = useMemo(() => {
+    if (!customerQuery.trim()) return [];
+    const q = customerQuery.trim().toLowerCase();
+    return customers.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 8);
+  }, [customers, customerQuery]);
+
   const tenderedNumber = Number(tendered);
   const change =
     tendered.trim() !== "" && !Number.isNaN(tenderedNumber) ? computeChange(total, tenderedNumber) : null;
+
+  const creditWarning =
+    paymentType === "credit" && selectedCustomer && wouldExceedCreditLimit(selectedCustomer, total)
+      ? `This would put ${selectedCustomer.name} over their credit limit.`
+      : null;
+
+  const canComplete =
+    cart.length > 0 &&
+    !checkingOut &&
+    (paymentType === "cash"
+      ? change !== null
+      : paymentType === "qr"
+        ? referenceNo.trim().length > 0
+        : selectedCustomer !== null);
 
   function addByBarcode(barcode: string) {
     const product = findProductByBarcode(products, barcode);
@@ -60,25 +118,43 @@ export function PosScreen() {
     addByBarcode(barcode);
   }
 
-  function handleAddProduct(productId: string) {
-    const product = products.find((p) => p.id === productId);
-    if (!product) return;
+  function handleTilePress(product: Product) {
     setCart((prev) => addToCart(prev, product));
-    setSearchQuery("");
+  }
+
+  function resetSaleState() {
+    setCart([]);
+    setTendered("0");
+    setPaymentSegment("Cash");
+    setReferenceNo("");
+    setCustomerQuery("");
+    setSelectedCustomer(null);
+    setDiscountEnabled(false);
+    setDiscountValueText("");
   }
 
   async function handleCompleteSale() {
-    if (cart.length === 0 || change === null) return;
+    if (!canComplete) return;
     setCheckingOut(true);
     setCheckoutError(null);
     try {
-      await checkout(cart, [], user?.name ?? "Cashier", { type: "cash" });
+      const payment: CheckoutPayment =
+        paymentType === "credit"
+          ? { type: "credit", customerId: selectedCustomer!.id }
+          : paymentType === "qr"
+            ? { type: "qr", referenceNo: referenceNo.trim() }
+            : { type: "cash" };
+      await checkout(cart, [], activeCashier?.name ?? user?.name ?? "Cashier", payment, discount, cashierToken);
       setLastReceiptTotal(total);
-      setCart([]);
-      setTendered("0");
+      resetSaleState();
+      setShowCart(false);
       setTimeout(() => setLastReceiptTotal(null), 4000);
     } catch (err) {
-      setCheckoutError(err instanceof Error ? err.message : "Could not complete sale.");
+      const message = err instanceof Error ? err.message : "Could not complete sale.";
+      if (message.includes("EXPIRED_CASHIER_SESSION")) {
+        reportExpiredSession();
+      }
+      setCheckoutError(message);
     } finally {
       setCheckingOut(false);
     }
@@ -87,7 +163,7 @@ export function PosScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator />
+        <ActivityIndicator color={colors.accent} />
       </View>
     );
   }
@@ -95,32 +171,57 @@ export function PosScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.storeName}>{store?.name ?? "POS"}</Text>
-          <Text style={styles.cashier}>{user?.name}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Scan with camera" onPress={() => setShowScanner(true)} style={styles.iconButton}>
+          <Feather name="camera" size={17} color={colors.textPrimary} />
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>Sell</Text>
+          <Text style={styles.subtitle}>
+            {activeCashier?.name ?? user?.name ?? "Cashier"}
+            {store?.name ? ` · ${store.name}` : ""}
+          </Text>
         </View>
-        <TouchableOpacity onPress={logout}>
-          <Text style={styles.logout}>Sign out</Text>
-        </TouchableOpacity>
+        {user?.role === "admin" && onOpenHome && (
+          <Pressable accessibilityRole="button" onPress={onOpenHome} hitSlop={8}>
+            <Text style={styles.headerLink}>Home</Text>
+          </Pressable>
+        )}
+        {user?.role === "admin" && onOpenSetupRegister && (
+          <Pressable accessibilityRole="button" onPress={onOpenSetupRegister} hitSlop={8}>
+            <Text style={styles.headerLink}>Register</Text>
+          </Pressable>
+        )}
+        {device && activeCashier && (
+          <Pressable accessibilityRole="button" onPress={() => endCashierSession()} hitSlop={8}>
+            <Text style={styles.headerLink}>Switch</Text>
+          </Pressable>
+        )}
+        {user && (
+          <Pressable accessibilityRole="button" onPress={logout} hitSlop={8}>
+            <Text style={styles.headerLink}>Sign out</Text>
+          </Pressable>
+        )}
       </View>
 
       {error && <Text style={styles.error}>{error}</Text>}
+      {lastReceiptTotal !== null && (
+        <Text accessibilityRole="text" style={styles.success}>
+          Sale recorded — {PESO.format(lastReceiptTotal)}. Stock updated.
+        </Text>
+      )}
 
       <View style={styles.searchRow}>
-        <TextInput
-          accessibilityLabel="Search products"
-          placeholder="Search by name…"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          style={styles.searchInput}
-        />
-        <TouchableOpacity
-          accessibilityLabel="Scan with camera"
-          style={styles.scanButton}
-          onPress={() => setShowScanner(true)}
-        >
-          <Text style={styles.scanButtonText}>Scan</Text>
-        </TouchableOpacity>
+        <View style={styles.searchField}>
+          <Feather name="search" size={16} color={colors.textFaint} />
+          <TextInput
+            accessibilityLabel="Search products"
+            placeholder="Search or scan"
+            placeholderTextColor={colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            style={styles.searchInput}
+          />
+        </View>
       </View>
 
       {barcodeError && (
@@ -129,210 +230,181 @@ export function PosScreen() {
         </Text>
       )}
 
-      {searchResults.length > 0 && (
-        <FlatList
-          data={searchResults}
-          keyExtractor={(p) => p.id}
-          style={styles.resultsList}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.resultRow} onPress={() => handleAddProduct(item.id)}>
-              <Text style={styles.resultName}>{item.name}</Text>
-              <Text style={styles.resultPrice}>{PESO.format(item.price)}</Text>
-            </TouchableOpacity>
-          )}
-        />
-      )}
-
-      <FlatList
-        data={cart}
-        keyExtractor={(line) => line.product.id}
-        style={styles.cartList}
-        contentContainerStyle={cart.length === 0 && styles.emptyCart}
-        ListEmptyComponent={<Text style={styles.emptyText}>Cart is empty. Scan or search an item.</Text>}
-        renderItem={({ item: line }) => (
-          <View style={styles.cartRow}>
-            <View style={styles.cartInfo}>
-              <Text style={styles.cartName}>{line.product.name}</Text>
-              <Text style={styles.cartMeta}>
-                {PESO.format(line.product.price)} each · {PESO.format(lineTotal(line.product, line.quantity))}
-              </Text>
-            </View>
-            <View style={styles.qtyRow}>
-              <TouchableOpacity
-                accessibilityLabel={`Decrease quantity of ${line.product.name}`}
-                style={styles.qtyButton}
-                onPress={() => setCart((prev) => setQuantity(prev, line.product.id, line.quantity - 1))}
-              >
-                <Text style={styles.qtyButtonText}>−</Text>
-              </TouchableOpacity>
-              <Text style={styles.qtyValue}>{line.quantity}</Text>
-              <TouchableOpacity
-                accessibilityLabel={`Increase quantity of ${line.product.name}`}
-                style={styles.qtyButton}
-                onPress={() => setCart((prev) => setQuantity(prev, line.product.id, line.quantity + 1))}
-              >
-                <Text style={styles.qtyButtonText}>+</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                accessibilityLabel={`Remove ${line.product.name}`}
-                onPress={() => setCart((prev) => removeFromCart(prev, line.product.id))}
-              >
-                <Text style={styles.removeText}>Remove</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      />
-
-      <View style={styles.footer}>
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalValue}>{PESO.format(total)}</Text>
-        </View>
-
-        <Text style={styles.fieldLabel}>Amount tendered</Text>
-        <TextInput
-          accessibilityLabel="Amount tendered"
-          keyboardType="decimal-pad"
-          value={tendered}
-          onChangeText={setTendered}
-          style={styles.tenderedInput}
-        />
-        <View style={styles.changeRow}>
-          <Text style={styles.changeLabel}>Change</Text>
-          <Text style={styles.changeValue}>{change === null ? "—" : PESO.format(change)}</Text>
-        </View>
-
-        {lastReceiptTotal !== null && (
-          <Text accessibilityRole="text" style={styles.success}>
-            Sale recorded — {PESO.format(lastReceiptTotal)}. Stock updated.
-          </Text>
-        )}
-        {checkoutError && (
-          <Text accessibilityRole="alert" style={styles.error}>
-            {checkoutError}
-          </Text>
-        )}
-
-        <TouchableOpacity
-          style={[
-            styles.completeButton,
-            (cart.length === 0 || change === null || checkingOut) && styles.completeButtonDisabled,
-          ]}
-          disabled={cart.length === 0 || change === null || checkingOut}
-          onPress={handleCompleteSale}
+      <View style={styles.chipRow}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setSelectedCategoryId(ALL_CATEGORY)}
+          style={[styles.chip, selectedCategoryId === ALL_CATEGORY && styles.chipOn]}
         >
-          {checkingOut ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.completeButtonText}>Complete sale</Text>
-          )}
-        </TouchableOpacity>
+          <Text style={[styles.chipText, selectedCategoryId === ALL_CATEGORY && styles.chipTextOn]}>All</Text>
+        </Pressable>
+        {categories.map((category) => (
+          <Pressable
+            key={category.id}
+            accessibilityRole="button"
+            onPress={() => setSelectedCategoryId(category.id)}
+            style={[styles.chip, selectedCategoryId === category.id && styles.chipOn]}
+          >
+            <Text style={[styles.chipText, selectedCategoryId === category.id && styles.chipTextOn]}>{category.name}</Text>
+          </Pressable>
+        ))}
       </View>
 
+      <View style={styles.grid}>
+        {displayedProducts.length === 0 ? (
+          <Text style={styles.emptyText}>No products found.</Text>
+        ) : (
+          displayedProducts.map((product) => (
+            <ProductTile
+              key={product.id}
+              product={product}
+              quantityInCart={cartQuantityByProductId.get(product.id) ?? 0}
+              onPress={() => handleTilePress(product)}
+            />
+          ))
+        )}
+      </View>
+
+      {cart.length > 0 && (
+        <Pressable accessibilityRole="button" accessibilityLabel="View cart" onPress={() => setShowCart(true)} style={styles.cartBar}>
+          <View style={styles.cartBarCount}>
+            <Text style={styles.cartBarCountText}>{cart.reduce((sum, l) => sum + l.quantity, 0)}</Text>
+          </View>
+          <Text style={styles.cartBarLabel}>View cart</Text>
+          <Text style={styles.cartBarTotal}>{PESO.format(total)}</Text>
+          <Feather name="chevron-right" size={19} color={colors.textPrimary} />
+        </Pressable>
+      )}
+
       <BarcodeScannerModal visible={showScanner} onDetected={handleScanned} onClose={() => setShowScanner(false)} />
+
+      <CartSheet
+        visible={showCart}
+        onClose={() => setShowCart(false)}
+        cart={cart}
+        onIncrement={(productId) => {
+          const line = cart.find((l) => l.product.id === productId);
+          if (line) setCart((prev) => setQuantity(prev, productId, line.quantity + 1));
+        }}
+        onDecrement={(productId) => {
+          const line = cart.find((l) => l.product.id === productId);
+          if (line) setCart((prev) => setQuantity(prev, productId, line.quantity - 1));
+        }}
+        subtotal={subtotal}
+        discountAmount={discountAmount}
+        total={total}
+        discountEnabled={discountEnabled}
+        discountType={discountType}
+        discountValueText={discountValueText}
+        onToggleDiscount={() => {
+          setDiscountEnabled((prev) => !prev);
+          setDiscountValueText("");
+        }}
+        onDiscountTypeChange={setDiscountType}
+        onDiscountValueChange={setDiscountValueText}
+        paymentSegment={paymentSegment}
+        onPaymentSegmentChange={setPaymentSegment}
+        paymentType={paymentType}
+        tendered={tendered}
+        onTenderedChange={setTendered}
+        change={change}
+        referenceNo={referenceNo}
+        onReferenceNoChange={setReferenceNo}
+        customerQuery={customerQuery}
+        onCustomerQueryChange={setCustomerQuery}
+        customerResults={customerResults}
+        selectedCustomer={selectedCustomer}
+        onSelectCustomer={(c) => {
+          setSelectedCustomer(c);
+          setCustomerQuery("");
+        }}
+        onClearCustomer={() => setSelectedCustomer(null)}
+        creditWarning={creditWarning}
+        checkingOut={checkingOut}
+        checkoutError={checkoutError}
+        canComplete={canComplete}
+        onCompleteSale={handleCompleteSale}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", paddingTop: 56 },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: {
+  container: { flex: 1, backgroundColor: colors.backgroundStart, paddingTop: 56, paddingHorizontal: 18 },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.backgroundStart },
+  header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 16 },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.iconSquare,
+    backgroundColor: colors.panelStrong,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  title: { fontSize: 18, fontWeight: "500", color: colors.textPrimary },
+  subtitle: { fontSize: 12, color: colors.textFaint, marginTop: 1 },
+  headerLink: { fontSize: 12.5, color: colors.accentSoft, fontWeight: "500" },
+  error: { color: colors.error, fontSize: 13, marginBottom: 8 },
+  success: { color: colors.success, fontSize: 13, marginBottom: 8 },
+  searchRow: { flexDirection: "row", marginBottom: 12 },
+  searchField: {
+    flex: 1,
     flexDirection: "row",
-    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    backgroundColor: colors.panelStrong,
+    borderRadius: radii.input,
+    paddingHorizontal: 14,
+    height: 46,
+  },
+  searchInput: { flex: 1, fontSize: 15, color: colors.textPrimary },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
+  chip: {
+    height: 32,
+    paddingHorizontal: 14,
+    borderRadius: radii.chip,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+    backgroundColor: colors.panelStrong,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chipOn: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chipText: { fontSize: 12.5, color: colors.textDim },
+  chipTextOn: { color: colors.textPrimary, fontWeight: "500" },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: "4%", paddingBottom: 100 },
+  emptyText: { color: colors.textFaint, fontSize: 13, textAlign: "center", width: "100%", marginTop: 20 },
+  cartBar: {
+    position: "absolute",
+    left: 18,
+    right: 18,
+    bottom: 20,
+    height: 56,
+    borderRadius: radii.card,
+    backgroundColor: colors.accent,
+    flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    marginBottom: 12,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
-  storeName: { fontSize: 18, fontWeight: "700", color: "#0f172a" },
-  cashier: { fontSize: 13, color: "#64748b" },
-  logout: { fontSize: 13, color: "#0f172a", fontWeight: "600" },
-  searchRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16 },
-  searchInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
+  cartBarCount: {
+    width: 24,
+    height: 24,
     borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 15,
-  },
-  scanButton: {
-    backgroundColor: "#0f172a",
-    borderRadius: 12,
-    paddingHorizontal: 18,
-    justifyContent: "center",
-  },
-  scanButtonText: { color: "#fff", fontWeight: "600" },
-  resultsList: { maxHeight: 180, marginHorizontal: 16, marginTop: 8 },
-  resultRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
-  },
-  resultName: { fontSize: 14, color: "#0f172a" },
-  resultPrice: { fontSize: 13, color: "#64748b" },
-  cartList: { flex: 1, marginTop: 12, paddingHorizontal: 16 },
-  emptyCart: { flex: 1, justifyContent: "center", alignItems: "center" },
-  emptyText: { color: "#94a3b8", fontSize: 14 },
-  cartRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
-  },
-  cartInfo: { flex: 1 },
-  cartName: { fontSize: 14, fontWeight: "600", color: "#0f172a" },
-  cartMeta: { fontSize: 12, color: "#64748b" },
-  qtyRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  qtyButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
     alignItems: "center",
     justifyContent: "center",
   },
-  qtyButtonText: { fontSize: 16, color: "#0f172a" },
-  qtyValue: { fontSize: 14, width: 20, textAlign: "center" },
-  removeText: { fontSize: 12, color: "#dc2626", marginLeft: 4 },
-  footer: {
-    borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
-    padding: 16,
-    paddingBottom: 32,
-  },
-  totalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  totalLabel: { fontSize: 14, color: "#64748b" },
-  totalValue: { fontSize: 24, fontWeight: "700", color: "#0f172a" },
-  fieldLabel: { fontSize: 12, color: "#334155", marginTop: 12, marginBottom: 4 },
-  tenderedInput: {
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  changeRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
-  changeLabel: { fontSize: 12, color: "#64748b" },
-  changeValue: { fontSize: 12, color: "#64748b" },
-  success: { marginTop: 10, color: "#047857", fontSize: 13 },
-  error: { color: "#dc2626", fontSize: 13, marginHorizontal: 16, marginBottom: 4 },
-  completeButton: {
-    backgroundColor: "#0f172a",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 14,
-  },
-  completeButtonDisabled: { opacity: 0.4 },
-  completeButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  cartBarCountText: { fontSize: 12, fontWeight: "600", color: colors.textPrimary },
+  cartBarLabel: { flex: 1, fontSize: 15, fontWeight: "500", color: colors.textPrimary },
+  cartBarTotal: { fontSize: 15, fontWeight: "600", color: colors.textPrimary },
 });
