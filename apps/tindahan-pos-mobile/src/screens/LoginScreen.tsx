@@ -1,13 +1,27 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { useAuth } from "../lib/auth";
+import { StyleSheet, Text, View } from "react-native";
+import { AppLogo } from "../components/AppLogo";
 import { Checkbox } from "../components/Checkbox";
+import { Divider } from "../components/Divider";
+import { InfoCallout } from "../components/InfoCallout";
+import { LinkText } from "../components/LinkText";
+import { PasswordInput } from "../components/PasswordInput";
 import { PrimaryButton } from "../components/PrimaryButton";
+import { ScreenContainer } from "../components/ScreenContainer";
+import { SecondaryButton } from "../components/SecondaryButton";
+import { SegmentedControl } from "../components/SegmentedControl";
 import { TextField } from "../components/TextField";
-import { colors, radii } from "../theme/colors";
+import { useAuth } from "../lib/auth";
+import { colors } from "../theme/colors";
 
-export function LoginScreen() {
+const SEGMENTS = ["Sign in", "Create account"] as const;
+
+interface LoginScreenProps {
+  /** Proposed per MOBILE_UI_DESIGN_SPECIFICATION.md §5 M-002 -- not wired to real routing yet (Phase 3). */
+  onSwitchToCreateAccount?: () => void;
+}
+
+export function LoginScreen({ onSwitchToCreateAccount }: LoginScreenProps) {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,80 +38,91 @@ export function LoginScreen() {
     setSubmitting(false);
   }
 
+  function handleSegmentChange(segment: string) {
+    if (segment === "Create account") onSwitchToCreateAccount?.();
+  }
+
   const canSubmit = !submitting && !!email.trim() && !!password;
 
   return (
-    <LinearGradient
-      colors={[colors.backgroundEnd, colors.backgroundStart]}
-      style={styles.background}
-    >
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <View style={styles.panel}>
-          <Text style={styles.title}>Tindahan POS</Text>
-          <Text style={styles.subtitle}>Sign in to start a shift</Text>
+    <ScreenContainer>
+      <View style={styles.center}>
+        <AppLogo size={40} />
+      </View>
 
-          <TextField
-            accessibilityLabel="Email"
-            placeholder="Email"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            textContentType="username"
-            value={email}
-            onChangeText={setEmail}
-          />
-          <TextField
-            accessibilityLabel="Password"
-            placeholder="Password"
-            secureTextEntry
-            textContentType="password"
-            value={password}
-            onChangeText={setPassword}
-          />
+      <SegmentedControl options={SEGMENTS} value="Sign in" onChange={handleSegmentChange} />
 
-          {error && (
-            <Text accessibilityRole="alert" style={styles.error}>
-              {error}
-            </Text>
-          )}
+      <Text style={styles.heading}>Welcome back</Text>
+      <Text style={styles.subtitle}>Sign in to open the register and see today's sales.</Text>
 
-          <View style={styles.checkboxRow}>
-            <Checkbox
-              checked={keepSignedIn}
-              onToggle={() => setKeepSignedIn((v) => !v)}
-              label="Keep me signed in on this device"
-            />
-          </View>
+      <SecondaryButton label="Continue with Google" onPress={() => {}} />
+      <Divider label="OR" />
 
-          <PrimaryButton label="Sign in" onPress={handleSubmit} disabled={!canSubmit} loading={submitting} />
-        </View>
-      </KeyboardAvoidingView>
-    </LinearGradient>
+      <TextField
+        accessibilityLabel="Email"
+        label="Email"
+        placeholder="you@store.com"
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="email-address"
+        textContentType="username"
+        value={email}
+        onChangeText={setEmail}
+      />
+
+      <View style={styles.passwordLabelRow}>
+        <Text style={styles.fieldLabel}>Password</Text>
+        <LinkText style={styles.forgotLink}>Forgot?</LinkText>
+      </View>
+      <PasswordInput
+        accessibilityLabel="Password"
+        placeholder="••••••••••"
+        value={password}
+        onChangeText={setPassword}
+      />
+
+      {error && (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {error}
+        </Text>
+      )}
+
+      <View style={styles.checkboxRow}>
+        <Checkbox
+          checked={keepSignedIn}
+          onToggle={() => setKeepSignedIn((v) => !v)}
+          label="Keep me signed in on this device"
+        />
+      </View>
+
+      <PrimaryButton label="Sign in" onPress={handleSubmit} disabled={!canSubmit} loading={submitting} />
+
+      <Text style={styles.footer}>
+        New here? <LinkText onPress={onSwitchToCreateAccount}>Create an account</LinkText>
+      </Text>
+      <Text style={styles.microCaption}>Protected by reCAPTCHA · Contact support</Text>
+
+      <Divider />
+
+      <InfoCallout
+        icon="tablet"
+        title="Set up this device as a register"
+        description="For the tablet at the counter. Pair it once, then staff sign in with a PIN."
+        onPress={() => {}}
+      />
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  background: { flex: 1 },
-  container: { flex: 1, justifyContent: "center", padding: 24 },
-  panel: {
-    backgroundColor: colors.panel,
-    borderWidth: 1,
-    borderColor: colors.hairline,
-    borderRadius: radii.card,
-    padding: 24,
-  },
-  title: { fontSize: 24, fontWeight: "500", color: colors.textPrimary, textAlign: "center" },
-  subtitle: {
-    fontSize: 13,
-    fontWeight: "400",
-    color: colors.textMuted,
-    textAlign: "center",
-    marginTop: 4,
-    marginBottom: 28,
-  },
-  error: { color: colors.error, fontSize: 13, marginBottom: 12 },
-  checkboxRow: { marginBottom: 20 },
+  center: { alignItems: "center", marginBottom: 18 },
+  heading: { fontSize: 21, fontWeight: "500", color: colors.textPrimary, textAlign: "center" },
+  subtitle: { fontSize: 13, color: colors.textFaint, textAlign: "center", marginTop: 4, marginBottom: 20 },
+  passwordLabelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  fieldLabel: { fontSize: 13, fontWeight: "500", color: colors.textDim },
+  forgotLink: { fontSize: 12.5 },
+  error: { color: colors.error, fontSize: 13, marginTop: 4, marginBottom: 4 },
+  checkboxRow: { marginTop: 12, marginBottom: 20 },
+  footer: { fontSize: 13, color: colors.textFaint, textAlign: "center", marginTop: 18 },
+  microCaption: { fontSize: 11, color: colors.textFaintest, textAlign: "center", marginTop: 8 },
 });

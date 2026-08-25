@@ -14,6 +14,7 @@ export function PrimaryButton({ label, onPress, disabled, loading }: PrimaryButt
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
       onPress={onPress}
       disabled={isDisabled}
       style={[styles.button, isDisabled && styles.buttonDisabled]}
