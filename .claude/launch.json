@@ -1,0 +1,38 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "super-admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--workspace",
+        "super-admin"
+      ],
+      "port": 5175
+    },
+    {
+      "name": "inventory-app",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--workspace",
+        "inventory-app"
+      ],
+      "port": 5174
+    },
+    {
+      "name": "tindahan-pos",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--workspace",
+        "tindahan-pos"
+      ],
+      "port": 5173
+    }
+  ]
+}
