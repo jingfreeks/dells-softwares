@@ -51,6 +51,7 @@ function setup(checkoutImpl?: jest.Mock) {
   });
   mockedUseStoreData.mockReturnValue({
     products: [rice],
+    categories: [{ id: "c1", name: "Grocery" }],
     customers: [juanCustomer],
     loading: false,
     error: null,
@@ -60,15 +61,24 @@ function setup(checkoutImpl?: jest.Mock) {
   return { checkout };
 }
 
-function addRiceToCart() {
-  fireEvent.changeText(screen.getByLabelText("Search products"), "Rice");
-  fireEvent.press(screen.getByText("Rice 1kg"));
+function addRiceAndOpenCart() {
+  fireEvent.press(screen.getByRole("button", { name: "Rice 1kg" }));
+  fireEvent.press(screen.getByRole("button", { name: "View cart" }));
 }
 
 describe("PosScreen payment + discount", () => {
+  it("shows the product grid and adds a tapped tile to the cart bar", () => {
+    setup();
+
+    expect(screen.getByRole("button", { name: "Rice 1kg" })).toBeTruthy();
+    fireEvent.press(screen.getByRole("button", { name: "Rice 1kg" }));
+
+    expect(screen.getAllByText("₱60.00").length).toBeGreaterThan(0);
+  });
+
   it("defaults to Cash and requires enough tendered amount before completing", () => {
     setup();
-    addRiceToCart();
+    addRiceAndOpenCart();
 
     expect(screen.getByRole("button", { name: "Complete sale" }).props.accessibilityState?.disabled).toBe(true);
 
@@ -79,7 +89,7 @@ describe("PosScreen payment + discount", () => {
 
   it("requires a reference number for GCash before completing", () => {
     setup();
-    addRiceToCart();
+    addRiceAndOpenCart();
 
     fireEvent.press(screen.getByRole("tab", { name: "GCash" }));
     expect(screen.getByRole("button", { name: "Complete sale" }).props.accessibilityState?.disabled).toBe(true);
@@ -90,7 +100,7 @@ describe("PosScreen payment + discount", () => {
 
   it("requires a selected customer for Utang and passes the customer id to checkout", async () => {
     const { checkout } = setup();
-    addRiceToCart();
+    addRiceAndOpenCart();
 
     fireEvent.press(screen.getByRole("tab", { name: "Utang" }));
     expect(screen.getByRole("button", { name: "Complete sale" }).props.accessibilityState?.disabled).toBe(true);
@@ -109,12 +119,12 @@ describe("PosScreen payment + discount", () => {
 
   it("applies a percentage discount to the total and forwards it to checkout", async () => {
     const { checkout } = setup();
-    addRiceToCart();
+    addRiceAndOpenCart();
 
     fireEvent.press(screen.getByText("+ Add discount"));
     fireEvent.changeText(screen.getByLabelText("Discount value"), "10");
 
-    expect(screen.getByText("₱54.00")).toBeTruthy();
+    expect(screen.getAllByText("₱54.00").length).toBeGreaterThan(0);
 
     fireEvent.changeText(screen.getByLabelText("Amount tendered"), "60");
     fireEvent.press(screen.getByRole("button", { name: "Complete sale" }));
@@ -122,5 +132,16 @@ describe("PosScreen payment + discount", () => {
     await waitFor(() => expect(checkout).toHaveBeenCalledTimes(1));
     const [, , , , discount] = checkout.mock.calls[0];
     expect(discount).toEqual({ type: "percentage", value: 10 });
+  });
+
+  it("filters the grid to a selected category and searches within it", () => {
+    setup();
+
+    fireEvent.press(screen.getByRole("button", { name: "Grocery" }));
+    expect(screen.getByRole("button", { name: "Rice 1kg" })).toBeTruthy();
+
+    fireEvent.changeText(screen.getByLabelText("Search products"), "nonexistent");
+    expect(screen.queryByRole("button", { name: "Rice 1kg" })).toBeNull();
+    expect(screen.getByText("No products found.")).toBeTruthy();
   });
 });
