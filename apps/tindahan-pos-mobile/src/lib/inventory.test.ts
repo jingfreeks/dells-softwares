@@ -1,4 +1,4 @@
-import { computeRestockSuggestions, lowStockProducts, stockStatus } from "./inventory";
+import { buildRestockRows, computeRestockSuggestions, lowStockProducts, stockStatus } from "./inventory";
 import type { Product, SaleRecord } from "./types";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
@@ -122,5 +122,40 @@ describe("computeRestockSuggestions", () => {
     const sales = [saleOf("soon", 2, now.toISOString()), saleOf("later", 2, now.toISOString())];
     const results = computeRestockSuggestions(products, sales, { now, leadTimeDays: 5 });
     expect(results.map((r) => r.productId)).toEqual(["soon", "later"]);
+  });
+});
+
+describe("buildRestockRows", () => {
+  it("marks a zero-stock product 'out' even with no sales/suggestion data", () => {
+    const rows = buildRestockRows([makeProduct({ id: "p1", stock: 0 })], []);
+    expect(rows).toEqual([
+      expect.objectContaining({ productId: "p1", isOut: true, severity: "out", avgDailySales: null, daysOfStockLeft: null }),
+    ]);
+  });
+
+  it("marks a product 'critical' when its suggestion says it'll run out within the lead time", () => {
+    const rows = buildRestockRows(
+      [makeProduct({ id: "p1", stock: 2 })],
+      [{ productId: "p1", productName: "p1", currentStock: 2, avgDailySales: 1, daysOfStockLeft: 2, suggestedQuantity: 5 }],
+      3
+    );
+    expect(rows[0]).toMatchObject({ severity: "critical", daysOfStockLeft: 2 });
+  });
+
+  it("marks a low-stock product with no velocity data 'low', not 'critical'", () => {
+    const rows = buildRestockRows([makeProduct({ id: "p1", stock: 3, lowStockThreshold: 5 })], []);
+    expect(rows[0]).toMatchObject({ severity: "low", daysOfStockLeft: null });
+  });
+
+  it("sorts out-of-stock first, then by soonest days-of-stock-left", () => {
+    const rows = buildRestockRows(
+      [
+        makeProduct({ id: "low", stock: 3, lowStockThreshold: 5 }),
+        makeProduct({ id: "out", stock: 0 }),
+        makeProduct({ id: "critical", stock: 1 }),
+      ],
+      [{ productId: "critical", productName: "critical", currentStock: 1, avgDailySales: 1, daysOfStockLeft: 1, suggestedQuantity: 3 }]
+    );
+    expect(rows.map((r) => r.productId)).toEqual(["out", "critical", "low"]);
   });
 });

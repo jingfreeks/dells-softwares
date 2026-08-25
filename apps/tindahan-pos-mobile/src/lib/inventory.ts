@@ -172,6 +172,71 @@ export function computeRestockSuggestions(
   return suggestions.sort((a, b) => a.daysOfStockLeft - b.daysOfStockLeft);
 }
 
+export type RestockSeverity = "out" | "critical" | "low";
+
+export interface RestockRow {
+  productId: string;
+  productName: string;
+  stock: number;
+  isOut: boolean;
+  avgDailySales: number | null;
+  daysOfStockLeft: number | null;
+  suggestedQuantity: number | null;
+  severity: RestockSeverity;
+}
+
+/**
+ * Merges `lowStockProducts()` (stock-status only, no sales dependency) with
+ * `computeRestockSuggestions()` (velocity-based, only available for a
+ * product with recent sales) into one row per low/out product, sorted
+ * most-urgent-first -- ported from apps/tindahan-pos's
+ * Dashboard/hooks.tsx buildRestockRows (minus its `supplier`/`cost`
+ * fields, since mobile doesn't fetch suppliers yet).
+ *
+ * The mockup's 3-way OUT/CRITICAL/LOW split isn't backed by an existing
+ * rule anywhere (web only has a 2-way isOut/not-out distinction) -- this
+ * is a judgment call, not a confirmed business rule: CRITICAL is a
+ * not-yet-out product whose velocity data says it'll run out within
+ * `leadTimeDays` (matching computeRestockSuggestions' own lead-time
+ * default); everything else low-stock, including a product with no
+ * recent-sales velocity data at all, is LOW.
+ */
+export function buildRestockRows(
+  lowStock: Product[],
+  suggestions: RestockSuggestion[],
+  leadTimeDays = RESTOCK_LEAD_TIME_DAYS
+): RestockRow[] {
+  const suggestionByProductId = new Map(suggestions.map((s) => [s.productId, s]));
+
+  return lowStock
+    .map((p): RestockRow => {
+      const suggestion = suggestionByProductId.get(p.id);
+      const isOut = p.stock <= 0;
+      const daysOfStockLeft = suggestion?.daysOfStockLeft ?? null;
+      const severity: RestockSeverity = isOut
+        ? "out"
+        : daysOfStockLeft !== null && daysOfStockLeft <= leadTimeDays
+          ? "critical"
+          : "low";
+      return {
+        productId: p.id,
+        productName: p.name,
+        stock: p.stock,
+        isOut,
+        avgDailySales: suggestion?.avgDailySales ?? null,
+        daysOfStockLeft,
+        suggestedQuantity: suggestion?.suggestedQuantity ?? null,
+        severity,
+      };
+    })
+    .sort((a, b) => {
+      if (a.isOut !== b.isOut) return a.isOut ? -1 : 1;
+      const aDays = a.daysOfStockLeft ?? Infinity;
+      const bDays = b.daysOfStockLeft ?? Infinity;
+      return aDays - bDays;
+    });
+}
+
 /** O(1) lookup index for findDuplicateBarcodeFast, memoize this per products list. */
 export function buildBarcodeIndex(products: Product[]): Map<string, Product> {
   const index = new Map<string, Product>();
