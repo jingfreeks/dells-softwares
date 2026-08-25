@@ -6,6 +6,7 @@
 export type StaffRole = "admin" | "cashier";
 export type SaleItemType = "product" | "service";
 export type PaymentType = "cash" | "credit" | "qr";
+export type SaleStatus = "completed" | "voided";
 
 export interface Database {
   public: {
@@ -161,6 +162,11 @@ export interface Database {
           payment_type: PaymentType;
           reference_no: string | null;
           created_at: string;
+          // Added by a later migration than 0001_init.sql (offline-sync +
+          // BIR-audit work) -- set only for a sale queued offline and
+          // synced later; null for a normal live sale (see mapSaleRow).
+          occurred_at: string | null;
+          status: SaleStatus;
         };
         Insert: {
           id?: string;
@@ -171,6 +177,8 @@ export interface Database {
           payment_type?: PaymentType;
           reference_no?: string | null;
           created_at?: string;
+          occurred_at?: string | null;
+          status?: SaleStatus;
         };
         Update: {
           id?: string;
@@ -181,6 +189,8 @@ export interface Database {
           payment_type?: PaymentType;
           reference_no?: string | null;
           created_at?: string;
+          occurred_at?: string | null;
+          status?: SaleStatus;
         };
         Relationships: [
           {
