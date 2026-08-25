@@ -18,6 +18,11 @@ export interface CheckoutPayment {
   referenceNo?: string;
 }
 
+export interface CheckoutDiscount {
+  type: "percentage" | "flat";
+  value: number;
+}
+
 interface StoreDataContextValue {
   products: Product[];
   categories: Category[];
@@ -34,7 +39,8 @@ interface StoreDataContextValue {
     cart: CartLine[],
     services: ServiceLine[],
     cashierName: string,
-    payment?: CheckoutPayment
+    payment?: CheckoutPayment,
+    discount?: CheckoutDiscount | null
   ) => Promise<{ saleId: string }>;
 }
 
@@ -257,7 +263,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     cart: CartLine[],
     services: ServiceLine[],
     _cashierName: string,
-    payment: CheckoutPayment = { type: "cash" }
+    payment: CheckoutPayment = { type: "cash" },
+    discount: CheckoutDiscount | null = null
   ): Promise<{ saleId: string }> {
     if (payment.type === "credit" && !payment.customerId) {
       throw new Error("A customer is required for a credit sale.");
@@ -271,12 +278,17 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       p_customer_id: payment.type === "credit" ? payment.customerId : null,
       p_payment_type: payment.type,
       p_reference_no: payment.type === "qr" ? payment.referenceNo!.trim() : null,
+      p_discount_type: discount?.type ?? null,
+      p_discount_value: discount?.value ?? null,
     });
     if (err) throw err;
     const result = data?.[0];
     if (!result) throw new Error("Checkout did not return a result.");
 
-    await fetchProducts();
+    // Stock always changed; a credit sale also moved the customer's
+    // balance, and the new sale itself belongs in `sales` for the Owner
+    // reporting screens without waiting for a manual refresh.
+    await Promise.all([fetchProducts(), fetchSales(), payment.type === "credit" ? fetchCustomers() : Promise.resolve()]);
 
     return { saleId: result.sale_id };
   }

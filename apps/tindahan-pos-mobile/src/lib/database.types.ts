@@ -478,6 +478,8 @@ export interface Database {
           p_customer_id?: string | null;
           p_payment_type?: PaymentType;
           p_reference_no?: string | null;
+          p_discount_type?: "percentage" | "flat" | null;
+          p_discount_value?: number | null;
         };
         Returns: { sale_id: string; total: number }[];
       };

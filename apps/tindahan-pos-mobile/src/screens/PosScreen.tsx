@@ -9,7 +9,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../lib/auth";
-import { useStoreData } from "../lib/storeData";
+import { useStoreData, type CheckoutDiscount, type CheckoutPayment } from "../lib/storeData";
 import {
   addToCart,
   cartTotal,
@@ -20,13 +20,28 @@ import {
   searchProductsByName,
   setQuantity,
 } from "../lib/pos";
+import { computeDiscountAmount } from "../lib/discount";
+import { wouldExceedCreditLimit } from "../lib/customers";
 import { PESO } from "../lib/money";
-import type { CartLine } from "../lib/types";
+import type { CartLine, Customer, PaymentType } from "../lib/types";
 import { BarcodeScannerModal } from "../components/BarcodeScannerModal";
+import { SegmentedControl } from "../components/SegmentedControl";
+
+const PAYMENT_SEGMENTS = ["Cash", "GCash", "Utang"] as const;
+const PAYMENT_TYPE_BY_SEGMENT: Record<(typeof PAYMENT_SEGMENTS)[number], PaymentType> = {
+  Cash: "cash",
+  GCash: "qr",
+  Utang: "credit",
+};
+const SEGMENT_BY_PAYMENT_TYPE: Record<PaymentType, (typeof PAYMENT_SEGMENTS)[number]> = {
+  cash: "Cash",
+  qr: "GCash",
+  credit: "Utang",
+};
 
 export function PosScreen() {
   const { user, store, logout } = useAuth();
-  const { products, loading, error, checkout } = useStoreData();
+  const { products, customers, loading, error, checkout } = useStoreData();
   const [cart, setCart] = useState<CartLine[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showScanner, setShowScanner] = useState(false);
@@ -36,14 +51,53 @@ export function PosScreen() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [lastReceiptTotal, setLastReceiptTotal] = useState<number | null>(null);
 
-  const total = useMemo(() => cartTotal(cart), [cart]);
+  const [paymentSegment, setPaymentSegment] = useState<(typeof PAYMENT_SEGMENTS)[number]>("Cash");
+  const paymentType = PAYMENT_TYPE_BY_SEGMENT[paymentSegment];
+  const [referenceNo, setReferenceNo] = useState("");
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+
+  const [discountEnabled, setDiscountEnabled] = useState(false);
+  const [discountType, setDiscountType] = useState<CheckoutDiscount["type"]>("percentage");
+  const [discountValueText, setDiscountValueText] = useState("");
+
+  const subtotal = useMemo(() => cartTotal(cart), [cart]);
+  const discount: CheckoutDiscount | null = useMemo(() => {
+    if (!discountEnabled) return null;
+    const value = Number(discountValueText);
+    if (!discountValueText.trim() || Number.isNaN(value) || value <= 0) return null;
+    return { type: discountType, value };
+  }, [discountEnabled, discountType, discountValueText]);
+  const discountAmount = useMemo(() => computeDiscountAmount(subtotal, discount), [subtotal, discount]);
+  const total = subtotal - discountAmount;
+
   const searchResults = useMemo(
     () => searchProductsByName(products, searchQuery).slice(0, 8),
     [products, searchQuery]
   );
+  const customerResults = useMemo(() => {
+    if (!customerQuery.trim()) return [];
+    const q = customerQuery.trim().toLowerCase();
+    return customers.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 8);
+  }, [customers, customerQuery]);
+
   const tenderedNumber = Number(tendered);
   const change =
     tendered.trim() !== "" && !Number.isNaN(tenderedNumber) ? computeChange(total, tenderedNumber) : null;
+
+  const creditWarning =
+    paymentType === "credit" && selectedCustomer && wouldExceedCreditLimit(selectedCustomer, total)
+      ? `This would put ${selectedCustomer.name} over their credit limit.`
+      : null;
+
+  const canComplete =
+    cart.length > 0 &&
+    !checkingOut &&
+    (paymentType === "cash"
+      ? change !== null
+      : paymentType === "qr"
+        ? referenceNo.trim().length > 0
+        : selectedCustomer !== null);
 
   function addByBarcode(barcode: string) {
     const product = findProductByBarcode(products, barcode);
@@ -67,15 +121,31 @@ export function PosScreen() {
     setSearchQuery("");
   }
 
+  function resetSaleState() {
+    setCart([]);
+    setTendered("0");
+    setPaymentSegment("Cash");
+    setReferenceNo("");
+    setCustomerQuery("");
+    setSelectedCustomer(null);
+    setDiscountEnabled(false);
+    setDiscountValueText("");
+  }
+
   async function handleCompleteSale() {
-    if (cart.length === 0 || change === null) return;
+    if (!canComplete) return;
     setCheckingOut(true);
     setCheckoutError(null);
     try {
-      await checkout(cart, [], user?.name ?? "Cashier", { type: "cash" });
+      const payment: CheckoutPayment =
+        paymentType === "credit"
+          ? { type: "credit", customerId: selectedCustomer!.id }
+          : paymentType === "qr"
+            ? { type: "qr", referenceNo: referenceNo.trim() }
+            : { type: "cash" };
+      await checkout(cart, [], user?.name ?? "Cashier", payment, discount);
       setLastReceiptTotal(total);
-      setCart([]);
-      setTendered("0");
+      resetSaleState();
       setTimeout(() => setLastReceiptTotal(null), 4000);
     } catch (err) {
       setCheckoutError(err instanceof Error ? err.message : "Could not complete sale.");
@@ -185,23 +255,147 @@ export function PosScreen() {
       />
 
       <View style={styles.footer}>
+        {!discountEnabled ? (
+          <TouchableOpacity onPress={() => setDiscountEnabled(true)}>
+            <Text style={styles.discountLink}>+ Add discount</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.discountRow}>
+            <View style={styles.discountTypeRow}>
+              <TouchableOpacity
+                style={[styles.discountTypeButton, discountType === "percentage" && styles.discountTypeButtonOn]}
+                onPress={() => setDiscountType("percentage")}
+              >
+                <Text style={[styles.discountTypeText, discountType === "percentage" && styles.discountTypeTextOn]}>%</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.discountTypeButton, discountType === "flat" && styles.discountTypeButtonOn]}
+                onPress={() => setDiscountType("flat")}
+              >
+                <Text style={[styles.discountTypeText, discountType === "flat" && styles.discountTypeTextOn]}>₱</Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              accessibilityLabel="Discount value"
+              placeholder={discountType === "percentage" ? "10" : "50"}
+              keyboardType="decimal-pad"
+              value={discountValueText}
+              onChangeText={setDiscountValueText}
+              style={styles.discountInput}
+            />
+            <TouchableOpacity
+              accessibilityLabel="Remove discount"
+              onPress={() => {
+                setDiscountEnabled(false);
+                setDiscountValueText("");
+              }}
+            >
+              <Text style={styles.removeText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {discountAmount > 0 && (
+          <>
+            <View style={styles.totalRow}>
+              <Text style={styles.fieldLabel}>Subtotal</Text>
+              <Text style={styles.subtotalValue}>{PESO.format(subtotal)}</Text>
+            </View>
+            <View style={styles.totalRow}>
+              <Text style={styles.fieldLabel}>Discount</Text>
+              <Text style={styles.discountValue}>−{PESO.format(discountAmount)}</Text>
+            </View>
+          </>
+        )}
+
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Total</Text>
           <Text style={styles.totalValue}>{PESO.format(total)}</Text>
         </View>
 
-        <Text style={styles.fieldLabel}>Amount tendered</Text>
-        <TextInput
-          accessibilityLabel="Amount tendered"
-          keyboardType="decimal-pad"
-          value={tendered}
-          onChangeText={setTendered}
-          style={styles.tenderedInput}
-        />
-        <View style={styles.changeRow}>
-          <Text style={styles.changeLabel}>Change</Text>
-          <Text style={styles.changeValue}>{change === null ? "—" : PESO.format(change)}</Text>
-        </View>
+        <SegmentedControl options={PAYMENT_SEGMENTS} value={paymentSegment} onChange={(v) => setPaymentSegment(v as (typeof PAYMENT_SEGMENTS)[number])} style={styles.paymentSegments} />
+
+        {paymentType === "cash" && (
+          <>
+            <Text style={styles.fieldLabel}>Amount tendered</Text>
+            <TextInput
+              accessibilityLabel="Amount tendered"
+              keyboardType="decimal-pad"
+              value={tendered}
+              onChangeText={setTendered}
+              style={styles.tenderedInput}
+            />
+            <View style={styles.changeRow}>
+              <Text style={styles.changeLabel}>Change</Text>
+              <Text style={styles.changeValue}>{change === null ? "—" : PESO.format(change)}</Text>
+            </View>
+          </>
+        )}
+
+        {paymentType === "qr" && (
+          <>
+            <Text style={styles.fieldLabel}>GCash reference number</Text>
+            <TextInput
+              accessibilityLabel="GCash reference number"
+              placeholder="e.g. 1234567890"
+              value={referenceNo}
+              onChangeText={setReferenceNo}
+              style={styles.tenderedInput}
+            />
+          </>
+        )}
+
+        {paymentType === "credit" && (
+          <>
+            <Text style={styles.fieldLabel}>Charge to customer</Text>
+            {selectedCustomer ? (
+              <View style={styles.selectedCustomerRow}>
+                <View>
+                  <Text style={styles.selectedCustomerName}>{selectedCustomer.name}</Text>
+                  <Text style={styles.selectedCustomerBalance}>
+                    Current balance: {PESO.format(selectedCustomer.balance)}
+                    {selectedCustomer.creditLimit !== null ? ` · limit ${PESO.format(selectedCustomer.creditLimit)}` : ""}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => setSelectedCustomer(null)}>
+                  <Text style={styles.removeText}>Change</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <TextInput
+                  accessibilityLabel="Search by name"
+                  placeholder="Search by name"
+                  value={customerQuery}
+                  onChangeText={setCustomerQuery}
+                  style={styles.tenderedInput}
+                />
+                {customerResults.length > 0 && (
+                  <View style={styles.customerResults}>
+                    {customerResults.map((c) => (
+                      <TouchableOpacity
+                        key={c.id}
+                        style={styles.resultRow}
+                        onPress={() => {
+                          setSelectedCustomer(c);
+                          setCustomerQuery("");
+                        }}
+                      >
+                        <Text style={styles.resultName}>{c.name}</Text>
+                        <Text style={styles.resultPrice}>{PESO.format(c.balance)}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </>
+            )}
+            {creditWarning && (
+              <Text accessibilityRole="alert" style={styles.warning}>
+                {creditWarning}
+              </Text>
+            )}
+          </>
+        )}
 
         {lastReceiptTotal !== null && (
           <Text accessibilityRole="text" style={styles.success}>
@@ -215,11 +409,9 @@ export function PosScreen() {
         )}
 
         <TouchableOpacity
-          style={[
-            styles.completeButton,
-            (cart.length === 0 || change === null || checkingOut) && styles.completeButtonDisabled,
-          ]}
-          disabled={cart.length === 0 || change === null || checkingOut}
+          accessibilityRole="button"
+          style={[styles.completeButton, !canComplete && styles.completeButtonDisabled]}
+          disabled={!canComplete}
           onPress={handleCompleteSale}
         >
           {checkingOut ? (
@@ -234,6 +426,10 @@ export function PosScreen() {
     </View>
   );
 }
+
+// Kept for reference/parity with SEGMENT_BY_PAYMENT_TYPE if a future
+// screen needs to preselect a payment segment from a PaymentType value.
+void SEGMENT_BY_PAYMENT_TYPE;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff", paddingTop: 56 },
@@ -309,9 +505,28 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 32,
   },
+  discountLink: { fontSize: 13, color: "#2563eb", fontWeight: "600", marginBottom: 10 },
+  discountRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
+  discountTypeRow: { flexDirection: "row", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 8, overflow: "hidden" },
+  discountTypeButton: { paddingHorizontal: 12, paddingVertical: 8 },
+  discountTypeButtonOn: { backgroundColor: "#0f172a" },
+  discountTypeText: { fontSize: 13, color: "#0f172a" },
+  discountTypeTextOn: { color: "#fff" },
+  discountInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+  },
+  subtotalValue: { fontSize: 13, color: "#64748b" },
+  discountValue: { fontSize: 13, color: "#dc2626" },
   totalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   totalLabel: { fontSize: 14, color: "#64748b" },
   totalValue: { fontSize: 24, fontWeight: "700", color: "#0f172a" },
+  paymentSegments: { marginTop: 12, marginBottom: 0 },
   fieldLabel: { fontSize: 12, color: "#334155", marginTop: 12, marginBottom: 4 },
   tenderedInput: {
     borderWidth: 1,
@@ -324,6 +539,20 @@ const styles = StyleSheet.create({
   changeRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
   changeLabel: { fontSize: 12, color: "#64748b" },
   changeValue: { fontSize: 12, color: "#64748b" },
+  customerResults: { borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, marginTop: 6, maxHeight: 160 },
+  selectedCustomerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  selectedCustomerName: { fontSize: 14, fontWeight: "600", color: "#0f172a" },
+  selectedCustomerBalance: { fontSize: 12, color: "#64748b", marginTop: 2 },
+  warning: { color: "#b45309", fontSize: 12, marginTop: 6 },
   success: { marginTop: 10, color: "#047857", fontSize: 13 },
   error: { color: "#dc2626", fontSize: 13, marginHorizontal: 16, marginBottom: 4 },
   completeButton: {
