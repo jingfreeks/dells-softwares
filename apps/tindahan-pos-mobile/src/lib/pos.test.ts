@@ -5,6 +5,7 @@ import {
   computeChange,
   findProductByBarcode,
   lineTotal,
+  quickCashAmounts,
   removeFromCart,
   searchProductsByName,
   setQuantity,
@@ -186,5 +187,20 @@ describe("searchProductsByName (story A2)", () => {
 
   it("returns an empty array when nothing matches", () => {
     expect(searchProductsByName(products, "nonexistent")).toEqual([]);
+  });
+});
+
+describe("quickCashAmounts", () => {
+  it("suggests the exact total plus the next 100/200/500/1000 round figures", () => {
+    expect(quickCashAmounts(70)).toEqual([70, 100, 200, 500]);
+  });
+
+  it("dedupes when the total is already a round figure", () => {
+    expect(quickCashAmounts(100)).toEqual([100, 200, 500, 1000]);
+  });
+
+  it("returns an empty array for a zero or negative total", () => {
+    expect(quickCashAmounts(0)).toEqual([]);
+    expect(quickCashAmounts(-5)).toEqual([]);
   });
 });
