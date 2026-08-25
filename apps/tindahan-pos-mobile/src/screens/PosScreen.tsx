@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../lib/auth";
+import { useCashierSession } from "../lib/cashierSession";
 import { useStoreData, type CheckoutDiscount, type CheckoutPayment } from "../lib/storeData";
 import {
   addToCart,
@@ -39,8 +40,14 @@ const SEGMENT_BY_PAYMENT_TYPE: Record<PaymentType, (typeof PAYMENT_SEGMENTS)[num
   credit: "Utang",
 };
 
-export function PosScreen() {
-  const { user, store, logout } = useAuth();
+interface PosScreenProps {
+  /** Admin-only entry point to the device-pairing settings screen (see App.tsx). */
+  onOpenSetupRegister?: () => void;
+}
+
+export function PosScreen({ onOpenSetupRegister }: PosScreenProps = {}) {
+  const { user, device, store, logout } = useAuth();
+  const { activeCashier, cashierToken, endCashierSession, reportExpiredSession } = useCashierSession();
   const { products, customers, loading, error, checkout } = useStoreData();
   const [cart, setCart] = useState<CartLine[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -143,12 +150,16 @@ export function PosScreen() {
           : paymentType === "qr"
             ? { type: "qr", referenceNo: referenceNo.trim() }
             : { type: "cash" };
-      await checkout(cart, [], user?.name ?? "Cashier", payment, discount);
+      await checkout(cart, [], activeCashier?.name ?? user?.name ?? "Cashier", payment, discount, cashierToken);
       setLastReceiptTotal(total);
       resetSaleState();
       setTimeout(() => setLastReceiptTotal(null), 4000);
     } catch (err) {
-      setCheckoutError(err instanceof Error ? err.message : "Could not complete sale.");
+      const message = err instanceof Error ? err.message : "Could not complete sale.";
+      if (message.includes("EXPIRED_CASHIER_SESSION")) {
+        reportExpiredSession();
+      }
+      setCheckoutError(message);
     } finally {
       setCheckingOut(false);
     }
@@ -167,11 +178,25 @@ export function PosScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.storeName}>{store?.name ?? "POS"}</Text>
-          <Text style={styles.cashier}>{user?.name}</Text>
+          <Text style={styles.cashier}>{activeCashier?.name ?? user?.name}</Text>
         </View>
-        <TouchableOpacity onPress={logout}>
-          <Text style={styles.logout}>Sign out</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          {user?.role === "admin" && onOpenSetupRegister && (
+            <TouchableOpacity onPress={onOpenSetupRegister}>
+              <Text style={styles.headerLink}>Set up a register</Text>
+            </TouchableOpacity>
+          )}
+          {device && activeCashier && (
+            <TouchableOpacity onPress={() => endCashierSession()}>
+              <Text style={styles.headerLink}>Switch cashier</Text>
+            </TouchableOpacity>
+          )}
+          {user && (
+            <TouchableOpacity onPress={logout}>
+              <Text style={styles.logout}>Sign out</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {error && <Text style={styles.error}>{error}</Text>}
@@ -443,6 +468,8 @@ const styles = StyleSheet.create({
   },
   storeName: { fontSize: 18, fontWeight: "700", color: "#0f172a" },
   cashier: { fontSize: 13, color: "#64748b" },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 14 },
+  headerLink: { fontSize: 12.5, color: "#2563eb", fontWeight: "500" },
   logout: { fontSize: 13, color: "#0f172a", fontWeight: "600" },
   searchRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16 },
   searchInput: {

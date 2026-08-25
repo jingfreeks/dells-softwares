@@ -40,7 +40,9 @@ interface StoreDataContextValue {
     services: ServiceLine[],
     cashierName: string,
     payment?: CheckoutPayment,
-    discount?: CheckoutDiscount | null
+    discount?: CheckoutDiscount | null,
+    /** From useCashierSession()'s cashierToken -- attributes the sale to the PIN'd-in cashier instead of the signed-in staff/device identity. */
+    cashierToken?: string | null
   ) => Promise<{ saleId: string }>;
 }
 
@@ -264,7 +266,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     services: ServiceLine[],
     _cashierName: string,
     payment: CheckoutPayment = { type: "cash" },
-    discount: CheckoutDiscount | null = null
+    discount: CheckoutDiscount | null = null,
+    cashierToken: string | null = null
   ): Promise<{ saleId: string }> {
     if (payment.type === "credit" && !payment.customerId) {
       throw new Error("A customer is required for a credit sale.");
@@ -280,6 +283,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
       p_reference_no: payment.type === "qr" ? payment.referenceNo!.trim() : null,
       p_discount_type: discount?.type ?? null,
       p_discount_value: discount?.value ?? null,
+      p_cashier_token: cashierToken,
     });
     if (err) throw err;
     const result = data?.[0];

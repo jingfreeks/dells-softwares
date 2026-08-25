@@ -1,13 +1,16 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { PosScreen } from "./PosScreen";
 import { useAuth } from "../lib/auth";
+import { useCashierSession } from "../lib/cashierSession";
 import { useStoreData } from "../lib/storeData";
 import type { Customer, Product } from "../lib/types";
 
 jest.mock("../lib/auth", () => ({ useAuth: jest.fn() }));
+jest.mock("../lib/cashierSession", () => ({ useCashierSession: jest.fn() }));
 jest.mock("../lib/storeData", () => ({ useStoreData: jest.fn() }));
 
 const mockedUseAuth = useAuth as jest.Mock;
+const mockedUseCashierSession = useCashierSession as jest.Mock;
 const mockedUseStoreData = useStoreData as jest.Mock;
 
 const rice: Product = {
@@ -34,7 +37,18 @@ const juanCustomer: Customer = {
 
 function setup(checkoutImpl?: jest.Mock) {
   const checkout = checkoutImpl ?? jest.fn().mockResolvedValue({ saleId: "sale1" });
-  mockedUseAuth.mockReturnValue({ user: { name: "Cashier One" }, store: { name: "Dell's Store" }, logout: jest.fn() });
+  mockedUseAuth.mockReturnValue({
+    user: { name: "Cashier One", role: "cashier" },
+    device: null,
+    store: { name: "Dell's Store" },
+    logout: jest.fn(),
+  });
+  mockedUseCashierSession.mockReturnValue({
+    activeCashier: null,
+    cashierToken: null,
+    endCashierSession: jest.fn(),
+    reportExpiredSession: jest.fn(),
+  });
   mockedUseStoreData.mockReturnValue({
     products: [rice],
     customers: [juanCustomer],

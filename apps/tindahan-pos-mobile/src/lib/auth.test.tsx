@@ -3,6 +3,8 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react-nativ
 import { AuthProvider, useAuth } from "./auth";
 
 const mockSignUp = jest.fn();
+const mockInvoke = jest.fn();
+const mockSignInWithPassword = jest.fn();
 
 jest.mock("./supabaseClient", () => ({
   supabase: {
@@ -10,7 +12,9 @@ jest.mock("./supabaseClient", () => ({
       getSession: jest.fn().mockResolvedValue({ data: { session: null } }),
       onAuthStateChange: jest.fn().mockReturnValue({ data: { subscription: { unsubscribe: jest.fn() } } }),
       signUp: (...args: unknown[]) => mockSignUp(...args),
+      signInWithPassword: (...args: unknown[]) => mockSignInWithPassword(...args),
     },
+    functions: { invoke: (...args: unknown[]) => mockInvoke(...args) },
   },
 }));
 
@@ -45,6 +49,61 @@ function renderRegister() {
   );
   return result;
 }
+
+function PairDeviceProbe({ result }: { result: React.MutableRefObject<Awaited<ReturnType<ReturnType<typeof useAuth>["pairDevice"]>> | null> }) {
+  const { pairDevice } = useAuth();
+  return (
+    <Text
+      accessibilityRole="button"
+      onPress={async () => {
+        result.current = await pairDevice("T4K9XY", "Counter tablet");
+      }}
+    >
+      pair
+    </Text>
+  );
+}
+
+function renderPairDevice() {
+  const result = { current: null } as React.MutableRefObject<
+    Awaited<ReturnType<ReturnType<typeof useAuth>["pairDevice"]>> | null
+  >;
+  render(
+    <AuthProvider>
+      <PairDeviceProbe result={result} />
+    </AuthProvider>
+  );
+  return result;
+}
+
+describe("pairDevice()", () => {
+  beforeEach(() => {
+    mockInvoke.mockReset();
+    mockSignInWithPassword.mockReset();
+  });
+
+  it("redeems the code, then signs in with the returned transient credentials", async () => {
+    mockInvoke.mockResolvedValue({ data: { email: "device+abc@internal.invalid", password: "temp-pass" }, error: null });
+    mockSignInWithPassword.mockResolvedValue({ error: null });
+    const result = renderPairDevice();
+
+    fireEvent.press(await screen.findByText("pair"));
+
+    await waitFor(() => expect(result.current).toEqual({ ok: true }));
+    expect(mockInvoke).toHaveBeenCalledWith("pair-device", { body: { code: "T4K9XY", deviceName: "Counter tablet" } });
+    expect(mockSignInWithPassword).toHaveBeenCalledWith({ email: "device+abc@internal.invalid", password: "temp-pass" });
+  });
+
+  it("maps an invalid/expired code to a friendly error without signing in", async () => {
+    mockInvoke.mockResolvedValue({ data: { error: "INVALID_OR_EXPIRED_CODE" }, error: null });
+    const result = renderPairDevice();
+
+    fireEvent.press(await screen.findByText("pair"));
+
+    await waitFor(() => expect(result.current).toEqual({ ok: false, error: "That code is invalid or has expired." }));
+    expect(mockSignInWithPassword).not.toHaveBeenCalled();
+  });
+});
 
 describe("register()", () => {
   beforeEach(() => {
