@@ -1,16 +1,21 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { colors, minTouchTarget, radii } from "../theme/colors";
 
 interface SegmentedControlProps {
-  options: readonly [string, string];
+  options: readonly string[];
   value: string;
   onChange: (value: string) => void;
+  style?: StyleProp<ViewStyle>;
 }
 
-/** Two-way toggle shared by Sign In / Create Account (§5 M-002, M-003; §9 `.seg`). */
-export function SegmentedControl({ options, value, onChange }: SegmentedControlProps) {
+/**
+ * Two-or-more-way toggle -- Sign In / Create Account (§5 M-002, M-003;
+ * §9 `.seg`), also reused for the checkout payment-type selector
+ * (Cash/GCash/Utang, mobile-cashier-register.html).
+ */
+export function SegmentedControl({ options, value, onChange, style }: SegmentedControlProps) {
   return (
-    <View style={styles.track} accessibilityRole="tablist">
+    <View style={[styles.track, style]} accessibilityRole="tablist">
       {options.map((option) => {
         const active = option === value;
         return (
