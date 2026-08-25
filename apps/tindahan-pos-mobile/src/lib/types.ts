@@ -68,6 +68,8 @@ export interface SaleRecord {
   customerId: string | null;
   /** GCash/Maya transaction number the cashier entered — set only for a "qr" sale. */
   referenceNo: string | null;
+  /** A voided sale's stock/utang effects were reversed server-side — excluded from every reporting total (see lib/reports.ts's completedSales()), but the row itself is kept. */
+  status: "completed" | "voided";
 }
 
 export interface ServiceLine {
