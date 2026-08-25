@@ -32,6 +32,12 @@ interface AuthContextValue {
    */
   register: (input: RegisterInput) => Promise<RegisterResult>;
   logout: () => Promise<void>;
+  /** Mirrors the web app's updateProfile() -- patches the signed-in staff row. */
+  updateProfile: (patch: { name?: string; phone?: string | null; address?: string | null }) => Promise<AuthResult>;
+  /** Mirrors the web app's updateStore() -- patches the current store's row. */
+  updateStore: (patch: { name?: string; address?: string | null }) => Promise<AuthResult>;
+  /** Marks the onboarding wizard finished so it doesn't show again on next sign-in. */
+  completeOnboarding: () => Promise<AuthResult>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -156,8 +162,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStore(null);
   }
 
+  async function updateProfile(patch: { name?: string; phone?: string | null; address?: string | null }): Promise<AuthResult> {
+    if (!user) return { ok: false, error: "Not signed in." };
+    const { error } = await supabase
+      .from("staff")
+      .update({
+        ...(patch.name !== undefined && { name: patch.name }),
+        ...(patch.phone !== undefined && { phone: patch.phone }),
+        ...(patch.address !== undefined && { address: patch.address }),
+      })
+      .eq("id", user.id);
+    if (error) return { ok: false, error: error.message };
+    setUser(await loadStaffProfile(user.id));
+    return { ok: true };
+  }
+
+  async function updateStore(patch: { name?: string; address?: string | null }): Promise<AuthResult> {
+    if (!user) return { ok: false, error: "Not signed in." };
+    const { error } = await supabase
+      .from("stores")
+      .update({
+        ...(patch.name !== undefined && { name: patch.name }),
+        ...(patch.address !== undefined && { address: patch.address }),
+      })
+      .eq("id", user.storeId);
+    if (error) return { ok: false, error: error.message };
+    setStore(await loadStore(user.storeId));
+    return { ok: true };
+  }
+
+  async function completeOnboarding(): Promise<AuthResult> {
+    if (!user) return { ok: false, error: "Not signed in." };
+    const { error } = await supabase
+      .from("staff")
+      .update({ onboarded_at: new Date().toISOString() })
+      .eq("id", user.id);
+    if (error) return { ok: false, error: error.message };
+    setUser(await loadStaffProfile(user.id));
+    return { ok: true };
+  }
+
   return (
-    <AuthContext.Provider value={{ user, store, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, store, loading, login, register, logout, updateProfile, updateStore, completeOnboarding }}
+    >
       {children}
     </AuthContext.Provider>
   );
