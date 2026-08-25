@@ -8,10 +8,16 @@ jest.mock("../lib/storeData", () => ({ useStoreData: jest.fn() }));
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn().mockResolvedValue(null),
   setItem: jest.fn().mockResolvedValue(undefined),
+  removeItem: jest.fn().mockResolvedValue(undefined),
 }));
 
 const mockedUseAuth = useAuth as jest.Mock;
 const mockedUseStoreData = useStoreData as jest.Mock;
+const mockedAsyncStorage = jest.requireMock("@react-native-async-storage/async-storage") as {
+  getItem: jest.Mock;
+  setItem: jest.Mock;
+  removeItem: jest.Mock;
+};
 
 function setup(overrides: { updateProfile?: jest.Mock; updateStore?: jest.Mock; completeOnboarding?: jest.Mock } = {}) {
   const updateProfile = overrides.updateProfile ?? jest.fn().mockResolvedValue({ ok: true });
@@ -41,6 +47,42 @@ function setup(overrides: { updateProfile?: jest.Mock; updateStore?: jest.Mock; 
 }
 
 describe("OnboardingScreen", () => {
+  beforeEach(() => {
+    mockedAsyncStorage.getItem.mockResolvedValue(null);
+    mockedAsyncStorage.setItem.mockClear();
+    mockedAsyncStorage.removeItem.mockClear();
+  });
+
+  it("resumes at the saved step instead of restarting at Welcome", async () => {
+    mockedAsyncStorage.getItem.mockImplementation((key: string) =>
+      Promise.resolve(key.startsWith("tindahan-pos-mobile:onboarding-step:") ? "stockAlerts" : null)
+    );
+    setup();
+
+    expect(await screen.findByText("When should we warn you?")).toBeTruthy();
+  });
+
+  it("clears the saved step once onboarding actually finishes", async () => {
+    const { completeOnboarding } = setup({ completeOnboarding: jest.fn().mockResolvedValue({ ok: true }) });
+
+    fireEvent.press(screen.getByRole("button", { name: "Start setup" }));
+    await screen.findByText("Tell us about you and your shop");
+    fireEvent.press(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByText("What do you sell?");
+    fireEvent.press(screen.getByRole("button", { name: "Skip" }));
+    await screen.findByText("When should we warn you?");
+    fireEvent.press(screen.getByRole("button", { name: "Skip" }));
+    await screen.findByText("Count your starting cash");
+    fireEvent.press(screen.getByText("Skip the count"));
+    await screen.findByText(/The register is open/);
+    fireEvent.press(screen.getByRole("button", { name: "Start selling" }));
+
+    await waitFor(() => expect(completeOnboarding).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mockedAsyncStorage.removeItem).toHaveBeenCalledWith("tindahan-pos-mobile:onboarding-step:s1")
+    );
+  });
+
   it("walks Welcome -> Profile -> skip through to Done and finishes", async () => {
     const { updateProfile, updateStore, completeOnboarding } = setup();
 

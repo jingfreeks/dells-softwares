@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { DEFAULT_THRESHOLD_DAYS, type DenominationCounts } from "./onboarding";
+import { DEFAULT_THRESHOLD_DAYS, type DenominationCounts, type OnboardingStep } from "./onboarding";
 
 export interface OpeningHours {
   openTime: string;
@@ -72,4 +72,38 @@ export function loadDenominationCounts(storeId: string): Promise<DenominationCou
 
 export function saveDenominationCounts(storeId: string, counts: DenominationCounts): Promise<void> {
   return saveJson(`tindahan-pos-mobile:starting-cash:${storeId}`, counts);
+}
+
+/**
+ * Lets an admin leave the onboarding wizard mid-flow (app killed, phone
+ * call, whatever) and resume at the same step next time instead of
+ * restarting from "welcome" -- mirrors the web app's own
+ * onboardingProgress.ts (there's no backend column for "current
+ * onboarding step" either). Cleared once onboarding actually completes.
+ */
+const ONBOARDING_STEP_KEY_PREFIX = "tindahan-pos-mobile:onboarding-step:";
+
+export async function loadOnboardingStep(storeId: string): Promise<OnboardingStep | null> {
+  try {
+    const raw = await AsyncStorage.getItem(ONBOARDING_STEP_KEY_PREFIX + storeId);
+    return (raw as OnboardingStep | null) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveOnboardingStep(storeId: string, step: OnboardingStep): Promise<void> {
+  try {
+    await AsyncStorage.setItem(ONBOARDING_STEP_KEY_PREFIX + storeId, step);
+  } catch {
+    // Best-effort persistence -- ignore quota/availability errors.
+  }
+}
+
+export async function clearOnboardingStep(storeId: string): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(ONBOARDING_STEP_KEY_PREFIX + storeId);
+  } catch {
+    // Best-effort persistence -- ignore quota/availability errors.
+  }
 }
