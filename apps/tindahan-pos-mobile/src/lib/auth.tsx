@@ -4,6 +4,14 @@ import { largeSecureStore } from "./secureStorage";
 import type { StaffAccount, Store } from "./types";
 
 type AuthResult = { ok: true } | { ok: false; error: string };
+type RegisterResult = { ok: true; needsEmailConfirmation: boolean } | { ok: false; error: string };
+
+interface RegisterInput {
+  storeName: string;
+  ownerName: string;
+  email: string;
+  password: string;
+}
 
 interface AuthContextValue {
   user: StaffAccount | null;
@@ -14,6 +22,15 @@ interface AuthContextValue {
   /** keepSignedIn (default true) controls whether the session survives
    * an app restart — see LargeSecureStore.setPersistenceEnabled. */
   login: (email: string, password: string, keepSignedIn?: boolean) => Promise<AuthResult>;
+  /**
+   * Mirrors the web app's register() (apps/tindahan-pos/src/lib/auth/auth.tsx):
+   * same signUp() call and `store_name`/`owner_name` metadata, so the same
+   * `handle_new_user()` DB trigger provisions a store + admin staff row
+   * either way. No confirmPassword here -- CreateAccountScreen's mockup
+   * (MOBILE_UI_DESIGN_SPECIFICATION.md §5 M-003) only has one password
+   * field, unlike the web registration form.
+   */
+  register: (input: RegisterInput) => Promise<RegisterResult>;
   logout: () => Promise<void>;
 }
 
@@ -61,6 +78,9 @@ async function loadStore(storeId: string): Promise<Store | null> {
 function friendlyAuthError(message: string): string {
   if (/invalid login credentials/i.test(message)) {
     return "Incorrect email or password.";
+  }
+  if (/already registered|already exists/i.test(message)) {
+    return "An account with that email already exists.";
   }
   return message;
 }
@@ -112,6 +132,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
+  async function register({ storeName, ownerName, email, password }: RegisterInput): Promise<RegisterResult> {
+    if (!storeName.trim() || !ownerName.trim() || !email.trim()) {
+      return { ok: false, error: "All fields are required." };
+    }
+    if (password.length < 8) {
+      return { ok: false, error: "Password must be at least 8 characters." };
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: { data: { store_name: storeName.trim(), owner_name: ownerName.trim() } },
+    });
+    if (error) return { ok: false, error: friendlyAuthError(error.message) };
+    return { ok: true, needsEmailConfirmation: !data.session };
+  }
+
   async function logout() {
     await supabase.auth.signOut();
     largeSecureStore.setPersistenceEnabled(true);
@@ -120,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, store, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, store, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
