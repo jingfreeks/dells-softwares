@@ -11,6 +11,7 @@ import { ScreenContainer } from "../components/ScreenContainer";
 import { SecondaryButton } from "../components/SecondaryButton";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { TextField } from "../components/TextField";
+import { useAuth } from "../lib/auth";
 import { isValidEmail, isValidPassword, MIN_PASSWORD_LENGTH } from "../lib/validation";
 import { colors } from "../theme/colors";
 
@@ -22,22 +23,30 @@ interface CreateAccountScreenProps {
 }
 
 /**
- * M-003 -- Create Account (MOBILE_UI_DESIGN_SPECIFICATION.md §5). Fields
- * hold local state and real client-side validation (Phase 3, §21: "form
- * validation... still without backend calls") -- there is still no
- * registration RPC to call (mobile's useAuth has no register(), unlike
- * the web app), so the submit button is validation-gated but otherwise
- * inert; wiring an actual account-creation call is Phase 4. The
- * password-strength value shown is example data, not a computed score
- * (scoring rules are TBD -- Backend/Business Logic Phase, §18).
+ * M-003 -- Create Account (MOBILE_UI_DESIGN_SPECIFICATION.md §5). Real
+ * client-side validation plus a real register() call (Phase 4) --
+ * mirrors the web app's signUp() flow, so the same handle_new_user() DB
+ * trigger provisions a store + admin staff row either way. If the
+ * project requires email confirmation, there's no session yet, so this
+ * screen shows a "check your email" state rather than navigating
+ * anywhere invented; if a session comes back immediately,
+ * AuthProvider's own onAuthStateChange listener picks it up and the
+ * app navigates away from this screen on its own -- no manual
+ * navigation call needed here. The password-strength value shown is
+ * still example data, not a computed score (scoring rules remain TBD
+ * -- Backend/Business Logic Phase, §18).
  */
 export function CreateAccountScreen({ onSwitchToSignIn }: CreateAccountScreenProps) {
-  const [storeName, setStoreName] = useState("Dell's Sari-Sari Store");
+  const { register } = useAuth();
+  const [storeName, setStoreName] = useState("");
   const [ownerName, setOwnerName] = useState("");
-  const [email, setEmail] = useState("dell@tindahan.ph");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [touched, setTouched] = useState({ storeName: false, ownerName: false, email: false, password: false });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
 
   function markTouched(field: keyof typeof touched) {
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -58,7 +67,41 @@ export function CreateAccountScreen({ onSwitchToSignIn }: CreateAccountScreenPro
       : undefined;
 
   const canSubmit =
-    !!storeName.trim() && !!ownerName.trim() && emailValid && passwordValid && agreed;
+    !submitting && !!storeName.trim() && !!ownerName.trim() && emailValid && passwordValid && agreed;
+
+  async function handleSubmit() {
+    if (!canSubmit) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    const result = await register({ storeName, ownerName, email, password });
+    setSubmitting(false);
+    if (!result.ok) {
+      setSubmitError(result.error);
+      return;
+    }
+    if (result.needsEmailConfirmation) {
+      setNeedsEmailConfirmation(true);
+    }
+    // Otherwise a session now exists; AuthProvider's onAuthStateChange
+    // picks it up and the app navigates away from this screen on its own.
+  }
+
+  if (needsEmailConfirmation) {
+    return (
+      <ScreenContainer>
+        <View style={styles.center}>
+          <AppLogo size={40} />
+        </View>
+        <Text style={styles.heading}>Check your email</Text>
+        <Text style={styles.subtitle}>
+          We sent a confirmation link to {email.trim()}. Open it to finish setting up {storeName.trim()}.
+        </Text>
+        <Text style={styles.footer}>
+          Wrong email? <LinkText onPress={() => setNeedsEmailConfirmation(false)}>Go back</LinkText>
+        </Text>
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer>
@@ -127,8 +170,19 @@ export function CreateAccountScreen({ onSwitchToSignIn }: CreateAccountScreenPro
         </Text>
       </Checkbox>
 
+      {submitError && (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {submitError}
+        </Text>
+      )}
+
       <View style={styles.mt20}>
-        <PrimaryButton label="Create account" onPress={() => {}} disabled={!canSubmit} />
+        <PrimaryButton
+          label="Create account"
+          onPress={handleSubmit}
+          disabled={!canSubmit}
+          loading={submitting}
+        />
       </View>
 
       <Text style={styles.footer}>
@@ -145,6 +199,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 13, color: colors.textFaint, textAlign: "center", marginTop: 4, marginBottom: 20 },
   termsText: { fontSize: 13, color: colors.textMuted, lineHeight: 18 },
   passwordError: { fontSize: 11.5, color: colors.error, marginBottom: 16 },
+  error: { color: colors.error, fontSize: 13, marginTop: 4, marginBottom: 4 },
   mt20: { marginTop: 4 },
   footer: { fontSize: 13, color: colors.textFaint, textAlign: "center", marginTop: 18 },
 });
