@@ -1,12 +1,12 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import { SetupRegisterScreen } from "./SetupRegisterScreen";
+import { SetupRegisterScreen } from "../setupregisterscreen";
 
 const mockRpc = jest.fn();
 const mockFrom = jest.fn();
 const mockInvoke = jest.fn();
 const mockGetSession = jest.fn();
 
-jest.mock("../lib/supabaseClient", () => ({
+jest.mock("../../lib/supabaseClient", () => ({
   supabase: {
     rpc: (...args: unknown[]) => mockRpc(...args),
     from: (...args: unknown[]) => mockFrom(...args),
