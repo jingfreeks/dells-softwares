@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 import { MetricCard } from "../../../components/MetricCard";
 import { PrimaryButton } from "../../../components/PrimaryButton";
-import { OnboardingStepHeader } from "../OnboardingStepHeader";
+import { OnboardingStepHeader } from "../onboardingstepheader";
 import { PESO } from "../../../lib/money";
 import { AssignedStaffCard, CashHealthCard, DenominationCard } from "./component";
 import { DEFAULT_DRAWER_MINIMUM, useOpenRegisterStep } from "./hooks";
