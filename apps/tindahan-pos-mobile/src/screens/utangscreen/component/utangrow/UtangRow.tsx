@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { Avatar } from "../../../../components/Avatar";
+import { Avatar } from "../../../../components/avatar";
 import { PESO } from "../../../../lib/money";
 import { initialsOf, useUtangRow } from "./hooks";
 import type { UtangRowProps } from "./types";

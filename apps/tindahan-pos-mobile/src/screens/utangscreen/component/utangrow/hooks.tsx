@@ -1,4 +1,4 @@
-import type { AvatarTone } from "../../../../components/Avatar";
+import type { AvatarTone } from "../../../../components/avatar";
 import { creditUsageVariant, isOverdueDebt, type CreditUsageVariant } from "../../../../lib/customers";
 import type { UtangRowProps } from "./types";
 
