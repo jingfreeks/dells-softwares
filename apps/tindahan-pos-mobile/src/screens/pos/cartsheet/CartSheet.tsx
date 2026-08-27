@@ -1,6 +1,6 @@
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { colors } from "../../../theme/colors";
-import { SegmentedControl } from "../../../components/SegmentedControl";
+import { SegmentedControl } from "../../../components/segmentedcontrol";
 import {
   CartItemRow,
   CashPayment,
