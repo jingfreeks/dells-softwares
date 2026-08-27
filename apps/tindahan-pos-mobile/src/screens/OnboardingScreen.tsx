@@ -28,7 +28,7 @@ import { pickAndOptimizeImage, uploadImage, type OptimizedImage } from "../lib/i
 import { pickCsvFileText } from "../lib/documentPicker";
 import { parseProductsCsv } from "../lib/csv";
 import type { Category } from "../lib/types";
-import { WelcomeStep } from "./onboarding/WelcomeStep";
+import { WelcomeStep } from "./onboarding";
 import { ProfileStep } from "./onboarding/ProfileStep";
 import { ProductsStep } from "./onboarding/ProductsStep";
 import { StockAlertsStep } from "./onboarding/StockAlertsStep";

@@ -1,15 +1,15 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import { CashierPinScreen } from "./CashierPinScreen";
-import { useAuth } from "../lib/auth";
-import { useCashierSession } from "../lib/cashierSession";
+import { CashierPinScreen } from "../cashierpinscreen";
+import { useAuth } from "../../lib/auth";
+import { useCashierSession } from "../../lib/cashierSession";
 
 const mockRpc = jest.fn();
 
-jest.mock("../lib/supabaseClient", () => ({
+jest.mock("../../lib/supabaseClient", () => ({
   supabase: { rpc: (...args: unknown[]) => mockRpc(...args) },
 }));
-jest.mock("../lib/auth", () => ({ useAuth: jest.fn() }));
-jest.mock("../lib/cashierSession", () => ({ useCashierSession: jest.fn() }));
+jest.mock("../../lib/auth", () => ({ useAuth: jest.fn() }));
+jest.mock("../../lib/cashierSession", () => ({ useCashierSession: jest.fn() }));
 
 const mockedUseAuth = useAuth as jest.Mock;
 const mockedUseCashierSession = useCashierSession as jest.Mock;

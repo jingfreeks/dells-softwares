@@ -1,3 +1,4 @@
+import "./global.css";
 import "./src/lib/polyfills";
 import { useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -5,7 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "./src/lib/auth";
 import { CashierSessionProvider, useCashierSession } from "./src/lib/cashierSession";
 import { StoreDataProvider } from "./src/lib/storeData";
-import { CashierPinScreen } from "./src/screens/CashierPinScreen";
+import { CashierPinScreen } from "./src/screens/cashierpinscreen";
 import { CreateAccountScreen } from "./src/screens/CreateAccountScreen";
 import { InsightsScreen } from "./src/screens/InsightsScreen";
 import { LoginScreen } from "./src/screens/LoginScreen";
