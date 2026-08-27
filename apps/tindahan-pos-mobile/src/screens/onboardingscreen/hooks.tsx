@@ -27,7 +27,7 @@ import { pickAndOptimizeImage, uploadImage, type OptimizedImage } from "../../li
 import { pickCsvFileText } from "../../lib/documentPicker";
 import { parseProductsCsv } from "../../lib/csv";
 import type { Category } from "../../lib/types";
-import { EMPTY_QUICK_ADD_FORM, type QuickAddForm } from "../onboarding/QuickAddProductModal";
+import { EMPTY_QUICK_ADD_FORM, type QuickAddForm } from "../onboarding/quickaddproductmodal";
 
 const UNCATEGORIZED = "Uncategorized";
 // Same caps as the web app's Onboarding/hooks.tsx (AVATAR_MAX_DIMENSION/STORE_PHOTO_MAX_DIMENSION).

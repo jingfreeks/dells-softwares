@@ -2,7 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import { PrimaryButton } from "../../../components/PrimaryButton";
 import { BarcodeScannerModal } from "../../../components/BarcodeScannerModal";
 import { OnboardingStepHeader } from "../onboardingstepheader";
-import { QuickAddProductModal } from "../QuickAddProductModal";
+import { QuickAddProductModal } from "../quickaddproductmodal";
 import { AddedSoFarCard, MethodTile, StarterListCard } from "./component";
 import { useProductsStep } from "./hooks";
 import type { ProductsStepProps } from "./types";
