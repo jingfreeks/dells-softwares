@@ -7,7 +7,7 @@ import { LinkText } from "../../components/linktext";
 import { PasswordInput } from "../../components/passwordinput";
 import { PrimaryButton } from "../../components/primarybutton";
 import { ScreenContainer } from "../../components/screencontainer";
-import { SecondaryButton } from "../../components/SecondaryButton";
+import { SecondaryButton } from "../../components/secondarybutton";
 import { SegmentedControl } from "../../components/SegmentedControl";
 import { TextField } from "../../components/textfield";
 import { SEGMENTS, useLoginScreen } from "./hooks";

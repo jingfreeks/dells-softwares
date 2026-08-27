@@ -7,7 +7,7 @@ import { PasswordInput } from "../../components/passwordinput";
 import { PasswordStrengthMeter } from "../../components/passwordstrengthmeter";
 import { PrimaryButton } from "../../components/primarybutton";
 import { ScreenContainer } from "../../components/screencontainer";
-import { SecondaryButton } from "../../components/SecondaryButton";
+import { SecondaryButton } from "../../components/secondarybutton";
 import { SegmentedControl } from "../../components/SegmentedControl";
 import { TextField } from "../../components/textfield";
 import { SEGMENTS, useCreateAccountScreen } from "./hooks";
