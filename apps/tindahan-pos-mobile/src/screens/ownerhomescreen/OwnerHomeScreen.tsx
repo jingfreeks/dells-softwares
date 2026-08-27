@@ -3,7 +3,7 @@ import { ActionPill } from "../../components/actionpill";
 import { Avatar } from "../../components/avatar";
 import { BottomTabBar } from "../../components/BottomTabBar";
 import { IconButton } from "../../components/iconbutton";
-import { InfoCallout } from "../../components/InfoCallout";
+import { InfoCallout } from "../../components/infocallout";
 import { ListRow } from "../../components/listrow";
 import { MetricCard } from "../../components/MetricCard";
 import { ScreenContainer } from "../../components/screencontainer";
