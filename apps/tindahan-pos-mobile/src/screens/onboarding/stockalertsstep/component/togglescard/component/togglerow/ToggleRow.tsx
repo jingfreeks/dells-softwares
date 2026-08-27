@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { Toggle } from "../../../../../../../components/Toggle";
+import { Toggle } from "../../../../../../../components/toggle";
 import type { ToggleRowProps } from "./types";
 
 export function ToggleRow({ title, detail, value, onToggle, isLast }: ToggleRowProps) {
