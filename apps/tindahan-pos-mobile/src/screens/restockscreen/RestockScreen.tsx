@@ -2,7 +2,7 @@ import { Text, View } from "react-native";
 import { BottomTabBar } from "../../components/BottomTabBar";
 import { Card } from "../../components/card";
 import { DetailHeader } from "../../components/detailheader";
-import { InfoCallout } from "../../components/InfoCallout";
+import { InfoCallout } from "../../components/infocallout";
 import { ListRow } from "../../components/listrow";
 import { MetricCard } from "../../components/MetricCard";
 import { ScreenContainer } from "../../components/screencontainer";
