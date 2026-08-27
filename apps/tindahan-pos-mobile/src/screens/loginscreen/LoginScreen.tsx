@@ -3,7 +3,7 @@ import { AppLogo } from "../../components/AppLogo";
 import { Checkbox } from "../../components/Checkbox";
 import { Divider } from "../../components/Divider";
 import { InfoCallout } from "../../components/InfoCallout";
-import { LinkText } from "../../components/LinkText";
+import { LinkText } from "../../components/linktext";
 import { PasswordInput } from "../../components/PasswordInput";
 import { PrimaryButton } from "../../components/PrimaryButton";
 import { ScreenContainer } from "../../components/ScreenContainer";

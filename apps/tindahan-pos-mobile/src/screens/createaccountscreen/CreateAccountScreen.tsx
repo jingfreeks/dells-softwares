@@ -2,7 +2,7 @@ import { Text, View } from "react-native";
 import { AppLogo } from "../../components/AppLogo";
 import { Checkbox } from "../../components/Checkbox";
 import { Divider } from "../../components/Divider";
-import { LinkText } from "../../components/LinkText";
+import { LinkText } from "../../components/linktext";
 import { PasswordInput } from "../../components/PasswordInput";
 import { PasswordStrengthMeter } from "../../components/PasswordStrengthMeter";
 import { PrimaryButton } from "../../components/PrimaryButton";
