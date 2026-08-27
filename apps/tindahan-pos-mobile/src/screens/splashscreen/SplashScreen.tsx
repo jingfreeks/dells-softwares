@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AppLogo } from "../../components/applogo";
-import { LoadingBar } from "../../components/LoadingBar";
+import { LoadingBar } from "../../components/loadingbar";
 import { colors } from "../../theme/colors";
 
 /**
