@@ -3,7 +3,7 @@ import { WelcomeStep } from "../onboarding";
 import { ProfileStep } from "../onboarding/profilestep";
 import { ProductsStep } from "../onboarding/productsstep";
 import { StockAlertsStep } from "../onboarding/stockalertsstep";
-import { OpenRegisterStep } from "../onboarding/OpenRegisterStep";
+import { OpenRegisterStep } from "../onboarding/openregisterstep";
 import { DoneStep } from "../onboarding/DoneStep";
 import { useOnboardingScreen } from "./hooks";
 
