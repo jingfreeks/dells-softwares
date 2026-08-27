@@ -1,0 +1,1 @@
+export { OnboardingStepHeader } from "./OnboardingStepHeader";
