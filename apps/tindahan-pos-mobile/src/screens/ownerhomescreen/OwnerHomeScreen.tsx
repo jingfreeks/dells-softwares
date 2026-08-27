@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { ActionPill } from "../../components/ActionPill";
+import { ActionPill } from "../../components/actionpill";
 import { Avatar } from "../../components/Avatar";
 import { BottomTabBar } from "../../components/BottomTabBar";
 import { IconButton } from "../../components/IconButton";
