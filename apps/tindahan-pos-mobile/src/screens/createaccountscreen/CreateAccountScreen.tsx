@@ -4,7 +4,7 @@ import { Checkbox } from "../../components/checkbox";
 import { Divider } from "../../components/divider";
 import { LinkText } from "../../components/linktext";
 import { PasswordInput } from "../../components/passwordinput";
-import { PasswordStrengthMeter } from "../../components/PasswordStrengthMeter";
+import { PasswordStrengthMeter } from "../../components/passwordstrengthmeter";
 import { PrimaryButton } from "../../components/primarybutton";
 import { ScreenContainer } from "../../components/screencontainer";
 import { SecondaryButton } from "../../components/SecondaryButton";
