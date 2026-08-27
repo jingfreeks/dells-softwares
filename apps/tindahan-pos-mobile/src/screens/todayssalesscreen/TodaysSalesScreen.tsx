@@ -4,7 +4,7 @@ import { Card } from "../../components/card";
 import { DetailHeader } from "../../components/DetailHeader";
 import { ListRow } from "../../components/ListRow";
 import { MetricCard } from "../../components/MetricCard";
-import { StackedBar } from "../../components/StackedBar";
+import { StackedBar } from "../../components/stackedbar";
 import { ScreenContainer } from "../../components/ScreenContainer";
 import { formatDayLabel, formatTime, saleSummaryLabel } from "../../lib/format";
 import { PESO } from "../../lib/money";
