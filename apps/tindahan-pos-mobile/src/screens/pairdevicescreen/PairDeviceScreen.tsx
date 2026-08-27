@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { ScreenContainer } from "../../components/ScreenContainer";
+import { ScreenContainer } from "../../components/screencontainer";
 import { Card } from "../../components/card";
 import { PrimaryButton } from "../../components/primarybutton";
 import { TextField } from "../../components/textfield";

@@ -6,7 +6,7 @@ import { LinkText } from "../../components/linktext";
 import { PasswordInput } from "../../components/passwordinput";
 import { PasswordStrengthMeter } from "../../components/PasswordStrengthMeter";
 import { PrimaryButton } from "../../components/primarybutton";
-import { ScreenContainer } from "../../components/ScreenContainer";
+import { ScreenContainer } from "../../components/screencontainer";
 import { SecondaryButton } from "../../components/SecondaryButton";
 import { SegmentedControl } from "../../components/SegmentedControl";
 import { TextField } from "../../components/textfield";

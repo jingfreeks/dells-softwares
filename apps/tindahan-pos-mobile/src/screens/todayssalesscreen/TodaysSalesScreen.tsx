@@ -5,7 +5,7 @@ import { DetailHeader } from "../../components/detailheader";
 import { ListRow } from "../../components/ListRow";
 import { MetricCard } from "../../components/MetricCard";
 import { StackedBar } from "../../components/stackedbar";
-import { ScreenContainer } from "../../components/ScreenContainer";
+import { ScreenContainer } from "../../components/screencontainer";
 import { formatDayLabel, formatTime, saleSummaryLabel } from "../../lib/format";
 import { PESO } from "../../lib/money";
 import { colors } from "../../theme/colors";

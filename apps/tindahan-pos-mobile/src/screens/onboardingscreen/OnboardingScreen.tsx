@@ -1,4 +1,4 @@
-import { ScreenContainer } from "../../components/ScreenContainer";
+import { ScreenContainer } from "../../components/screencontainer";
 import { WelcomeStep } from "../onboarding";
 import { ProfileStep } from "../onboarding/profilestep";
 import { ProductsStep } from "../onboarding/productsstep";
