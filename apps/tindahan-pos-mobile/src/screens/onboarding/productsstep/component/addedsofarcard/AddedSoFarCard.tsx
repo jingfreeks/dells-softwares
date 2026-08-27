@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { Card } from "../../../../../components/Card";
+import { Card } from "../../../../../components/card";
 import { PESO } from "../../../../../lib/money";
 import type { AddedSoFarCardProps } from "./types";
 

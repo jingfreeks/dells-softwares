@@ -1,5 +1,5 @@
 import { Text } from "react-native";
-import { Card } from "../../../../../components/Card";
+import { Card } from "../../../../../components/card";
 import { STARTING_CASH_DENOMINATIONS } from "../../../../../lib/onboarding";
 import { DenominationRow } from "./component";
 import type { DenominationCardProps } from "./types";

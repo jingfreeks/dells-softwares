@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { Card } from "../../../../components/Card";
+import { Card } from "../../../../components/card";
 import { PrimaryButton } from "../../../../components/PrimaryButton";
 import { formatCountdown } from "../../hooks";
 import type { PairingCodeCardProps } from "./types";

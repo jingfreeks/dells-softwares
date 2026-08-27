@@ -1,5 +1,5 @@
 import { Modal, Pressable, Text, View } from "react-native";
-import { Card } from "../../../../components/Card";
+import { Card } from "../../../../components/card";
 import { PrimaryButton } from "../../../../components/PrimaryButton";
 import { TextField } from "../../../../components/TextField";
 import { colors } from "../../../../theme/colors";

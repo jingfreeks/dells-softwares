@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { Card } from "../../../components/Card";
+import { Card } from "../../../components/card";
 import { PrimaryButton } from "../../../components/PrimaryButton";
 import { colors } from "../../../theme/colors";
 import { PESO } from "../../../lib/money";

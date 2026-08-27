@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { Card } from "../../../../../components/Card";
+import { Card } from "../../../../../components/card";
 import type { AssignedStaffCardProps } from "./types";
 
 export function AssignedStaffCard({ assignedStaffName }: AssignedStaffCardProps) {

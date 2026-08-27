@@ -1,4 +1,4 @@
-import { Card } from "../../../../../components/Card";
+import { Card } from "../../../../../components/card";
 import { ToggleRow } from "./component";
 import type { TogglesCardProps } from "./types";
 

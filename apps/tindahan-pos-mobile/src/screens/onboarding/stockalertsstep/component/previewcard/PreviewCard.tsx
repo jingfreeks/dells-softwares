@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { Card } from "../../../../../components/Card";
+import { Card } from "../../../../../components/card";
 import { formatDaysLeft } from "./hooks";
 import type { PreviewCardProps } from "./types";
 
