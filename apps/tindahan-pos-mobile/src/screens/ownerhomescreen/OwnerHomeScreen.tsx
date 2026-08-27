@@ -5,7 +5,7 @@ import { BottomTabBar } from "../../components/BottomTabBar";
 import { IconButton } from "../../components/iconbutton";
 import { InfoCallout } from "../../components/infocallout";
 import { ListRow } from "../../components/listrow";
-import { MetricCard } from "../../components/MetricCard";
+import { MetricCard } from "../../components/metriccard";
 import { ScreenContainer } from "../../components/screencontainer";
 import { SectionHeader } from "../../components/sectionheader";
 import { formatDayLabel, formatRelativeTime, greetingForHour, saleSummaryLabel } from "../../lib/format";

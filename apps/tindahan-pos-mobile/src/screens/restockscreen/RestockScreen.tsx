@@ -4,7 +4,7 @@ import { Card } from "../../components/card";
 import { DetailHeader } from "../../components/detailheader";
 import { InfoCallout } from "../../components/infocallout";
 import { ListRow } from "../../components/listrow";
-import { MetricCard } from "../../components/MetricCard";
+import { MetricCard } from "../../components/metriccard";
 import { ScreenContainer } from "../../components/screencontainer";
 import { rowDescription, useRestockScreen } from "./hooks";
 import type { RestockScreenProps } from "./types";

@@ -3,7 +3,7 @@ import { Feather } from "@expo/vector-icons";
 import { Card } from "../../components/card";
 import { DetailHeader } from "../../components/detailheader";
 import { ListRow } from "../../components/listrow";
-import { MetricCard } from "../../components/MetricCard";
+import { MetricCard } from "../../components/metriccard";
 import { StackedBar } from "../../components/stackedbar";
 import { ScreenContainer } from "../../components/screencontainer";
 import { formatDayLabel, formatTime, saleSummaryLabel } from "../../lib/format";
