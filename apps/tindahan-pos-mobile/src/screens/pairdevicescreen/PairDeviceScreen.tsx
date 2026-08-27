@@ -3,7 +3,7 @@ import { Feather } from "@expo/vector-icons";
 import { ScreenContainer } from "../../components/ScreenContainer";
 import { Card } from "../../components/card";
 import { PrimaryButton } from "../../components/primarybutton";
-import { TextField } from "../../components/TextField";
+import { TextField } from "../../components/textfield";
 import { colors } from "../../theme/colors";
 import { usePairDeviceScreen } from "./hooks";
 import type { PairDeviceScreenProps } from "./types";
