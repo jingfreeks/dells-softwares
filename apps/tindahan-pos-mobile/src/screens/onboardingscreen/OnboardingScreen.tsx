@@ -1,6 +1,6 @@
 import { ScreenContainer } from "../../components/ScreenContainer";
 import { WelcomeStep } from "../onboarding";
-import { ProfileStep } from "../onboarding/ProfileStep";
+import { ProfileStep } from "../onboarding/profilestep";
 import { ProductsStep } from "../onboarding/ProductsStep";
 import { StockAlertsStep } from "../onboarding/StockAlertsStep";
 import { OpenRegisterStep } from "../onboarding/OpenRegisterStep";

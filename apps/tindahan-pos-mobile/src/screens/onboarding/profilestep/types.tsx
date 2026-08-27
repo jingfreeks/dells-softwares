@@ -1,0 +1,31 @@
+export interface ProfileStepProps {
+  name: string;
+  onNameChange: (value: string) => void;
+  phone: string;
+  onPhoneChange: (value: string) => void;
+  avatarUri: string | null;
+  avatarUploading: boolean;
+  avatarError: string | null;
+  onPickAvatar: () => void;
+  storeName: string;
+  onStoreNameChange: (value: string) => void;
+  storeAddress: string;
+  onStoreAddressChange: (value: string) => void;
+  sameAsProfile: boolean;
+  onSameAsProfileChange: (value: boolean) => void;
+  address: string;
+  onAddressChange: (value: string) => void;
+  storePhotoUri: string | null;
+  storePhotoUploading: boolean;
+  storePhotoError: string | null;
+  onPickStorePhoto: () => void;
+  openTime: string;
+  onOpenTimeChange: (value: string) => void;
+  closeTime: string;
+  onCloseTimeChange: (value: string) => void;
+  error: string | null;
+  saving: boolean;
+  onContinue: () => void;
+  onSkip: () => void;
+  onBack: () => void;
+}
