@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ScreenContainer } from "../components/ScreenContainer";
-import { useAuth } from "../lib/auth";
-import { useStoreData } from "../lib/storeData";
+import { useAuth } from "../../lib/auth";
+import { useStoreData } from "../../lib/storeData";
 import {
   DEFAULT_LOW_STOCK_THRESHOLD,
   STARTER_CATALOG,
@@ -10,7 +9,7 @@ import {
   computeStockAlertPreview,
   type DenominationCounts,
   type OnboardingStep,
-} from "../lib/onboarding";
+} from "../../lib/onboarding";
 import {
   DEFAULT_OPENING_HOURS,
   DEFAULT_STOCK_ALERT_SETTINGS,
@@ -23,25 +22,20 @@ import {
   saveOnboardingStep,
   saveOpeningHours,
   saveStockAlertSettings,
-} from "../lib/onboardingSettings";
-import { pickAndOptimizeImage, uploadImage, type OptimizedImage } from "../lib/imageUpload";
-import { pickCsvFileText } from "../lib/documentPicker";
-import { parseProductsCsv } from "../lib/csv";
-import type { Category } from "../lib/types";
-import { WelcomeStep } from "./onboarding";
-import { ProfileStep } from "./onboarding/ProfileStep";
-import { ProductsStep } from "./onboarding/ProductsStep";
-import { StockAlertsStep } from "./onboarding/StockAlertsStep";
-import { OpenRegisterStep } from "./onboarding/OpenRegisterStep";
-import { DoneStep } from "./onboarding/DoneStep";
-import { EMPTY_QUICK_ADD_FORM, type QuickAddForm } from "./onboarding/QuickAddProductModal";
+} from "../../lib/onboardingSettings";
+import { pickAndOptimizeImage, uploadImage, type OptimizedImage } from "../../lib/imageUpload";
+import { pickCsvFileText } from "../../lib/documentPicker";
+import { parseProductsCsv } from "../../lib/csv";
+import type { Category } from "../../lib/types";
+import { EMPTY_QUICK_ADD_FORM, type QuickAddForm } from "../onboarding/QuickAddProductModal";
 
 const UNCATEGORIZED = "Uncategorized";
 // Same caps as the web app's Onboarding/hooks.tsx (AVATAR_MAX_DIMENSION/STORE_PHOTO_MAX_DIMENSION).
 const AVATAR_MAX_DIMENSION = 512;
 const STORE_PHOTO_MAX_DIMENSION = 1024;
 
-export function OnboardingScreen() {
+/** All state + logic for OnboardingScreen -- OnboardingScreen.tsx stays presentational. */
+export function useOnboardingScreen() {
   const { user, store, updateProfile, updateStore, completeOnboarding } = useAuth();
   const { products, categories, sales, addProduct, addCategory } = useStoreData();
 
@@ -361,130 +355,69 @@ export function OnboardingScreen() {
     if (user) await clearOnboardingStep(user.storeId);
   }
 
-  if (step === "welcome") {
-    return (
-      <ScreenContainer>
-        <WelcomeStep onStartSetup={() => setStep("profile")} onSkipToRegister={() => setStep("openRegister")} />
-      </ScreenContainer>
-    );
-  }
-
-  if (step === "done") {
-    return (
-      <ScreenContainer>
-        <DoneStep
-          ownerName={name || user?.name || ""}
-          storeName={storeName}
-          openTime={openTime}
-          closeTime={closeTime}
-          productsAdded={products.length}
-          thresholdDays={thresholdDays}
-          startingFloat={startingFloat}
-          finishing={finishing}
-          finishError={finishError}
-          onFinish={handleFinish}
-        />
-      </ScreenContainer>
-    );
-  }
-
-  return (
-    <ScreenContainer>
-      {step === "profile" && (
-        <ProfileStep
-          name={name}
-          onNameChange={setName}
-          phone={phone}
-          onPhoneChange={setPhone}
-          avatarUri={avatarImage?.uri ?? user?.avatarUrl ?? null}
-          avatarUploading={avatarUploading}
-          avatarError={avatarError}
-          onPickAvatar={handlePickAvatar}
-          storeName={storeName}
-          onStoreNameChange={setStoreName}
-          storeAddress={storeAddress}
-          onStoreAddressChange={setStoreAddress}
-          sameAsProfile={sameAsProfile}
-          onSameAsProfileChange={setSameAsProfile}
-          address={address}
-          onAddressChange={setAddress}
-          storePhotoUri={storePhotoImage?.uri ?? store?.photoUrl ?? null}
-          storePhotoUploading={storePhotoUploading}
-          storePhotoError={storePhotoError}
-          onPickStorePhoto={handlePickStorePhoto}
-          openTime={openTime}
-          onOpenTimeChange={setOpenTime}
-          closeTime={closeTime}
-          onCloseTimeChange={setCloseTime}
-          error={profileError}
-          saving={savingProfile}
-          onContinue={handleProfileContinue}
-          onSkip={() => setStep("products")}
-          onBack={() => setStep("welcome")}
-        />
-      )}
-
-      {step === "products" && (
-        <ProductsStep
-          products={products}
-          enabledCategoryKeys={enabledCategoryKeys}
-          onToggleCategory={(key) =>
-            setEnabledCategoryKeys((prev) => {
-              const next = new Set(prev);
-              if (next.has(key)) next.delete(key);
-              else next.add(key);
-              return next;
-            })
-          }
-          starterItemsToAddCount={starterItemsToAdd.length}
-          importingStarter={importingStarter}
-          starterError={starterError}
-          onImportStarterCatalog={handleImportStarterCatalog}
-          onScannedBarcode={handleScannedBarcode}
-          importingCsv={importingCsv}
-          csvError={csvError}
-          onImportCsv={handleImportCsv}
-          quickAddForm={quickAddForm}
-          onQuickAddFormChange={setQuickAddForm}
-          quickAddError={quickAddError}
-          savingQuickAdd={savingQuickAdd}
-          onQuickAddSubmit={handleQuickAddSubmit}
-          showQuickAdd={showQuickAdd}
-          onShowQuickAddChange={setShowQuickAdd}
-          onContinue={() => setStep("stockAlerts")}
-          onSkip={() => setStep("stockAlerts")}
-          onBack={() => setStep("profile")}
-        />
-      )}
-
-      {step === "stockAlerts" && (
-        <StockAlertsStep
-          thresholdDays={thresholdDays}
-          onThresholdDaysChange={setThresholdDays}
-          fastMoverBoost={fastMoverBoost}
-          onFastMoverBoostChange={setFastMoverBoost}
-          dailySummary={dailySummary}
-          onDailySummaryChange={setDailySummary}
-          preview={stockAlertPreview}
-          onContinue={() => setStep("openRegister")}
-          onSkip={() => setStep("openRegister")}
-          onBack={() => setStep("products")}
-        />
-      )}
-
-      {step === "openRegister" && (
-        <OpenRegisterStep
-          denominationCounts={denominationCounts}
-          onDenominationCountChange={(key, quantity) =>
-            setDenominationCounts((prev) => ({ ...prev, [key]: quantity }))
-          }
-          averageSaleValue={averageSaleValue}
-          assignedStaffName={user?.name ?? ""}
-          onOpenRegister={() => setStep("done")}
-          onSkipCount={() => setStep("done")}
-          onBack={() => setStep("stockAlerts")}
-        />
-      )}
-    </ScreenContainer>
-  );
+  return {
+    user,
+    store,
+    products,
+    step,
+    setStep,
+    name,
+    setName,
+    phone,
+    setPhone,
+    address,
+    setAddress,
+    storeName,
+    setStoreName,
+    storeAddress,
+    setStoreAddress,
+    sameAsProfile,
+    setSameAsProfile,
+    avatarImage,
+    avatarUploading,
+    avatarError,
+    handlePickAvatar,
+    storePhotoImage,
+    storePhotoUploading,
+    storePhotoError,
+    handlePickStorePhoto,
+    openTime,
+    setOpenTime,
+    closeTime,
+    setCloseTime,
+    profileError,
+    savingProfile,
+    handleProfileContinue,
+    enabledCategoryKeys,
+    setEnabledCategoryKeys,
+    starterItemsToAdd,
+    importingStarter,
+    starterError,
+    handleImportStarterCatalog,
+    importingCsv,
+    csvError,
+    handleImportCsv,
+    showQuickAdd,
+    setShowQuickAdd,
+    quickAddForm,
+    setQuickAddForm,
+    quickAddError,
+    savingQuickAdd,
+    handleQuickAddSubmit,
+    handleScannedBarcode,
+    thresholdDays,
+    setThresholdDays,
+    fastMoverBoost,
+    setFastMoverBoost,
+    dailySummary,
+    setDailySummary,
+    stockAlertPreview,
+    denominationCounts,
+    setDenominationCounts,
+    averageSaleValue,
+    startingFloat,
+    finishing,
+    finishError,
+    handleFinish,
+  };
 }

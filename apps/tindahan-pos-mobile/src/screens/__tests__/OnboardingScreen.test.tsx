@@ -1,17 +1,17 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import { OnboardingScreen } from "./OnboardingScreen";
-import { useAuth } from "../lib/auth";
-import { useStoreData } from "../lib/storeData";
-import { pickAndOptimizeImage, uploadImage } from "../lib/imageUpload";
-import { pickCsvFileText } from "../lib/documentPicker";
+import { OnboardingScreen } from "../onboardingscreen";
+import { useAuth } from "../../lib/auth";
+import { useStoreData } from "../../lib/storeData";
+import { pickAndOptimizeImage, uploadImage } from "../../lib/imageUpload";
+import { pickCsvFileText } from "../../lib/documentPicker";
 
-jest.mock("../lib/auth", () => ({ useAuth: jest.fn() }));
-jest.mock("../lib/storeData", () => ({ useStoreData: jest.fn() }));
-jest.mock("../lib/imageUpload", () => ({
+jest.mock("../../lib/auth", () => ({ useAuth: jest.fn() }));
+jest.mock("../../lib/storeData", () => ({ useStoreData: jest.fn() }));
+jest.mock("../../lib/imageUpload", () => ({
   pickAndOptimizeImage: jest.fn().mockResolvedValue(null),
   uploadImage: jest.fn().mockResolvedValue("https://example.com/image.jpg"),
 }));
-jest.mock("../lib/documentPicker", () => ({ pickCsvFileText: jest.fn().mockResolvedValue(null) }));
+jest.mock("../../lib/documentPicker", () => ({ pickCsvFileText: jest.fn().mockResolvedValue(null) }));
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn().mockResolvedValue(null),
   setItem: jest.fn().mockResolvedValue(undefined),
