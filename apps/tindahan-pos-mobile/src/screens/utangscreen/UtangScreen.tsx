@@ -3,7 +3,7 @@ import { BottomTabBar } from "../../components/BottomTabBar";
 import { Card } from "../../components/card";
 import { DetailHeader } from "../../components/detailheader";
 import { PrimaryButton } from "../../components/primarybutton";
-import { ScreenContainer } from "../../components/ScreenContainer";
+import { ScreenContainer } from "../../components/screencontainer";
 import { StackedBar } from "../../components/stackedbar";
 import { PESO } from "../../lib/money";
 import { colors } from "../../theme/colors";

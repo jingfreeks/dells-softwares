@@ -6,7 +6,7 @@ import { IconButton } from "../../components/iconbutton";
 import { InfoCallout } from "../../components/InfoCallout";
 import { ListRow } from "../../components/ListRow";
 import { MetricCard } from "../../components/MetricCard";
-import { ScreenContainer } from "../../components/ScreenContainer";
+import { ScreenContainer } from "../../components/screencontainer";
 import { SectionHeader } from "../../components/sectionheader";
 import { formatDayLabel, formatRelativeTime, greetingForHour, saleSummaryLabel } from "../../lib/format";
 import { PESO } from "../../lib/money";

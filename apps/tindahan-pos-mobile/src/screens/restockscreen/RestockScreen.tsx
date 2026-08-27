@@ -5,7 +5,7 @@ import { DetailHeader } from "../../components/detailheader";
 import { InfoCallout } from "../../components/InfoCallout";
 import { ListRow } from "../../components/ListRow";
 import { MetricCard } from "../../components/MetricCard";
-import { ScreenContainer } from "../../components/ScreenContainer";
+import { ScreenContainer } from "../../components/screencontainer";
 import { rowDescription, useRestockScreen } from "./hooks";
 import type { RestockScreenProps } from "./types";
 
