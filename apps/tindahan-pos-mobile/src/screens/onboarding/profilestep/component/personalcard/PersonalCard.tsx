@@ -1,7 +1,7 @@
 import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Card } from "../../../../../components/card";
-import { TextField } from "../../../../../components/TextField";
+import { TextField } from "../../../../../components/textfield";
 import { colors } from "../../../../../theme/colors";
 import type { PersonalCardProps } from "./types";
 

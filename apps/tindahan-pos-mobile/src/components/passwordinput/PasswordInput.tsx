@@ -1,7 +1,7 @@
 import { Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { colors } from "../../theme/colors";
-import { TextField } from "../TextField";
+import { TextField } from "../textfield";
 import { usePasswordInput } from "./hooks";
 import type { PasswordInputProps } from "./types";
 

@@ -9,7 +9,7 @@ import { PrimaryButton } from "../../components/primarybutton";
 import { ScreenContainer } from "../../components/ScreenContainer";
 import { SecondaryButton } from "../../components/SecondaryButton";
 import { SegmentedControl } from "../../components/SegmentedControl";
-import { TextField } from "../../components/TextField";
+import { TextField } from "../../components/textfield";
 import { SEGMENTS, useCreateAccountScreen } from "./hooks";
 import type { CreateAccountScreenProps } from "./types";
 

@@ -4,7 +4,7 @@ import { ScreenContainer } from "../../components/ScreenContainer";
 import { Avatar } from "../../components/avatar";
 import { Card } from "../../components/card";
 import { PrimaryButton } from "../../components/primarybutton";
-import { TextField } from "../../components/TextField";
+import { TextField } from "../../components/textfield";
 import { colors } from "../../theme/colors";
 import { KEYPAD_ROWS, PIN_LENGTH, initials, useCashierPinScreen } from "./hooks";
 

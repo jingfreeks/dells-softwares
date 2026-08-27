@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 import { Card } from "../../../../../components/card";
-import { TextField } from "../../../../../components/TextField";
+import { TextField } from "../../../../../components/textfield";
 import type { HoursCardProps } from "./types";
 
 export function HoursCard({ openTime, onOpenTimeChange, closeTime, onCloseTimeChange }: HoursCardProps) {
