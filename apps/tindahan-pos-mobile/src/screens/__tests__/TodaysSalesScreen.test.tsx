@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
-import { TodaysSalesScreen } from "./TodaysSalesScreen";
-import { useStoreData } from "../lib/storeData";
-import type { SaleRecord } from "../lib/types";
+import { TodaysSalesScreen } from "../todayssalesscreen";
+import { useStoreData } from "../../lib/storeData";
+import type { SaleRecord } from "../../lib/types";
 
-jest.mock("../lib/storeData", () => ({ useStoreData: jest.fn() }));
+jest.mock("../../lib/storeData", () => ({ useStoreData: jest.fn() }));
 
 const mockedUseStoreData = useStoreData as jest.Mock;
 

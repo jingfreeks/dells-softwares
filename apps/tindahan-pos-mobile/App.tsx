@@ -17,7 +17,7 @@ import { PosScreen } from "./src/screens/PosScreen";
 import { RestockScreen } from "./src/screens/restockscreen";
 import { SetupRegisterScreen } from "./src/screens/SetupRegisterScreen";
 import { SplashScreen } from "./src/screens/splashscreen";
-import { TodaysSalesScreen } from "./src/screens/TodaysSalesScreen";
+import { TodaysSalesScreen } from "./src/screens/todayssalesscreen";
 import { UtangScreen } from "./src/screens/UtangScreen";
 
 type AuthScreen = "signIn" | "createAccount" | "pairDevice";
