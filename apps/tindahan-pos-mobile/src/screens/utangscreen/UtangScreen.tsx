@@ -2,7 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import { BottomTabBar } from "../../components/BottomTabBar";
 import { Card } from "../../components/card";
 import { DetailHeader } from "../../components/DetailHeader";
-import { PrimaryButton } from "../../components/PrimaryButton";
+import { PrimaryButton } from "../../components/primarybutton";
 import { ScreenContainer } from "../../components/ScreenContainer";
 import { StackedBar } from "../../components/stackedbar";
 import { PESO } from "../../lib/money";

@@ -2,7 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { ScreenContainer } from "../../components/ScreenContainer";
 import { Card } from "../../components/card";
-import { PrimaryButton } from "../../components/PrimaryButton";
+import { PrimaryButton } from "../../components/primarybutton";
 import { TextField } from "../../components/TextField";
 import { colors } from "../../theme/colors";
 import { usePairDeviceScreen } from "./hooks";

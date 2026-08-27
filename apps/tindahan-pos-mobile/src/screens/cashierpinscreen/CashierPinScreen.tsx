@@ -3,7 +3,7 @@ import { Feather } from "@expo/vector-icons";
 import { ScreenContainer } from "../../components/ScreenContainer";
 import { Avatar } from "../../components/Avatar";
 import { Card } from "../../components/card";
-import { PrimaryButton } from "../../components/PrimaryButton";
+import { PrimaryButton } from "../../components/primarybutton";
 import { TextField } from "../../components/TextField";
 import { colors } from "../../theme/colors";
 import { KEYPAD_ROWS, PIN_LENGTH, initials, useCashierPinScreen } from "./hooks";

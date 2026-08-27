@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from "react-native";
-import { PrimaryButton } from "../../../components/PrimaryButton";
+import { PrimaryButton } from "../../../components/primarybutton";
 import { BarcodeScannerModal } from "../../../components/BarcodeScannerModal";
 import { OnboardingStepHeader } from "../onboardingstepheader";
 import { QuickAddProductModal } from "../quickaddproductmodal";

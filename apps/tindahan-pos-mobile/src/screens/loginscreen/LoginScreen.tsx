@@ -5,7 +5,7 @@ import { Divider } from "../../components/divider";
 import { InfoCallout } from "../../components/InfoCallout";
 import { LinkText } from "../../components/linktext";
 import { PasswordInput } from "../../components/PasswordInput";
-import { PrimaryButton } from "../../components/PrimaryButton";
+import { PrimaryButton } from "../../components/primarybutton";
 import { ScreenContainer } from "../../components/ScreenContainer";
 import { SecondaryButton } from "../../components/SecondaryButton";
 import { SegmentedControl } from "../../components/SegmentedControl";
