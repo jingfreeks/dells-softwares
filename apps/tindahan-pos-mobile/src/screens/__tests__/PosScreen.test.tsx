@@ -1,13 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import { PosScreen } from "./PosScreen";
-import { useAuth } from "../lib/auth";
-import { useCashierSession } from "../lib/cashierSession";
-import { useStoreData } from "../lib/storeData";
-import type { Customer, Product } from "../lib/types";
+import { PosScreen } from "../posscreen";
+import { useAuth } from "../../lib/auth";
+import { useCashierSession } from "../../lib/cashierSession";
+import { useStoreData } from "../../lib/storeData";
+import type { Customer, Product } from "../../lib/types";
 
-jest.mock("../lib/auth", () => ({ useAuth: jest.fn() }));
-jest.mock("../lib/cashierSession", () => ({ useCashierSession: jest.fn() }));
-jest.mock("../lib/storeData", () => ({ useStoreData: jest.fn() }));
+jest.mock("../../lib/auth", () => ({ useAuth: jest.fn() }));
+jest.mock("../../lib/cashierSession", () => ({ useCashierSession: jest.fn() }));
+jest.mock("../../lib/storeData", () => ({ useStoreData: jest.fn() }));
 
 const mockedUseAuth = useAuth as jest.Mock;
 const mockedUseCashierSession = useCashierSession as jest.Mock;
