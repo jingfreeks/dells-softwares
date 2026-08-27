@@ -2,7 +2,7 @@ import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-nativ
 import { Feather } from "@expo/vector-icons";
 import { colors } from "../../theme/colors";
 import { PESO } from "../../lib/money";
-import { BarcodeScannerModal } from "../../components/BarcodeScannerModal";
+import { BarcodeScannerModal } from "../../components/barcodescannermodal";
 import { CartSheet } from "../pos/cartsheet";
 import { ProductTile } from "../pos/producttile";
 import { ALL_CATEGORY, usePosScreen } from "./hooks";
