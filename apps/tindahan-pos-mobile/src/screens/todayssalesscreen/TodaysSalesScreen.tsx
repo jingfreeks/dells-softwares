@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Card } from "../../components/card";
-import { DetailHeader } from "../../components/DetailHeader";
+import { DetailHeader } from "../../components/detailheader";
 import { ListRow } from "../../components/ListRow";
 import { MetricCard } from "../../components/MetricCard";
 import { StackedBar } from "../../components/stackedbar";

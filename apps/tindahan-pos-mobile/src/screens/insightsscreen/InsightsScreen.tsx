@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 import { Card } from "../../components/card";
-import { DetailHeader } from "../../components/DetailHeader";
+import { DetailHeader } from "../../components/detailheader";
 import { ScreenContainer } from "../../components/ScreenContainer";
 import { PESO } from "../../lib/money";
 import { useInsightsScreen } from "./hooks";
