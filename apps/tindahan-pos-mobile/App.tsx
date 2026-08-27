@@ -9,7 +9,7 @@ import { StoreDataProvider } from "./src/lib/storeData";
 import { CashierPinScreen } from "./src/screens/cashierpinscreen";
 import { CreateAccountScreen } from "./src/screens/CreateAccountScreen";
 import { InsightsScreen } from "./src/screens/InsightsScreen";
-import { LoginScreen } from "./src/screens/LoginScreen";
+import { LoginScreen } from "./src/screens/loginscreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { OwnerHomeScreen } from "./src/screens/OwnerHomeScreen";
 import { PairDeviceScreen } from "./src/screens/PairDeviceScreen";
