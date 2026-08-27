@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from "react-native";
-import { BottomTabBar } from "../../components/BottomTabBar";
+import { BottomTabBar } from "../../components/bottomtabbar";
 import { Card } from "../../components/card";
 import { DetailHeader } from "../../components/detailheader";
 import { PrimaryButton } from "../../components/primarybutton";

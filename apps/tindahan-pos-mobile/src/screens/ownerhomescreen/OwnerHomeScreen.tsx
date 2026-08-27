@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 import { ActionPill } from "../../components/actionpill";
 import { Avatar } from "../../components/avatar";
-import { BottomTabBar } from "../../components/BottomTabBar";
+import { BottomTabBar } from "../../components/bottomtabbar";
 import { IconButton } from "../../components/iconbutton";
 import { InfoCallout } from "../../components/infocallout";
 import { ListRow } from "../../components/listrow";
