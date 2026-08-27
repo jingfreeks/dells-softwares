@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { AppLogo } from "../../components/AppLogo";
+import { AppLogo } from "../../components/applogo";
 import { Checkbox } from "../../components/Checkbox";
 import { Divider } from "../../components/Divider";
 import { LinkText } from "../../components/linktext";
