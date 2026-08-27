@@ -1,5 +1,5 @@
 import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
-import { Card } from "../../../../../components/Card";
+import { Card } from "../../../../../components/card";
 import { Checkbox } from "../../../../../components/Checkbox";
 import { TextField } from "../../../../../components/TextField";
 import { colors } from "../../../../../theme/colors";

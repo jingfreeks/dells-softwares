@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 import { BottomTabBar } from "../../components/BottomTabBar";
-import { Card } from "../../components/Card";
+import { Card } from "../../components/card";
 import { DetailHeader } from "../../components/DetailHeader";
 import { InfoCallout } from "../../components/InfoCallout";
 import { ListRow } from "../../components/ListRow";

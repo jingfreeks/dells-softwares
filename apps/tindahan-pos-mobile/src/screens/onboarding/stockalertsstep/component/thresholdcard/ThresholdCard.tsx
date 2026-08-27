@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from "react-native";
-import { Card } from "../../../../../components/Card";
+import { Card } from "../../../../../components/card";
 import { useThresholdCard } from "./hooks";
 import type { ThresholdCardProps } from "./types";
 
