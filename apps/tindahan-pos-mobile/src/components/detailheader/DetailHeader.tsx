@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { IconButton } from "../IconButton";
+import { IconButton } from "../iconbutton";
 import type { DetailHeaderProps } from "./types";
 
 /**
