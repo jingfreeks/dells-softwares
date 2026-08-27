@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { MetricCard } from "../../../components/MetricCard";
+import { MetricCard } from "../../../components/metriccard";
 import { PrimaryButton } from "../../../components/primarybutton";
 import { OnboardingStepHeader } from "../onboardingstepheader";
 import { PESO } from "../../../lib/money";
