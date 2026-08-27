@@ -14,7 +14,7 @@ import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { OwnerHomeScreen } from "./src/screens/OwnerHomeScreen";
 import { PairDeviceScreen } from "./src/screens/pairdevicescreen";
 import { PosScreen } from "./src/screens/PosScreen";
-import { RestockScreen } from "./src/screens/RestockScreen";
+import { RestockScreen } from "./src/screens/restockscreen";
 import { SetupRegisterScreen } from "./src/screens/SetupRegisterScreen";
 import { SplashScreen } from "./src/screens/splashscreen";
 import { TodaysSalesScreen } from "./src/screens/TodaysSalesScreen";
