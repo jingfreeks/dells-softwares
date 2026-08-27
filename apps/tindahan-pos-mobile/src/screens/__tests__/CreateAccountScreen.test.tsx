@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import { CreateAccountScreen } from "./CreateAccountScreen";
-import { useAuth } from "../lib/auth";
+import { CreateAccountScreen } from "../createaccountscreen";
+import { useAuth } from "../../lib/auth";
 
-jest.mock("../lib/auth", () => ({ useAuth: jest.fn() }));
+jest.mock("../../lib/auth", () => ({ useAuth: jest.fn() }));
 
 const mockedUseAuth = useAuth as jest.Mock;
 
