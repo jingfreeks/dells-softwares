@@ -10,7 +10,7 @@ import { CashierPinScreen } from "./src/screens/cashierpinscreen";
 import { CreateAccountScreen } from "./src/screens/createaccountscreen";
 import { InsightsScreen } from "./src/screens/insightsscreen";
 import { LoginScreen } from "./src/screens/loginscreen";
-import { OnboardingScreen } from "./src/screens/OnboardingScreen";
+import { OnboardingScreen } from "./src/screens/onboardingscreen";
 import { OwnerHomeScreen } from "./src/screens/ownerhomescreen";
 import { PairDeviceScreen } from "./src/screens/pairdevicescreen";
 import { PosScreen } from "./src/screens/posscreen";
