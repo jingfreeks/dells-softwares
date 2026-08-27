@@ -16,7 +16,7 @@ import { PairDeviceScreen } from "./src/screens/pairdevicescreen";
 import { PosScreen } from "./src/screens/PosScreen";
 import { RestockScreen } from "./src/screens/RestockScreen";
 import { SetupRegisterScreen } from "./src/screens/SetupRegisterScreen";
-import { SplashScreen } from "./src/screens/SplashScreen";
+import { SplashScreen } from "./src/screens/splashscreen";
 import { TodaysSalesScreen } from "./src/screens/TodaysSalesScreen";
 import { UtangScreen } from "./src/screens/UtangScreen";
 
