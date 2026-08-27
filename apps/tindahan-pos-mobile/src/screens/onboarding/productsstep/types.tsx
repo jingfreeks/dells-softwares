@@ -1,5 +1,5 @@
 import type { Product } from "../../../lib/types";
-import type { QuickAddForm } from "../QuickAddProductModal";
+import type { QuickAddForm } from "../quickaddproductmodal";
 
 export interface ProductsStepProps {
   products: Product[];

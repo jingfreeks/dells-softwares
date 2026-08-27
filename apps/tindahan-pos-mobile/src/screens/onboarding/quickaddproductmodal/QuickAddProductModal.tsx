@@ -1,35 +1,19 @@
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { Card } from "../../components/Card";
-import { PrimaryButton } from "../../components/PrimaryButton";
-import { TextField } from "../../components/TextField";
-import { colors } from "../../theme/colors";
-
-export interface QuickAddForm {
-  name: string;
-  price: string;
-  barcode: string;
-}
-
-export const EMPTY_QUICK_ADD_FORM: QuickAddForm = { name: "", price: "", barcode: "" };
-
-interface QuickAddProductModalProps {
-  form: QuickAddForm;
-  onFormChange: (form: QuickAddForm) => void;
-  error: string | null;
-  saving: boolean;
-  onSubmit: () => void;
-  onClose: () => void;
-}
+import { Card } from "../../../components/Card";
+import { PrimaryButton } from "../../../components/PrimaryButton";
+import { TextField } from "../../../components/TextField";
+import { colors } from "../../../theme/colors";
+import type { QuickAddProductModalProps } from "./types";
 
 /** Small "type it in" quick-add modal for Onboarding's Products step. */
 export function QuickAddProductModal({ form, onFormChange, error, saving, onSubmit, onClose }: QuickAddProductModalProps) {
   return (
     <Modal visible animationType="fade" transparent onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <Card padding={18} style={styles.card}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Add a product</Text>
+      <View className="flex-1 justify-center p-5" style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}>
+        <Card padding={18} style={{ backgroundColor: colors.panelSurface }}>
+          <View className="flex-row justify-between items-center mb-3.5">
+            <Text className="text-[15px] font-medium text-text-primary">Add a product</Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={8}>
               <Feather name="x" size={18} color={colors.textFaint} />
             </Pressable>
@@ -56,7 +40,7 @@ export function QuickAddProductModal({ form, onFormChange, error, saving, onSubm
           />
 
           {error && (
-            <Text accessibilityRole="alert" style={styles.error}>
+            <Text accessibilityRole="alert" className="text-error text-xs mb-2.5">
               {error}
             </Text>
           )}
@@ -67,11 +51,3 @@ export function QuickAddProductModal({ form, onFormChange, error, saving, onSubm
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: "rgba(0, 0, 0, 0.6)", justifyContent: "center", padding: 20 },
-  card: { backgroundColor: colors.panelSurface },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
-  title: { fontSize: 15, fontWeight: "500", color: colors.textPrimary },
-  error: { color: colors.error, fontSize: 12, marginBottom: 10 },
-});
