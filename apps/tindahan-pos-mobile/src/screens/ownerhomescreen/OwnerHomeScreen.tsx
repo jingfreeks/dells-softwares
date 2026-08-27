@@ -4,7 +4,7 @@ import { Avatar } from "../../components/avatar";
 import { BottomTabBar } from "../../components/BottomTabBar";
 import { IconButton } from "../../components/iconbutton";
 import { InfoCallout } from "../../components/InfoCallout";
-import { ListRow } from "../../components/ListRow";
+import { ListRow } from "../../components/listrow";
 import { MetricCard } from "../../components/MetricCard";
 import { ScreenContainer } from "../../components/screencontainer";
 import { SectionHeader } from "../../components/sectionheader";
