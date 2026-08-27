@@ -7,7 +7,7 @@ import { InfoCallout } from "../../components/InfoCallout";
 import { ListRow } from "../../components/ListRow";
 import { MetricCard } from "../../components/MetricCard";
 import { ScreenContainer } from "../../components/ScreenContainer";
-import { SectionHeader } from "../../components/SectionHeader";
+import { SectionHeader } from "../../components/sectionheader";
 import { formatDayLabel, formatRelativeTime, greetingForHour, saleSummaryLabel } from "../../lib/format";
 import { PESO } from "../../lib/money";
 import { PAYMENT_ICON, PAYMENT_LABEL, useOwnerHomeScreen } from "./hooks";
