@@ -18,7 +18,7 @@ import { RestockScreen } from "./src/screens/restockscreen";
 import { SetupRegisterScreen } from "./src/screens/SetupRegisterScreen";
 import { SplashScreen } from "./src/screens/splashscreen";
 import { TodaysSalesScreen } from "./src/screens/todayssalesscreen";
-import { UtangScreen } from "./src/screens/UtangScreen";
+import { UtangScreen } from "./src/screens/utangscreen";
 
 type AuthScreen = "signIn" | "createAccount" | "pairDevice";
 
