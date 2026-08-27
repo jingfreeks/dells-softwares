@@ -2,7 +2,7 @@ import { Text, View } from "react-native";
 import { ActionPill } from "../../components/actionpill";
 import { Avatar } from "../../components/avatar";
 import { BottomTabBar } from "../../components/BottomTabBar";
-import { IconButton } from "../../components/IconButton";
+import { IconButton } from "../../components/iconbutton";
 import { InfoCallout } from "../../components/InfoCallout";
 import { ListRow } from "../../components/ListRow";
 import { MetricCard } from "../../components/MetricCard";
