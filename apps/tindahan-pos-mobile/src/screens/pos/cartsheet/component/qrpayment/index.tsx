@@ -1,0 +1,1 @@
+export { QrPayment } from "./QrPayment";
