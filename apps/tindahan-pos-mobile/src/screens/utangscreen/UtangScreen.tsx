@@ -4,7 +4,7 @@ import { Card } from "../../components/card";
 import { DetailHeader } from "../../components/DetailHeader";
 import { PrimaryButton } from "../../components/PrimaryButton";
 import { ScreenContainer } from "../../components/ScreenContainer";
-import { StackedBar } from "../../components/StackedBar";
+import { StackedBar } from "../../components/stackedbar";
 import { PESO } from "../../lib/money";
 import { colors } from "../../theme/colors";
 import { UtangRow } from "./component";
