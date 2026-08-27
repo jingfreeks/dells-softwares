@@ -1,6 +1,6 @@
 import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
 import { Card } from "../../../../../components/card";
-import { Checkbox } from "../../../../../components/Checkbox";
+import { Checkbox } from "../../../../../components/checkbox";
 import { TextField } from "../../../../../components/textfield";
 import { colors } from "../../../../../theme/colors";
 import type { StoreCardProps } from "./types";
