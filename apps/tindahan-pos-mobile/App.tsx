@@ -8,7 +8,7 @@ import { CashierSessionProvider, useCashierSession } from "./src/lib/cashierSess
 import { StoreDataProvider } from "./src/lib/storeData";
 import { CashierPinScreen } from "./src/screens/cashierpinscreen";
 import { CreateAccountScreen } from "./src/screens/createaccountscreen";
-import { InsightsScreen } from "./src/screens/InsightsScreen";
+import { InsightsScreen } from "./src/screens/insightsscreen";
 import { LoginScreen } from "./src/screens/loginscreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { OwnerHomeScreen } from "./src/screens/OwnerHomeScreen";
