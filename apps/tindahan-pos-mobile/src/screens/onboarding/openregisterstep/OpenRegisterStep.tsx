@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 import { MetricCard } from "../../../components/MetricCard";
-import { PrimaryButton } from "../../../components/PrimaryButton";
+import { PrimaryButton } from "../../../components/primarybutton";
 import { OnboardingStepHeader } from "../onboardingstepheader";
 import { PESO } from "../../../lib/money";
 import { AssignedStaffCard, CashHealthCard, DenominationCard } from "./component";

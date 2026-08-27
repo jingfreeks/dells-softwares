@@ -1,5 +1,5 @@
 import {  View } from "react-native";
-import { PrimaryButton } from "../../../components/PrimaryButton";
+import { PrimaryButton } from "../../../components/primarybutton";
 import { CheckListCard, PressableButton, Header, Footer } from "./component";
 import type { WelcomeStepProps } from "./types";
 import { CHECKLIST } from "./types";

@@ -1,6 +1,6 @@
 import { Modal, Pressable, Text, View } from "react-native";
 import { Card } from "../../../../components/card";
-import { PrimaryButton } from "../../../../components/PrimaryButton";
+import { PrimaryButton } from "../../../../components/primarybutton";
 import { TextField } from "../../../../components/TextField";
 import { colors } from "../../../../theme/colors";
 import { useUnpairModal } from "./hooks";

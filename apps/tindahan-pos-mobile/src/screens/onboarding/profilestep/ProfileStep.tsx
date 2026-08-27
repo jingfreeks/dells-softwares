@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { PrimaryButton } from "../../../components/PrimaryButton";
+import { PrimaryButton } from "../../../components/primarybutton";
 import { OnboardingStepHeader } from "../onboardingstepheader";
 import { HoursCard, PersonalCard, StoreCard } from "./component";
 import type { ProfileStepProps } from "./types";
