@@ -4,7 +4,7 @@ import { colors } from "../../theme/colors";
 import { PESO } from "../../lib/money";
 import { BarcodeScannerModal } from "../../components/BarcodeScannerModal";
 import { CartSheet } from "../pos/CartSheet";
-import { ProductTile } from "../pos/ProductTile";
+import { ProductTile } from "../pos/producttile";
 import { ALL_CATEGORY, usePosScreen } from "./hooks";
 import type { PosScreenProps } from "./types";
 
