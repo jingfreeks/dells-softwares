@@ -12,7 +12,7 @@ import { InsightsScreen } from "./src/screens/InsightsScreen";
 import { LoginScreen } from "./src/screens/loginscreen";
 import { OnboardingScreen } from "./src/screens/OnboardingScreen";
 import { OwnerHomeScreen } from "./src/screens/OwnerHomeScreen";
-import { PairDeviceScreen } from "./src/screens/PairDeviceScreen";
+import { PairDeviceScreen } from "./src/screens/pairdevicescreen";
 import { PosScreen } from "./src/screens/PosScreen";
 import { RestockScreen } from "./src/screens/RestockScreen";
 import { SetupRegisterScreen } from "./src/screens/SetupRegisterScreen";
