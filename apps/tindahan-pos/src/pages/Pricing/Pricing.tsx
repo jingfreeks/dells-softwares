@@ -27,7 +27,7 @@ export function Pricing() {
                 key={plan.planCode}
                 name={plan.name}
                 priceLabel={plan.priceLabel}
-                featureCount={plan.features.size}
+                featureNames={plan.featureNames}
                 isCurrent={plan.planCode === currentPlanCode}
                 canStartTrial={TRIALABLE_CODES.has(plan.planCode) && !hasUsedTrial}
                 justStarted={startedCode === plan.planCode}

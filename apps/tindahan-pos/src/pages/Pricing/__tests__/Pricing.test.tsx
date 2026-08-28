@@ -9,10 +9,38 @@ vi.mock("@/lib/supabaseClient", () => ({ supabase: { rpc: (...args: unknown[]) =
 const useBillingState = vi.fn();
 vi.mock("@/lib/billing/billingContext", () => ({ useBillingState: () => useBillingState() }));
 
+// Real feature codes must resolve to real names from the catalogue --
+// "unknown" deliberately has no entry here to assert unknown codes are
+// skipped rather than rendered blank.
+vi.mock("@/lib/features/featuresContext", () => ({
+  useFeatures: () => ({
+    loading: false,
+    catalogue: [
+      { code: "pos.sell", moduleCode: "POS", name: "Point of Sale", held: true },
+      { code: "pos.utang", moduleCode: "POS", name: "Utang tracking", held: false },
+      { code: "inventory.purchase_orders", moduleCode: "INVENTORY", name: "Purchase orders", held: false },
+    ],
+  }),
+}));
+
 const planPricesRows = [
-  { plan_code: "BASIC", name: "Starter", price_php: 299, billing_interval: "MONTHLY", features: ["a"], sort_order: 1 },
-  { plan_code: "BUSINESS", name: "Growth", price_php: 599, billing_interval: "MONTHLY", features: ["a", "b"], sort_order: 2 },
-  { plan_code: "ENTERPRISE", name: "Business", price_php: null, billing_interval: "MONTHLY", features: ["a", "b", "c"], sort_order: 3 },
+  { plan_code: "BASIC", name: "Starter", price_php: 299, billing_interval: "MONTHLY", features: ["pos.sell"], sort_order: 1 },
+  {
+    plan_code: "BUSINESS",
+    name: "Growth",
+    price_php: 599,
+    billing_interval: "MONTHLY",
+    features: ["pos.sell", "pos.utang", "unknown"],
+    sort_order: 2,
+  },
+  {
+    plan_code: "ENTERPRISE",
+    name: "Business",
+    price_php: null,
+    billing_interval: "MONTHLY",
+    features: ["pos.sell", "pos.utang", "inventory.purchase_orders"],
+    sort_order: 3,
+  },
 ];
 
 beforeEach(() => {
@@ -66,5 +94,15 @@ describe("Pricing", () => {
     await screen.findByText("Growth");
     expect(screen.queryByRole("button", { name: "Start free trial" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Ask about this plan" }).length).toBeGreaterThan(0);
+  });
+
+  it("renders real feature names from the catalogue, and skips a code the catalogue doesn't know", async () => {
+    render(<Pricing />);
+    expect(await screen.findByText("Purchase orders")).toBeInTheDocument();
+    expect(screen.getAllByText("Utang tracking").length).toBeGreaterThan(0);
+    // "unknown" is in Growth's features list but has no catalogue entry --
+    // asserting the whole document has no stray "unknown" text confirms it
+    // was silently skipped rather than rendered as a blank/broken bullet.
+    expect(screen.queryByText("unknown")).not.toBeInTheDocument();
   });
 });
