@@ -28,4 +28,11 @@ describe("Privacy", () => {
       "mailto:dobluis.lyndell@gmail.com"
     );
   });
+
+  it("lists data-subject rights under the Data Privacy Act of 2012", () => {
+    renderPrivacy();
+    expect(screen.getByText("Your rights under Philippine law")).toBeInTheDocument();
+    expect(screen.getByText(/Republic Act No\. 10173/)).toBeInTheDocument();
+    expect(screen.getByText(/National Privacy Commission/)).toBeInTheDocument();
+  });
 });

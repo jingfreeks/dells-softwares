@@ -37,6 +37,7 @@ import {
   Reports,
   PlanSettings,
   Privacy,
+  Terms,
 } from "@/pages";
 
 function App() {
@@ -59,6 +60,7 @@ function App() {
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/pair" element={<Pair />} />
                         <Route path="/privacy" element={<Privacy />} />
+                        <Route path="/terms" element={<Terms />} />
                         <Route element={<ProtectedRoute />}>
                           <Route path="/pos" element={<Pos />} />
                           <Route path="/inventory" element={<Inventory />} />

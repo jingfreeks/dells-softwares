@@ -179,22 +179,30 @@ export function Register() {
               </p>
             )}
 
-            <button
-              type="button"
-              role="checkbox"
-              aria-checked={agreedToTerms}
-              aria-label="I agree to the Terms of Service and Privacy Policy"
-              onClick={() => setAgreedToTerms(!agreedToTerms)}
-              className="tpl-terms-row"
-            >
-              <span className={`tpl-checkbox${agreedToTerms ? " tpl-on" : ""}`}>
+            <div className="tpl-terms-row">
+              <button
+                type="button"
+                role="checkbox"
+                aria-checked={agreedToTerms}
+                aria-label="I agree to the Terms of Service and Privacy Policy"
+                onClick={() => setAgreedToTerms(!agreedToTerms)}
+                className={`tpl-checkbox${agreedToTerms ? " tpl-on" : ""}`}
+                style={{ padding: 0 }}
+              >
                 {agreedToTerms && <i className="ti ti-check" aria-hidden />}
+              </button>
+              <span className="tpl-terms-label" onClick={() => setAgreedToTerms(!agreedToTerms)}>
+                {LABEL_AGREE_TO_TERMS_PREFIX}{" "}
+                <Link to="/terms" className="tpl-lnk" onClick={(e) => e.stopPropagation()}>
+                  {LINK_TERMS_OF_SERVICE}
+                </Link>{" "}
+                {TEXT_AND}{" "}
+                <Link to="/privacy" className="tpl-lnk" onClick={(e) => e.stopPropagation()}>
+                  {LINK_PRIVACY_POLICY}
+                </Link>
+                .
               </span>
-              <span className="tpl-terms-label">
-                {LABEL_AGREE_TO_TERMS_PREFIX} <span className="tpl-lnk">{LINK_TERMS_OF_SERVICE}</span> {TEXT_AND}{" "}
-                <span className="tpl-lnk">{LINK_PRIVACY_POLICY}</span>.
-              </span>
-            </button>
+            </div>
 
             <button type="submit" disabled={!canSubmit} className="tpl-btnp">
               {submitting && <span aria-hidden className="tpl-spinner" />}
