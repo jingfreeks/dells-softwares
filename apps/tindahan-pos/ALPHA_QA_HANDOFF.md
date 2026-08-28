@@ -7,7 +7,8 @@
 
 This document is written for an **Independent AI QA Tester** with no prior context on this codebase and no ability to ask the original developer questions.
 
-- This document is the **expected-behavior reference**, derived from reading the actual Alpha source code (React/TypeScript frontend, Supabase/PostgreSQL migrations, and the automated test suite) on the `feat/landing-header-dells-logo` branch as of 2026-08-25.
+- This document is the **expected-behavior reference**, derived from reading the actual Alpha source code (React/TypeScript frontend, Supabase/PostgreSQL migrations, and the automated test suite). Originally written as of 2026-08-25 on the `feat/landing-header-dells-logo` branch; **updated 2026-08-29** to cover the Free Demo Store + Free Trial feature, Register-page changes (confirm-password field, Google sign-up), the account-deletion review queue, and a plan-naming discrepancy — all of which landed after the original pass. Sections carrying this update are marked `[Updated 2026-08-29]`.
+- This document covers the **web app** (`apps/tindahan-pos`) only.
 - The **live running application is the system under test**.
 - If the live application disagrees with this document, **do not assume either one is correct** — record it as a `DOCUMENTATION VS APPLICATION DISCREPANCY` (format in §36) and move on. Do not silently "fix" this document to match what you observed, and do not assume the app is broken just because it differs from what's written here.
 - Anything the codebase did not make clear is explicitly marked `UNKNOWN — Requires clarification.`, `PRESENT BUT NOT VERIFIED AS FUNCTIONAL`, or `IMPLEMENTED BUT CURRENTLY INACCESSIBLE`.
@@ -38,7 +39,7 @@ This document is written for an **Independent AI QA Tester** with no prior conte
 
 ### Current Alpha scope
 
-The Alpha build includes: authentication & self-registration, onboarding wizard, POS checkout (cash/credit/QR/GCash-Maya reference), inventory & receiving, suppliers, customers/utang, staff & RBAC, cashier shifts/drawer, e-load & cash-in/cash-out/print-photocopy services, discounts, VAT/BIR receipt fields, void & partial refund, reports (with CSV export), plan/billing awareness (read-only from the app's perspective — actual billing/payment collection is out of scope for this app), device pairing (multi-register), audit log, and a settings area covering store identity, receipts, fees, alerts, backup, devices, and plan.
+The Alpha build includes: authentication & self-registration, a Welcome/Choose step (Explore Demo Store vs. Set Up My Store) **[Updated 2026-08-29]**, a read-only isolated Demo Store **[Updated 2026-08-29]**, onboarding wizard, a 30-day free trial with severity-banded reminder banner and a one-time trial-expired screen **[Updated 2026-08-29]**, a Pricing/Upgrade page listing every real plan **[Updated 2026-08-29]**, POS checkout (cash/credit/QR/GCash-Maya reference), inventory & receiving, suppliers, customers/utang, staff & RBAC, cashier shifts/drawer, e-load & cash-in/cash-out/print-photocopy services, discounts, VAT/BIR receipt fields, void & partial refund, reports (with CSV export), plan/billing awareness (read-only from the app's perspective — actual billing/payment collection is out of scope for this app), device pairing (multi-register), audit log, self-service account deletion routed through a platform-admin review queue for a store's sole admin **[Updated 2026-08-29]**, and a settings area covering store identity, receipts, fees, alerts, backup, devices, and plan.
 
 Do **not** assume: BIR full compliance/accreditation, real payment gateway integration (GCash/Maya are recorded as a manual reference number, not processed), a native mobile app, or a public REST API for third parties. None of these exist in this codebase.
 
@@ -97,6 +98,9 @@ flowchart TD
 | `stock_discrepancies` | Deficit recorded when an offline-replayed sale oversold stock | `deficit` | Offline queue reconciliation |
 | `suppliers` | Supplier directory | `payment_terms` (`cash`\|`7_days`\|`15_days`), `scan_code` (QR), `usual_delivery_days`, `active` | Suppliers, Receiving |
 | `feature_flags` | Global boolean toggles (e.g. `pack_pricing`) | `key`, `enabled` | checkout_sale(), pack pricing UI |
+| `demo_products` / `demo_sales` / `demo_customers` **[Updated 2026-08-29]** | Fixed, shared sample dataset for the read-only Demo Store — **no `store_id` column at all**; every signed-in user sees the identical rows | seeded ~8 products / 5 sales / 3 customers | `/demo` page only, never joined to any real store |
+| `core.organization_subscriptions` **[Updated 2026-08-29]** | Per-org subscription/trial state (in the `core` schema, not `public`) | `status` (`TRIALING`\|`ACTIVE`\|...), `trial_ends_at` (permanent one-time-trial marker, never cleared), `plan_id` | `start_trial()`, `my_store_billing_state()`, TrialBanner, TrialExpired, Pricing |
+| `core.account_deletion_requests` **[Updated 2026-08-29]** | A sole admin's filed request to delete their account, reviewed by a platform admin in the separate Super Admin console | `status` (`PENDING`\|`APPROVED`\|`DENIED`), `requested_email`, `reason`, `resolution_note` | `delete-account` Edge Function (files), `approve-deletion-request` Edge Function (resolves) — **not reachable from this app's own UI**, see §16.1 |
 
 Do **not** expose or attempt to read: Supabase project URL/anon key/service-role key, `.env` values, or any secret. None are reproduced in this document.
 
@@ -138,6 +142,27 @@ flowchart TD
     G --> H[record_credit_payment RPC]
     H --> I[balance -= payment amount<br/>credit_payments row inserted]
     I --> G
+```
+
+### Free Demo Store + Free Trial lifecycle **[Updated 2026-08-29]**
+
+```mermaid
+flowchart TD
+    A[New admin, first sign-in<br/>onboardedAt is null] --> B["/onboarding — Welcome/Choose step"]
+    B -- Explore Demo Store --> C["/demo — read-only, shared sample data<br/>onboarding stays INCOMPLETE"]
+    C --> D[Set Up My Store link] --> E
+    B -- Set Up My Store --> E[Onboarding wizard: profile step...]
+    E --> F[Congrats step]
+    F --> G{Store already used a trial?<br/>trial_ends_at set?}
+    G -- No --> H[start_trial 'BUSINESS'<br/>trial_ends_at = now + 30 days<br/>status = TRIALING]
+    G -- Yes --> F
+    H --> I[TrialBanner shown app-wide, admin only<br/>info: 4+ days, warning: 2-3 days, urgent: <=1 day]
+    I --> J{trial_ends_at passed?}
+    J -- No --> I
+    J -- Yes, on next authenticated read --> K[core.expire_trial_if_due<br/>status -> ACTIVE, plan -> BASIC<br/>trial_ends_at stays set forever]
+    K --> L["/trial-expired shown once<br/>localStorage show-once flag"]
+    L --> M[Choose a plan -> /pricing]
+    L --> N[Continue on Basic -> /admin]
 ```
 
 ### Cashier shift (drawer) lifecycle
@@ -187,7 +212,10 @@ Derived from `src/App.tsx` (routes), `src/pages/`, and `src/lib/nav.ts` (which r
 | Settings → Devices | `/settings/devices` | List/unpair paired registers | admin (assumed) | — |
 | Settings → Plan | `/settings/plan` | Current subscription tier, upgrade request | admin (assumed) | — |
 | Settings → Audit Log | `/settings/audit-log` | Sensitive-action history | admin (assumed) | — |
-| Onboarding | `/onboarding` | First-run wizard for a new admin | admin, only if `onboardedAt` is null | `<OnboardingRoute>` wrapper |
+| Onboarding | `/onboarding` | First-run wizard for a new admin — first step is now a Welcome/Choose screen (Explore Demo Store vs. Set Up My Store) **[Updated 2026-08-29]** | admin, only if `onboardedAt` is null | `<OnboardingRoute>` wrapper |
+| Demo Store **[Updated 2026-08-29]** | `/demo` | Read-only, isolated sample sari-sari store ("Aling Nena's Sari-Sari Store") — 3 metric tiles, product list, recent sales, customers with utang. No checkout, no edits, nothing persists. | Any signed-in staff (RLS: `select ... using (true)`, not store-scoped) | — |
+| Pricing / Upgrade **[Updated 2026-08-29]** | `/pricing` | Lists every active real plan (`plan_prices()` RPC) with feature bullets; starts a 30-day trial for BUSINESS/PRO if the store hasn't used one yet | Any signed-in staff (authenticated only, no anon pricing) | — |
+| Trial Expired **[Updated 2026-08-29]** | `/trial-expired` | One-time transitional screen shown once after a trial lapses; "Choose a plan" or "Continue on Basic" | admin only, shown once per trial (localStorage-tracked) | `useTrialExpiredRedirect()` in `ProtectedRoute` |
 
 Root `/` is intercepted before it ever reaches the SPA — both `vite.config.ts` (dev/preview) and `vercel.json` (production) rewrite a fresh HTTP request for `/` straight to the static marketing page `public/landing.html`. The React route for `/` (`Navigate to="/pos"`) only fires for a client-side navigation that happens to target `/` from inside an already-mounted SPA.
 
@@ -254,6 +282,7 @@ Notes for the tester:
 - **No PIN is set yet** on any of these accounts — PIN-based quick-switch cashier login (§14) and the owner-approval-PIN override flow (§17) both need a PIN first. Sign in as QA Owner → Settings → Staff → set a PIN for QA Cashier/QA Supervisor (or sign in as each and set their own PIN under Settings → Profile → Signing in), and set the QA Owner's own PIN the same way (needed for the credit-limit-override flow).
 - **No device is paired yet.** If a "paired device / bare register" test is needed, pair one live during testing via `/pair` (Login page → "Pair a device") using a pairing code generated from Settings → Devices while signed in as QA Owner.
 - If any of these accounts stop working (e.g. staging gets reset), recreate them via `/register` (Owner) and Settings → Staff → Add Staff (Supervisor/Cashier) — do not invent new credentials without documenting them here.
+- **`[New 2026-08-29]`** These three accounts are already onboarded (`onboardedAt` set) from prior testing, so they will **not** show the new Welcome/Choose screen (§9.1) or be eligible to start a fresh trial (`start_trial` is one-time-per-store, and this store may already have `trial_ends_at` set from earlier work). To test FLOW-029/030/031 (Welcome/Choose, Explore Demo, trial start) as a genuinely fresh signup, register a **new** `QA Trial Test` store via `/register` rather than reusing QA Owner — do not repurpose QA Owner's store for this, since it would consume its one-time trial and make future re-tests of the trial-start flow impossible on that store.
 - **Which frontend URL to point the browser at**: this document's own §1 "Application URL" row is `UNKNOWN` — the frontend's staging deployment domain wasn't discoverable from the repo itself (only the Supabase *backend* project, `qfkdecarbqwbpkzqqdxk`, is known, and that's what these accounts live in). Get the staging frontend URL from the engineering team before testing, or run the app locally with `npm run dev` from a checkout whose `.env` is linked to this same staging project.
 
 ---
@@ -309,7 +338,9 @@ Field reference from `Product` type (`src/lib/types.ts`): `name`, `barcode` (nul
 
 Route: `/register` (`src/pages/Register/Register.tsx` + `hooks.tsx`).
 
-Fields: **Store name** (required, plain text), **Owner name** (required, plain text), **Email** (required, `type=email`, must match `/^[^\s@]+@[^\s@]+\.[^\s@]+$/` for the client-side green-check indicator), **Password** (required, `minLength={8}`, live strength meter scoring 0–4 based on length≥8 / mixed case / digit / symbol), a **"I agree to the Terms of Service and Privacy Policy"** checkbox (submit is disabled until checked), no separate confirm-password field (the same value is submitted twice internally).
+Fields: **Store name** (required, plain text), **Owner name** (required, plain text), **Email** (required, `type=email`, must match `/^[^\s@]+@[^\s@]+\.[^\s@]+$/` for the client-side green-check indicator), **Password** (required, `minLength={8}`, live strength meter scoring 0–4 based on length≥8 / mixed case / digit / symbol), **Confirm password** (required, same show/hide-eye UI as Password; submit is blocked with an inline error if the two don't match) **[Updated 2026-08-29 — previously there was no confirm-password field]**, and a **"I agree to the Terms of Service and Privacy Policy"** checkbox, which now renders *above* both the "Sign up with Google" button and the form (previously below the form) **[Updated 2026-08-29]** — submit and the Google button are both disabled until it's checked, and clicking either while unchecked now shows a visible error instead of doing nothing.
+
+A real, working **"Sign up with Google"** button sits between the checkbox and the form — see the Login step below for its current (no longer disabled) status **[Updated 2026-08-29]**.
 
 On submit, client-side validates: all three text fields non-empty, password ≥8 chars — then calls Supabase `auth.signUp()` with `store_name`/`owner_name` as user metadata (a `handle_new_user()` trigger, referenced in code comments, is expected to create the `stores` and `staff` rows server-side from that metadata — the trigger's own SQL was not located by filename search in this pass; **UNKNOWN — Requires clarification**, verify a store+staff row is actually created on signup).
 
@@ -323,7 +354,9 @@ On submit, client-side validates: all three text fields non-empty, password ≥8
 
 Route: `/login`.
 
-Fields: Email, Password, "Keep me signed in" checkbox (toggles Supabase session persistence between `localStorage` and a non-persistent/session-only mode), "Forgot password?" link, a disabled "Continue with Google" button (title attribute literally says *"Google sign-in isn't set up yet"* — this is `IMPLEMENTED BUT CURRENTLY INACCESSIBLE`, do not test it as a real flow), and a "Set up this device" link to `/pair`.
+Fields: Email, Password, "Keep me signed in" checkbox (toggles Supabase session persistence between `localStorage` and a non-persistent/session-only mode), "Forgot password?" link, a **working** "Continue with Google" button (real `supabase.auth.signInWithOAuth({ provider: "google", ... })` call — **`[Updated 2026-08-29]` this is no longer disabled; KI-003 below is resolved**), and a "Set up this device" link to `/pair`. A new Google user gets the same `handle_new_user()` store-creation trigger as a password signup and lands in the same onboarding wizard.
+
+**Environment caveat**: the OAuth `redirectTo` is correctly computed client-side from `window.location.origin`, but Supabase only honors it if that origin is in the project's Auth **Redirect URLs allow-list** (Supabase Dashboard → Authentication → URL Configuration), and only falls back to the project's **Site URL** otherwise. If Google sign-in on a given environment redirects to `localhost` after a successful Google login, that is a **Supabase Dashboard configuration issue for that environment, not an application code bug** — report it as an environment/config discrepancy, not a code defect.
 
 **Expected behavior**:
 - Valid credentials → signed in, redirected per `ProtectedRoute`'s logic (admin without onboarding → `/onboarding`; otherwise the requested route or `/pos`).
@@ -332,11 +365,50 @@ Fields: Email, Password, "Keep me signed in" checkbox (toggles Supabase session 
 
 ### Step 4 — Onboarding (first-run wizard, admin only)
 
-Route: `/onboarding`, wrapped in `<OnboardingRoute>`. Multi-step (source: `src/pages/Onboarding/` — `useProductsStep`, `useStockAlertsStep`, `useOpenRegisterStep`, `useCongratsStep` hooks imply a step sequence: products → stock alerts → open register/hours → congrats). The Products step can seed the catalogue from a **starter catalogue** of ~40 common sari-sari items across 6 categories (Noodles, Drinks, Snacks, Canned Goods, Household, Sachets — e.g. "Lucky Me Pancit Canton" ₱18, "555 Sardines" ₱22) with editable prices, or the admin can skip and add products manually later. Completing the wizard sets `staff.onboarded_at`, after which `ProtectedRoute` stops redirecting here.
+Route: `/onboarding`, wrapped in `<OnboardingRoute>`. **`[Updated 2026-08-29]`** The wizard's first step is now a **Welcome/Choose** screen (`WelcomeStep`) offering two cards:
+
+- **"Explore Demo Store"** — *"Try Tindahan POS with sample products and sales. Nothing you do here touches your real store."* Navigates to `/demo` (§9.1 below) and **exits the wizard without completing it** — `onboardedAt` stays null, so the admin returns to this same Welcome/Choose screen on their next visit unless they follow the Demo Store's own "Set Up My Store" link back in.
+- **"Set Up My Store"** — *"Start your real 30-day free trial. No card needed."* Continues into the real wizard: products → stock alerts → open register/hours → congrats (source: `src/pages/Onboarding/` — `useProductsStep`, `useStockAlertsStep`, `useOpenRegisterStep`, `useCongratsStep`).
+
+The Products step can seed the catalogue from a **starter catalogue** of ~40 common sari-sari items across 6 categories (Noodles, Drinks, Snacks, Canned Goods, Household, Sachets — e.g. "Lucky Me Pancit Canton" ₱18, "555 Sardines" ₱22) with editable prices, or the admin can skip and add products manually later.
+
+**Trial start** `[Updated 2026-08-29]`: reaching the **Congrats** step — not the final "Finish" click — silently fires `start_trial('BUSINESS')` if the store hasn't used a trial yet (`trial_ends_at` still null), so the congrats screen's "your 30-day trial has started" copy is already true by the time it renders. `BUSINESS` (displayed to users as **"Growth"** — see the plan-naming note in §27) is hardcoded as the wizard's default trial plan; a store that already has `trial_ends_at` set (e.g. it started a trial via the Pricing page, or via a landing-page `?plan=` CTA before finishing onboarding) skips this — a trial is one-time-ever per store, never re-triggered.
+
+Completing the wizard sets `staff.onboarded_at`, after which `ProtectedRoute` stops redirecting here.
+
+### 9.1 — Explore Demo Store `[New 2026-08-29]`
+
+Route: `/demo` (`src/pages/DemoStore/DemoStore.tsx`). A fixed, shared, **read-only** sample store labeled "Aling Nena's Sari-Sari Store" — every signed-in user on every store sees the *exact same* rows, because `demo_products`/`demo_sales`/`demo_customers` have no `store_id` column at all and their RLS policies are `select ... using (true)`. There is no checkout, no stock edit, no save button anywhere on this page — nothing a tester does here can persist or leak into a real store.
+
+Shown: 3 metric tiles (Sales this period, Low stock items, Outstanding utang), a Products list (name/category/stock status/price), a Recent sales list, and a Customers-with-utang list (filtered to `balance > 0`). A persistent, non-dismissible banner reads *"You're exploring Demo Store — sample data only. Nothing here is saved."* with a "Set Up My Store" link back into the real onboarding wizard.
+
+**Verification priority**: confirm no write action exists anywhere on this page (no "Add to cart," no edit-stock control, no "Save"), and confirm the data shown never changes based on which store/account is signed in.
 
 ### Step 5 — Dashboard (`/admin`, admin only)
 
-Cards/sections found under `src/pages/Dashboard/component/`: Best Sellers, Sales by Category, Needs Restocking, Recent Sales, Daily Transaction Details (with a totals breakdown and per-sale list), a Daily Report summary, a Subscription/plan card, and dedicated **report detail modals** for Best Sellers / Low Stock / Restocking / Sales / Utang (click-through drill-downs). Figures are built by `buildDailyReport()` (`src/lib/reports/reports.ts`) — today's total, transaction count, % change vs. yesterday (`null` if yesterday had zero sales — never shown as "∞%"), outstanding utang total, low-stock list, best sellers, up to 10 most recent sales, restock suggestions, category breakdown, VAT summary. **Voided sales are excluded from every total** but still appear (flagged) in list views.
+Cards/sections found under `src/pages/Dashboard/component/`: an **Onboarding Checklist card** ("Getting set up") `[Updated 2026-08-29]`, Best Sellers, Sales by Category, Needs Restocking, Recent Sales, Daily Transaction Details (with a totals breakdown and per-sale list), a Daily Report summary, a Subscription/plan card, and dedicated **report detail modals** for Best Sellers / Low Stock / Restocking / Sales / Utang (click-through drill-downs). Figures are built by `buildDailyReport()` (`src/lib/reports/reports.ts`) — today's total, transaction count, % change vs. yesterday (`null` if yesterday had zero sales — never shown as "∞%"), outstanding utang total, low-stock list, best sellers, up to 10 most recent sales, restock suggestions, category breakdown, VAT summary. **Voided sales are excluded from every total** but still appear (flagged) in list views.
+
+**Onboarding Checklist card** `[Updated 2026-08-29]` (`OnboardingChecklistCard`): shows "`N` of 4 done" with a progress bar and auto-hides once all 4 items are done. All 4 items are computed live from already-loaded app state (no local/hidden flags): **Add your products** (`products.length > 0`, links to Inventory), **Open the register** (drawer float `balance > 0`, links to POS), **Enter existing utang** (`customers.length > 0`, links to Customers), **Make your first sale** (`sales.length > 0`, links to POS).
+
+### 9.2 — Trial reminder banner `[New 2026-08-29]`
+
+Shown app-wide (every protected route, **admin only** — a cashier never sees it, since they can't act on plan changes and it doesn't gate anything in POS) whenever `subscriptionStatus === "TRIALING"`. Severity is purely a function of whole days remaining (rounded up, so "expires later today" still reads as 1 day left, not 0):
+
+| Days remaining | Severity | Copy |
+|---|---|---|
+| ≥ 4 | info | "You're on a free trial. `N` days left. After that you'll move back to Basic — everything you've recorded stays exactly where it is." |
+| 2–3 | warning | Same copy, warning styling |
+| ≤ 1 | urgent | "Your free trial ends today." / "...ends in 1 day." |
+
+"Choose a plan" button navigates to `/pricing`.
+
+### 9.3 — Trial expired `[New 2026-08-29]`
+
+Route: `/trial-expired`, a **one-time transitional screen**, not a gate — an admin can always reach `/admin` normally afterward. Shown exactly once per trial via a `localStorage` show-once flag (keyed per store); reappearing on every subsequent visit would itself be a bug worth reporting. Copy: *"Your free trial has ended."* / *"You're back on Basic. Everything you've recorded — products, sales, customers — stays exactly where it is. Nothing has been deleted, and selling still works."* Two CTAs: "Choose a plan" (`/pricing`) and "Continue on Basic" (`/admin`).
+
+### 9.4 — Pricing / Upgrade `[New 2026-08-29]`
+
+Route: `/pricing`, reachable by any signed-in staff member (not admin-gated — verify whether a cashier can also reach it; `UNKNOWN — Requires clarification`). Lists **every active real plan** from `plan_prices()`, not a static subset, with feature bullets translated from `my_store_features()`'s catalogue. Choosing BUSINESS ("Growth") or PRO ("Pro") starts a trial immediately if the store hasn't used one yet (same one-time `start_trial()` rule as onboarding); choosing FREE, BASIC ("Starter"), or ENTERPRISE ("Business"), or re-choosing a plan already trialed, falls back to the existing `request_plan_upgrade()` "ask a human" pattern — there is no self-serve checkout/payment collection anywhere in this app.
 
 ---
 
@@ -475,6 +547,16 @@ Permission preview reflects real, server-seeded role_permissions (not illustrati
 
 Staff → Activity Log card, Shift History modal, "On shift now" modal, Voids-this-week modal, and a Drawer Variance modal all surface derived data from `sales`/`cashier_sessions` — good candidates for cross-checking against the raw data after running the worked examples in §11–12.
 
+### 16.1 — Account deletion (Settings → Danger zone → Delete my account) `[Updated 2026-08-29]`
+
+Any signed-in staff member can request to permanently delete their own account and login access from Settings → Profile. Behavior now branches on whether the caller is their store's **only** admin:
+
+- **Not the store's only admin** (or a cashier): the account is deleted immediately via the `delete-account` Edge Function's service-role Admin API call. The caller is signed out and redirected to `/login`. Unchanged from before.
+- **The store's only admin**: deletion is **no longer flatly refused**. Instead, `delete-account` files a row in `core.account_deletion_requests` (status `PENDING`) and returns success with `requiresReview: true`. The modal shows *"You're the only admin for this store, so deleting your account closes the whole store. We've sent this to our team for review — you'll hear back by email."* — the caller **stays signed in**; nothing is deleted yet.
+- A platform admin later reviews the request in the **separate Super Admin console** (a different app, `apps/super-admin`, with its own login and its own MFA-gated `platform_admins` role — **not reachable from this app and not something a tester of this app can access without separate Super Admin credentials**). Approving deletes the requesting user's account and sets the organization's status to `CANCELLED`; denying leaves everything untouched with a note.
+
+**What a QA tester of this app can actually verify**: that a sole-admin store's delete-account attempt produces the "submitted for review" message (not the old "promote another staff member first" refusal), that the caller remains signed in and functional afterward, and that a *non*-sole-admin account still deletes immediately as before. Verifying the platform-admin approve/deny side is out of scope for this app's QA pass — it belongs to a separate Super Admin console test pass.
+
 ---
 
 ## 17. Shift Flow
@@ -555,6 +637,21 @@ Do **not** assume full BIR accreditation/compliance — the app implements VAT-b
 
 Additional flows worth adding given what this Alpha actually implements: **FLOW-023** Void a sale, **FLOW-024** Partial refund, **FLOW-025** Discount at checkout (percentage and flat, including the `pos.discounts`-feature-off rejection), **FLOW-026** QR/GCash-Maya payment with reference number, **FLOW-027** Device pairing and the locked bare-register experience, **FLOW-028** E-load / cash-in / cash-out service sale and fee-bracket accuracy.
 
+**`[New 2026-08-29]`** — Free Demo Store + Free Trial and related Register/deletion changes:
+
+| ID | Flow |
+|---|---|
+| FLOW-029 | Welcome/Choose screen — a fresh, unonboarded admin sees both "Explore Demo Store" and "Set Up My Store" cards |
+| FLOW-030 | Explore Demo Store — verify no write action exists anywhere on `/demo`, data is identical regardless of which account is signed in, and `onboardedAt` stays null after visiting |
+| FLOW-031 | Set Up My Store completes the wizard and starts a real 30-day trial (`trial_ends_at` set, status `TRIALING`) exactly once — reaching Congrats a second time (e.g. back button) must not restart or extend the trial |
+| FLOW-032 | TrialBanner severity states — info (≥4 days), warning (2–3 days), urgent (≤1 day); admin sees it, cashier does not |
+| FLOW-033 | Trial expiry — after `trial_ends_at` passes, next authenticated read reverts status to `ACTIVE`/plan `BASIC`, and `/trial-expired` shows exactly once, never again on subsequent visits |
+| FLOW-034 | Pricing page (`/pricing`) shows all 5 real plans with correct display names (Free/Starter/Growth/Pro/Business — not the internal codes) and correct prices |
+| FLOW-035 | Register — confirm-password mismatch blocks submit with a visible inline error |
+| FLOW-036 | Register — Google sign-up button is disabled (with visible, not just hover-only, feedback) until Terms is checked, then completes a real OAuth redirect |
+| FLOW-037 | Delete-account, sole admin — files a review request, shows the "submitted for review" message, caller stays signed in and functional |
+| FLOW-038 | Delete-account, non-sole admin — still deletes immediately as before, redirects to `/login` |
+
 ---
 
 ## 22. Positive and Negative Test Flows
@@ -625,6 +722,9 @@ Additional flows worth adding given what this Alpha actually implements: **FLOW-
 
 Protected (behind sign-in):
 ├── /admin                  ← Dashboard (admin only)
+├── /demo                   ← Demo Store, read-only [New 2026-08-29]
+├── /pricing                ← Pricing/Upgrade, all real plans [New 2026-08-29]
+├── /trial-expired          ← one-time post-trial screen, admin only [New 2026-08-29]
 ├── /pos                    ← POS (admin, cashier, paired device)
 ├── /inventory              ← Products / Categories
 │   └── /inventory/receiving
@@ -701,13 +801,17 @@ The app has **two separate gating layers**, both worth testing independently:
 1. **Global feature flags** (`feature_flags` table, e.g. `pack_pricing`) — a simple on/off switch, defaults to enabled if no row exists.
 2. **Per-store plan entitlement** (`core` schema) — five subscription tiers, cumulative (each tier includes everything below it):
 
-| Tier | Price | What it adds over the tier below |
-|---|---|---|
-| FREE | ₱0 | POS basics: shifts/drawer, void, discounts, pack pricing |
-| BASIC | ₱299/month (default for every new signup) | Utang, e-load/cash-in, held sales, suppliers, receiving |
-| BUSINESS | ₱599/month | Purchase orders, stock counts, unit conversions |
-| PRO | ₱999/month | Multiple registers, BIR receipting |
-| ENTERPRISE | Custom (price shown as "Contact us", never a number) | Stock transfers (multi-branch) |
+**`[Updated 2026-08-29] — Plan display names were renamed (`20260815137000_plan_display_name_rename.sql`) and this table was previously stale.** The internal `code` never changed and is what every RPC/entitlement check keys off; only the user-facing `name` changed:
+
+| `code` (internal, used by RPCs/logs) | **Display name shown to users** | Price | What it adds over the tier below |
+|---|---|---|---|
+| `FREE` | Free | ₱0 | POS basics: shifts/drawer, void, discounts, pack pricing |
+| `BASIC` | **Starter** | ₱299/month (default for every new signup) | Utang, e-load/cash-in, held sales, suppliers, receiving |
+| `BUSINESS` | **Growth** | ₱599/month (default trial plan started by onboarding) | Purchase orders, stock counts, unit conversions |
+| `PRO` | Pro | ₱999/month | Multiple registers, BIR receipting |
+| `ENTERPRISE` | **Business** | Custom (price shown as "Contact us", never a number) | Stock transfers (multi-branch) |
+
+**Naming trap for QA — verify this explicitly rather than assuming**: the plan `code = 'BUSINESS'` (₱599, the plan the free trial actually grants) now **displays as "Growth"**, while the top-tier `code = 'ENTERPRISE'` (custom pricing) now **displays as "Business"**. If you're cross-referencing a database row, an RPC error message, or an older screenshot/doc that says "BUSINESS," do not assume it refers to the plan labeled "Business" on screen — it almost certainly means "Growth." See KI-010 in §28.
 
 A feature not held by the store's plan surfaces a friendly, action-oriented message via `describePlatformError()` rather than a raw error — e.g. attempting utang on a plan without it: *"This store isn't set up for utang. You can still take cash, GCash or card — ask the owner if utang should be turned on."* Reaching a plan/device/product **limit** (not a missing feature) surfaces as e.g. *"Your plan includes 3 registers, and you are using all of them. Contact support to raise the limit."* — worth testing by pairing a 4th device on a plan capped at 3.
 
@@ -723,13 +827,15 @@ These were found by reading the source during documentation — **do not fix the
 |---|---|---|---|---|---|---|
 | KI-001 | Customers | Add Customer form collects `nickname`, `blockCreditPastLimit`, `paymentSchedule`, and `openingBalance`, but **none of the four are persisted** — the backend `customers` table only has `name`/`phone`/`credit_limit`/`balance`, and there is no RPC to set an initial balance. This is acknowledged in-code as a TODO in `src/pages/Customers/hooks.tsx`. | Fields validate and appear to save; on reload they are gone / never took effect. | Either persist them, or remove the fields/hide them until backend support exists. | Medium — silent data loss, confusing to a store owner who thinks they set a starting balance | Yes, on every Alpha build until backend support lands |
 | KI-002 | Staff | Cash-out permission is described only as a "needs-pin" UI placeholder with **no actual server-side enforcement mechanism** (comment in `src/pages/Staff/lib.ts`). | Anyone can cash-out regardless of role, if the cash-out UI is reachable at all. | A real permission check. | Low-Medium — no data corruption, but a stated security control does not exist yet | Yes |
-| KI-003 | Auth | "Continue with Google" button on Login/Register is present but explicitly disabled (`title="Google sign-in isn't set up yet"`). | Button renders, cannot be clicked. | Either implement it or remove it from Alpha UI. | Low — clearly disabled, unlikely to confuse a tester, but flag if it ever becomes clickable without working | No (unless it becomes enabled) |
+| KI-003 | Auth | **RESOLVED as of 2026-08-29.** Previously: "Continue with Google" button on Login/Register was present but explicitly disabled (`title="Google sign-in isn't set up yet"`). | Both Login's and Register's Google buttons now make a real `supabase.auth.signInWithOAuth` call. Register's button is now gated on the Terms checkbox instead (disabled + visible error until checked), not on "not set up yet." | N/A — implemented. | N/A | Keep testing Google sign-in as a real flow; if the "not set up yet" tooltip reappears anywhere, that itself is a regression worth reporting |
 | KI-004 | Shift/Drawer variance | E-load/cash-in/cash-out service amounts are **not** folded into the end-of-shift expected-cash calculation — documented as a deliberate, known limitation, not a bug, because those service amounts aren't structured data yet (free-text service names on `sale_items`). | A drawer that did e-load cash transactions will show a variance that doesn't actually indicate a real shortfall/overage. | Documented limitation; a QA tester should not file this as a bug, but should verify the UI's variance card explains it (per the migration comment, it's "documented as a known limitation on the frontend variance card"). | Low — by design, but confirm the UI disclosure is actually present | Verify UI disclosure only |
 | KI-005 | Nav / Suppliers | `/suppliers` has no sidebar/bottom-nav entry — reachable only by typing the URL directly. Explicitly called out as intentional in a code comment in `src/lib/nav.ts` ("out of scope to add one here"). | No visible way to reach Suppliers from normal navigation. | Confirm whether this is still intended for Alpha, or should be added before a wider release. | Low-Medium (discoverability) | Worth flagging to product, not a functional bug |
 | KI-006 | Receiving | Same as KI-005 — `/inventory/receiving` has no dedicated top-level nav entry either; reachable via an in-page link from Inventory or direct URL. | — | — | Low (discoverability) | Note only |
 | KI-007 | Documentation vs. code (historical) | An old comment in `0009_customer_credit.sql` states credit limits are "advisory only... nothing here enforces it." This is **stale** — the currently-live `checkout_sale()` (from `20260815132000_generic_discount.sql`) *does* enforce the limit with an admin-PIN override. Not a functional bug, but flagging in case any other in-app help text/tooltip still repeats the old "advisory only" framing. | — | — | Low — only matters if user-facing copy repeats the stale claim | Check any in-app copy about credit limits |
 | KI-008 | Settings role-gating | Individual Settings sub-pages (Store, Receipts, Fees, Alerts, Backup, Devices, Plan, Audit Log) were not each independently confirmed to be admin-only at the route/RLS level in this pass — they were inferred by convention. | UNKNOWN | A plain Cashier navigating directly to e.g. `/settings/fees` should be verified — either blocked, or shown read-only, or (if a real gap) able to edit sensitive config. | Potentially High if it turns out a Cashier can edit fee brackets, VAT rate, or BIR fields | **Yes — priority verification item, this is a security-relevant unknown, not a confirmed bug** |
 | KI-009 | Device pairing code generation | The exact place an admin generates the 6-character pairing code (for `/pair`) was not located during this documentation pass. | UNKNOWN | Verify the flow exists somewhere in Settings → Devices or Staff, and works end-to-end. | Medium — if missing, the entire multi-register feature is untestable | Yes |
+| KI-010 **[New 2026-08-29]** | Plan naming | Plan **display names** were renamed (`20260815137000_plan_display_name_rename.sql`) but the internal `code`s were not: `code='BUSINESS'` now displays as **"Growth"**, and `code='ENTERPRISE'` now displays as **"Business"** — see §27. | A raw DB row, RPC error string, or log line saying "BUSINESS" refers to the ₱599 plan shown on screen as "Growth," not to the plan labeled "Business" (which is actually ENTERPRISE/custom pricing). | Not a bug — a real, deliberate rename — but a strong source of tester/reviewer confusion when cross-referencing code, logs, and the UI. | Low functional impact, Medium documentation/communication risk | No — just keep this mapping in mind whenever a bug report needs to name a plan precisely; always state both the code and the display name |
+| KI-011 **[New 2026-08-29]** | Pricing page access | `/pricing` was not confirmed to be admin-gated or open to any signed-in role during this pass. | UNKNOWN | Verify whether a plain Cashier can reach `/pricing` and whether they can trigger `start_trial`/`request_plan_upgrade` from it. | Medium — a cashier changing plan/trial state would be a real authorization gap | Yes — priority verification item |
 
 ---
 
@@ -903,4 +1009,4 @@ This is the entire point of independent testing: to surface exactly these discre
 
 ---
 
-*End of document. This file was produced by reading the Alpha application's actual source code and database migrations in `apps/tindahan-pos` — no application code, schema, or business logic was modified in the process of producing it.*
+*End of document. This file was produced by reading the Alpha application's actual source code and database migrations in `apps/tindahan-pos` — no application code, schema, or business logic was modified in the process of producing it. Originally written 2026-08-25; updated 2026-08-29 to cover the Free Demo Store + Free Trial feature, Register-page changes, the account-deletion review queue, and a plan-display-name rename — sections carrying that update are marked `[Updated 2026-08-29]` or `[New 2026-08-29]`.*
