@@ -33,7 +33,7 @@ export function Footer() {
               { label: "FAQ", href: "#faq" },
               { label: "Documentation" },
               { label: "Privacy", href: "/privacy" },
-              { label: "Terms" },
+              { label: "Terms", href: "/terms" },
             ]}
           />
         </div>

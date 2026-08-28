@@ -86,6 +86,38 @@ export function Privacy() {
           </ul>
         </Section>
 
+        <Section title="How long we keep it">
+          <p>
+            Business data (products, sales, customers) stays for as long as your account is active, since that's
+            what the app is for. Demo-request details are kept only long enough to follow up, and are deleted once
+            an enquiry is resolved or after a reasonable inactive period. Deleting your account removes your staff
+            record; store data tied to it is handled the same way as any other account-deletion request you send
+            us.
+          </p>
+        </Section>
+
+        <Section title="Your rights under Philippine law">
+          <p>
+            As a data subject under the Data Privacy Act of 2012 (Republic Act No. 10173), you have the right to:
+          </p>
+          <ul>
+            <li>Be informed that your personal data is being processed &mdash; this notice is part of that.</li>
+            <li>Access your personal data and get a copy of it (the in-app export covers most of this already).</li>
+            <li>Correct any inaccurate or outdated information we hold about you.</li>
+            <li>
+              Object to, or ask us to erase or block, processing of your data, where the law allows &mdash; for
+              example, a demo request we haven't yet acted on.
+            </li>
+            <li>Data portability, for data we process by electronic means.</li>
+            <li>File a complaint with the National Privacy Commission if you believe your rights were violated.</li>
+          </ul>
+          <p>
+            To exercise any of these, contact us at the email below. We haven't yet formally confirmed whether NPC
+            registration applies to us at our current size &mdash; we intend to comply with whatever the law
+            requires as the business grows.
+          </p>
+        </Section>
+
         <Section title="Contact">
           <p>
             Questions about this notice or your data can go to{" "}

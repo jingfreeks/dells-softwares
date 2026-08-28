@@ -14,3 +14,4 @@ export * from "./Reports";
 export * from "./Settings";
 export * from "./Staff";
 export * from "./Suppliers";
+export * from "./Terms";
