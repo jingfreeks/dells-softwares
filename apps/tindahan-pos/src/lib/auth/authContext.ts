@@ -24,6 +24,10 @@ export interface AuthContextValue {
   /** keepSignedIn (default true) controls whether the session survives
    * closing the browser — see togglablePersistenceStorage. */
   login: (email: string, password: string, keepSignedIn?: boolean) => Promise<AuthResult>;
+  /** Redirects the browser to Google -- resolves once the redirect has been
+   * initiated (or failed, e.g. the provider isn't enabled yet), not once
+   * sign-in completes. The same call for both "sign in" and "sign up". */
+  loginWithGoogle: () => Promise<AuthResult>;
   register: (input: {
     storeName: string;
     ownerName: string;

@@ -165,6 +165,7 @@ function baseAuthValue() {
     authError: null as string | null,
     retryAuth: vi.fn(),
     login: vi.fn().mockResolvedValue({ ok: true }),
+    loginWithGoogle: vi.fn().mockResolvedValue({ ok: true }),
     register: vi.fn().mockResolvedValue({ ok: true, needsEmailConfirmation: false }),
     logout: vi.fn().mockResolvedValue(undefined),
     requestPasswordReset: vi.fn().mockResolvedValue({ ok: true }),

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib";
 
 export function useLoginForm() {
-  const { user, login } = useAuth();
+  const { user, login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -11,6 +11,7 @@ export function useLoginForm() {
   const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -27,6 +28,18 @@ export function useLoginForm() {
     }
   }
 
+  async function handleGoogleSignIn() {
+    setError(null);
+    setGoogleSubmitting(true);
+    const result = await loginWithGoogle();
+    // Success navigates the browser away to Google -- only a failure ever
+    // reaches this line (provider not enabled, network error, etc.).
+    if (!result.ok) {
+      setError(result.error);
+      setGoogleSubmitting(false);
+    }
+  }
+
   return {
     user,
     email,
@@ -40,5 +53,7 @@ export function useLoginForm() {
     error,
     submitting,
     handleSubmit,
+    googleSubmitting,
+    handleGoogleSignIn,
   };
 }

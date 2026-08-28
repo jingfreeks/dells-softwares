@@ -222,6 +222,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
+  /**
+   * Same call for sign-in and sign-up -- Supabase doesn't distinguish them
+   * for OAuth, it creates the auth.users row on first login if one doesn't
+   * exist yet. That row fires the same handle_new_user trigger a password
+   * signUp does, so a brand-new Google user gets a store/staff row (falling
+   * back to "My Store"/their email, since Google's profile fields don't
+   * match the store_name/owner_name keys the trigger reads from
+   * raw_user_meta_data) and lands in the same onboarding wizard.
+   */
+  async function loginWithGoogle(): Promise<AuthResult> {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/` },
+    });
+    if (error) return { ok: false, error: friendlyAuthError(error.message) };
+    return { ok: true };
+  }
+
   async function register(input: {
     storeName: string;
     ownerName: string;
@@ -400,6 +418,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authError,
         retryAuth,
         login,
+        loginWithGoogle,
         register,
         logout,
         requestPasswordReset,

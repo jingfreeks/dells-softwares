@@ -75,6 +75,8 @@ export function Login() {
     error,
     submitting,
     handleSubmit,
+    googleSubmitting,
+    handleGoogleSignIn,
   } = useLoginForm();
   const navigate = useNavigate();
 
@@ -84,15 +86,9 @@ export function Login() {
     <div className="tpl-root tpl-shell">
       <div className="tpl-form-pane">
         <div className="tpl-form-inner">
-          {/* A plain <a>, not react-router's <Link>: "/" is the static
-              public/landing.html, served by vite.config.ts's
-              serveLandingAtRoot plugin / vercel.json's rewrite -- both only
-              intercept a real HTTP request. A client-side route change
-              would land on the SPA's own bare "/" redirect instead and never
-              show the actual marketing page. */}
-          <a href="/" className="tpl-lnk" style={{ display: "inline-block", marginBottom: 12, fontSize: 13 }}>
+          <Link to="/" className="tpl-lnk" style={{ display: "inline-block", marginBottom: 12, fontSize: 13 }}>
             {LINK_BACK_TO_HOME}
-          </a>
+          </Link>
           <Titleheader />
 
           <div className="tpl-seg" role="tablist">
@@ -120,11 +116,11 @@ export function Login() {
           <button
             type="button"
             className="tpl-btn"
-            disabled
-            title="Google sign-in isn't set up yet"
+            disabled={googleSubmitting || submitting}
+            onClick={handleGoogleSignIn}
           >
             <i className="ti ti-brand-google" aria-hidden />
-            {BUTTON_CONTINUE_WITH_GOOGLE}
+            {googleSubmitting ? BUTTON_SIGNING_IN : BUTTON_CONTINUE_WITH_GOOGLE}
           </button>
 
           <div className="tpl-or-row">
