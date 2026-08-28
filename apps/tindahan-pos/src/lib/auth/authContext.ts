@@ -26,8 +26,12 @@ export interface AuthContextValue {
   login: (email: string, password: string, keepSignedIn?: boolean) => Promise<AuthResult>;
   /** Redirects the browser to Google -- resolves once the redirect has been
    * initiated (or failed, e.g. the provider isn't enabled yet), not once
-   * sign-in completes. The same call for both "sign in" and "sign up". */
-  loginWithGoogle: () => Promise<AuthResult>;
+   * sign-in completes. The same call for both "sign in" and "sign up".
+   * `planCode`, when given (a landing-page CTA carried in via ?plan=CODE),
+   * is threaded through the OAuth round trip via the redirect URL so
+   * HomeRedirect can start the trial once the user lands back signed in —
+   * see loginWithGoogle's own comment for why this can't happen here. */
+  loginWithGoogle: (planCode?: string) => Promise<AuthResult>;
   register: (input: {
     storeName: string;
     ownerName: string;

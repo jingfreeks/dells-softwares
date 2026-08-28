@@ -104,6 +104,18 @@ describe("Register", () => {
     expect(loginWithGoogle).toHaveBeenCalled();
   });
 
+  it("carries a selected plan code into the Google OAuth redirect", async () => {
+    const user = userEvent.setup();
+    const loginWithGoogle = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, loginWithGoogle }));
+    renderRegister("/register?plan=BUSINESS");
+
+    await user.click(screen.getByRole("checkbox", { name: /Terms of Service/ }));
+    await user.click(screen.getByRole("button", { name: "Sign up with Google" }));
+
+    expect(loginWithGoogle).toHaveBeenCalledWith("BUSINESS");
+  });
+
   it("shows an error if the Google redirect fails to start", async () => {
     const user = userEvent.setup();
     const loginWithGoogle = vi.fn().mockResolvedValue({ ok: false, error: "Google sign-in isn't enabled yet." });
