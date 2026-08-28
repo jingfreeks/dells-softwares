@@ -1,11 +1,15 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { OnboardingScreen } from "../onboardingscreen";
 import { useAuth } from "../../lib/auth";
+import { useBillingState } from "../../lib/billing";
+import { startTrialBestEffort } from "../../lib/startTrial";
 import { useStoreData } from "../../lib/storeData";
 import { pickAndOptimizeImage, uploadImage } from "../../lib/imageUpload";
 import { pickCsvFileText } from "../../lib/documentPicker";
 
 jest.mock("../../lib/auth", () => ({ useAuth: jest.fn() }));
+jest.mock("../../lib/billing", () => ({ useBillingState: jest.fn() }));
+jest.mock("../../lib/startTrial", () => ({ startTrialBestEffort: jest.fn() }));
 jest.mock("../../lib/storeData", () => ({ useStoreData: jest.fn() }));
 jest.mock("../../lib/imageUpload", () => ({
   pickAndOptimizeImage: jest.fn().mockResolvedValue(null),
@@ -19,6 +23,8 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
 }));
 
 const mockedUseAuth = useAuth as jest.Mock;
+const mockedUseBillingState = useBillingState as jest.Mock;
+const mockedStartTrialBestEffort = startTrialBestEffort as jest.Mock;
 const mockedUseStoreData = useStoreData as jest.Mock;
 const mockedPickAndOptimizeImage = pickAndOptimizeImage as jest.Mock;
 const mockedUploadImage = uploadImage as jest.Mock;
@@ -36,6 +42,8 @@ function setup(
     completeOnboarding?: jest.Mock;
     addProduct?: jest.Mock;
     addCategory?: jest.Mock;
+    onExploreDemo?: jest.Mock;
+    billing?: unknown;
   } = {}
 ) {
   const updateProfile = overrides.updateProfile ?? jest.fn().mockResolvedValue({ ok: true });
@@ -43,6 +51,7 @@ function setup(
   const completeOnboarding = overrides.completeOnboarding ?? jest.fn().mockResolvedValue({ ok: true });
   const addProduct = overrides.addProduct ?? jest.fn().mockResolvedValue({});
   const addCategory = overrides.addCategory ?? jest.fn().mockResolvedValue({ id: "c1", name: "Grocery" });
+  const onExploreDemo = overrides.onExploreDemo ?? jest.fn();
 
   mockedUseAuth.mockReturnValue({
     user: { id: "u1", storeId: "s1", name: "Lyndell", email: "a@b.com", role: "admin", avatarUrl: null, phone: null, address: null, onboardedAt: null },
@@ -51,6 +60,7 @@ function setup(
     updateStore,
     completeOnboarding,
   });
+  mockedUseBillingState.mockReturnValue(overrides.billing ?? null);
   mockedUseStoreData.mockReturnValue({
     products: [],
     categories: [],
@@ -62,8 +72,8 @@ function setup(
     addCategory,
   });
 
-  render(<OnboardingScreen />);
-  return { updateProfile, updateStore, completeOnboarding, addProduct, addCategory };
+  render(<OnboardingScreen onExploreDemo={onExploreDemo} />);
+  return { updateProfile, updateStore, completeOnboarding, addProduct, addCategory, onExploreDemo };
 }
 
 describe("OnboardingScreen", () => {
@@ -74,6 +84,7 @@ describe("OnboardingScreen", () => {
     mockedPickAndOptimizeImage.mockReset().mockResolvedValue(null);
     mockedUploadImage.mockReset().mockResolvedValue("https://example.com/image.jpg");
     mockedPickCsvFileText.mockReset().mockResolvedValue(null);
+    mockedStartTrialBestEffort.mockClear();
   });
 
   it("imports products from a picked CSV file, resolving categories and skipping bad rows", async () => {
@@ -87,7 +98,7 @@ describe("OnboardingScreen", () => {
     const addProduct = jest.fn().mockResolvedValue({});
     setup({ addProduct, addCategory });
 
-    fireEvent.press(screen.getByRole("button", { name: "Start setup" }));
+    fireEvent.press(screen.getByRole("button", { name: "Set Up My Store" }));
     await screen.findByText("Tell us about you and your shop");
     fireEvent.press(screen.getByRole("button", { name: "Continue" }));
     await screen.findByText("What do you sell?");
@@ -104,7 +115,7 @@ describe("OnboardingScreen", () => {
     const addProduct = jest.fn();
     setup({ addProduct });
 
-    fireEvent.press(screen.getByRole("button", { name: "Start setup" }));
+    fireEvent.press(screen.getByRole("button", { name: "Set Up My Store" }));
     await screen.findByText("Tell us about you and your shop");
     fireEvent.press(screen.getByRole("button", { name: "Continue" }));
     await screen.findByText("What do you sell?");
@@ -120,7 +131,7 @@ describe("OnboardingScreen", () => {
     const addProduct = jest.fn();
     setup({ addProduct });
 
-    fireEvent.press(screen.getByRole("button", { name: "Start setup" }));
+    fireEvent.press(screen.getByRole("button", { name: "Set Up My Store" }));
     await screen.findByText("Tell us about you and your shop");
     fireEvent.press(screen.getByRole("button", { name: "Continue" }));
     await screen.findByText("What do you sell?");
@@ -135,7 +146,7 @@ describe("OnboardingScreen", () => {
     mockedPickAndOptimizeImage.mockResolvedValue({ uri: "file:///tmp/pic.jpg", base64: "abc", contentType: "image/jpeg" });
     const { updateProfile, updateStore } = setup();
 
-    fireEvent.press(screen.getByRole("button", { name: "Start setup" }));
+    fireEvent.press(screen.getByRole("button", { name: "Set Up My Store" }));
     await screen.findByText("Tell us about you and your shop");
 
     fireEvent.press(screen.getByRole("button", { name: "Add your photo" }));
@@ -158,7 +169,7 @@ describe("OnboardingScreen", () => {
     mockedPickAndOptimizeImage.mockRejectedValue(new Error("That image is too large (max 8MB)."));
     setup();
 
-    fireEvent.press(screen.getByRole("button", { name: "Start setup" }));
+    fireEvent.press(screen.getByRole("button", { name: "Set Up My Store" }));
     await screen.findByText("Tell us about you and your shop");
     fireEvent.press(screen.getByRole("button", { name: "Add your photo" }));
 
@@ -177,7 +188,7 @@ describe("OnboardingScreen", () => {
   it("clears the saved step once onboarding actually finishes", async () => {
     const { completeOnboarding } = setup({ completeOnboarding: jest.fn().mockResolvedValue({ ok: true }) });
 
-    fireEvent.press(screen.getByRole("button", { name: "Start setup" }));
+    fireEvent.press(screen.getByRole("button", { name: "Set Up My Store" }));
     await screen.findByText("Tell us about you and your shop");
     fireEvent.press(screen.getByRole("button", { name: "Continue" }));
     await screen.findByText("What do you sell?");
@@ -198,7 +209,7 @@ describe("OnboardingScreen", () => {
   it("walks Welcome -> Profile -> skip through to Done and finishes", async () => {
     const { updateProfile, updateStore, completeOnboarding } = setup();
 
-    fireEvent.press(screen.getByRole("button", { name: "Start setup" }));
+    fireEvent.press(screen.getByRole("button", { name: "Set Up My Store" }));
     expect(await screen.findByText("Tell us about you and your shop")).toBeTruthy();
 
     fireEvent.press(screen.getByRole("button", { name: "Continue" }));
@@ -218,14 +229,53 @@ describe("OnboardingScreen", () => {
     fireEvent.press(screen.getByText("Skip the count"));
 
     expect(await screen.findByText(/The register is open/)).toBeTruthy();
+    // Trial starts on reaching Done, not on the final tap -- its
+    // confirmation copy is already on this screen (mobile-30).
+    expect(mockedStartTrialBestEffort).toHaveBeenCalledWith("BUSINESS");
+    expect(await screen.findByText("Your 30-day free trial has started.")).toBeTruthy();
+
     fireEvent.press(screen.getByRole("button", { name: "Start selling" }));
 
     await waitFor(() => expect(completeOnboarding).toHaveBeenCalledTimes(1));
   });
 
+  it("calls onExploreDemo when Explore Demo is chosen instead of Set Up My Store", async () => {
+    const { onExploreDemo } = setup();
+
+    fireEvent.press(screen.getByRole("button", { name: "Explore Demo" }));
+
+    expect(onExploreDemo).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not start a second trial if the store is already trialing", async () => {
+    setup({
+      billing: {
+        organizationStatus: "ACTIVE",
+        subscriptionStatus: "TRIALING",
+        writesAllowed: true,
+        graceEndsAt: null,
+        trialEndsAt: "2026-09-20T00:00:00Z",
+      },
+    });
+
+    fireEvent.press(screen.getByRole("button", { name: "Set Up My Store" }));
+    await screen.findByText("Tell us about you and your shop");
+    fireEvent.press(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByText("What do you sell?");
+    fireEvent.press(screen.getByRole("button", { name: "Skip" }));
+    await screen.findByText("When should we warn you?");
+    fireEvent.press(screen.getByRole("button", { name: "Skip" }));
+    await screen.findByText("Count your starting cash");
+    fireEvent.press(screen.getByText("Skip the count"));
+    await screen.findByText(/The register is open/);
+
+    expect(mockedStartTrialBestEffort).not.toHaveBeenCalled();
+    expect(screen.queryByText("Your 30-day free trial has started.")).toBeNull();
+  });
+
   it("shows a profile error and does not advance when the name is missing", async () => {
     setup();
-    fireEvent.press(screen.getByRole("button", { name: "Start setup" }));
+    fireEvent.press(screen.getByRole("button", { name: "Set Up My Store" }));
     await screen.findByText("Tell us about you and your shop");
 
     fireEvent.changeText(screen.getByLabelText("Your name"), "");
