@@ -757,6 +757,17 @@ export const TEXT_WELCOME_STEP_PROFILE_DESC = "Your name and shop details";
 export const TEXT_WELCOME_STEP_PRODUCTS_DESC = "Start from a ready-made list";
 export const TEXT_WELCOME_STEP_STOCK_ALERTS_DESC = "We suggest a sensible default";
 export const TEXT_WELCOME_STEP_OPEN_REGISTER_DESC = "Count your starting cash";
+
+// Onboarding — Welcome/Choose (Demo Store vs. real trial)
+export const TEXT_WELCOME_CHOOSE_HEADLINE_PREFIX = "Welcome,";
+export const LABEL_EXPLORE_DEMO_STORE = "Explore Demo Store";
+export const TEXT_EXPLORE_DEMO_STORE_DESC =
+  "Try Tindahan POS with sample products and sales. Nothing you do here touches your real store.";
+export const BUTTON_EXPLORE_DEMO_STORE = "Explore Demo Store";
+export const LABEL_SET_UP_MY_STORE = "Set Up My Store";
+export const TEXT_SET_UP_MY_STORE_DESC = "Start your real 30-day free trial. No card needed.";
+export const BUTTON_SET_UP_MY_STORE = "Set Up My Store";
+export const TEXT_TRIAL_STARTED_BANNER = "Your 30-day free trial has started.";
 export const TEXT_ABOUT_LOWERCASE_PREFIX = "about";
 export const TEXT_MIN_SUFFIX = "min";
 export const TEXT_YOU_CAN_LEAVE_ANY_STEP_TITLE = "You can leave any step for later";
@@ -1338,7 +1349,7 @@ export const BUTTON_COMPARE_PLANS = "Compare plans";
 export const BUTTON_MAYBE_LATER = "Maybe later";
 export const ARIA_VIEW_UPGRADE_OPTIONS = "View upgrade options";
 export const LINK_BACK_TO_HOME = "← Back to home";
-export const TEXT_REGISTER_TRIAL_PREFIX = "14-day free trial of ";
+export const TEXT_REGISTER_TRIAL_PREFIX = "30-day free trial of ";
 export const TEXT_REGISTER_TRIAL_THEN_PREFIX = ", then ";
 export const TEXT_ADDONS_HEADING = "Add-ons";
 export const TEXT_ADDON_ACCOUNTING_NAME = "Accounting";

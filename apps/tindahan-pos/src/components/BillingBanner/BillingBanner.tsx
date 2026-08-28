@@ -1,4 +1,7 @@
+import { useNavigate } from "react-router-dom";
 import { useAuth, useBillingState } from "@/lib";
+import { daysUntil } from "@/lib/billing/trialCountdown";
+import { TrialBanner } from "./TrialBanner";
 
 /**
  * The §08 billing warning, for the POS.
@@ -29,6 +32,7 @@ import { useAuth, useBillingState } from "@/lib";
 export function BillingBanner() {
   const { user } = useAuth();
   const billing = useBillingState();
+  const navigate = useNavigate();
 
   if (!billing || user?.role !== "admin") return null;
 
@@ -66,18 +70,12 @@ export function BillingBanner() {
   }
 
   if (billing.subscriptionStatus === "TRIALING") {
-    const until = billing.trialEndsAt
-      ? new Date(billing.trialEndsAt).toLocaleDateString()
-      : null;
+    if (!billing.trialEndsAt) return null;
     return (
-      <div
-        role="status"
-        className="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900"
-      >
-        <span className="font-medium">You're on a free trial.</span>{" "}
-        {until ? `Ends ${until}. ` : ""}After that you'll move back to Basic —
-        everything you've recorded stays exactly where it is.
-      </div>
+      <TrialBanner
+        daysRemaining={daysUntil(billing.trialEndsAt)}
+        onUpgradeClick={() => navigate("/pricing")}
+      />
     );
   }
 

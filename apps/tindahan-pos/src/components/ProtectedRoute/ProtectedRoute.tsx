@@ -6,6 +6,7 @@ import { BillingBanner } from "@/components/BillingBanner";
 import { BottomNav } from "@/components/BottomNav";
 import { PageLoadingOverlay } from "@/components/PageLoadingOverlay";
 import { PageErrorOverlay } from "@/components/PageErrorOverlay";
+import { useTrialExpiredRedirect } from "@/lib/billing/useTrialExpiredRedirect";
 import "@/pages/authTheme.css";
 
 // A layout route (rendered once via <Route element={<ProtectedRoute />}>
@@ -17,6 +18,7 @@ import "@/pages/authTheme.css";
 export function ProtectedRoute() {
   const { user, deviceSession, loading, authError, retryAuth } = useAuth();
   const location = useLocation();
+  useTrialExpiredRedirect();
 
   if (loading) {
     return <PageLoadingOverlay variant="dark" />;
@@ -49,8 +51,11 @@ export function ProtectedRoute() {
 
   // Admins who haven't finished the post-registration onboarding wizard get
   // bounced there from any other protected route — cashiers never see it
-  // since only the registering admin sets up store info.
-  if (user.role === "admin" && !user.onboardedAt) {
+  // since only the registering admin sets up store info. /demo is the one
+  // exception: "Explore Demo Store" is chosen from inside the wizard
+  // (WelcomeStep) precisely so the real store can stay un-onboarded while
+  // it's used, so this gate must not immediately bounce it back.
+  if (user.role === "admin" && !user.onboardedAt && location.pathname !== "/demo") {
     return <Navigate to="/onboarding" replace />;
   }
 

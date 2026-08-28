@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useAuth,
+  useBillingState,
   supabase,
   uploadImage,
   validateAndOptimizeImage,
@@ -12,6 +13,7 @@ import {
 } from "@/lib";
 import { loadOnboardingStep, saveOnboardingStep, clearOnboardingStep } from "./onboardingProgress";
 import { loadOpeningHours, saveOpeningHours, DEFAULT_OPENING_HOURS } from "./openingHoursSettings";
+import { startTrialBestEffort } from "@/lib/billing/startTrial";
 
 const AVATAR_MAX_DIMENSION = 512;
 const STORE_PHOTO_MAX_DIMENSION = 1024;
@@ -20,8 +22,10 @@ export type OnboardingStep = "welcome" | "profile" | "products" | "stockAlerts" 
 
 export function useOnboardingWizard() {
   const { user, store, updateProfile, updateStore, completeOnboarding } = useAuth();
+  const billing = useBillingState();
   const navigate = useNavigate();
   const [step, setStep] = useState<OnboardingStep>("welcome");
+  const [trialStarted, setTrialStarted] = useState(false);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -198,6 +202,10 @@ export function useOnboardingWizard() {
     setStep("products");
   }
 
+  function goToExploreDemo() {
+    navigate("/demo", { replace: true });
+  }
+
   function goToProfileStep() {
     setStep("profile");
   }
@@ -215,6 +223,19 @@ export function useOnboardingWizard() {
     // user.onboardedAt, and OnboardingRoute would immediately redirect
     // away before the congrats step ever renders. It's marked complete
     // when they leave via "Start selling"/"See the dashboard" instead.
+    //
+    // The trial itself starts here, not on finish: mockup 47's "your
+    // 30-day trial has started" copy is shown on this very screen, so it
+    // needs to already be true by the time it renders. Reaching congrats
+    // only happens via the real "Set Up My Store" path (Explore Demo exits
+    // the wizard entirely via goToExploreDemo), so this fires
+    // unconditionally -- start_trial() itself is the idempotency guard
+    // (TRIAL_ALREADY_USED) if a landing-page ?plan= CTA already started one
+    // at Register time.
+    if (!billing?.trialEndsAt) {
+      startTrialBestEffort("BUSINESS");
+      setTrialStarted(true);
+    }
     setStep("congrats");
   }
 
@@ -237,6 +258,7 @@ export function useOnboardingWizard() {
 
   return {
     step,
+    goToExploreDemo,
     goToProfileStep,
     goToStockAlertsStep,
     goToOpenRegisterStep,
@@ -278,5 +300,6 @@ export function useOnboardingWizard() {
     finishing,
     finishError,
     onFinish: handleFinish,
+    trialStarted,
   };
 }

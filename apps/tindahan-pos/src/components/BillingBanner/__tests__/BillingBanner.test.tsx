@@ -1,5 +1,6 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 
 // Mocking the two hooks rather than the network keeps each case about the
 // one thing it tests: which message a given (role, billing state) pair
@@ -13,6 +14,16 @@ vi.mock("@/lib", () => ({
 }));
 
 import { BillingBanner } from "../BillingBanner";
+
+function renderBanner() {
+  return render(
+    <MemoryRouter>
+      <BillingBanner />
+    </MemoryRouter>
+  );
+}
+
+const NOW = new Date("2026-08-28T12:00:00Z");
 
 const ADMIN = { user: { role: "admin" } };
 const CASHIER = { user: { role: "cashier" } };
@@ -39,31 +50,37 @@ const TRIALING = {
 };
 
 beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(NOW);
   useAuth.mockReset().mockReturnValue(ADMIN);
   useBillingState.mockReset().mockReturnValue(ACTIVE);
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("BillingBanner", () => {
   it("says nothing when the account is in good standing", () => {
-    const { container } = render(<BillingBanner />);
+    const { container } = renderBanner();
     expect(container).toBeEmptyDOMElement();
   });
 
   it("says nothing while the answer is still unknown", () => {
     useBillingState.mockReturnValue(null);
-    const { container } = render(<BillingBanner />);
+    const { container } = renderBanner();
     expect(container).toBeEmptyDOMElement();
   });
 
   it("warns an admin that the account is suspended", () => {
     useBillingState.mockReturnValue(SUSPENDED);
-    render(<BillingBanner />);
+    renderBanner();
     expect(screen.getByRole("status")).toHaveTextContent(/account is suspended/i);
   });
 
   it("distinguishes a cancelled subscription from a suspended one", () => {
     useBillingState.mockReturnValue(CANCELLED);
-    render(<BillingBanner />);
+    renderBanner();
     expect(screen.getByRole("status")).toHaveTextContent(/subscription has ended/i);
   });
 
@@ -71,19 +88,19 @@ describe("BillingBanner", () => {
     // Suspension withdraws back-office writes only. Implying the till is
     // dead would be false and would cause a panic call.
     useBillingState.mockReturnValue(SUSPENDED);
-    render(<BillingBanner />);
+    renderBanner();
     expect(screen.getByRole("status")).toHaveTextContent(/selling still works/i);
   });
 
   it("never claims existing records are gone", () => {
     useBillingState.mockReturnValue(SUSPENDED);
-    render(<BillingBanner />);
+    renderBanner();
     expect(screen.getByRole("status")).toHaveTextContent(/nothing you.{0,3}ve already recorded/i);
   });
 
   it("warns during grace and names the deadline", () => {
     useBillingState.mockReturnValue(PAST_DUE);
-    render(<BillingBanner />);
+    renderBanner();
     const banner = screen.getByRole("status");
     expect(banner).toHaveTextContent(/overdue/i);
     expect(banner).toHaveTextContent(new Date(PAST_DUE.graceEndsAt).toLocaleDateString());
@@ -91,36 +108,45 @@ describe("BillingBanner", () => {
 
   it("stays coherent when the grace deadline is missing", () => {
     useBillingState.mockReturnValue({ ...PAST_DUE, graceEndsAt: null });
-    render(<BillingBanner />);
+    renderBanner();
     expect(screen.getByRole("status")).toHaveTextContent(/Everything still works\. After that/i);
   });
 
-  it("tells an admin they're on a trial, and names the deadline", () => {
+  it("tells an admin they're on a trial, and how many days are left", () => {
     useBillingState.mockReturnValue(TRIALING);
-    render(<BillingBanner />);
+    renderBanner();
     const banner = screen.getByRole("status");
     expect(banner).toHaveTextContent(/free trial/i);
-    expect(banner).toHaveTextContent(new Date(TRIALING.trialEndsAt).toLocaleDateString());
+    expect(banner).toHaveTextContent(/8 days left/i);
   });
 
   it("says the trial reverts to Basic, not that anything is lost", () => {
     useBillingState.mockReturnValue(TRIALING);
-    render(<BillingBanner />);
+    renderBanner();
     const banner = screen.getByRole("status");
     expect(banner).toHaveTextContent(/move back to Basic/i);
     expect(banner).toHaveTextContent(/stays exactly where it is/i);
   });
 
-  it("stays coherent when the trial deadline is missing", () => {
+  it("shows the urgent severity in the final day", () => {
+    useBillingState.mockReturnValue({ ...TRIALING, trialEndsAt: "2026-08-29T05:40:41Z" });
+    renderBanner();
+    expect(screen.getByRole("status")).toHaveTextContent(/free trial ends/i);
+  });
+
+  it("says nothing when TRIALING but the deadline is missing", () => {
+    // Backend invariant: my_store_billing_state() only sets trial_ends_at
+    // while TRIALING. If it's ever absent there is nothing true to compute
+    // a countdown from, so this renders nothing rather than guess.
     useBillingState.mockReturnValue({ ...TRIALING, trialEndsAt: null });
-    render(<BillingBanner />);
-    expect(screen.getByRole("status")).toHaveTextContent(/free trial\. After that/i);
+    const { container } = renderBanner();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("shows nothing to a cashier during a trial either", () => {
     useAuth.mockReturnValue(CASHIER);
     useBillingState.mockReturnValue(TRIALING);
-    const { container } = render(<BillingBanner />);
+    const { container } = renderBanner();
     expect(container).toBeEmptyDOMElement();
   });
 
@@ -129,14 +155,14 @@ describe("BillingBanner", () => {
     // A cashier cannot pay the bill, and the POS screen faces the customer.
     useAuth.mockReturnValue(CASHIER);
     useBillingState.mockReturnValue(SUSPENDED);
-    const { container } = render(<BillingBanner />);
+    const { container } = renderBanner();
     expect(container).toBeEmptyDOMElement();
   });
 
   it("shows nothing to a cashier during grace either", () => {
     useAuth.mockReturnValue(CASHIER);
     useBillingState.mockReturnValue(PAST_DUE);
-    const { container } = render(<BillingBanner />);
+    const { container } = renderBanner();
     expect(container).toBeEmptyDOMElement();
   });
 
@@ -144,7 +170,7 @@ describe("BillingBanner", () => {
     // A register has no staff row at all, and sits facing the customer.
     useAuth.mockReturnValue(DEVICE);
     useBillingState.mockReturnValue(SUSPENDED);
-    const { container } = render(<BillingBanner />);
+    const { container } = renderBanner();
     expect(container).toBeEmptyDOMElement();
   });
 });

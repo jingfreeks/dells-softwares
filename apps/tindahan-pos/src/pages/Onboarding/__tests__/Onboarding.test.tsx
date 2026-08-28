@@ -5,12 +5,14 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import {
   useAuth,
   useStoreData,
+  useBillingState,
   validateAndOptimizeImage,
   uploadImage,
   DrawerFloatProvider,
   useDrawerFloat,
   PESO,
 } from "@/lib";
+import { supabase } from "@/lib/supabaseClient";
 import {
   makeAuthValue,
   makeStaffAccount,
@@ -23,11 +25,12 @@ import { Onboarding } from "../Onboarding";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/lib/storeData", () => ({ useStoreData: vi.fn() }));
-vi.mock("@/lib/supabaseClient", () => ({ supabase: {} }));
+vi.mock("@/lib/supabaseClient", () => ({ supabase: { rpc: vi.fn().mockResolvedValue({ data: null, error: null }) } }));
 vi.mock("@/lib/imageUpload", () => ({
   validateAndOptimizeImage: vi.fn(),
   uploadImage: vi.fn(),
 }));
+vi.mock("@/lib/billing", () => ({ useBillingState: vi.fn(() => null) }));
 
 function makeImageFile(name = "photo.jpg") {
   return new File([new Uint8Array([1, 2, 3])], name, { type: "image/jpeg" });
@@ -54,7 +57,7 @@ function renderPage() {
 }
 
 async function goToProfileStep(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: "Start setup" }));
+  await user.click(screen.getByRole("button", { name: "Set Up My Store" }));
 }
 
 async function goToProductsStep(user: ReturnType<typeof userEvent.setup>) {
@@ -80,22 +83,35 @@ async function goToCongratsStep(user: ReturnType<typeof userEvent.setup>) {
 describe("Onboarding", () => {
   beforeEach(() => {
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue());
+    vi.mocked(useBillingState).mockReturnValue(null);
+    vi.mocked(supabase.rpc).mockClear();
     window.localStorage.clear();
   });
 
-  it("shows the welcome step first", () => {
-    vi.mocked(useAuth).mockReturnValue(makeAuthValue());
+  it("shows the welcome/choose step first", () => {
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ name: "Aling Nena" }) }));
     renderPage();
-    expect(screen.getByText("Let's get your shop ready to sell.")).toBeInTheDocument();
+    expect(screen.getByText(/Welcome, Aling Nena/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Explore Demo Store" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Set Up My Store" })).toBeInTheDocument();
   });
 
-  it("skips straight to the open register step from welcome", async () => {
+  it("routes to the demo store when Explore Demo Store is chosen", async () => {
     const user = userEvent.setup();
     vi.mocked(useAuth).mockReturnValue(makeAuthValue());
-    renderPage();
+    render(
+      <DrawerFloatProvider>
+        <MemoryRouter initialEntries={["/onboarding"]}>
+          <Routes>
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/demo" element={<p>Demo store page</p>} />
+          </Routes>
+        </MemoryRouter>
+      </DrawerFloatProvider>
+    );
 
-    await user.click(screen.getByRole("button", { name: "Skip — take me to the register" }));
-    expect(await screen.findByText("Count your starting cash")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Explore Demo Store" }));
+    expect(await screen.findByText("Demo store page")).toBeInTheDocument();
   });
 
   it("moves to the profile step, prefilled from the signed-in user and store", async () => {
@@ -362,6 +378,37 @@ describe("Onboarding", () => {
       await user.click(screen.getByRole("button", { name: "Start selling" }));
       expect(completeOnboarding).toHaveBeenCalled();
       expect(await screen.findByText("POS page")).toBeInTheDocument();
+    });
+
+    it("starts a real trial on reaching congrats, and shows the confirmation", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ store: makeStore({ name: "Dell's Store" }) }));
+      renderPage();
+      await goToCongratsStep(user);
+
+      expect(supabase.rpc).toHaveBeenCalledWith("start_trial", { p_plan_code: "BUSINESS" });
+      expect(screen.getByText(/Your 30-day free trial has started/)).toBeInTheDocument();
+    });
+
+    it("does not start a second trial if the store is already trialing", async () => {
+      const user = userEvent.setup();
+      vi.mocked(useBillingState).mockReturnValue({
+        organizationStatus: "ACTIVE",
+        subscriptionStatus: "TRIALING",
+        writesAllowed: true,
+        graceEndsAt: null,
+        trialEndsAt: "2026-09-20T00:00:00Z",
+      });
+      const completeOnboarding = vi.fn().mockResolvedValue({ ok: true });
+      vi.mocked(useAuth).mockReturnValue(
+        makeAuthValue({ store: makeStore({ name: "Dell's Store" }), completeOnboarding })
+      );
+      renderPage();
+      await goToCongratsStep(user);
+
+      expect(screen.queryByText(/Your 30-day free trial has started/)).not.toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Start selling" }));
+      expect(supabase.rpc).not.toHaveBeenCalledWith("start_trial", expect.anything());
     });
 
     it("shows an error when completing onboarding fails", async () => {

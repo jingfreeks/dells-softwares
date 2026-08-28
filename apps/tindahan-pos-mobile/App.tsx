@@ -1,3 +1,4 @@
+import "./global.css";
 import "./src/lib/polyfills";
 import { useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -5,19 +6,19 @@ import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "./src/lib/auth";
 import { CashierSessionProvider, useCashierSession } from "./src/lib/cashierSession";
 import { StoreDataProvider } from "./src/lib/storeData";
-import { CashierPinScreen } from "./src/screens/CashierPinScreen";
-import { CreateAccountScreen } from "./src/screens/CreateAccountScreen";
-import { InsightsScreen } from "./src/screens/InsightsScreen";
-import { LoginScreen } from "./src/screens/LoginScreen";
-import { OnboardingScreen } from "./src/screens/OnboardingScreen";
-import { OwnerHomeScreen } from "./src/screens/OwnerHomeScreen";
-import { PairDeviceScreen } from "./src/screens/PairDeviceScreen";
-import { PosScreen } from "./src/screens/PosScreen";
-import { RestockScreen } from "./src/screens/RestockScreen";
-import { SetupRegisterScreen } from "./src/screens/SetupRegisterScreen";
-import { SplashScreen } from "./src/screens/SplashScreen";
-import { TodaysSalesScreen } from "./src/screens/TodaysSalesScreen";
-import { UtangScreen } from "./src/screens/UtangScreen";
+import { CashierPinScreen } from "./src/screens/cashierpinscreen";
+import { CreateAccountScreen } from "./src/screens/createaccountscreen";
+import { InsightsScreen } from "./src/screens/insightsscreen";
+import { LoginScreen } from "./src/screens/loginscreen";
+import { OnboardingScreen } from "./src/screens/onboardingscreen";
+import { OwnerHomeScreen } from "./src/screens/ownerhomescreen";
+import { PairDeviceScreen } from "./src/screens/pairdevicescreen";
+import { PosScreen } from "./src/screens/posscreen";
+import { RestockScreen } from "./src/screens/restockscreen";
+import { SetupRegisterScreen } from "./src/screens/setupregisterscreen";
+import { SplashScreen } from "./src/screens/splashscreen";
+import { TodaysSalesScreen } from "./src/screens/todayssalesscreen";
+import { UtangScreen } from "./src/screens/utangscreen";
 
 type AuthScreen = "signIn" | "createAccount" | "pairDevice";
 

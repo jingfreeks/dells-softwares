@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib";
-import { supabase } from "@/lib/supabaseClient";
 import {
   TEXT_PASSWORD_STRENGTH_WEAK,
   TEXT_PASSWORD_STRENGTH_FAIR,
@@ -9,6 +8,7 @@ import {
   TEXT_PASSWORD_STRENGTH_STRONG,
 } from "@/lib";
 import { STATIC_PLANS, type StaticPlan } from "@/lib/plan/staticPlans";
+import { startTrialBestEffort } from "@/lib/billing/startTrial";
 
 const REQUESTABLE_PLAN_CODES = new Set(["BUSINESS", "PRO"]);
 
@@ -40,7 +40,7 @@ export function computePasswordStrength(password: string): { score: number; labe
 }
 
 export function useRegisterForm() {
-  const { user, register } = useAuth();
+  const { user, register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const selectedPlan = useSelectedPlan();
   const [storeName, setStoreName] = useState("");
@@ -52,6 +52,22 @@ export function useRegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
+
+  async function handleGoogleSignUp() {
+    if (!agreedToTerms) return;
+    setError(null);
+    setGoogleSubmitting(true);
+    // Note: a ?plan= CTA isn't carried through this flow yet -- the OAuth
+    // round trip lands back on "/", not "/register?plan=...", so there's
+    // nothing here to call start_trial() with. A Google-sign-up owner who
+    // wanted Growth/Pro can still start their trial from Settings.
+    const result = await loginWithGoogle();
+    if (!result.ok) {
+      setError(result.error);
+      setGoogleSubmitting(false);
+    }
+  }
 
   const passwordStrength = computePasswordStrength(password);
 
@@ -82,16 +98,8 @@ export function useRegisterForm() {
     if (selectedPlan) {
       // Best-effort: the account was already created successfully above --
       // a failure starting the trial shouldn't undo that or block the new
-      // owner from reaching their store. A bare `void supabase.rpc(...)`
-      // with nothing consuming its result was silently dropped by the
-      // production build (esbuild treats Supabase's fluent builder API as
-      // side-effect-free when the return value goes unused) -- .then() both
-      // fixes that and makes "errors here are deliberately ignored" explicit
-      // instead of relying on an unhandled rejection.
-      supabase.rpc("start_trial", { p_plan_code: selectedPlan.code }).then(
-        () => {},
-        () => {}
-      );
+      // owner from reaching their store.
+      startTrialBestEffort(selectedPlan.code as "BUSINESS" | "PRO");
     }
     navigate("/pos");
   }
@@ -116,5 +124,7 @@ export function useRegisterForm() {
     submitting,
     awaitingConfirmation,
     handleSubmit,
+    googleSubmitting,
+    handleGoogleSignUp,
   };
 }

@@ -34,6 +34,13 @@ vi.mock("@/lib/billing/billingContext", async (orig) => ({
   ...(await orig<typeof import("@/lib/billing/billingContext")>()),
   useBillingState: () => ({ organizationStatus: "ACTIVE", subscriptionStatus: "ACTIVE", writesAllowed: true, graceEndsAt: null }),
 }));
+// OnboardingChecklistCard (via useOnboardingChecklist) needs DrawerFloatProvider,
+// which Dashboard itself didn't require before -- same "mock the seam, not the
+// provider tree" approach as the two mocks above.
+vi.mock("@/lib/drawerFloat/drawerFloatContext", async (orig) => ({
+  ...(await orig<typeof import("@/lib/drawerFloat/drawerFloatContext")>()),
+  useDrawerFloat: () => ({ balance: 0, setBalance: vi.fn(), add: vi.fn(), deduct: vi.fn() }),
+}));
 vi.mock("@/lib/supabaseClient", () => ({
   supabase: {
     rpc: (name: string) =>

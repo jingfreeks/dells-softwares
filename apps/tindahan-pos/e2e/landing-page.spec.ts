@@ -2,40 +2,38 @@ import { expect, type Locator, type Page } from '@playwright/test'
 import { test } from '@playwright/test'
 import { sql, uniqueEmail } from './helpers'
 
-/** The card whose OWN price name (not a bullet point mentioning it, e.g. Business's "Everything in Basic") matches exactly. */
+/** The pricing card whose OWN name (not a bullet point mentioning it, e.g. Business's "Everything in Growth") matches exactly. */
 function planCard(page: Page, name: string): Locator {
-  return page.locator('#pricing .price').filter({ has: page.locator('.pname', { hasText: new RegExp(`^${name}$`) }) })
+  return page.locator('.tland-price').filter({ has: page.getByText(new RegExp(`^${name}$`)) })
 }
 
-// public/landing.html is a static file, served at "/" by vite.config.ts's
-// serveLandingAtRoot plugin (dev/preview) and vercel.json's rewrite
-// (production) -- outside the React app entirely, and outside this app's
-// unit-test reach. This is the one place that can prove the pricing
-// section's CTAs actually carry a real visitor into the real app.
+// The Landing page is a real route in the React SPA now (src/pages/Landing),
+// rendered at "/" for a signed-out visitor via HomeRedirect -- not a
+// standalone static file outside the app anymore.
 
 test.describe('Landing page -> Register handoff', () => {
   test('the pricing section\'s CTAs point at the real signup routes', async ({ page }) => {
     await page.goto('/')
     const hrefs = await page
-      .locator('#pricing .price a')
+      .locator('.tland-pricegrid a')
       .evaluateAll((links) => links.map((l) => l.getAttribute('href')))
     expect(hrefs).toEqual(['/register', '/register?plan=BUSINESS', '#demo'])
   })
 
-  test('Basic\'s "Get started" lands on a plain Register with no acknowledgment', async ({ page }) => {
+  test('Starter\'s "Get started" lands on a plain Register with no acknowledgment', async ({ page }) => {
     await page.goto('/')
-    await planCard(page, 'Basic').getByRole('link', { name: 'Get started' }).click()
+    await planCard(page, 'Starter').getByRole('link', { name: 'Get started' }).click()
 
     await expect(page).toHaveURL(/\/register$/)
     await expect(page.getByText(/free trial/i)).not.toBeVisible()
   })
 
-  test('Business\'s "Get started" carries the plan through, and signing up starts a real trial', async ({ page }) => {
+  test('Growth\'s "Get started" carries the plan through, and signing up starts a real trial', async ({ page }) => {
     await page.goto('/')
-    await planCard(page, 'Business').getByRole('link', { name: 'Get started' }).click()
+    await planCard(page, 'Growth').getByRole('link', { name: 'Get started' }).click()
 
     await expect(page).toHaveURL(/\/register\?plan=BUSINESS/)
-    await expect(page.getByText(/14-day free trial of Business.*₱599/)).toBeVisible()
+    await expect(page.getByText(/14-day free trial of Growth.*₱599/)).toBeVisible()
 
     const storeName = `Landing Flow ${Date.now()}`
     const email = uniqueEmail('landing')
@@ -66,6 +64,8 @@ test.describe('Landing page -> Register handoff', () => {
     // write can still be in flight the instant /onboarding resolves. Poll
     // rather than reading once. Checks the real subscription row AND that
     // entitlements were actually materialized -- not just a status label.
+    // This keys off the BUSINESS *code*, not the "Growth" display name --
+    // renaming the landing page's label never touches the database.
     await expect
       .poll(
         async () =>
@@ -99,31 +99,31 @@ test.describe('Landing page -> Register handoff', () => {
     await page.goto('/login')
     await page.getByRole('link', { name: /back to home/i }).click()
     await expect(page).toHaveURL('/')
-    await expect(page.getByText(/one screen to run/i)).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Know your sales/i)
 
     await page.goto('/register')
     await page.getByRole('link', { name: /back to home/i }).click()
     await expect(page).toHaveURL('/')
-    await expect(page.getByText(/one screen to run/i)).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Know your sales/i)
   })
 
-  test('the Annual toggle swaps the priced cards and leaves Enterprise untouched', async ({ page }) => {
+  test('the Annual toggle swaps the priced cards and leaves Business untouched', async ({ page }) => {
     await page.goto('/')
 
     await expect(page.getByText(/₱299.*\/ month/)).toBeVisible()
-    await expect(page.getByText(/Save.*17%/)).not.toBeVisible()
+    await expect(page.getByText(/Save 17%/)).not.toBeVisible()
 
     await page.getByRole('button', { name: 'Annual' }).click()
 
     await expect(page.getByText(/₱2,990.*\/ year/)).toBeVisible()
     await expect(page.getByText(/₱5,990.*\/ year/)).toBeVisible()
-    await expect(page.getByText(/Save.*17%/)).toBeVisible()
-    await expect(page.getByText("Let's talk")).toBeVisible()
+    await expect(page.getByText(/Save 17%/)).toBeVisible()
+    await expect(page.getByText("Let's Talk")).toBeVisible()
 
     await page.getByRole('button', { name: 'Monthly' }).click()
 
     await expect(page.getByText(/₱299.*\/ month/)).toBeVisible()
     await expect(page.getByText(/₱599.*\/ month/)).toBeVisible()
-    await expect(page.getByText(/Save.*17%/)).not.toBeVisible()
+    await expect(page.getByText(/Save 17%/)).not.toBeVisible()
   })
 })
