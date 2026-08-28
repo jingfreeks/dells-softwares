@@ -179,7 +179,7 @@ describe("Register", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, register }));
     renderRegister("/register?plan=BUSINESS");
 
-    expect(screen.getByText(/14-day free trial of Growth.*₱599\/monthly/)).toBeInTheDocument();
+    expect(screen.getByText(/30-day free trial of Growth.*₱599\/monthly/)).toBeInTheDocument();
 
     await fillForm(user);
     await user.click(screen.getByRole("button", { name: "Create account" }));

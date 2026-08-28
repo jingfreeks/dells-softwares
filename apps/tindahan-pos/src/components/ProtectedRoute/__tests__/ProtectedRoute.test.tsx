@@ -15,8 +15,11 @@ vi.mock("@/lib/features", () => ({
   useFeature: () => true,
 }));
 // Null reads as "nothing to warn about" — this file is about the shell
-// chrome, not the billing banner, which has its own tests.
+// chrome, not the billing banner, which has its own tests. Mocked at both
+// the barrel and the submodule path: BillingBanner imports via the barrel,
+// useTrialExpiredRedirect imports billingContext directly.
 vi.mock("@/lib/billing", () => ({ useBillingState: () => null }));
+vi.mock("@/lib/billing/billingContext", () => ({ useBillingState: () => null }));
 
 function renderProtected(initialEntry = "/pos") {
   return render(

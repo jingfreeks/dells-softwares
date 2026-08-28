@@ -38,6 +38,9 @@ import {
   PlanSettings,
   Privacy,
   Terms,
+  DemoStore,
+  Pricing,
+  TrialExpired,
 } from "@/pages";
 
 function App() {
@@ -79,6 +82,9 @@ function App() {
                           <Route path="/settings/devices" element={<DevicesSettings />} />
                           <Route path="/settings/plan" element={<PlanSettings />} />
                           <Route path="/settings/audit-log" element={<AuditLogSettings />} />
+                          <Route path="/demo" element={<DemoStore />} />
+                          <Route path="/pricing" element={<Pricing />} />
+                          <Route path="/trial-expired" element={<TrialExpired />} />
                         </Route>
                         <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
                         <Route path="/profile" element={<Navigate to="/settings/profile" replace />} />

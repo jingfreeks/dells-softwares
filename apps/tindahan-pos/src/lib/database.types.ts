@@ -1023,6 +1023,48 @@ export interface Database {
           },
         ];
       };
+      demo_products: {
+        Row: {
+          id: string;
+          name: string;
+          category: string;
+          price: number;
+          stock: number;
+          low_stock_threshold: number;
+          sort_order: number;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          category: string;
+          price: number;
+          stock: number;
+          low_stock_threshold?: number;
+          sort_order?: number;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          category?: string;
+          price?: number;
+          stock?: number;
+          low_stock_threshold?: number;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
+      demo_sales: {
+        Row: { id: string; occurred_at: string; total: number; item_count: number };
+        Insert: { id?: string; occurred_at: string; total: number; item_count: number };
+        Update: { id?: string; occurred_at?: string; total?: number; item_count?: number };
+        Relationships: [];
+      };
+      demo_customers: {
+        Row: { id: string; name: string; balance: number };
+        Insert: { id?: string; name: string; balance?: number };
+        Update: { id?: string; name?: string; balance?: number };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

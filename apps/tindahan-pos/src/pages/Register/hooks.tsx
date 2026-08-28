@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib";
-import { supabase } from "@/lib/supabaseClient";
 import {
   TEXT_PASSWORD_STRENGTH_WEAK,
   TEXT_PASSWORD_STRENGTH_FAIR,
@@ -9,6 +8,7 @@ import {
   TEXT_PASSWORD_STRENGTH_STRONG,
 } from "@/lib";
 import { STATIC_PLANS, type StaticPlan } from "@/lib/plan/staticPlans";
+import { startTrialBestEffort } from "@/lib/billing/startTrial";
 
 const REQUESTABLE_PLAN_CODES = new Set(["BUSINESS", "PRO"]);
 
@@ -98,16 +98,8 @@ export function useRegisterForm() {
     if (selectedPlan) {
       // Best-effort: the account was already created successfully above --
       // a failure starting the trial shouldn't undo that or block the new
-      // owner from reaching their store. A bare `void supabase.rpc(...)`
-      // with nothing consuming its result was silently dropped by the
-      // production build (esbuild treats Supabase's fluent builder API as
-      // side-effect-free when the return value goes unused) -- .then() both
-      // fixes that and makes "errors here are deliberately ignored" explicit
-      // instead of relying on an unhandled rejection.
-      supabase.rpc("start_trial", { p_plan_code: selectedPlan.code }).then(
-        () => {},
-        () => {}
-      );
+      // owner from reaching their store.
+      startTrialBestEffort(selectedPlan.code as "BUSINESS" | "PRO");
     }
     navigate("/pos");
   }
