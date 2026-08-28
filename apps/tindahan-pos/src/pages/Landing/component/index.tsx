@@ -1,0 +1,12 @@
+export { Navbar } from "./navbar";
+export { HeroSection } from "./herosection";
+export { TrustBar } from "./trustbar";
+export { ProblemSection } from "./problemsection";
+export { FeaturesSection } from "./featuressection";
+export { HardwareSection } from "./hardwaresection";
+export { ShowcaseSection } from "./showcasesection";
+export { PricingSection } from "./pricingsection";
+export { DemoSection } from "./demosection";
+export { FaqSection } from "./faqsection";
+export { ClosingCta } from "./closingcta";
+export { Footer } from "./footer";

@@ -1,0 +1,1024 @@
+/*
+ * Landing page — additional styles layered on top of the shared
+ * `.tpl-root`/`.tpl-shell-bg` dark-glassy design system already defined
+ * in authTheme.css (imported alongside this file). Everything here is
+ * prefixed `tland-` so it can't collide with any of the existing `tpl-`
+ * selectors that Login/Register/the app shell already rely on.
+ */
+
+.tland-root {
+  background: var(--tpl-bg-deep);
+  color: var(--tpl-t3);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+.tland-root a {
+  color: inherit;
+  text-decoration: none;
+}
+.tland-root h1,
+.tland-root h2,
+.tland-root h3 {
+  color: var(--tpl-t1);
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+.tland-root h1 {
+  font-size: clamp(32px, 5.4vw, 56px);
+  line-height: 1.1;
+  font-weight: 600;
+}
+.tland-root h2 {
+  font-size: clamp(25px, 3.6vw, 36px);
+  line-height: 1.2;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.tland-root h3 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.tland-wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+@media (max-width: 640px) {
+  .tland-wrap {
+    padding: 0 18px;
+  }
+}
+
+.tland-section {
+  padding: clamp(56px, 8vw, 100px) 0;
+  position: relative;
+}
+.tland-shead {
+  max-width: 660px;
+  margin-bottom: clamp(30px, 5vw, 48px);
+}
+.tland-kicker {
+  font-size: 12px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--tpl-a4);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.tland-lede {
+  font-size: clamp(15px, 2vw, 18px);
+  color: var(--tpl-t5);
+  line-height: 1.65;
+  max-width: 56ch;
+}
+
+/* buttons — inline/auto-width CTAs, distinct from .tpl-btn's full-width auth-form shape */
+.tland-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 11px;
+  font-size: 15.5px;
+  font-weight: 600;
+  border: 0.5px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.tland-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.tland-btn-p {
+  background: linear-gradient(180deg, var(--tpl-a1), #1d4ed8);
+  color: #fff;
+  box-shadow: 0 8px 26px rgba(37, 99, 235, 0.4);
+}
+.tland-btn-p:hover {
+  box-shadow: 0 10px 34px rgba(37, 99, 235, 0.55);
+}
+.tland-btn-s {
+  background: var(--tpl-gl);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--tpl-t3);
+}
+.tland-btn-s:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* nav */
+.tland-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  background: rgba(7, 11, 20, 0.82);
+  border-bottom: 0.5px solid var(--tpl-bd3);
+}
+.tland-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tpl-a3);
+  flex: none;
+  display: inline-block;
+}
+.tland-brand {
+  display: flex;
+  align-items: center;
+}
+.tland-nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 66px;
+}
+.tland-navlinks {
+  display: flex;
+  gap: 26px;
+  margin-left: auto;
+  font-size: 15px;
+  color: var(--tpl-t5);
+}
+.tland-navlinks a:hover {
+  color: var(--tpl-t2);
+}
+.tland-navcta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.tland-navcta .tland-btn {
+  height: 40px;
+  padding: 0 18px;
+  font-size: 14.5px;
+  border-radius: 9px;
+}
+.tland-burger {
+  display: none;
+  margin-left: auto;
+  background: var(--tpl-gl);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  color: var(--tpl-t3);
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+.tland-burger svg {
+  width: 20px;
+  height: 20px;
+}
+@media (max-width: 900px) {
+  .tland-navlinks,
+  .tland-navcta {
+    display: none;
+  }
+  .tland-burger {
+    display: inline-flex;
+  }
+}
+.tland-mobmenu {
+  border-top: 0.5px solid var(--tpl-bd3);
+  background: rgba(7, 11, 20, 0.98);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.tland-mobmenu a.tland-mi {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 0 4px;
+  font-size: 17px;
+  color: var(--tpl-t3);
+  border-bottom: 0.5px solid var(--tpl-bd3);
+}
+.tland-mobmenu a.tland-mi:last-of-type {
+  border-bottom: 0;
+}
+.tland-mobmenu .tland-mact {
+  display: grid;
+  gap: 10px;
+  padding: 16px 0 20px;
+}
+.tland-mobmenu .tland-btn {
+  width: 100%;
+  height: 50px;
+}
+
+/* hero */
+.tland-hero {
+  position: relative;
+  padding: clamp(48px, 8vw, 92px) 0 0;
+  overflow: hidden;
+}
+.tland-hero::before {
+  content: "";
+  position: absolute;
+  inset: -20% -10% auto -10%;
+  height: 760px;
+  background: radial-gradient(58% 60% at 72% 6%, rgba(37, 99, 235, 0.3) 0%, rgba(16, 31, 63, 0.42) 40%, transparent 72%);
+  pointer-events: none;
+}
+.tland-hero .tland-wrap {
+  position: relative;
+}
+.tland-herogrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr);
+  gap: clamp(28px, 5vw, 64px);
+  align-items: center;
+}
+@media (max-width: 900px) {
+  .tland-herogrid {
+    grid-template-columns: 1fr;
+  }
+}
+.tland-grad {
+  background: linear-gradient(96deg, #8ab6ff 10%, #3b82f6 60%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.tland-heroctas {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+@media (max-width: 640px) {
+  .tland-heroctas {
+    flex-direction: column;
+  }
+  .tland-heroctas .tland-btn {
+    width: 100%;
+  }
+}
+.tland-microcopy {
+  font-size: 14px;
+  color: var(--tpl-t7);
+}
+.tland-trustrow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 0.5px solid var(--tpl-bd3);
+  flex-wrap: wrap;
+}
+.tland-stack {
+  display: flex;
+}
+.tland-stack span {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--tpl-bg-deep);
+  margin-left: -10px;
+  background: linear-gradient(160deg, #33333a, #22252e);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: var(--tpl-t5);
+}
+.tland-stack span:first-child {
+  margin-left: 0;
+}
+.tland-nohw {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: rgba(74, 222, 128, 0.1);
+  border: 0.5px solid rgba(74, 222, 128, 0.28);
+  color: var(--tpl-t3);
+  font-size: 14.5px;
+  padding: 10px 16px;
+  border-radius: 11px;
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+.tland-nohw strong {
+  color: var(--tpl-okd);
+}
+
+.tland-frame {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 0.5px solid var(--tpl-bd);
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  background: radial-gradient(100% 70% at 100% 0%, var(--tpl-bg-hi) 0%, var(--tpl-bg-mid) 45%, var(--tpl-bg-deep) 100%);
+}
+.tland-framebar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 14px;
+  border-bottom: 0.5px solid var(--tpl-bd3);
+  background: rgba(255, 255, 255, 0.02);
+}
+.tland-framebar i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #2f3440;
+  display: block;
+}
+.tland-frameurl {
+  margin-left: 10px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  color: var(--tpl-t7);
+  background: rgba(0, 0, 0, 0.35);
+  border: 0.5px solid var(--tpl-bd3);
+  border-radius: 6px;
+  padding: 3px 10px;
+}
+.tland-appbody {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  min-height: 330px;
+}
+@media (max-width: 640px) {
+  .tland-appbody {
+    grid-template-columns: 1fr;
+  }
+  .tland-side {
+    display: none;
+  }
+}
+.tland-side {
+  padding: 14px 10px;
+  border-right: 0.5px solid var(--tpl-bd3);
+  background: rgba(255, 255, 255, 0.02);
+}
+.tland-side p {
+  font-size: 10.5px;
+  color: var(--tpl-t5);
+  padding: 6px 7px;
+  border-radius: 7px;
+  margin: 0 0 3px;
+}
+.tland-side p.tland-on {
+  background: rgba(76, 141, 255, 0.16);
+  border: 0.5px solid rgba(76, 141, 255, 0.28);
+  color: var(--tpl-a4);
+}
+.tland-side .tland-slbl {
+  font-size: 8.5px;
+  letter-spacing: 0.9px;
+  color: var(--tpl-t8);
+  padding: 0 7px;
+  margin-bottom: 8px;
+}
+.tland-appmain {
+  padding: 14px 15px;
+  min-width: 0;
+}
+.tland-stat {
+  background: var(--tpl-gl);
+  border: 0.5px solid var(--tpl-bd);
+  border-radius: 9px;
+  padding: 9px 10px;
+}
+.tland-stat b {
+  display: block;
+  color: var(--tpl-t1);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.tland-stat i {
+  font-style: normal;
+  display: block;
+  font-size: 8.5px;
+  letter-spacing: 0.5px;
+  color: var(--tpl-t7);
+  margin-bottom: 3px;
+}
+.tland-stat u {
+  text-decoration: none;
+  font-size: 9px;
+  color: var(--tpl-ok);
+}
+.tland-heromockgrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 10px;
+}
+.tland-rowline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+}
+.tland-rowline:last-child {
+  border-bottom: 0;
+}
+.tland-sq {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: rgba(76, 141, 255, 0.18);
+  flex: none;
+}
+.tland-sq.tland-w {
+  background: rgba(251, 191, 36, 0.18);
+}
+.tland-rlt {
+  font-size: 10.5px;
+  color: var(--tpl-t3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tland-rls {
+  font-size: 9px;
+  color: var(--tpl-t7);
+}
+.tland-amt {
+  font-size: 10.5px;
+  color: var(--tpl-t2);
+  flex: none;
+}
+
+/* strip / trust bar */
+.tland-strip {
+  border-top: 0.5px solid var(--tpl-bd3);
+  border-bottom: 0.5px solid var(--tpl-bd3);
+  padding: 24px 0;
+  background: rgba(255, 255, 255, 0.015);
+}
+.tland-striprow {
+  display: flex;
+  gap: clamp(20px, 5vw, 64px);
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.tland-striprow p {
+  font-size: 13.5px;
+  color: var(--tpl-t7);
+  margin: 0;
+}
+.tland-striprow b {
+  color: var(--tpl-t2);
+  font-weight: 600;
+}
+
+/* problem / feature grids */
+.tland-grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .tland-grid3 {
+    grid-template-columns: 1fr;
+  }
+}
+.tland-prob {
+  border-left: 2px solid rgba(248, 113, 113, 0.45);
+  padding: 4px 0 4px 18px;
+}
+.tland-fcard {
+  background: var(--tpl-gl2);
+  border: 0.5px solid var(--tpl-bd);
+  border-radius: 16px;
+  padding: 24px;
+}
+.tland-ficon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: rgba(76, 141, 255, 0.14);
+  border: 0.5px solid rgba(76, 141, 255, 0.28);
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  color: var(--tpl-a4);
+}
+.tland-ficon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* hardware 3-step flow */
+.tland-hwflow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 22px 8px;
+  text-align: center;
+}
+.tland-hwstep {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 8px;
+}
+.tland-hwstep svg {
+  width: 22px;
+  height: 22px;
+  margin: 0 auto 8px;
+  color: var(--tpl-a4);
+}
+.tland-hwarrow {
+  color: var(--tpl-t7);
+  font-size: 16px;
+  flex: none;
+}
+
+/* alternating showcase */
+.tland-show {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+  gap: clamp(28px, 5vw, 60px);
+  align-items: center;
+  margin-bottom: clamp(44px, 7vw, 80px);
+}
+.tland-show:last-child {
+  margin-bottom: 0;
+}
+.tland-show.tland-flip .tland-showtext {
+  order: 2;
+}
+@media (max-width: 900px) {
+  .tland-show {
+    grid-template-columns: 1fr;
+  }
+  .tland-show.tland-flip .tland-showtext {
+    order: 0;
+  }
+}
+.tland-showtext ul {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.tland-showtext li {
+  display: flex;
+  gap: 11px;
+  font-size: 15px;
+  color: var(--tpl-t4);
+  align-items: flex-start;
+}
+.tland-tick {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: rgba(74, 222, 128, 0.14);
+  color: var(--tpl-ok);
+  display: grid;
+  place-items: center;
+  flex: none;
+  margin-top: 2px;
+  font-size: 11px;
+}
+.tland-panel {
+  border-radius: 16px;
+  border: 0.5px solid var(--tpl-bd);
+  overflow: hidden;
+  background: radial-gradient(100% 70% at 100% 0%, var(--tpl-bg-hi) 0%, var(--tpl-bg-mid) 50%, var(--tpl-bg-deep) 100%);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
+  padding: 20px;
+}
+
+/* pricing */
+.tland-pricegrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .tland-pricegrid {
+    grid-template-columns: 1fr;
+  }
+}
+.tland-price {
+  background: var(--tpl-gl2);
+  border: 0.5px solid var(--tpl-bd);
+  border-radius: 16px;
+  padding: 26px;
+  position: relative;
+}
+.tland-price.tland-featured {
+  border: 1.5px solid rgba(76, 141, 255, 0.5);
+  background: rgba(76, 141, 255, 0.06);
+}
+.tland-ptag {
+  position: absolute;
+  top: -11px;
+  left: 26px;
+  background: linear-gradient(180deg, var(--tpl-a1), #1d4ed8);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 99px;
+}
+.tland-pname {
+  font-size: 14px;
+  color: var(--tpl-t5);
+  margin: 0 0 8px;
+}
+.tland-pamt {
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--tpl-t1);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.tland-pamt small {
+  font-size: 15px;
+  color: var(--tpl-t6);
+  font-weight: 400;
+}
+.tland-pdesc {
+  font-size: 13.5px;
+  color: var(--tpl-t7);
+  margin: 6px 0 20px;
+}
+.tland-price ul {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  margin: 0 0 24px;
+  padding: 0;
+}
+.tland-price li {
+  display: flex;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--tpl-t4);
+}
+.tland-price .tland-btn {
+  width: 100%;
+}
+.tland-pricetoggle {
+  display: inline-flex;
+  gap: 3px;
+  background: var(--tpl-gl3);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 22px;
+}
+.tland-pricetoggle button {
+  height: 34px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tpl-t6);
+  font-size: 13.5px;
+  border-radius: 7px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+.tland-pricetoggle button[aria-pressed="true"] {
+  background: rgba(76, 141, 255, 0.18);
+  border: 0.5px solid rgba(76, 141, 255, 0.35);
+  color: var(--tpl-a4);
+  font-weight: 500;
+}
+.tland-save {
+  color: var(--tpl-okd);
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+/* FAQ */
+.tland-faq {
+  display: grid;
+  gap: 0;
+  max-width: 820px;
+}
+.tland-faq details {
+  border-bottom: 0.5px solid var(--tpl-bd3);
+}
+.tland-faq summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 20px 0;
+  font-size: 16.5px;
+  font-weight: 500;
+  color: var(--tpl-t2);
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+.tland-faq summary::-webkit-details-marker {
+  display: none;
+}
+.tland-faq summary::after {
+  content: "+";
+  color: var(--tpl-a4);
+  font-size: 22px;
+  line-height: 1;
+  flex: none;
+  font-weight: 400;
+}
+.tland-faq details[open] summary::after {
+  content: "\2013";
+}
+.tland-faq details p {
+  padding: 0 0 20px;
+  font-size: 15px;
+  color: var(--tpl-t6);
+  max-width: 66ch;
+  margin: 0;
+}
+
+/* demo form */
+.tland-demo {
+  background: radial-gradient(80% 100% at 50% 0%, rgba(37, 99, 235, 0.2), transparent 70%);
+}
+.tland-demogrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
+  gap: clamp(28px, 5vw, 56px);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .tland-demogrid {
+    grid-template-columns: 1fr;
+  }
+}
+.tland-demoform {
+  background: #0d1526;
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
+}
+.tland-field {
+  margin-bottom: 15px;
+}
+.tland-field label {
+  display: block;
+  font-size: 13.5px;
+  color: var(--tpl-t4);
+  margin-bottom: 7px;
+}
+.tland-field input,
+.tland-field select,
+.tland-field textarea {
+  width: 100%;
+  background: var(--tpl-gl);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  height: 46px;
+  padding: 0 14px;
+  color: var(--tpl-t2);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+}
+.tland-field textarea {
+  height: auto;
+  padding: 12px 14px;
+  min-height: 88px;
+  resize: vertical;
+  line-height: 1.55;
+}
+.tland-field input::placeholder,
+.tland-field textarea::placeholder {
+  color: #5b677e;
+}
+.tland-field input:focus,
+.tland-field select:focus,
+.tland-field textarea:focus {
+  border-color: var(--tpl-a1);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
+}
+.tland-field.tland-fielderr input,
+.tland-field.tland-fielderr select {
+  border-color: var(--tpl-bad);
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.12);
+}
+.tland-fieldmsg {
+  color: var(--tpl-bad);
+  font-size: 12.5px;
+  margin-top: 6px;
+}
+.tland-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 640px) {
+  .tland-two {
+    grid-template-columns: 1fr;
+  }
+}
+.tland-consent {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 4px 0 18px;
+}
+.tland-consent input {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  margin-top: 2px;
+  accent-color: var(--tpl-a2);
+}
+.tland-consent span {
+  font-size: 12.5px;
+  color: var(--tpl-t6);
+  line-height: 1.5;
+}
+.tland-formnote {
+  font-size: 12.5px;
+  color: var(--tpl-t7);
+  text-align: center;
+  margin-top: 14px;
+}
+.tland-formerr {
+  background: rgba(248, 113, 113, 0.1);
+  border: 0.5px solid rgba(248, 113, 113, 0.3);
+  color: #f8b4b4;
+  font-size: 13.5px;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.tland-okmsg {
+  text-align: center;
+  padding: 28px 10px;
+}
+.tland-okmsg .tland-tickbig {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(74, 222, 128, 0.14);
+  color: var(--tpl-ok);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  font-size: 24px;
+}
+.tland-sold {
+  display: grid;
+  gap: 18px;
+  margin-top: 26px;
+}
+.tland-sold div {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+}
+.tland-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: rgba(76, 141, 255, 0.16);
+  border: 0.5px solid rgba(76, 141, 255, 0.3);
+  color: var(--tpl-a4);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex: none;
+}
+.tland-sold b {
+  display: block;
+  font-size: 15px;
+  color: var(--tpl-t2);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.tland-sold p {
+  font-size: 14px;
+  color: var(--tpl-t6);
+  margin: 0;
+}
+
+/* closing cta */
+.tland-closing {
+  text-align: center;
+  background: radial-gradient(70% 100% at 50% 100%, rgba(37, 99, 235, 0.2), transparent 70%);
+}
+
+/* footer */
+.tland-footer {
+  border-top: 0.5px solid var(--tpl-bd3);
+  padding: 44px 0 30px;
+  background: rgba(255, 255, 255, 0.015);
+}
+.tland-fgrid {
+  display: grid;
+  grid-template-columns: 1.6fr repeat(3, 1fr);
+  gap: 32px;
+  margin-bottom: 34px;
+}
+@media (max-width: 900px) {
+  .tland-fgrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .tland-fgrid {
+    grid-template-columns: 1fr;
+    gap: 26px;
+  }
+}
+.tland-fgrid h4 {
+  font-size: 12px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--tpl-t7);
+  margin: 0 0 14px;
+  font-weight: 600;
+}
+.tland-fgrid ul {
+  list-style: none;
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+}
+.tland-fgrid a {
+  font-size: 14.5px;
+  color: var(--tpl-t5);
+}
+.tland-fgrid a:hover {
+  color: var(--tpl-t2);
+}
+.tland-fbot {
+  border-top: 0.5px solid var(--tpl-bd3);
+  padding-top: 22px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+@media (max-width: 640px) {
+  .tland-fbot {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+.tland-fbot p {
+  font-size: 13px;
+  color: var(--tpl-t8);
+  margin: 0;
+}
+
+.tland-logo {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+
+/* Privacy page body copy */
+.tland-privacy-body p {
+  color: var(--tpl-t4);
+  font-size: 15px;
+  line-height: 1.65;
+  margin: 0 0 10px;
+}
+.tland-privacy-body ul {
+  list-style: disc;
+  padding-left: 22px;
+  display: grid;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+.tland-privacy-body li {
+  color: var(--tpl-t4);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.tland-privacy-body b {
+  color: var(--tpl-t2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tland-root * {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
