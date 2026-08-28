@@ -61,6 +61,7 @@ export function useSettingsProfilePage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteReviewMessage, setDeleteReviewMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setName(user?.name ?? "");
@@ -265,9 +266,14 @@ export function useSettingsProfilePage() {
     setDeleting(true);
     setDeleteError(null);
     const result = await deleteAccount();
+    setDeleting(false);
     if (!result.ok) {
       setDeleteError(result.error);
-      setDeleting(false);
+      return;
+    }
+    if (result.requiresReview) {
+      // Still signed in -- the request was filed, not the account deleted.
+      setDeleteReviewMessage(result.message ?? "Your request has been submitted for review.");
       return;
     }
     navigate("/login", { replace: true });
@@ -275,6 +281,7 @@ export function useSettingsProfilePage() {
 
   function openDeleteModal() {
     setDeleteError(null);
+    setDeleteReviewMessage(null);
     setShowDeleteModal(true);
   }
 
@@ -337,6 +344,7 @@ export function useSettingsProfilePage() {
     closeDeleteModal,
     deleteError,
     deleting,
+    deleteReviewMessage,
     handleDeleteAccount,
   };
 }

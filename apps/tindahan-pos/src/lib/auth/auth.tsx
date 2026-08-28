@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { supabase } from "@/lib/supabaseClient";
 import { togglablePersistenceStorage } from "@/lib/supabaseClient/togglablePersistenceStorage";
 import type { DeviceSession, StaffAccount, Store, StoreFeeConfig, VatStatus } from "@/lib/types";
-import { AuthContext, type AuthResult, type RegisterResult } from "./authContext";
+import { AuthContext, type AuthResult, type RegisterResult, type DeleteAccountResult } from "./authContext";
 import { ERROR_COULD_NOT_START_SESSION } from "@/lib/textLabels";
 
 async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
@@ -393,7 +393,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
-  async function deleteAccount(): Promise<AuthResult> {
+  async function deleteAccount(): Promise<DeleteAccountResult> {
     if (!user) return { ok: false, error: "Not signed in." };
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
@@ -410,6 +410,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { ok: false, error: body?.error ?? error.message };
     }
     if (data?.error) return { ok: false, error: data.error };
+
+    if (data?.requiresReview) {
+      // The account still exists -- a platform admin has to act on the
+      // filed request first -- so the caller stays signed in.
+      return { ok: true, requiresReview: true, message: data.message };
+    }
 
     await supabase.auth.signOut();
     setUser(null);
