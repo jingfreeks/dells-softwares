@@ -7,7 +7,7 @@ import type { PricingScreenProps } from "./types";
 
 /** Upgrade/Pricing (mobile-35). */
 export function PricingScreen({ onBack }: PricingScreenProps) {
-  const { loading, plans, currentPlanCode, hasUsedTrial, startedCode, choosePlan, isTrialable } =
+  const { loading, plans, error, currentPlanCode, hasUsedTrial, startedCode, choosePlan, isTrialable } =
     usePricingScreen();
 
   return (
@@ -22,7 +22,12 @@ export function PricingScreen({ onBack }: PricingScreenProps) {
 
       {loading && <Text className="text-[13px] text-text-faint">Loading plans…</Text>}
 
+      {!loading && error && (
+        <Text className="text-[13px] text-red-500">Couldn't load plans: {error}</Text>
+      )}
+
       {!loading &&
+        !error &&
         plans.map((plan) => (
           <PlanCard
             key={plan.planCode}

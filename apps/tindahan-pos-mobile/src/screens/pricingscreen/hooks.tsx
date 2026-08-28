@@ -36,6 +36,7 @@ export function usePricingScreen() {
   const [currentPlanCode, setCurrentPlanCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [startedCode, setStartedCode] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,6 +46,7 @@ export function usePricingScreen() {
       supabase.rpc("my_store_features"),
     ]).then(([pricesRes, planRes, featuresRes]) => {
       if (cancelled) return;
+      if (pricesRes.error) setError(pricesRes.error.message);
       const featureNameByCode = new Map<string, string>();
       for (const row of featuresRes.data ?? []) {
         featureNameByCode.set(row.feature_code, row.name);
@@ -95,6 +97,7 @@ export function usePricingScreen() {
   return {
     loading,
     plans,
+    error,
     currentPlanCode,
     hasUsedTrial,
     startedCode,

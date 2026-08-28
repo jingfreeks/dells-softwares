@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTrialBanner } from "./hooks";
 import type { TrialBannerProps } from "./types";
 
@@ -10,6 +11,11 @@ import type { TrialBannerProps } from "./types";
  */
 export function TrialBanner({ daysRemaining, onViewPlansPress }: TrialBannerProps) {
   const { severity, background, border, textColor } = useTrialBanner(daysRemaining);
+  // This is the topmost element on screen when mounted (App.tsx's AdminHome,
+  // above every screen's own ScreenContainer), so it needs the safe-area
+  // top inset itself -- ScreenContainer normally handles this, but this
+  // banner sits above ScreenContainer, not inside it.
+  const insets = useSafeAreaInsets();
 
   const dayLabel =
     daysRemaining <= 0 ? "today" : daysRemaining === 1 ? "tomorrow" : `in ${daysRemaining} days`;
@@ -27,8 +33,13 @@ export function TrialBanner({ daysRemaining, onViewPlansPress }: TrialBannerProp
 
   return (
     <View
-      style={{ backgroundColor: background, borderBottomWidth: 0.5, borderBottomColor: border }}
-      className="px-3.5 py-2.5"
+      style={{
+        backgroundColor: background,
+        borderBottomWidth: 0.5,
+        borderBottomColor: border,
+        paddingTop: insets.top + 8,
+      }}
+      className="px-3.5 pb-2.5"
     >
       <View className="flex-row items-center gap-2 mb-1.5">
         <Feather name="clock" size={15} color={textColor} />
