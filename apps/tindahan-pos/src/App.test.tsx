@@ -28,8 +28,8 @@ vi.mock("./lib/supabaseClient", () => {
 import App from "./App";
 
 describe("App", () => {
-  it("redirects an unauthenticated visitor to the login page", async () => {
+  it("shows the Landing page to an unauthenticated visitor at /", async () => {
     render(<App />);
-    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+    expect(await screen.findByText("Your tindahan, under control")).toBeInTheDocument();
   });
 });

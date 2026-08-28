@@ -6,6 +6,7 @@ import { makeAuthValue, makeStaffAccount } from "../../../test/testUtils";
 import { HomeRedirect } from "../HomeRedirect";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
+vi.mock("@/pages/Landing", () => ({ Landing: () => <p>Landing page</p> }));
 
 function renderHome() {
   return render(
@@ -27,10 +28,10 @@ describe("HomeRedirect", () => {
     expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument();
   });
 
-  it("sends a signed-out visitor to /login", () => {
+  it("shows the Landing page to a signed-out visitor", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ loading: false, user: null }));
     renderHome();
-    expect(screen.getByText("Login page")).toBeInTheDocument();
+    expect(screen.getByText("Landing page")).toBeInTheDocument();
   });
 
   it("sends an admin to the Dashboard", () => {
