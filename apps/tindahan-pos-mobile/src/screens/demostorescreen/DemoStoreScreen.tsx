@@ -1,4 +1,5 @@
 import { Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MetricCard } from "../../components/metriccard";
 import { ListRow } from "../../components/listrow";
 import { SectionHeader } from "../../components/sectionheader";
@@ -29,12 +30,20 @@ export function DemoStoreScreen({ onExitDemo }: DemoStoreScreenProps) {
   } = useDemoStoreScreen();
 
   const maxSold = bestSellers[0]?.soldCount ?? 1;
+  // This banner is the topmost element on screen (mounted above
+  // ScreenContainer, not inside it), so it needs the safe-area top inset
+  // itself -- same fix as TrialBanner, which sits above ScreenContainer too.
+  const insets = useSafeAreaInsets();
 
   return (
     <View className="flex-1">
       <View
-        style={{ backgroundColor: "rgba(76,141,255,.10)", borderBottomColor: "rgba(76,141,255,.30)" }}
-        className="border-b px-3.5 py-2.5"
+        style={{
+          backgroundColor: "rgba(76,141,255,.10)",
+          borderBottomColor: "rgba(76,141,255,.30)",
+          paddingTop: insets.top + 10,
+        }}
+        className="border-b px-3.5 pb-2.5"
         accessibilityRole="summary"
       >
         <View className="flex-row items-center gap-2 mb-1.5">
