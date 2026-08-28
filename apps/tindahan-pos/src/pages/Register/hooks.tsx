@@ -58,11 +58,11 @@ export function useRegisterForm() {
     if (!agreedToTerms) return;
     setError(null);
     setGoogleSubmitting(true);
-    // Note: a ?plan= CTA isn't carried through this flow yet -- the OAuth
-    // round trip lands back on "/", not "/register?plan=...", so there's
-    // nothing here to call start_trial() with. A Google-sign-up owner who
-    // wanted Growth/Pro can still start their trial from Settings.
-    const result = await loginWithGoogle();
+    // The OAuth round trip always lands back on "/", not "/register?plan=...",
+    // so the selected plan code rides along in the redirect URL instead --
+    // see loginWithGoogle()'s own comment, and HomeRedirect for where it's
+    // read back and the trial actually starts.
+    const result = await loginWithGoogle(selectedPlan?.code);
     if (!result.ok) {
       setError(result.error);
       setGoogleSubmitting(false);

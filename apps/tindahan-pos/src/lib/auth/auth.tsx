@@ -230,11 +230,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * back to "My Store"/their email, since Google's profile fields don't
    * match the store_name/owner_name keys the trigger reads from
    * raw_user_meta_data) and lands in the same onboarding wizard.
+   *
+   * `planCode`, when given, rides along as a query param on the redirect
+   * target -- Supabase sends the browser back to exactly this URL once
+   * OAuth completes, so it's the only way a value survives the round trip.
+   * HomeRedirect (where "/" always lands) reads it back off the URL and
+   * starts the trial once a session exists.
    */
-  async function loginWithGoogle(): Promise<AuthResult> {
+  async function loginWithGoogle(planCode?: string): Promise<AuthResult> {
+    const redirectTo = planCode
+      ? `${window.location.origin}/?plan=${encodeURIComponent(planCode)}`
+      : `${window.location.origin}/`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/` },
+      options: { redirectTo },
     });
     if (error) return { ok: false, error: friendlyAuthError(error.message) };
     return { ok: true };
