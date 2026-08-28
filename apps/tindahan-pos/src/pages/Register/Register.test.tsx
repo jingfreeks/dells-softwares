@@ -42,7 +42,7 @@ async function fillForm(
 }
 
 describe("Register", () => {
-  it("links back to home with a plain href, not a client-side route", () => {
+  it("links back to home", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null }));
     renderRegister();
     expect(screen.getByRole("link", { name: /back to home/i })).toHaveAttribute("href", "/");
@@ -86,6 +86,34 @@ describe("Register", () => {
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
     expect(register).not.toHaveBeenCalled();
+  });
+
+  it("disables Sign up with Google until the terms checkbox is agreed to", async () => {
+    const user = userEvent.setup();
+    const loginWithGoogle = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, loginWithGoogle }));
+    renderRegister();
+
+    const googleButton = screen.getByRole("button", { name: "Sign up with Google" });
+    expect(googleButton).toBeDisabled();
+
+    await user.click(screen.getByRole("checkbox", { name: /Terms of Service/ }));
+    expect(googleButton).toBeEnabled();
+
+    await user.click(googleButton);
+    expect(loginWithGoogle).toHaveBeenCalled();
+  });
+
+  it("shows an error if the Google redirect fails to start", async () => {
+    const user = userEvent.setup();
+    const loginWithGoogle = vi.fn().mockResolvedValue({ ok: false, error: "Google sign-in isn't enabled yet." });
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, loginWithGoogle }));
+    renderRegister();
+
+    await user.click(screen.getByRole("checkbox", { name: /Terms of Service/ }));
+    await user.click(screen.getByRole("button", { name: "Sign up with Google" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Google sign-in isn't enabled yet.");
   });
 
   it("shows the awaiting-confirmation screen when email confirmation is required", async () => {

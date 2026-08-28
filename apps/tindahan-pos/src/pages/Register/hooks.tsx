@@ -40,7 +40,7 @@ export function computePasswordStrength(password: string): { score: number; labe
 }
 
 export function useRegisterForm() {
-  const { user, register } = useAuth();
+  const { user, register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const selectedPlan = useSelectedPlan();
   const [storeName, setStoreName] = useState("");
@@ -52,6 +52,22 @@ export function useRegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
+
+  async function handleGoogleSignUp() {
+    if (!agreedToTerms) return;
+    setError(null);
+    setGoogleSubmitting(true);
+    // Note: a ?plan= CTA isn't carried through this flow yet -- the OAuth
+    // round trip lands back on "/", not "/register?plan=...", so there's
+    // nothing here to call start_trial() with. A Google-sign-up owner who
+    // wanted Growth/Pro can still start their trial from Settings.
+    const result = await loginWithGoogle();
+    if (!result.ok) {
+      setError(result.error);
+      setGoogleSubmitting(false);
+    }
+  }
 
   const passwordStrength = computePasswordStrength(password);
 
@@ -116,5 +132,7 @@ export function useRegisterForm() {
     submitting,
     awaitingConfirmation,
     handleSubmit,
+    googleSubmitting,
+    handleGoogleSignUp,
   };
 }

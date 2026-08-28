@@ -67,6 +67,8 @@ export function Register() {
     submitting,
     awaitingConfirmation,
     handleSubmit,
+    googleSubmitting,
+    handleGoogleSignUp,
   } = useRegisterForm();
 
   if (user) return <Navigate to="/pos" replace />;
@@ -79,14 +81,17 @@ export function Register() {
     <div className="tpl-root tpl-shell">
       <div className="tpl-form-pane">
         <div className="tpl-form-inner">
-          {/* A plain <a>, not react-router's <Link> -- see Login.tsx for why. */}
-          <a href="/" className="tpl-lnk" style={{ display: "inline-block", marginBottom: 12, fontSize: 13 }}>
+          <Link to="/" className="tpl-lnk" style={{ display: "inline-block", marginBottom: 12, fontSize: 13 }}>
             {LINK_BACK_TO_HOME}
-          </a>
+          </Link>
           <Header />
 
           <Buttonsigninscreen />
-          <Googlebtnsignup />
+          <Googlebtnsignup
+            agreedToTerms={agreedToTerms}
+            submitting={googleSubmitting}
+            onClick={handleGoogleSignUp}
+          />
 
           <form onSubmit={handleSubmit} noValidate>
             <label htmlFor="storeName" className="tpl-lbl">

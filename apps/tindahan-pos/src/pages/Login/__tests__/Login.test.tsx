@@ -22,10 +22,7 @@ function renderLogin() {
 }
 
 describe("Login", () => {
-  // A plain href, not a react-router route match -- "/" is served by
-  // public/landing.html at the HTTP layer (vite.config.ts's
-  // serveLandingAtRoot / vercel.json), which only a real navigation reaches.
-  it("links back to home with a plain href, not a client-side route", () => {
+  it("links back to home", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null }));
     renderLogin();
     expect(screen.getByRole("link", { name: /back to home/i })).toHaveAttribute("href", "/");
@@ -49,6 +46,29 @@ describe("Login", () => {
 
     expect(login).toHaveBeenCalledWith("nena@example.com", "secret123", true);
     expect(await screen.findByText("Home page")).toBeInTheDocument();
+  });
+
+  it("starts the Google OAuth redirect on click", async () => {
+    const user = userEvent.setup();
+    const loginWithGoogle = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, loginWithGoogle }));
+    renderLogin();
+
+    await user.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    expect(loginWithGoogle).toHaveBeenCalled();
+  });
+
+  it("shows an error and re-enables the button if the Google redirect fails to start", async () => {
+    const user = userEvent.setup();
+    const loginWithGoogle = vi.fn().mockResolvedValue({ ok: false, error: "Google sign-in isn't enabled yet." });
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, loginWithGoogle }));
+    renderLogin();
+
+    await user.click(screen.getByRole("button", { name: "Continue with Google" }));
+
+    expect(await screen.findByText("Google sign-in isn't enabled yet.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue with Google" })).toBeEnabled();
   });
 
   it("passes keepSignedIn as false when the checkbox is unticked", async () => {
