@@ -6,6 +6,8 @@ import {
   TEXT_PASSWORD_STRENGTH_FAIR,
   TEXT_PASSWORD_STRENGTH_GOOD,
   TEXT_PASSWORD_STRENGTH_STRONG,
+  ERROR_MUST_AGREE_TO_TERMS,
+  ERROR_PASSWORDS_DO_NOT_MATCH,
 } from "@/lib";
 import { STATIC_PLANS, type StaticPlan } from "@/lib/plan/staticPlans";
 import { startTrialBestEffort } from "@/lib/billing/startTrial";
@@ -47,6 +49,7 @@ export function useRegisterForm() {
   const [ownerName, setOwnerName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,14 +58,17 @@ export function useRegisterForm() {
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
 
   async function handleGoogleSignUp() {
-    if (!agreedToTerms) return;
+    if (!agreedToTerms) {
+      setError(ERROR_MUST_AGREE_TO_TERMS);
+      return;
+    }
     setError(null);
     setGoogleSubmitting(true);
-    // Note: a ?plan= CTA isn't carried through this flow yet -- the OAuth
-    // round trip lands back on "/", not "/register?plan=...", so there's
-    // nothing here to call start_trial() with. A Google-sign-up owner who
-    // wanted Growth/Pro can still start their trial from Settings.
-    const result = await loginWithGoogle();
+    // The OAuth round trip always lands back on "/", not "/register?plan=...",
+    // so the selected plan code rides along in the redirect URL instead --
+    // see loginWithGoogle()'s own comment, and HomeRedirect for where it's
+    // read back and the trial actually starts.
+    const result = await loginWithGoogle(selectedPlan?.code);
     if (!result.ok) {
       setError(result.error);
       setGoogleSubmitting(false);
@@ -73,13 +79,17 @@ export function useRegisterForm() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!agreedToTerms) return;
+    if (!agreedToTerms) {
+      setError(ERROR_MUST_AGREE_TO_TERMS);
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError(ERROR_PASSWORDS_DO_NOT_MATCH);
+      return;
+    }
     setError(null);
     setSubmitting(true);
-    // No separate "confirm password" field — a show/hide toggle solves
-    // the same "did I type it right" problem with less friction, so the
-    // value is submitted as its own confirmation.
-    const result = await register({ storeName, ownerName, email, password, confirmPassword: password });
+    const result = await register({ storeName, ownerName, email, password, confirmPassword });
     setSubmitting(false);
 
     if (!result.ok) {
@@ -115,6 +125,8 @@ export function useRegisterForm() {
     setEmail,
     password,
     setPassword,
+    confirmPassword,
+    setConfirmPassword,
     passwordStrength,
     showPassword,
     toggleShowPassword: () => setShowPassword((v) => !v),

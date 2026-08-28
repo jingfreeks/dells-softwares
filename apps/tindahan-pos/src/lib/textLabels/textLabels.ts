@@ -79,6 +79,8 @@ export const LABEL_STORE_NAME = "Store name";
 export const LABEL_OWNER_NAME = "Your name";
 export const HINT_EMAIL_RECEIPT = "We'll send your receipt template here.";
 export const HINT_PASSWORD_MIN_LENGTH = "At least 8 characters.";
+export const LABEL_CONFIRM_PASSWORD = "Confirm password";
+export const ERROR_MUST_AGREE_TO_TERMS = "Please agree to the Terms of Service and Privacy Policy first.";
 export const TEXT_PASSWORD_STRENGTH_WEAK = "Too weak";
 export const TEXT_PASSWORD_STRENGTH_FAIR = "Fair";
 export const TEXT_PASSWORD_STRENGTH_GOOD = "Strong";
@@ -280,6 +282,8 @@ export const LABEL_DELETE_ACCOUNT_CONFIRM_HEADING = "Delete your account?";
 export const TEXT_DELETE_ACCOUNT_MODAL_BODY =
   "This permanently deletes your login and profile. It cannot be undone. Sales and other records you created stay in the store's history, just no longer attributed to you by name.";
 export const BUTTON_DELETING = "Deleting…";
+export const LABEL_DELETE_ACCOUNT_REQUEST_SUBMITTED_HEADING = "Request submitted";
+export const BUTTON_OK = "OK";
 export const ERROR_COULD_NOT_PROCESS_IMAGE = "Could not process that image.";
 export const ERROR_COULD_NOT_SAVE_PROFILE = "Could not save profile.";
 

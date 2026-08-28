@@ -505,6 +505,51 @@ export interface Database {
           },
         ];
       };
+      demo_products: {
+        Row: {
+          id: string;
+          name: string;
+          category: string;
+          price: number;
+          stock: number;
+          low_stock_threshold: number;
+          sort_order: number;
+          sold_count: number;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          category: string;
+          price: number;
+          stock: number;
+          low_stock_threshold?: number;
+          sort_order?: number;
+          sold_count?: number;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          category?: string;
+          price?: number;
+          stock?: number;
+          low_stock_threshold?: number;
+          sort_order?: number;
+          sold_count?: number;
+        };
+        Relationships: [];
+      };
+      demo_sales: {
+        Row: { id: string; occurred_at: string; total: number; item_count: number };
+        Insert: { id?: string; occurred_at: string; total: number; item_count: number };
+        Update: { id?: string; occurred_at?: string; total?: number; item_count?: number };
+        Relationships: [];
+      };
+      demo_customers: {
+        Row: { id: string; name: string; balance: number };
+        Insert: { id?: string; name: string; balance?: number };
+        Update: { id?: string; name?: string; balance?: number };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -557,6 +602,45 @@ export interface Database {
       end_cashier_session: {
         Args: { p_token: string; p_closing_float?: number | null };
         Returns: undefined;
+      };
+      start_trial: {
+        Args: { p_plan_code: string };
+        Returns: undefined;
+      };
+      my_store_billing_state: {
+        Args: Record<string, never>;
+        Returns: {
+          organization_status: string;
+          subscription_status: string;
+          writes_allowed: boolean;
+          grace_ends_at: string | null;
+          trial_ends_at: string | null;
+        }[];
+      };
+      my_store_plan: {
+        Args: Record<string, never>;
+        Returns: {
+          plan_code: string;
+          name: string;
+          price_php: number | null;
+          billing_interval: string;
+          features: string[];
+        }[];
+      };
+      plan_prices: {
+        Args: Record<string, never>;
+        Returns: {
+          plan_code: string;
+          name: string;
+          price_php: number | null;
+          billing_interval: string;
+          features: string[];
+          sort_order: number;
+        }[];
+      };
+      my_store_features: {
+        Args: Record<string, never>;
+        Returns: { feature_code: string; module_code: string; name: string; enabled: boolean }[];
       };
     };
     Enums: {

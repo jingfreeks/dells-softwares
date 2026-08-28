@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useBillingState } from "@/lib/billing/billingContext";
+import { useFeatures } from "@/lib/features/featuresContext";
 import { startTrialBestEffort } from "@/lib/billing/startTrial";
 import { type PlanPrice, priceLabel } from "@/lib/plan/plan";
 
@@ -8,6 +9,16 @@ const TRIALABLE_CODES = new Set(["BUSINESS", "PRO"]);
 
 export function usePricingPage() {
   const billing = useBillingState();
+  // my_store_features() is the single source of truth for what a feature
+  // code is actually called -- reusing its catalogue here means every
+  // bullet on this page is a real, currently-shipped capability's real
+  // name, not marketing copy that can drift from what the app supports.
+  const { catalogue, loading: catalogueLoading } = useFeatures();
+  const featureNameByCode = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const f of catalogue) map.set(f.code, f.name);
+    return map;
+  }, [catalogue]);
   const [plans, setPlans] = useState<PlanPrice[]>([]);
   const [currentPlanCode, setCurrentPlanCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,8 +67,19 @@ export function usePricingPage() {
   }
 
   return {
-    loading,
-    plans: plans.map((p) => ({ ...p, priceLabel: priceLabel(p) })),
+    loading: loading || catalogueLoading,
+    plans: plans.map((p) => ({
+      ...p,
+      priceLabel: priceLabel(p),
+      // Unknown codes (a plan referencing a feature the catalogue hasn't
+      // caught up on) are skipped rather than shown as a blank bullet --
+      // same "an unknown answer is not a wrong answer" discipline as
+      // usePlanPage's lockedByPlan.
+      featureNames: [...p.features]
+        .map((code) => featureNameByCode.get(code))
+        .filter((name): name is string => !!name)
+        .sort((a, b) => a.localeCompare(b)),
+    })),
     currentPlanCode,
     hasUsedTrial,
     startedCode,

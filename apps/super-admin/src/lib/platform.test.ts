@@ -5,6 +5,8 @@ import {
   featuresLostByPlanChange,
   planPriceLabel,
   setModule,
+  listDeletionRequests,
+  denyDeletionRequest,
   type OrganizationFeature,
   type Plan,
 } from "./platform";
@@ -75,6 +77,76 @@ describe("setModule", () => {
   it("throws when the RPC reports an error", async () => {
     rpc.mockResolvedValue({ error: { message: "UNAUTHORIZED_ACTION" } });
     await expect(setModule("org-1", "ACCOUNTING", true, "")).rejects.toThrow("UNAUTHORIZED_ACTION");
+  });
+});
+
+describe("listDeletionRequests", () => {
+  beforeEach(() => {
+    rpc.mockReset();
+  });
+
+  it("maps snake_case RPC rows to the camelCase shape the console expects", async () => {
+    rpc.mockResolvedValue({
+      data: [
+        {
+          id: "req-1",
+          organization_id: "org-1",
+          organization_name: "Dell's Store",
+          requested_user_id: "user-1",
+          requested_email: "owner@example.com",
+          reason: "closing up shop",
+          status: "PENDING",
+          requested_at: "2026-08-01T00:00:00Z",
+          resolved_at: null,
+          resolved_by_email: null,
+          resolution_note: null,
+        },
+      ],
+      error: null,
+    });
+
+    const rows = await listDeletionRequests();
+
+    expect(rpc).toHaveBeenCalledWith("platform_deletion_requests", undefined);
+    expect(rows).toEqual([
+      {
+        id: "req-1",
+        organizationId: "org-1",
+        organizationName: "Dell's Store",
+        requestedUserId: "user-1",
+        requestedEmail: "owner@example.com",
+        reason: "closing up shop",
+        status: "PENDING",
+        requestedAt: "2026-08-01T00:00:00Z",
+        resolvedAt: null,
+        resolvedByEmail: null,
+        resolutionNote: null,
+      },
+    ]);
+  });
+
+  it("throws when the RPC reports an error", async () => {
+    rpc.mockResolvedValue({ data: null, error: { message: "UNAUTHORIZED_ACTION" } });
+    await expect(listDeletionRequests()).rejects.toThrow("UNAUTHORIZED_ACTION");
+  });
+});
+
+describe("denyDeletionRequest", () => {
+  beforeEach(() => {
+    rpc.mockReset().mockResolvedValue({ error: null });
+  });
+
+  it("passes the request id and note through, null when no note is given", async () => {
+    await denyDeletionRequest("req-1", "");
+    expect(rpc).toHaveBeenCalledWith("platform_deny_deletion_request", {
+      p_request_id: "req-1",
+      p_note: null,
+    });
+  });
+
+  it("throws when the RPC reports an error", async () => {
+    rpc.mockResolvedValue({ error: { message: "VALIDATION_FAILED" } });
+    await expect(denyDeletionRequest("req-1", "note")).rejects.toThrow("VALIDATION_FAILED");
   });
 });
 

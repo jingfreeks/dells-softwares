@@ -25,19 +25,21 @@ function renderRegister(initialEntry = "/register") {
 
 async function fillForm(
   user: ReturnType<typeof userEvent.setup>,
-  overrides: Partial<{ storeName: string; ownerName: string; email: string; password: string }> = {}
+  overrides: Partial<{ storeName: string; ownerName: string; email: string; password: string; confirmPassword: string }> = {}
 ) {
   const values = {
     storeName: "Dell's Store",
     ownerName: "Aling Nena",
     email: "nena@example.com",
     password: "secret123",
+    confirmPassword: "secret123",
     ...overrides,
   };
   await user.type(screen.getByLabelText("Store name"), values.storeName);
   await user.type(screen.getByLabelText("Your name"), values.ownerName);
   await user.type(screen.getByLabelText("Email address"), values.email);
   await user.type(screen.getByLabelText("Password"), values.password);
+  await user.type(screen.getByLabelText("Confirm password"), values.confirmPassword);
   await user.click(screen.getByRole("checkbox", { name: /Terms of Service/ }));
 }
 
@@ -83,10 +85,25 @@ describe("Register", () => {
     await user.type(screen.getByLabelText("Your name"), "Aling Nena");
     await user.type(screen.getByLabelText("Email address"), "nena@example.com");
     await user.type(screen.getByLabelText("Password"), "secret123");
+    await user.type(screen.getByLabelText("Confirm password"), "secret123");
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
     expect(register).not.toHaveBeenCalled();
   });
+
+  it("does not submit and shows an error when the passwords don't match", async () => {
+    const user = userEvent.setup();
+    const register = vi.fn().mockResolvedValue({ ok: true, needsEmailConfirmation: false });
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, register }));
+    renderRegister();
+
+    await fillForm(user, { confirmPassword: "different123" });
+    await user.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(register).not.toHaveBeenCalled();
+    expect(await screen.findByRole("alert")).toHaveTextContent("don't match");
+  });
+
 
   it("disables Sign up with Google until the terms checkbox is agreed to", async () => {
     const user = userEvent.setup();
@@ -102,6 +119,18 @@ describe("Register", () => {
 
     await user.click(googleButton);
     expect(loginWithGoogle).toHaveBeenCalled();
+  });
+
+  it("carries a selected plan code into the Google OAuth redirect", async () => {
+    const user = userEvent.setup();
+    const loginWithGoogle = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: null, loginWithGoogle }));
+    renderRegister("/register?plan=BUSINESS");
+
+    await user.click(screen.getByRole("checkbox", { name: /Terms of Service/ }));
+    await user.click(screen.getByRole("button", { name: "Sign up with Google" }));
+
+    expect(loginWithGoogle).toHaveBeenCalledWith("BUSINESS");
   });
 
   it("shows an error if the Google redirect fails to start", async () => {

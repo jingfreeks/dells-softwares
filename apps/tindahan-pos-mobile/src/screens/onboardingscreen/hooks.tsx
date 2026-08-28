@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../lib/auth";
+import { useBillingState } from "../../lib/billing";
+import { startTrialBestEffort } from "../../lib/startTrial";
 import { useStoreData } from "../../lib/storeData";
 import {
   DEFAULT_LOW_STOCK_THRESHOLD,
@@ -37,9 +39,25 @@ const STORE_PHOTO_MAX_DIMENSION = 1024;
 /** All state + logic for OnboardingScreen -- OnboardingScreen.tsx stays presentational. */
 export function useOnboardingScreen() {
   const { user, store, updateProfile, updateStore, completeOnboarding } = useAuth();
+  const billing = useBillingState();
   const { products, categories, sales, addProduct, addCategory } = useStoreData();
 
-  const [step, setStep] = useState<OnboardingStep>("welcome");
+  const [step, setStepRaw] = useState<OnboardingStep>("welcome");
+  const [trialStarted, setTrialStarted] = useState(false);
+
+  // Trial starts the moment the wizard reaches "done" -- that's the
+  // screen whose copy confirms it (mobile-30) -- not on finish, so the
+  // confirmation is already true by the time it renders. Reaching "done"
+  // only happens via the real "Set Up My Store" path ("Explore Demo"
+  // exits the wizard entirely before any step change), so this fires
+  // unconditionally -- start_trial() itself is the idempotency guard.
+  function setStep(next: OnboardingStep) {
+    if (next === "done" && !billing?.trialEndsAt) {
+      startTrialBestEffort("BUSINESS");
+      setTrialStarted(true);
+    }
+    setStepRaw(next);
+  }
 
   // Profile step
   const [name, setName] = useState(user?.name ?? "");
@@ -361,6 +379,7 @@ export function useOnboardingScreen() {
     products,
     step,
     setStep,
+    trialStarted,
     name,
     setName,
     phone,

@@ -6,14 +6,16 @@ import { StockAlertsStep } from "../onboarding/stockalertsstep";
 import { OpenRegisterStep } from "../onboarding/openregisterstep";
 import { DoneStep } from "../onboarding/donestep";
 import { useOnboardingScreen } from "./hooks";
+import type { OnboardingScreenProps } from "./types";
 
-export function OnboardingScreen() {
+export function OnboardingScreen({ onExploreDemo }: OnboardingScreenProps) {
   const {
     user,
     store,
     products,
     step,
     setStep,
+    trialStarted,
     name,
     setName,
     phone,
@@ -77,7 +79,11 @@ export function OnboardingScreen() {
   if (step === "welcome") {
     return (
       <ScreenContainer>
-        <WelcomeStep onStartSetup={() => setStep("profile")} onSkipToRegister={() => setStep("openRegister")} />
+        <WelcomeStep
+          ownerName={name || user?.name || ""}
+          onExploreDemo={onExploreDemo}
+          onSetUpStore={() => setStep("profile")}
+        />
       </ScreenContainer>
     );
   }
@@ -93,6 +99,7 @@ export function OnboardingScreen() {
           productsAdded={products.length}
           thresholdDays={thresholdDays}
           startingFloat={startingFloat}
+          trialStarted={trialStarted}
           finishing={finishing}
           finishError={finishError}
           onFinish={handleFinish}

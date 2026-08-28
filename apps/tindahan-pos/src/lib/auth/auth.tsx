@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { supabase } from "@/lib/supabaseClient";
 import { togglablePersistenceStorage } from "@/lib/supabaseClient/togglablePersistenceStorage";
 import type { DeviceSession, StaffAccount, Store, StoreFeeConfig, VatStatus } from "@/lib/types";
-import { AuthContext, type AuthResult, type RegisterResult } from "./authContext";
+import { AuthContext, type AuthResult, type RegisterResult, type DeleteAccountResult } from "./authContext";
 import { ERROR_COULD_NOT_START_SESSION } from "@/lib/textLabels";
 
 async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
@@ -230,11 +230,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * back to "My Store"/their email, since Google's profile fields don't
    * match the store_name/owner_name keys the trigger reads from
    * raw_user_meta_data) and lands in the same onboarding wizard.
+   *
+   * `planCode`, when given, rides along as a query param on the redirect
+   * target -- Supabase sends the browser back to exactly this URL once
+   * OAuth completes, so it's the only way a value survives the round trip.
+   * HomeRedirect (where "/" always lands) reads it back off the URL and
+   * starts the trial once a session exists.
    */
-  async function loginWithGoogle(): Promise<AuthResult> {
+  async function loginWithGoogle(planCode?: string): Promise<AuthResult> {
+    const redirectTo = planCode
+      ? `${window.location.origin}/?plan=${encodeURIComponent(planCode)}`
+      : `${window.location.origin}/`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/` },
+      options: { redirectTo },
     });
     if (error) return { ok: false, error: friendlyAuthError(error.message) };
     return { ok: true };
@@ -384,7 +393,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
-  async function deleteAccount(): Promise<AuthResult> {
+  async function deleteAccount(): Promise<DeleteAccountResult> {
     if (!user) return { ok: false, error: "Not signed in." };
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
@@ -401,6 +410,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { ok: false, error: body?.error ?? error.message };
     }
     if (data?.error) return { ok: false, error: data.error };
+
+    if (data?.requiresReview) {
+      // The account still exists -- a platform admin has to act on the
+      // filed request first -- so the caller stays signed in.
+      return { ok: true, requiresReview: true, message: data.message };
+    }
 
     await supabase.auth.signOut();
     setUser(null);

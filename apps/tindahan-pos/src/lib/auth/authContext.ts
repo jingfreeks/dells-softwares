@@ -5,6 +5,12 @@ export type AuthResult = { ok: true } | { ok: false; error: string };
 export type RegisterResult =
   | { ok: true; needsEmailConfirmation: boolean }
   | { ok: false; error: string };
+/** requiresReview: true means no auth.users row was deleted -- a sole
+ * admin's request was filed for platform-admin review instead. The caller
+ * stays signed in; message is the copy to show them. */
+export type DeleteAccountResult =
+  | { ok: true; requiresReview?: boolean; message?: string }
+  | { ok: false; error: string };
 
 export interface AuthContextValue {
   user: StaffAccount | null;
@@ -26,8 +32,12 @@ export interface AuthContextValue {
   login: (email: string, password: string, keepSignedIn?: boolean) => Promise<AuthResult>;
   /** Redirects the browser to Google -- resolves once the redirect has been
    * initiated (or failed, e.g. the provider isn't enabled yet), not once
-   * sign-in completes. The same call for both "sign in" and "sign up". */
-  loginWithGoogle: () => Promise<AuthResult>;
+   * sign-in completes. The same call for both "sign in" and "sign up".
+   * `planCode`, when given (a landing-page CTA carried in via ?plan=CODE),
+   * is threaded through the OAuth round trip via the redirect URL so
+   * HomeRedirect can start the trial once the user lands back signed in —
+   * see loginWithGoogle's own comment for why this can't happen here. */
+  loginWithGoogle: (planCode?: string) => Promise<AuthResult>;
   register: (input: {
     storeName: string;
     ownerName: string;
@@ -62,8 +72,10 @@ export interface AuthContextValue {
   setOwnPin: (pin: string) => Promise<AuthResult>;
   /** Marks the signed-in admin's onboarding wizard as finished. */
   completeOnboarding: () => Promise<AuthResult>;
-  /** Permanently deletes the signed-in staff member's own account. */
-  deleteAccount: () => Promise<AuthResult>;
+  /** Permanently deletes the signed-in staff member's own account -- or,
+   * if they're their store's only admin, files a request for a platform
+   * admin to review instead (see DeleteAccountResult). */
+  deleteAccount: () => Promise<DeleteAccountResult>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

@@ -74,6 +74,7 @@ export function ProfileSettings() {
     closeDeleteModal,
     deleteError,
     deleting,
+    deleteReviewMessage,
     handleDeleteAccount,
   } = useSettingsProfilePage();
 
@@ -167,6 +168,7 @@ export function ProfileSettings() {
         open={showDeleteModal}
         deleteError={deleteError}
         deleting={deleting}
+        reviewMessage={deleteReviewMessage}
         onCancel={closeDeleteModal}
         onConfirm={handleDeleteAccount}
       />
