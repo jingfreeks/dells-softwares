@@ -80,7 +80,9 @@ export function DemoStore() {
                     <div key={s.id} className="tpl-lr" style={{ padding: "8px 0" }}>
                       <div className="tpl-flex1">
                         <p className="tpl-tp">{new Date(s.occurredAt).toLocaleString()}</p>
-                        <p className="tpl-ts">{s.itemCount} items</p>
+                        <p className="tpl-ts">
+                          {s.itemCount} {s.itemCount === 1 ? "item" : "items"}
+                        </p>
                       </div>
                       <span className="tpl-ts">{PESO.format(s.total)}</span>
                     </div>
@@ -91,12 +93,14 @@ export function DemoStore() {
                   <p className="tpl-h3" style={{ marginBottom: 12 }}>
                     Customers with utang
                   </p>
-                  {customers.map((c) => (
-                    <div key={c.id} className="tpl-lr" style={{ padding: "8px 0" }}>
-                      <p className="tpl-tp">{c.name}</p>
-                      <span className="tpl-ts">{PESO.format(c.balance)}</span>
-                    </div>
-                  ))}
+                  {customers
+                    .filter((c) => c.balance > 0)
+                    .map((c) => (
+                      <div key={c.id} className="tpl-lr" style={{ padding: "8px 0" }}>
+                        <p className="tpl-tp">{c.name}</p>
+                        <span className="tpl-ts">{PESO.format(c.balance)}</span>
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>

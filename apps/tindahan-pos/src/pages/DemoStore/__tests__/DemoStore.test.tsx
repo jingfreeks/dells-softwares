@@ -22,6 +22,7 @@ const demoSales = [
 const demoCustomers = [
   { id: "dc-1", name: "Mang Jose", balance: 320 },
   { id: "dc-2", name: "Aling Puring", balance: 150 },
+  { id: "dc-3", name: "Kuya Ramil", balance: 0 },
 ];
 
 vi.mock("@/lib/supabaseClient", () => ({
@@ -76,5 +77,17 @@ describe("DemoStore", () => {
   it("links back to real setup", () => {
     renderPage();
     expect(screen.getByRole("link", { name: "Set Up My Store" })).toHaveAttribute("href", "/onboarding");
+  });
+
+  it("omits a customer with a zero balance from the utang list", async () => {
+    renderPage();
+    await screen.findByText("Mang Jose");
+    expect(screen.queryByText("Kuya Ramil")).not.toBeInTheDocument();
+  });
+
+  it("singularizes the item count for a one-item sale", async () => {
+    renderPage();
+    expect(await screen.findByText("1 item")).toBeInTheDocument();
+    expect(screen.queryByText("1 items")).not.toBeInTheDocument();
   });
 });
