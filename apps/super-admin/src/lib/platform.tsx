@@ -72,6 +72,23 @@ export interface PlatformAuditEntry {
   createdAt: string;
 }
 
+/** A sole admin's request to delete their account -- filed when
+ * delete-account finds no other admin to hand the store to. See
+ * 20260815142000_account_deletion_requests.sql. */
+export interface DeletionRequest {
+  id: string;
+  organizationId: string;
+  organizationName: string;
+  requestedUserId: string;
+  requestedEmail: string;
+  reason: string | null;
+  status: "PENDING" | "APPROVED" | "DENIED";
+  requestedAt: string;
+  resolvedAt: string | null;
+  resolvedByEmail: string | null;
+  resolutionNote: string | null;
+}
+
 interface PlatformContextValue {
   session: Session | null;
   /** null once resolved means "signed in, but not a platform administrator". */
@@ -428,6 +445,55 @@ export async function resetModuleToPlan(
     p_reason: reason || null,
   });
   if (error) throw new Error(error.message);
+}
+
+export async function listDeletionRequests(): Promise<DeletionRequest[]> {
+  const { data, error } = await supabase.rpc("platform_deletion_requests");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, never>) => ({
+    id: r.id,
+    organizationId: r.organization_id,
+    organizationName: r.organization_name,
+    requestedUserId: r.requested_user_id,
+    requestedEmail: r.requested_email,
+    reason: r.reason,
+    status: r.status,
+    requestedAt: r.requested_at,
+    resolvedAt: r.resolved_at,
+    resolvedByEmail: r.resolved_by_email,
+    resolutionNote: r.resolution_note,
+  }));
+}
+
+export async function denyDeletionRequest(requestId: string, note: string): Promise<void> {
+  const { error } = await supabase.rpc("platform_deny_deletion_request", {
+    p_request_id: requestId,
+    p_note: note || null,
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Deletes the requesting user's account and cancels their organization —
+ * see approve-deletion-request/index.ts for why this needs an Edge
+ * Function rather than a plain RPC. Returns a warning string on the rare
+ * partial-failure path (account deleted, but the request record itself
+ * didn't update) instead of throwing -- the deletion itself still
+ * succeeded, so this isn't really an error. */
+export async function approveDeletionRequest(requestId: string, note: string): Promise<{ warning?: string }> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) throw new Error("Not signed in.");
+
+  const { data, error } = await supabase.functions.invoke("approve-deletion-request", {
+    headers: { Authorization: `Bearer ${token}` },
+    body: { requestId, note: note || null },
+  });
+  if (error) {
+    const body: { error?: string } | null = await error.context?.json?.().catch(() => null);
+    throw new Error(body?.error ?? error.message);
+  }
+  if (data?.error) throw new Error(data.error);
+  return { warning: data?.warning };
 }
 
 export async function listPlatformAudit(limit = 100): Promise<PlatformAuditEntry[]> {

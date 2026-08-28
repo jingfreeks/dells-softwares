@@ -4,6 +4,7 @@ import { MfaGate, NoAccess, Shell } from "./components/Shell";
 import { Login } from "./pages/Login";
 import { Organizations } from "./pages/Organizations";
 import { OrganizationDetail } from "./pages/OrganizationDetail";
+import { DeletionRequests } from "./pages/DeletionRequests";
 import { Audit } from "./pages/Audit";
 
 /**
@@ -35,6 +36,7 @@ function Console() {
       <Routes>
         <Route path="/organizations" element={<Organizations />} />
         <Route path="/organizations/:orgId" element={<OrganizationDetail />} />
+        <Route path="/deletion-requests" element={<DeletionRequests />} />
         <Route path="/audit" element={<Audit />} />
         <Route path="*" element={<Navigate to="/organizations" replace />} />
       </Routes>

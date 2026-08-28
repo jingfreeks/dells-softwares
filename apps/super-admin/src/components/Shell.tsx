@@ -29,6 +29,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
         <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="Main">
           <ConsoleLink to="/organizations">Organizations</ConsoleLink>
+          <ConsoleLink to="/deletion-requests">Deletion requests</ConsoleLink>
           <ConsoleLink to="/audit">Platform audit</ConsoleLink>
         </nav>
 

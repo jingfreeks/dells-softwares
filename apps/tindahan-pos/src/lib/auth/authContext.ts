@@ -5,6 +5,12 @@ export type AuthResult = { ok: true } | { ok: false; error: string };
 export type RegisterResult =
   | { ok: true; needsEmailConfirmation: boolean }
   | { ok: false; error: string };
+/** requiresReview: true means no auth.users row was deleted -- a sole
+ * admin's request was filed for platform-admin review instead. The caller
+ * stays signed in; message is the copy to show them. */
+export type DeleteAccountResult =
+  | { ok: true; requiresReview?: boolean; message?: string }
+  | { ok: false; error: string };
 
 export interface AuthContextValue {
   user: StaffAccount | null;
@@ -66,8 +72,10 @@ export interface AuthContextValue {
   setOwnPin: (pin: string) => Promise<AuthResult>;
   /** Marks the signed-in admin's onboarding wizard as finished. */
   completeOnboarding: () => Promise<AuthResult>;
-  /** Permanently deletes the signed-in staff member's own account. */
-  deleteAccount: () => Promise<AuthResult>;
+  /** Permanently deletes the signed-in staff member's own account -- or,
+   * if they're their store's only admin, files a request for a platform
+   * admin to review instead (see DeleteAccountResult). */
+  deleteAccount: () => Promise<DeleteAccountResult>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

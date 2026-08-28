@@ -11,10 +11,14 @@
 //      (checked against their own JWT via the anon-key client, still bound
 //      by RLS — a caller can only ever prove facts about themselves this
 //      way).
-//   2. If they're an admin, block deletion when they're the store's only
-//      admin — deleting the last admin would orphan the store (nobody left
-//      to manage inventory/staff/reports). They're told to promote another
-//      staff member to admin first.
+//   2. If they're an admin and the store's only admin, deleting them
+//      outright would orphan the store (nobody left to manage
+//      inventory/staff/reports) — instead of refusing, this files an
+//      account-deletion request (public.file_account_deletion_request(),
+//      service_role) for a platform admin to review. See
+//      20260815142000_account_deletion_requests.sql for why a review queue
+//      replaced the old flat "promote someone first" refusal, and
+//      approve-deletion-request for what happens once one is approved.
 //   3. Otherwise, delete their auth.users row via the service_role admin
 //      API. staff.id references auth.users(id) on delete cascade, so their
 //      staff row is removed automatically. sales.cashier_id,
@@ -98,12 +102,23 @@ Deno.serve(async (req) => {
         return json({ error: countError.message }, 400);
       }
       if (!count || count === 0) {
+        const { error: requestError } = await adminClient.rpc("file_account_deletion_request", {
+          p_organization_id: callerStaff.store_id,
+          p_user_id: caller.id,
+          p_email: caller.email,
+        });
+        if (requestError) {
+          console.error("delete-account: file_account_deletion_request failed:", requestError.message);
+          return json({ error: "Could not submit your deletion request. Try again." }, 500);
+        }
         return json(
           {
-            error:
-              "You're the only admin for this store. Promote another staff member to admin before deleting your account.",
+            ok: true,
+            requiresReview: true,
+            message:
+              "You're the only admin for this store, so deleting your account closes the whole store. We've sent this to our team for review — you'll hear back by email.",
           },
-          400
+          200
         );
       }
     }
