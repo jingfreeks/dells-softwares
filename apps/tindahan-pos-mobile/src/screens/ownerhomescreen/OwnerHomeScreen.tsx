@@ -8,6 +8,7 @@ import { ListRow } from "../../components/listrow";
 import { MetricCard } from "../../components/metriccard";
 import { ScreenContainer } from "../../components/screencontainer";
 import { SectionHeader } from "../../components/sectionheader";
+import { OnboardingChecklistCard } from "./component/onboardingchecklistcard";
 import { formatDayLabel, formatRelativeTime, greetingForHour, saleSummaryLabel } from "../../lib/format";
 import { PESO } from "../../lib/money";
 import { PAYMENT_ICON, PAYMENT_LABEL, useOwnerHomeScreen } from "./hooks";
@@ -75,6 +76,8 @@ export function OwnerHomeScreen(props: OwnerHomeScreenProps) {
           />
           <MetricCard label="Utang Out" value={PESO.format(utangOutstanding)} caption={`${customersWithBalance.length} customers`} />
         </View>
+
+        <OnboardingChecklistCard />
 
         {activeCashier && (
           <View className="mt-3.5">

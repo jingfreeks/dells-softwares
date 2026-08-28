@@ -6,6 +6,7 @@ export interface DoneStepProps {
   productsAdded: number;
   thresholdDays: number;
   startingFloat: number;
+  trialStarted: boolean;
   finishing: boolean;
   finishError: string | null;
   onFinish: () => void;

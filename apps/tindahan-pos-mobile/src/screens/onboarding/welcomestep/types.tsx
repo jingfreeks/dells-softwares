@@ -1,38 +1,20 @@
 export interface WelcomeStepProps {
-  onStartSetup: () => void;
-  onSkipToRegister: () => void;
+  ownerName: string;
+  onExploreDemo: () => void;
+  onSetUpStore: () => void;
 }
 
-export interface ChecklistItem {
-  n: number;
+export interface ChoiceTickItem {
+  label: string;
+}
+
+export interface ChoiceCardData {
+  icon: "monitor" | "home";
   title: string;
-  detail: string;
-  time: string;
+  description: string;
+  ticks: ChoiceTickItem[];
+  ctaLabel: string;
+  accentColor: string;
+  accentBackground: string;
+  accentBorder: string;
 }
-
-export const CHECKLIST: ChecklistItem[] = [
-  {
-    n: 1,
-    title: "Store profile",
-    detail: "Your name and shop details",
-    time: "~1 min",
-  },
-  {
-    n: 2,
-    title: "Add products",
-    detail: "Start from a ready-made list",
-    time: "~4 min",
-  },
-  {
-    n: 3,
-    title: "Set stock alerts",
-    detail: "We suggest a sensible default",
-    time: "~1 min",
-  },
-  {
-    n: 4,
-    title: "Open the register",
-    detail: "Count your starting cash",
-    time: "~2 min",
-  },
-];

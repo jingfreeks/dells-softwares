@@ -16,6 +16,7 @@ export function DoneStep({
   productsAdded,
   thresholdDays,
   startingFloat,
+  trialStarted,
   finishing,
   finishError,
   onFinish,
@@ -33,6 +34,13 @@ export function DoneStep({
         {productsAdded} product{productsAdded === 1 ? "" : "s"} loaded, alerts set at {thresholdDays} days of cover, and{" "}
         {PESO.format(startingFloat)} counted into the drawer. Ring up your first sale whenever you&apos;re ready.
       </Text>
+
+      {trialStarted && (
+        <View className="flex-row items-center gap-1.5 mb-[18px]">
+          <Feather name="check-circle" size={13} color={colors.success} />
+          <Text className="text-[12.5px] text-success">Your 30-day free trial has started.</Text>
+        </View>
+      )}
 
       <Card padding={14}>
         <Text className="text-[13.5px] font-medium text-text-primary mb-[11px]">What&apos;s set up</Text>
