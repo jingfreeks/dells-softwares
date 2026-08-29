@@ -10,6 +10,7 @@ import {
   BUTTON_DISCARD_SALE,
   TEXT_DISCARD_CONFIRM_HAS_SERVICE,
   BUTTON_CLOSE,
+  useEscapeToClose,
   type HeldSale,
   type Product,
 } from "@/lib";
@@ -36,6 +37,8 @@ function heldSaleDisplayTotal(held: HeldSale, products: Product[]): number {
 
 export function HeldSalesModal({ open, heldSales, products, resumeError, onResume, onDiscard, onClose }: HeldSalesModalProps) {
   const [confirmingDiscardId, setConfirmingDiscardId] = useState<string | null>(null);
+
+  useEscapeToClose(open, onClose);
 
   if (!open) return null;
 

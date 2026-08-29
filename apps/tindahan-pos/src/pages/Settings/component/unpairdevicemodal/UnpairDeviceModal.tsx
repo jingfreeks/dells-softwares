@@ -1,5 +1,5 @@
 import { PinKeypad } from "@/components";
-import { LABEL_UNPAIR_DEVICE_HEADING, TEXT_ENTER_OWNER_PIN, BUTTON_CANCEL } from "@/lib";
+import { LABEL_UNPAIR_DEVICE_HEADING, TEXT_ENTER_OWNER_PIN, BUTTON_CANCEL, useEscapeToClose } from "@/lib";
 
 interface UnpairDeviceModalProps {
   open: boolean;
@@ -12,6 +12,8 @@ interface UnpairDeviceModalProps {
 }
 
 export function UnpairDeviceModal({ open, pin, onPinChange, onSubmit, error, submitting, onCancel }: UnpairDeviceModalProps) {
+  useEscapeToClose(open, onCancel);
+
   if (!open) return null;
 
   return (

@@ -9,6 +9,7 @@ import {
   COLUMN_VARIANCE,
   EMPTY_STATE_NO_VARIANCE_THIS_WEEK,
   TEXT_VARIANCE_SCOPE_NOTE,
+  useEscapeToClose,
 } from "@/lib";
 import type { ClosedShift } from "../../lib";
 
@@ -18,6 +19,8 @@ interface DrawerVarianceModalProps {
 }
 
 export function DrawerVarianceModal({ closedShifts, onClose }: DrawerVarianceModalProps) {
+  useEscapeToClose(true, onClose);
+
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>
       <div

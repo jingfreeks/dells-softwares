@@ -34,6 +34,7 @@ import {
   DAY_FRI,
   DAY_SAT,
   DAY_SUN,
+  useEscapeToClose,
 } from "@/lib";
 import { ChipMultiSelect } from "@/components";
 import type { SupplierFormValues } from "../hooks";
@@ -81,6 +82,8 @@ export function AddSupplierModal({
   onCancel,
   onSubmit,
 }: AddSupplierModalProps) {
+  useEscapeToClose(true, onCancel);
+
   return (
     <div className="tpl-modal-overlay" onClick={onCancel}>
       <div

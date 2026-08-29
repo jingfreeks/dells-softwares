@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ARIA_CLOSE_MODAL, BUTTON_CANCEL } from "@/lib";
+import { ARIA_CLOSE_MODAL, BUTTON_CANCEL, useEscapeToClose } from "@/lib";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -24,6 +24,8 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  useEscapeToClose(open, onCancel);
+
   if (!open) return null;
 
   return (

@@ -8,6 +8,7 @@ import {
   COLUMN_SALES,
   COLUMN_TRANSACTIONS,
   EMPTY_STATE_NO_ONE_ON_SHIFT,
+  useEscapeToClose,
 } from "@/lib";
 import type { OpenShift } from "../../hooksShifts";
 
@@ -17,6 +18,8 @@ interface OnShiftNowModalProps {
 }
 
 export function OnShiftNowModal({ openShifts, onClose }: OnShiftNowModalProps) {
+  useEscapeToClose(true, onClose);
+
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>
       <div

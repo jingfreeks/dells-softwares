@@ -6,6 +6,7 @@ import {
   LABEL_YOUR_OVERRIDE_PIN_CONFIRM,
   ERROR_PINS_DO_NOT_MATCH,
   BUTTON_CANCEL,
+  useEscapeToClose,
 } from "@/lib";
 
 interface SetPinModalProps {
@@ -31,11 +32,13 @@ export function SetPinModal({ open, submitting, error, onCancel, onSubmit, headi
     }
   }, [open]);
 
-  if (!open) return null;
-
   function handleCancel() {
     onCancel();
   }
+
+  useEscapeToClose(open, handleCancel);
+
+  if (!open) return null;
 
   function handleFirstEntry(pin: string) {
     setFirstPin(pin);

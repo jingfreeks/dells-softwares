@@ -6,6 +6,7 @@ import {
   BUTTON_DELETING,
   BUTTON_DELETE_MY_ACCOUNT,
   BUTTON_OK,
+  useEscapeToClose,
 } from "@/lib";
 
 interface DeleteAccountModalProps {
@@ -25,6 +26,8 @@ export function DeleteAccountModal({
   onCancel,
   onConfirm,
 }: DeleteAccountModalProps) {
+  useEscapeToClose(open, onCancel);
+
   if (!open) return null;
 
   const headingId = "deleteAccountModalHeading";

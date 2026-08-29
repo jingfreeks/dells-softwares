@@ -7,6 +7,7 @@ import {
   TEXT_OWNER_APPROVAL_RECORDED_HINT,
   BUTTON_CANCEL,
   BUTTON_PAY_CASH_INSTEAD,
+  useEscapeToClose,
   type Customer,
 } from "@/lib";
 
@@ -35,6 +36,8 @@ export function OwnerApprovalModal({
   onCancel,
   onPayCashInstead,
 }: OwnerApprovalModalProps) {
+  useEscapeToClose(open, onCancel);
+
   if (!open || !customer) return null;
 
   const overage = creditOverageAmount(customer, total);

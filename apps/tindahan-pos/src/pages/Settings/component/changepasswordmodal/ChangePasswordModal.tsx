@@ -7,6 +7,7 @@ import {
   BUTTON_UPDATE_PASSWORD,
   BUTTON_UPDATING,
   TEXT_PASSWORD_UPDATED,
+  useEscapeToClose,
 } from "@/lib";
 import "@/pages/authTheme.css";
 
@@ -35,6 +36,8 @@ export function ChangePasswordModal({
   onCancel,
   onSubmit,
 }: ChangePasswordModalProps) {
+  useEscapeToClose(open, onCancel);
+
   if (!open) return null;
 
   return (

@@ -9,6 +9,7 @@ import {
   LABEL_BLOCK_CREDIT_SUBTITLE,
   BUTTON_CANCEL,
   BUTTON_ADDING,
+  useEscapeToClose,
 } from "@/lib";
 import type { PaymentSchedule } from "../../hooks";
 import { DuplicateWarning } from "../duplicatewarning";
@@ -49,6 +50,8 @@ export function AddCustomerModal({
   onCancel,
   onSubmit,
 }: AddCustomerModalProps) {
+  useEscapeToClose(true, onCancel);
+
   return (
     <div className="tpl-modal-overlay" onClick={onCancel}>
       <div

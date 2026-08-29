@@ -7,6 +7,7 @@ import {
   ARIA_CLOSE_MODAL,
   BUTTON_ADD_PRODUCT,
   BUTTON_DONE,
+  useEscapeToClose,
 } from "@/lib";
 import type { QuickAddForm } from "../useProductsStep";
 
@@ -31,6 +32,8 @@ export function QuickAddProductModal({
     e.preventDefault();
     onSubmit();
   }
+
+  useEscapeToClose(true, onClose);
 
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>

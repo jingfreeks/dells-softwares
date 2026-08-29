@@ -10,6 +10,7 @@ import {
   LABEL_MERGE_INTO,
   BUTTON_CONFIRM_MERGE,
   BUTTON_DELETE,
+  useEscapeToClose,
 } from "@/lib";
 
 interface CategoryManagerProps {
@@ -39,6 +40,8 @@ export function CategoryManager({ onClose }: CategoryManagerProps) {
     cancelDelete,
     confirmDelete,
   } = useCategoryManager();
+
+  useEscapeToClose(true, onClose);
 
   const confirmCount = confirmTarget ? usageCount(confirmTarget.id) : 0;
   const otherCategories = categories.filter((c) => c.id !== confirmTarget?.id);
