@@ -19,6 +19,7 @@ export * from "./PinKeypad";
 export * from "./ProtectedRoute";
 export * from "./Receipt";
 export * from "./ReportDetailModal";
+export * from "./RequireRole";
 export * from "./ScannerLoadingOverlay";
 export * from "./SetPinModal";
 export * from "./UpgradeModal";
