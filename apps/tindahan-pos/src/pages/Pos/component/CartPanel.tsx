@@ -173,6 +173,7 @@ export function CartPanel({
                   id="discount-value"
                   type="number"
                   min={0}
+                  max={discountType === "percentage" ? 100 : undefined}
                   value={discountValue}
                   onChange={(e) => onDiscountValueChange(e.target.value)}
                   style={{ width: 72 }}

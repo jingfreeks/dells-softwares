@@ -16,6 +16,15 @@ const KNOWN_BUSINESS_RULE_MESSAGES = [
   "FEATURE_NOT_ENABLED",
   "INVALID_OVERRIDE_PIN",
   "EXPIRED_CASHIER_SESSION",
+  // Raised by checkout_sale()'s own discount validation (>100% off, a
+  // negative/zero value, or an unrecognized discount type) -- without these
+  // here, a rejected discount fell through to "assume connectivity" too: the
+  // sale was queued for replay and shown to the cashier as complete (receipt
+  // printed, stock decremented locally) even though it would fail forever
+  // once actually synced, since checkout_sale() rejects the same discount
+  // every retry.
+  "INVALID_DISCOUNT_TYPE",
+  "INVALID_DISCOUNT_VALUE",
   "INVALID_OCCURRED_AT",
   "DEVICE_LIMIT_REACHED",
   "Insufficient stock",
