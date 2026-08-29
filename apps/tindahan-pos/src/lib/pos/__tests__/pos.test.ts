@@ -79,6 +79,23 @@ describe("addToCart", () => {
     const cart = addToCart(addToCart([], chips), soda);
     expect(cart).toHaveLength(2);
   });
+
+  it("caps quantity at available stock instead of overselling (soda has 4 in stock)", () => {
+    const cart = addToCart([], soda, 6);
+    expect(cart[0].quantity).toBe(4);
+  });
+
+  it("caps a repeated scan at available stock once the line is already at the limit", () => {
+    const atLimit: CartLine[] = [{ product: soda, quantity: 4 }];
+    const cart = addToCart(atLimit, soda);
+    expect(cart).toEqual(atLimit);
+  });
+
+  it("does not add a line for a product with zero or negative stock", () => {
+    const outOfStock = { ...soda, stock: 0 };
+    expect(addToCart([], outOfStock)).toEqual([]);
+    expect(addToCart([], { ...soda, stock: -2 })).toEqual([]);
+  });
 });
 
 describe("removeFromCart / setQuantity (story A7)", () => {
@@ -100,6 +117,11 @@ describe("removeFromCart / setQuantity (story A7)", () => {
   it("removes the line entirely when quantity drops to zero or below", () => {
     const result = setQuantity(cart, chips.id, 0);
     expect(result.some((l) => l.product.id === chips.id)).toBe(false);
+  });
+
+  it("caps the target quantity at available stock (soda has 4 in stock)", () => {
+    const result = setQuantity(cart, soda.id, 9);
+    expect(result.find((l) => l.product.id === soda.id)?.quantity).toBe(4);
   });
 });
 
