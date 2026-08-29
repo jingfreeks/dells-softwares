@@ -6,18 +6,30 @@ import {
   TEXT_CONFIRMATION_EMAIL_SENT_SUFFIX,
   LINK_BACK_TO_LOGIN,
 } from "@/lib";
+import "@/pages/authTheme.css";
 
+// Was built with plain Tailwind slate/white utilities instead of the
+// tpl-* dark theme every other auth screen uses (Login, Register, Pair) --
+// this is the one place in the sign-up flow a light card flashed on top of
+// an otherwise all-dark product.
 export function ConfirmationSentScreen({ email }: { email: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <p className="text-sm font-medium text-[var(--color-brand)]">{APP_NAME}</p>
-        <h1 className="mt-1 text-xl font-semibold text-slate-900">{PAGE_HEADING_CHECK_YOUR_EMAIL}</h1>
-        <p role="status" className="mt-3 text-sm text-slate-600">
-          {TEXT_CONFIRMATION_EMAIL_SENT_PREFIX} <span className="font-medium">{email}</span>
+    <div
+      className="tpl-root flex min-h-screen items-center justify-center p-6"
+      style={{ background: "radial-gradient(90% 80% at 90% 0%, #12244A 0%, #0B142A 45%, #070B14 100%)" }}
+    >
+      <div className="tpl-card" style={{ width: "100%", maxWidth: 380, padding: "32px 28px", textAlign: "center" }}>
+        <p className="tpl-acc" style={{ fontSize: 13, fontWeight: 500 }}>
+          {APP_NAME}
+        </p>
+        <h1 className="tpl-h2" style={{ marginTop: 4 }}>
+          {PAGE_HEADING_CHECK_YOUR_EMAIL}
+        </h1>
+        <p role="status" className="tpl-sub" style={{ marginTop: 10, marginBottom: 0 }}>
+          {TEXT_CONFIRMATION_EMAIL_SENT_PREFIX} <span style={{ color: "var(--tpl-t2)", fontWeight: 500 }}>{email}</span>
           {TEXT_CONFIRMATION_EMAIL_SENT_SUFFIX}
         </p>
-        <Link to="/login" className="mt-6 inline-block font-medium text-[var(--color-brand)] hover:underline">
+        <Link to="/login" className="tpl-lnk" style={{ display: "inline-block", marginTop: 22, fontWeight: 500 }}>
           {LINK_BACK_TO_LOGIN}
         </Link>
       </div>
