@@ -103,80 +103,90 @@ export function SalesTable({ sales, onVoidSale, voidError, onReprintSale, onRefu
       <p className="tpl-h2" style={{ padding: "14px 15px 0" }}>
         {LABEL_SALES_LIST}
       </p>
-      <div className="tpl-thead" style={{ gridTemplateColumns: COLUMNS }}>
-        <span>{COLUMN_DATE}</span>
-        <span>{COLUMN_CASHIER}</span>
-        <span>{COLUMN_ITEMS}</span>
-        <span>{COLUMN_PAYMENT}</span>
-        <span className="tpl-right">{COLUMN_TOTAL}</span>
-        <span className="tpl-right">{COLUMN_STATUS}</span>
-      </div>
+      {/* 6 columns (3 of them fixed-width) need ~620px to read cleanly --
+          on a narrow viewport the row's own content used to overflow past
+          the card's edge with nothing to scroll it into view (overflow-x
+          defaults to visible), silently hiding Payment/Status. This wrapper
+          scrolls just the table sideways instead, leaving the heading above
+          full-width. */}
+      <div style={{ overflowX: "auto" }}>
+        <div style={{ minWidth: 620 }}>
+          <div className="tpl-thead" style={{ gridTemplateColumns: COLUMNS }}>
+            <span>{COLUMN_DATE}</span>
+            <span>{COLUMN_CASHIER}</span>
+            <span>{COLUMN_ITEMS}</span>
+            <span>{COLUMN_PAYMENT}</span>
+            <span className="tpl-right">{COLUMN_TOTAL}</span>
+            <span className="tpl-right">{COLUMN_STATUS}</span>
+          </div>
 
-      {sales.length === 0 && (
-        <p className="tpl-ts" style={{ padding: "24px 15px", textAlign: "center" }}>
-          {TEXT_NO_SALES_IN_RANGE}
-        </p>
-      )}
+          {sales.length === 0 && (
+            <p className="tpl-ts" style={{ padding: "24px 15px", textAlign: "center" }}>
+              {TEXT_NO_SALES_IN_RANGE}
+            </p>
+          )}
 
-      {sales.map((sale) => (
-        <div key={sale.id} className="tpl-trow" style={{ gridTemplateColumns: COLUMNS }}>
-          <span className="tpl-ts">{formatSaleDate(sale.timestamp)}</span>
-          <span>
-            <span className="tpl-tp">{sale.cashierName}</span>
-            {sale.deviceName && <p className="tpl-ts">{sale.deviceName}</p>}
-          </span>
-          <span className="tpl-ts">{formatItems(sale)}</span>
-          <span className="tpl-tp">{PAYMENT_LABEL[sale.paymentType]}</span>
-          <span className="tpl-ts tpl-right">{PESO.format(sale.total)}</span>
-          <span className="tpl-right" style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
-            {onReprintSale && (
-              <button
-                type="button"
-                className="tpl-lnk"
-                style={{ fontSize: 12 }}
-                onClick={() => onReprintSale(sale)}
-              >
-                {BUTTON_REPRINT_RECEIPT}
-              </button>
-            )}
-            {sale.status === "voided" ? (
-              <span
-                title={[
-                  sale.voidedByName && `${TEXT_VOIDED_BY_PREFIX} ${sale.voidedByName}`,
-                  sale.voidReason && `${TEXT_VOID_REASON_PREFIX} ${sale.voidReason}`,
-                ]
-                  .filter(Boolean)
-                  .join(" — ")}
-              >
-                <SaleStatusChip />
+          {sales.map((sale) => (
+            <div key={sale.id} className="tpl-trow" style={{ gridTemplateColumns: COLUMNS }}>
+              <span className="tpl-ts">{formatSaleDate(sale.timestamp)}</span>
+              <span>
+                <span className="tpl-tp">{sale.cashierName}</span>
+                {sale.deviceName && <p className="tpl-ts">{sale.deviceName}</p>}
               </span>
-            ) : (
-              <>
-                {onRefundSale && (
+              <span className="tpl-ts">{formatItems(sale)}</span>
+              <span className="tpl-tp">{PAYMENT_LABEL[sale.paymentType]}</span>
+              <span className="tpl-ts tpl-right">{PESO.format(sale.total)}</span>
+              <span className="tpl-right" style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+                {onReprintSale && (
                   <button
                     type="button"
                     className="tpl-lnk"
                     style={{ fontSize: 12 }}
-                    onClick={() => setRefundingSale(sale)}
+                    onClick={() => onReprintSale(sale)}
                   >
-                    {BUTTON_REFUND_SALE}
+                    {BUTTON_REPRINT_RECEIPT}
                   </button>
                 )}
-                {onVoidSale && (
-                  <button
-                    type="button"
-                    className="tpl-lnk"
-                    style={{ fontSize: 12 }}
-                    onClick={() => setVoidingSale(sale)}
+                {sale.status === "voided" ? (
+                  <span
+                    title={[
+                      sale.voidedByName && `${TEXT_VOIDED_BY_PREFIX} ${sale.voidedByName}`,
+                      sale.voidReason && `${TEXT_VOID_REASON_PREFIX} ${sale.voidReason}`,
+                    ]
+                      .filter(Boolean)
+                      .join(" — ")}
                   >
-                    {BUTTON_VOID_SALE}
-                  </button>
+                    <SaleStatusChip />
+                  </span>
+                ) : (
+                  <>
+                    {onRefundSale && (
+                      <button
+                        type="button"
+                        className="tpl-lnk"
+                        style={{ fontSize: 12 }}
+                        onClick={() => setRefundingSale(sale)}
+                      >
+                        {BUTTON_REFUND_SALE}
+                      </button>
+                    )}
+                    {onVoidSale && (
+                      <button
+                        type="button"
+                        className="tpl-lnk"
+                        style={{ fontSize: 12 }}
+                        onClick={() => setVoidingSale(sale)}
+                      >
+                        {BUTTON_VOID_SALE}
+                      </button>
+                    )}
+                  </>
                 )}
-              </>
-            )}
-          </span>
+              </span>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
 
       <ConfirmDialog
         open={!!voidingSale}
