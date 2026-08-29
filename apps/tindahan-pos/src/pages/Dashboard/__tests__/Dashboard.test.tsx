@@ -81,6 +81,17 @@ function renderPage() {
   );
 }
 
+function renderPageWithPosRoute() {
+  return render(
+    <MemoryRouter initialEntries={["/"]}>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/pos" element={<p>POS page</p>} />
+      </Routes>
+    </MemoryRouter>
+  );
+}
+
 function SeededReceivingStub() {
   const location = useLocation();
   const prefill = (
@@ -118,6 +129,14 @@ describe("Dashboard", () => {
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ loading: true }));
     renderPage();
     expect(screen.queryByText("Today's sales", { exact: false })).not.toBeInTheDocument();
+  });
+
+  it("redirects a cashier to /pos instead of rendering the dashboard", () => {
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: { ...makeAuthValue().user!, role: "cashier" } }));
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue());
+    renderPageWithPosRoute();
+    expect(screen.getByText("POS page")).toBeInTheDocument();
+    expect(screen.queryByText("TODAY'S SALES")).not.toBeInTheDocument();
   });
 
   it("shows an error banner", () => {

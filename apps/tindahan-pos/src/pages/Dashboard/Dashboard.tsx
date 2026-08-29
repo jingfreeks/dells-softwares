@@ -1,3 +1,4 @@
+import { Navigate } from "react-router-dom";
 import {
   useAuth,
   useStoreData,
@@ -69,6 +70,16 @@ export function Dashboard() {
     report.todaysTransactionCount > 0
       ? report.todaysSalesTotal / report.todaysTransactionCount
       : 0;
+
+  // Route-level guard, same pattern as Staff.tsx: nav.ts's `roles: ["admin"]`
+  // for this route only hides the sidebar link, it was never enforced
+  // against a direct navigation -- a Cashier reaching /admin by URL saw the
+  // full dashboard (today's sales, utang, plan/subscription controls). No
+  // separate permission code is documented for Dashboard (Owner-only, not
+  // Supervisor), so this checks role directly rather than useCan().
+  if (user && user.role !== "admin") {
+    return <Navigate to="/pos" replace />;
+  }
 
   return (
     <div className="tpl-root">
