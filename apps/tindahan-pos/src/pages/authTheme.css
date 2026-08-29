@@ -1162,6 +1162,10 @@
 .tpl-tile.tpl-on .tpl-tpr {
   color: var(--tpl-a4);
 }
+.tpl-tile:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
 /* Small pill option button — network picker, quick-cash tiles */
 .tpl-opt {
@@ -1176,6 +1180,10 @@
   font-size: 13px;
   cursor: pointer;
   font-family: inherit;
+}
+.tpl-opt:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .tpl-opt.tpl-on {
   background: rgba(76, 141, 255, 0.18);
