@@ -29,7 +29,7 @@ export function TrialBanner({ daysRemaining, onUpgradeClick }: TrialBannerProps)
   return (
     <div
       role="status"
-      className={`flex items-center justify-between gap-3 border-b px-4 py-2.5 text-sm ${classesBySeverity[severity]}`}
+      className={`flex flex-col items-start gap-2 border-b px-4 py-2.5 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3 ${classesBySeverity[severity]}`}
     >
       <span>
         <span className="font-medium">
@@ -43,7 +43,7 @@ export function TrialBanner({ daysRemaining, onUpgradeClick }: TrialBannerProps)
       <button
         type="button"
         onClick={onUpgradeClick}
-        className="shrink-0 rounded-md border border-current px-3 py-1 font-medium hover:bg-white/40"
+        className="w-full shrink-0 rounded-md border border-current px-3 py-1 font-medium hover:bg-white/40 sm:w-auto"
       >
         Choose a plan
       </button>
