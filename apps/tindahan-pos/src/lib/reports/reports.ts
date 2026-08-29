@@ -1,5 +1,5 @@
 import { lowStockProducts, computeRestockSuggestions, type RestockSuggestion } from "@/lib/inventory";
-import type { Customer, PaymentType, Product, SaleRecord } from "@/lib/types";
+import type { Customer, PaymentType, Product, RefundRecord, SaleRecord } from "@/lib/types";
 
 /**
  * A voided sale (BIR compliance §39) had its stock/utang effects reversed
@@ -55,6 +55,26 @@ export function voidSummary(sales: SaleRecord[]): VoidSummary {
   return {
     count: voided.length,
     totalAmount: voided.reduce((sum, sale) => sum + sale.total, 0),
+  };
+}
+
+export interface RefundSummary {
+  count: number;
+  totalAmount: number;
+}
+
+/**
+ * Refunds live in their own append-only table (refund_sale_items() never
+ * touches the original sale -- see RefundRecord), so unlike voidSummary()
+ * this can't be derived from the `sales` array. It's a pure sum over
+ * whatever refund rows the caller already fetched for the report's date
+ * range -- the fetch itself lives in the Reports page hook, same split as
+ * the sales fetch feeding the rest of this module.
+ */
+export function refundSummary(refunds: RefundRecord[]): RefundSummary {
+  return {
+    count: refunds.length,
+    totalAmount: refunds.reduce((sum, r) => sum + r.totalAmount, 0),
   };
 }
 

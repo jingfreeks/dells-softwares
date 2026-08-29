@@ -1,4 +1,4 @@
-import type { Product, SaleRecord, Customer } from "./types";
+import type { Product, SaleRecord, Customer, RefundRecord } from "./types";
 import { completedSales } from "./reports";
 import type { PaymentTypeTotal } from "./reports";
 
@@ -93,6 +93,15 @@ export function voidsToCsv(sales: SaleRecord[]): string {
   return toCsv(
     ["Sale ID", "Date", "Receipt No.", "Cashier", "Total", "Voided at", "Voided by", "Void reason"],
     voided.map((s) => [s.id, s.timestamp, s.receiptNumber, s.cashierName, s.total, s.voidedAt, s.voidedByName, s.voidReason])
+  );
+}
+
+/** Refunds are never reflected on the original sale (append-only, see
+ * RefundRecord) -- this is the only place their total is reported at all. */
+export function refundsToCsv(refunds: RefundRecord[]): string {
+  return toCsv(
+    ["Refund ID", "Date", "Sale receipt no.", "Cashier", "Amount", "Reason"],
+    refunds.map((r) => [r.id, r.createdAt, r.receiptNumber, r.cashierName, r.totalAmount, r.reason])
   );
 }
 

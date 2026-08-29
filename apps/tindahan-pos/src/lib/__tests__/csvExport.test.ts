@@ -4,10 +4,12 @@ import {
   salesToCsv,
   vatSalesToCsv,
   voidsToCsv,
+  refundsToCsv,
   paymentBreakdownToCsv,
   everythingToJson,
 } from "../csvExport";
 import { makeProduct, makeSaleRecord } from "../../test/testUtils";
+import type { RefundRecord } from "../types";
 
 describe("productsToCsv", () => {
   it("includes a header row and one row per product", () => {
@@ -101,6 +103,34 @@ describe("voidsToCsv", () => {
   it("is empty (header only) with no voided sales", () => {
     const csv = voidsToCsv([makeSaleRecord({ status: "completed" })]);
     expect(csv.split("\r\n")).toHaveLength(1);
+  });
+});
+
+function makeRefundRecord(overrides: Partial<RefundRecord> = {}): RefundRecord {
+  return {
+    id: "r1",
+    saleId: "s1",
+    receiptNumber: "000001",
+    cashierName: "Aling Nena",
+    reason: "Wrong item",
+    totalAmount: 25,
+    createdAt: "2026-08-01T00:00:00Z",
+    ...overrides,
+  };
+}
+
+describe("refundsToCsv", () => {
+  it("includes a header row and one row per refund", () => {
+    const csv = refundsToCsv([makeRefundRecord()]);
+    const lines = csv.split("\r\n");
+    expect(lines[0]).toBe("Refund ID,Date,Sale receipt no.,Cashier,Amount,Reason");
+    expect(lines[1]).toContain("Aling Nena");
+    expect(lines[1]).toContain("000001");
+    expect(lines[1]).toContain("Wrong item");
+  });
+
+  it("is empty (header only) with no refunds", () => {
+    expect(refundsToCsv([]).split("\r\n")).toHaveLength(1);
   });
 });
 
