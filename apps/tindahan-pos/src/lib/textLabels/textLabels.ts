@@ -1124,7 +1124,7 @@ export const LABEL_VAT_STATUS = "VAT status";
 export const LABEL_VAT_RATE = "VAT rate (%)";
 export const TEXT_VAT_RATE_HINT = "The statutory rate is 12% — adjust only if the applicable BIR rate changes.";
 export const TEXT_VAT_STATUS_HINT =
-  "Your registered tax status with BIR. This app doesn't compute or break down VAT amounts yet.";
+  "Your registered tax status with BIR. When VAT Registered, receipts show the VATable sales / VAT amount breakdown automatically, computed at the rate below.";
 export const LABEL_VAT_REGISTERED = "VAT Registered";
 export const LABEL_NON_VAT = "Non-VAT";
 export const LABEL_VAT_EXEMPT = "VAT-Exempt";
