@@ -27,9 +27,10 @@ const eq = vi.fn().mockResolvedValue({ data: [], error: null });
 // optionally followed by .eq() when a cashier filter is set — an awaitable
 // object that also exposes .eq() covers both shapes.
 function makeAwaitableQuery(): Promise<{ data: unknown[]; error: null }> & { eq: typeof eq } {
-  const result = Promise.resolve({ data: [], error: null }) as Promise<{ data: unknown[]; error: null }> & {
-    eq: typeof eq;
-  };
+  const result = Promise.resolve({ data: [], error: null }) as unknown as Promise<{
+    data: unknown[];
+    error: null;
+  }> & { eq: typeof eq };
   result.eq = eq;
   return result;
 }
