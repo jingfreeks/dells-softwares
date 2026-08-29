@@ -5,7 +5,14 @@ import { CreditProgress } from "../../creditprogress";
 import { CustomerActions } from "../../customeractions";
 import { customerInitials } from "../../../lib";
 
-export const CUSTOMER_ROW_COLUMNS = "minmax(0,2fr) 96px minmax(0,1.4fr) 86px";
+// Same collapse bug as the Inventory table's PRODUCT_ROW_COLUMNS: the two
+// fixed columns (balance/actions) plus gaps already take up ~200px, and on
+// a narrow viewport minmax(0, ...) let the two flexible columns collapse
+// straight to a few px -- customer name, balance, credit-used and the
+// Collect button all rendered stacked on the same point. The floors below
+// stop that; CustomerTable's own overflow-x:auto lets the row scroll
+// sideways past this width instead.
+export const CUSTOMER_ROW_COLUMNS = "minmax(140px,2fr) 96px minmax(120px,1.4fr) 86px";
 
 interface CustomerRowProps {
   customer: Customer;
