@@ -140,6 +140,46 @@ describe("Receipt", () => {
     expect(screen.queryByText("*** REPRINT ***")).not.toBeInTheDocument();
   });
 
+  // Found live on staging: reprinting a voided sale's receipt looked
+  // identical to a valid one -- no marker, no reason, no way to tell it
+  // was voided just from the paper.
+  describe("voided sale marker", () => {
+    it("shows an explicit VOIDED marker plus who voided it and why", () => {
+      render(
+        <Receipt
+          sale={makeSaleRecord({
+            status: "voided",
+            voidedByName: "QA Test Owner",
+            voidReason: "Incorrect quantity entered",
+          })}
+          store={makeStore()}
+          settings={baseSettings}
+          isReprint
+        />
+      );
+
+      expect(screen.getByText("*** VOIDED — NOT VALID ***")).toBeInTheDocument();
+      expect(screen.getByText("Voided by QA Test Owner")).toBeInTheDocument();
+      expect(screen.getByText("Reason: Incorrect quantity entered")).toBeInTheDocument();
+    });
+
+    it("shows no VOIDED marker for a completed sale", () => {
+      render(
+        <Receipt
+          sale={makeSaleRecord({ status: "completed" })}
+          store={makeStore()}
+          settings={baseSettings}
+          tendered={100}
+          change={50}
+        />
+      );
+
+      expect(screen.queryByText("*** VOIDED — NOT VALID ***")).not.toBeInTheDocument();
+      expect(screen.queryByText(/^Voided by/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/^Reason:/)).not.toBeInTheDocument();
+    });
+  });
+
   it("shows tendered and change only for a cash sale", () => {
     const { rerender } = render(
       <Receipt

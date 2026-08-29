@@ -543,6 +543,7 @@ export const LABEL_STATUS_VOIDED = "Voided";
 export const BUTTON_VOID_SALE = "Void";
 export const BUTTON_REPRINT_RECEIPT = "Reprint";
 export const TEXT_REPRINT_MARKER = "*** REPRINT ***";
+export const TEXT_VOIDED_MARKER = "*** VOIDED — NOT VALID ***";
 export const TEXT_VOID_SALE_TITLE = "Void this sale?";
 export const TEXT_VOID_SALE_BODY_PREFIX =
   "This restores the product stock and, for a credit sale, reverses the customer's utang balance. The receipt/invoice number is not reissued to another sale. This cannot be undone.";
