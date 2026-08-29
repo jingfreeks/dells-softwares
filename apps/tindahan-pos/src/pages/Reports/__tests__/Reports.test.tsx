@@ -23,7 +23,19 @@ const order = vi.fn().mockResolvedValue({
 // query uses .select().eq() instead of .order() — same chain object
 // supports both so one shared mock covers staff/devices and refund_items.
 const eq = vi.fn().mockResolvedValue({ data: [], error: null });
-const select = vi.fn(() => ({ order, eq }));
+// useReportsPage's own refunds-in-range fetch chains .select().gte().lte(),
+// optionally followed by .eq() when a cashier filter is set — an awaitable
+// object that also exposes .eq() covers both shapes.
+function makeAwaitableQuery(): Promise<{ data: unknown[]; error: null }> & { eq: typeof eq } {
+  const result = Promise.resolve({ data: [], error: null }) as Promise<{ data: unknown[]; error: null }> & {
+    eq: typeof eq;
+  };
+  result.eq = eq;
+  return result;
+}
+const lte = vi.fn(() => makeAwaitableQuery());
+const gte = vi.fn(() => ({ lte }));
+const select = vi.fn(() => ({ order, eq, gte }));
 const from = vi.fn(() => ({ select }));
 const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
 

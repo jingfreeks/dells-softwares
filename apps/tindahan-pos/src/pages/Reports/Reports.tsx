@@ -21,6 +21,7 @@ import {
   SalesTable,
   VatSummaryCard,
   VoidSummaryCard,
+  RefundSummaryCard,
   PaymentBreakdownTable,
   ZReadingCard,
 } from "./component";
@@ -42,11 +43,13 @@ export function Reports() {
     setDeviceId,
     devices,
     report,
+    refundReport,
     loading,
     error,
     exportCsv,
     exportVatCsv,
     exportVoidsCsv,
+    exportRefundsCsv,
     exportPaymentBreakdownCsv,
     onRetry,
     debtAging,
@@ -128,6 +131,7 @@ export function Reports() {
           </div>
           <VatSummaryCard summary={report.vatSummary} vatStatus={store?.vatStatus ?? null} onExport={exportVatCsv} />
           <VoidSummaryCard summary={report.voidSummary} onExport={exportVoidsCsv} />
+          <RefundSummaryCard summary={refundReport} onExport={exportRefundsCsv} />
           <CashierBreakdownTable rows={report.byCashier} grandTotal={report.totalSales} />
           <PaymentBreakdownTable
             rows={report.byPaymentType}

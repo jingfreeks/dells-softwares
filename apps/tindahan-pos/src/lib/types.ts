@@ -140,6 +140,23 @@ export interface SaleRecord {
   discountAmount: number;
 }
 
+/**
+ * A row from the `refunds` table (20260815131000_refund_return.sql) --
+ * append-only, never touches the original sale (see refund_sale_items()).
+ * receiptNumber/cashierName are enriched client-side from the already-loaded
+ * sales/staff for the same report range, since the table itself only stores
+ * sale_id/actor_id.
+ */
+export interface RefundRecord {
+  id: string;
+  saleId: string;
+  receiptNumber: string | null;
+  cashierName: string | null;
+  reason: string;
+  totalAmount: number;
+  createdAt: string;
+}
+
 export interface ServiceLine {
   id: string;
   label: string;
