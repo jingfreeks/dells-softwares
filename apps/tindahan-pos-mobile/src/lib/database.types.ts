@@ -12,13 +12,29 @@ export interface Database {
   public: {
     Tables: {
       stores: {
-        Row: { id: string; name: string; address: string | null; photo_url: string | null; created_at: string };
+        Row: {
+          id: string;
+          name: string;
+          address: string | null;
+          photo_url: string | null;
+          created_at: string;
+          contact_number: string | null;
+          city: string | null;
+          tin: string | null;
+          business_permit_no: string | null;
+          bir_registered: boolean;
+        };
         Insert: {
           id?: string;
           name: string;
           address?: string | null;
           photo_url?: string | null;
           created_at?: string;
+          contact_number?: string | null;
+          city?: string | null;
+          tin?: string | null;
+          business_permit_no?: string | null;
+          bir_registered?: boolean;
         };
         Update: {
           id?: string;
@@ -26,6 +42,11 @@ export interface Database {
           address?: string | null;
           photo_url?: string | null;
           created_at?: string;
+          contact_number?: string | null;
+          city?: string | null;
+          tin?: string | null;
+          business_permit_no?: string | null;
+          bir_registered?: boolean;
         };
         Relationships: [];
       };

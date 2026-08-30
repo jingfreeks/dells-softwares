@@ -7,7 +7,17 @@ jest.mock("../../lib/auth", () => ({ useAuth: jest.fn() }));
 
 const mockedUseAuth = useAuth as jest.Mock;
 
-const store: Store = { id: "st1", name: "Dell's Sari-Sari Store", address: null, photoUrl: null };
+const store: Store = {
+  id: "st1",
+  name: "Dell's Sari-Sari Store",
+  address: null,
+  photoUrl: null,
+  contactNumber: null,
+  city: null,
+  tin: null,
+  businessPermitNo: null,
+  birRegistered: false,
+};
 
 function staff(overrides: Partial<StaffAccount> = {}): StaffAccount {
   return {

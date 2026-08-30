@@ -25,6 +25,7 @@ import { RestockScreen } from "./src/screens/restockscreen";
 import { SettingsMenuScreen } from "./src/screens/settingsmenuscreen";
 import type { SettingsSectionKey } from "./src/screens/settingsmenuscreen/types";
 import { SettingsProfileScreen } from "./src/screens/settingsprofilescreen";
+import { SettingsStoreScreen } from "./src/screens/settingsstorescreen";
 import { SetupRegisterScreen } from "./src/screens/setupregisterscreen";
 import { SplashScreen } from "./src/screens/splashscreen";
 import { TodaysSalesScreen } from "./src/screens/todayssalesscreen";
@@ -119,6 +120,10 @@ function AdminHome() {
     return <SettingsProfileScreen onBack={() => setSettingsSection(null)} />;
   }
 
+  if (settingsSection === "store") {
+    return <SettingsStoreScreen onBack={() => setSettingsSection(null)} />;
+  }
+
   if (showSettings) {
     return (
       <SettingsMenuScreen
@@ -127,7 +132,7 @@ function AdminHome() {
         // is a no-op rather than a route to a blank screen, the same call
         // "More" itself carried before the menu existed.
         onOpenSection={(key) => {
-          if (key === "profile") setSettingsSection(key);
+          if (key === "profile" || key === "store") setSettingsSection(key);
         }}
       />
     );

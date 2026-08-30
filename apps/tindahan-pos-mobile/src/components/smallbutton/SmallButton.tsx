@@ -2,7 +2,7 @@ import { Pressable, Text } from "react-native";
 import type { SmallButtonProps } from "./types";
 
 /**
- * The mockup's `.btn sm` -- a compact neutral button sitting at the right
+ * The mockups' `.btn sm` -- a compact neutral button sitting at the right
  * of a settings row ("Change", "Set", "Discard").
  *
  * Not SecondaryButton: that one is hardcoded as the Google sign-in button
