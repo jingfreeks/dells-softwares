@@ -25,6 +25,9 @@ function platformValue(over: Partial<ReturnType<typeof usePlatform>> = {}) {
     signOut: vi.fn(),
     verifyMfa: vi.fn().mockResolvedValue({ ok: true }),
     refresh: vi.fn(),
+    getMfaStatus: vi.fn().mockResolvedValue({ enrolled: true, factorId: "factor-1" }),
+    enrollMfa: vi.fn().mockResolvedValue({ ok: true }),
+    verifyMfaCode: vi.fn().mockResolvedValue({ ok: true }),
     ...over,
   } as ReturnType<typeof usePlatform>;
 }

@@ -99,6 +99,23 @@ interface PlatformContextValue {
   /** Stamps mfa_verified_at. Fails unless the session actually carries aal2. */
   verifyMfa: () => Promise<{ ok: boolean; error?: string }>;
   refresh: () => Promise<void>;
+  /** Whether this account already has a verified TOTP factor, and its id if
+   * so -- distinct from `admin.mfaFresh`, which is about the *session*, not
+   * the account. */
+  getMfaStatus: () => Promise<{ enrolled: boolean; factorId: string | null }>;
+  enrollMfa: () => Promise<{ ok: boolean; error?: string; enrollment?: MfaEnrollment }>;
+  /** Verifies a 6-digit TOTP code against `factorId` (elevating the session
+   * to aal2 on success), then stamps mfa_verified_at server-side the same
+   * way verifyMfa() does. */
+  verifyMfaCode: (factorId: string, code: string) => Promise<{ ok: boolean; error?: string }>;
+}
+
+export interface MfaEnrollment {
+  factorId: string;
+  /** A complete `data:image/svg+xml;utf-8,...` URI from Supabase -- use
+   * directly as an <img> src, it is not raw SVG markup on its own. */
+  qrCodeDataUri: string;
+  secret: string;
 }
 
 const PlatformContext = createContext<PlatformContextValue | null>(null);
@@ -168,9 +185,74 @@ export function PlatformProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }, [loadAdmin]);
 
+  // Whether this account has ever enrolled a factor at all -- distinct from
+  // admin.mfaFresh, which is about whether *this session* has proven it
+  // recently. An account with no factor needs enrollment (QR code); an
+  // account with a stale session but an existing factor only needs a
+  // challenge (just the 6-digit code, against that same factor's id).
+  //
+  // listFactors()'s `totp`/`phone`/`webauthn` buckets are pre-filtered to
+  // VERIFIED factors only -- an unverified one only shows up in `.all`.
+  // Confirmed live: an abandoned enrollment's factor was present in `.all`
+  // but absent from `.totp`, which silently broke the "drop the stale
+  // factor first" logic below when it read the wrong array.
+  const getMfaStatus = useCallback(async () => {
+    const { data, error } = await supabase.auth.mfa.listFactors();
+    if (error || !data) return { enrolled: false, factorId: null };
+    const verified = data.all.find((f) => f.factor_type === "totp" && f.status === "verified");
+    return { enrolled: !!verified, factorId: verified?.id ?? null };
+  }, []);
+
+  const enrollMfa = useCallback(async () => {
+    // A closed tab or a code typo mid-QR-scan leaves an unverified factor
+    // behind, and GoTrue refuses a second TOTP enroll while one already
+    // exists ("A factor with the friendly name ... already exists") --
+    // regardless of that factor being unverified and therefore useless. Its
+    // secret was only ever shown once and can't be retrieved again, so the
+    // only way forward is to drop it and issue a fresh one.
+    const { data: existing } = await supabase.auth.mfa.listFactors();
+    const stale = existing?.all.find((f) => f.factor_type === "totp" && f.status === "unverified");
+    if (stale) await supabase.auth.mfa.unenroll({ factorId: stale.id });
+
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
+    if (error) return { ok: false, error: error.message };
+    return {
+      ok: true,
+      enrollment: { factorId: data.id, qrCodeDataUri: data.totp.qr_code, secret: data.totp.secret },
+    };
+  }, []);
+
+  const verifyMfaCode = useCallback(
+    async (factorId: string, code: string) => {
+      const { data: challenge, error: challengeErr } = await supabase.auth.mfa.challenge({ factorId });
+      if (challengeErr) return { ok: false, error: challengeErr.message };
+      const { error: verifyErr } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId: challenge.id,
+        code,
+      });
+      if (verifyErr) return { ok: false, error: verifyErr.message };
+      // The session now carries aal2 -- stamp mfa_verified_at server-side
+      // the same way the returning-admin path does.
+      return verifyMfa();
+    },
+    [verifyMfa]
+  );
+
   return (
     <PlatformContext.Provider
-      value={{ session, admin, loading, signIn, signOut, verifyMfa, refresh: loadAdmin }}
+      value={{
+        session,
+        admin,
+        loading,
+        signIn,
+        signOut,
+        verifyMfa,
+        refresh: loadAdmin,
+        getMfaStatus,
+        enrollMfa,
+        verifyMfaCode,
+      }}
     >
       {children}
     </PlatformContext.Provider>
