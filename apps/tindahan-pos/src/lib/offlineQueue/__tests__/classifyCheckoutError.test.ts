@@ -22,8 +22,11 @@ describe("isConnectivityFailure", () => {
   it.each([
     "CREDIT_LIMIT_EXCEEDED",
     "INVALID_OVERRIDE_PIN",
+    "OVERRIDE_PIN_LOCKED",
     "EXPIRED_CASHIER_SESSION",
     "INVALID_OCCURRED_AT",
+    "INVALID_DISCOUNT_TYPE",
+    "INVALID_DISCOUNT_VALUE",
     "Cart is empty",
     "A customer is required for a credit sale",
     "Max candy: Insufficient stock. Only 0 item(s) available.",
@@ -58,6 +61,17 @@ describe("entitlement rejections are business rules, not connectivity", () => {
 
   it("treats any withheld capability the same way", () => {
     expect(isConnectivityFailure(new Error("FEATURE_NOT_ENABLED: pos.void"))).toBe(false);
+  });
+
+  // Found live on staging: a >100% discount was rejected by checkout_sale()
+  // with INVALID_DISCOUNT_VALUE, but that message wasn't on the whitelist --
+  // so it fell through to "assume connectivity" and the sale was queued for
+  // replay, shown to the cashier as a completed -₱50.00 sale with stock
+  // already decremented, even though it can never actually sync (the server
+  // rejects the same discount every retry).
+  it("does not queue a sale rejected for an invalid discount", () => {
+    expect(isConnectivityFailure(new Error("INVALID_DISCOUNT_VALUE"))).toBe(false);
+    expect(isConnectivityFailure(new Error("INVALID_DISCOUNT_TYPE"))).toBe(false);
   });
 
   // The default still has to hold for everything genuinely unknown: wrongly

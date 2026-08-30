@@ -1,14 +1,15 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useAuth, useStoreData } from "@/lib";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { useAuth, useStoreData, useCan } from "@/lib";
 import { makeAuthValue, makeCustomer, makeProduct, makeSaleRecord, makeStoreDataValue } from "../../../test/testUtils";
 import { Reports } from "../Reports";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/lib/storeData", () => ({ useStoreData: vi.fn() }));
 vi.mock("@/lib/permissions", () => ({
-  useCan: () => true,
+  useCan: vi.fn(() => true),
   usePermissions: () => ({ permissions: new Set(), loading: false }),
 }));
 
@@ -22,7 +23,20 @@ const order = vi.fn().mockResolvedValue({
 // query uses .select().eq() instead of .order() — same chain object
 // supports both so one shared mock covers staff/devices and refund_items.
 const eq = vi.fn().mockResolvedValue({ data: [], error: null });
-const select = vi.fn(() => ({ order, eq }));
+// useReportsPage's own refunds-in-range fetch chains .select().gte().lte(),
+// optionally followed by .eq() when a cashier filter is set — an awaitable
+// object that also exposes .eq() covers both shapes.
+function makeAwaitableQuery(): Promise<{ data: unknown[]; error: null }> & { eq: typeof eq } {
+  const result = Promise.resolve({ data: [], error: null }) as unknown as Promise<{
+    data: unknown[];
+    error: null;
+  }> & { eq: typeof eq };
+  result.eq = eq;
+  return result;
+}
+const lte = vi.fn(() => makeAwaitableQuery());
+const gte = vi.fn(() => ({ lte }));
+const select = vi.fn(() => ({ order, eq, gte }));
 const from = vi.fn(() => ({ select }));
 const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
 
@@ -34,9 +48,21 @@ function renderPage() {
   return render(<Reports />);
 }
 
+function renderPageWithPosRoute() {
+  return render(
+    <MemoryRouter initialEntries={["/"]}>
+      <Routes>
+        <Route path="/" element={<Reports />} />
+        <Route path="/pos" element={<p>POS page</p>} />
+      </Routes>
+    </MemoryRouter>
+  );
+}
+
 describe("Reports", () => {
   beforeEach(() => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue());
+    vi.mocked(useCan).mockReturnValue(true);
     order.mockClear();
     eq.mockReset().mockResolvedValue({ data: [], error: null });
     rpc.mockClear();
@@ -47,6 +73,21 @@ describe("Reports", () => {
         { id: "c2", name: "Mang Jose" },
       ],
     });
+  });
+
+  it("redirects a staff member without pos.report.view to /pos instead of rendering reports", () => {
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: { ...makeAuthValue().user!, role: "cashier" } }));
+    vi.mocked(useCan).mockReturnValue(false);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue());
+    renderPageWithPosRoute();
+    expect(screen.getByText("POS page")).toBeInTheDocument();
+    expect(screen.queryByTestId("summary-cards")).not.toBeInTheDocument();
+    // useReportsPage's fetch effects (staff, devices, sales, refunds) must
+    // never fire for an unauthorized role -- a hook's effects otherwise run
+    // on the very first render regardless of the component's own redirect,
+    // which previously let a `refunds` query reach the network before the
+    // redirect took effect.
+    expect(from).not.toHaveBeenCalled();
   });
 
   it("shows summary totals computed from the filtered sales", async () => {

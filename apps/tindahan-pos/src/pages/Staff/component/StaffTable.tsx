@@ -31,43 +31,45 @@ export function StaffTable({
   onRemove,
 }: StaffTableProps) {
   return (
-    <div className="tpl-card" style={{ padding: 0, marginBottom: 14 }}>
-      <div className="tpl-thead" style={{ gridTemplateColumns: STAFF_ROW_COLUMNS }}>
-        <span>{COLUMN_PERSON}</span>
-        <span>{COLUMN_ROLE}</span>
-        <span className="tpl-right">{COLUMN_SALES_TODAY}</span>
-        <span>{COLUMN_STATUS}</span>
-        <span />
+    <div className="tpl-card" style={{ padding: 0, marginBottom: 14, overflowX: "auto" }}>
+      <div style={{ minWidth: 486 }}>
+        <div className="tpl-thead" style={{ gridTemplateColumns: STAFF_ROW_COLUMNS }}>
+          <span>{COLUMN_PERSON}</span>
+          <span>{COLUMN_ROLE}</span>
+          <span className="tpl-right">{COLUMN_SALES_TODAY}</span>
+          <span>{COLUMN_STATUS}</span>
+          <span />
+        </div>
+
+        {loading && (
+          <p className="tpl-ts" style={{ padding: "32px 15px", textAlign: "center" }}>
+            {LABEL_LOADING}
+          </p>
+        )}
+
+        {!loading &&
+          staff.map((member) => (
+            <StaffRow
+              key={member.id}
+              member={member}
+              currentUserId={currentUserId}
+              sales={sales}
+              removingId={removingId}
+              onEditName={onEditName}
+              onChangeRole={onChangeRole}
+              onResetPassword={onResetPassword}
+              onSetPin={onSetPin}
+              onToggleActive={onToggleActive}
+              onRemove={onRemove}
+            />
+          ))}
+
+        {!loading && staff.length === 0 && (
+          <p className="tpl-ts" style={{ padding: "32px 15px", textAlign: "center" }}>
+            {EMPTY_STATE_NO_STAFF}
+          </p>
+        )}
       </div>
-
-      {loading && (
-        <p className="tpl-ts" style={{ padding: "32px 15px", textAlign: "center" }}>
-          {LABEL_LOADING}
-        </p>
-      )}
-
-      {!loading &&
-        staff.map((member) => (
-          <StaffRow
-            key={member.id}
-            member={member}
-            currentUserId={currentUserId}
-            sales={sales}
-            removingId={removingId}
-            onEditName={onEditName}
-            onChangeRole={onChangeRole}
-            onResetPassword={onResetPassword}
-            onSetPin={onSetPin}
-            onToggleActive={onToggleActive}
-            onRemove={onRemove}
-          />
-        ))}
-
-      {!loading && staff.length === 0 && (
-        <p className="tpl-ts" style={{ padding: "32px 15px", textAlign: "center" }}>
-          {EMPTY_STATE_NO_STAFF}
-        </p>
-      )}
     </div>
   );
 }

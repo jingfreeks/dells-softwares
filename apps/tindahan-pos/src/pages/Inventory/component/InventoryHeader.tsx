@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { NAV_LABEL_INVENTORY, TEXT_PRODUCTS_TRACKED_SUFFIX, PAGE_HEADING_RECEIVING, LABEL_VERSION_1_1, TEXT_LAST_STOCK_IN_PREFIX, BUTTON_CATEGORIES, BUTTON_ADD_PRODUCT } from "@/lib";
+import { NAV_LABEL_INVENTORY, TEXT_PRODUCTS_TRACKED_SUFFIX, PAGE_HEADING_RECEIVING, TEXT_LAST_STOCK_IN_PREFIX, BUTTON_CATEGORIES, BUTTON_ADD_PRODUCT } from "@/lib";
 import { TruckIcon } from "@/components";
 
 interface InventoryHeaderProps {
@@ -27,7 +27,6 @@ export function InventoryHeader({ productCount, lastStockIn, onOpenCategoryManag
         >
           <TruckIcon className="h-4 w-4" />
           {PAGE_HEADING_RECEIVING}
-          <span className="tpl-chip" style={{ fontSize: 10, padding: "1px 6px" }}>{LABEL_VERSION_1_1}</span>
         </Link>
         <button
           type="button"

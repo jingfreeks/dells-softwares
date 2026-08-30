@@ -1023,6 +1023,48 @@ export interface Database {
           },
         ];
       };
+      demo_products: {
+        Row: {
+          id: string;
+          name: string;
+          category: string;
+          price: number;
+          stock: number;
+          low_stock_threshold: number;
+          sort_order: number;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          category: string;
+          price: number;
+          stock: number;
+          low_stock_threshold?: number;
+          sort_order?: number;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          category?: string;
+          price?: number;
+          stock?: number;
+          low_stock_threshold?: number;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
+      demo_sales: {
+        Row: { id: string; occurred_at: string; total: number; item_count: number };
+        Insert: { id?: string; occurred_at: string; total: number; item_count: number };
+        Update: { id?: string; occurred_at?: string; total?: number; item_count?: number };
+        Relationships: [];
+      };
+      demo_customers: {
+        Row: { id: string; name: string; balance: number };
+        Insert: { id?: string; name: string; balance?: number };
+        Update: { id?: string; name?: string; balance?: number };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -1040,8 +1082,17 @@ export interface Database {
           p_is_offline_replay?: boolean;
           p_discount_type?: string | null;
           p_discount_value?: number | null;
+          p_override_token?: string | null;
         };
         Returns: { sale_id: string; total: number; receipt_number: string | null }[];
+      };
+      // 20260815146000_credit_override_pin_lockout.sql
+      check_credit_override_pin: {
+        Args: {
+          p_pin: string;
+          p_cashier_token?: string | null;
+        };
+        Returns: { ok: boolean; error_code: string | null; override_token: string | null }[];
       };
       void_sale: {
         Args: {

@@ -22,9 +22,18 @@
   --tpl-t4: #b6c1d4;
   --tpl-t5: #94a2b8;
   --tpl-t6: #7c8aa5;
-  --tpl-t7: #66738a;
-  --tpl-t8: #4a5567;
-  --tpl-t9: #5b677e;
+  /* t7/t8/t9 were #66738a/#4a5567/#5b677e -- 4.1:1, 2.6:1, and 3.4:1 against
+     --tpl-bg-mid, all below WCAG AA's 4.5:1 floor for text. These three are
+     used for real, frequently-read content, not decoration: t7 is every
+     table header (.tpl-thead) and metric label (.tpl-mlbl -- "TODAY'S
+     SALES", "VOIDED SALES", etc.) plus form hints (.tpl-hint) and
+     not-yet-done onboarding checklist items; t9 is input placeholder text
+     and footer fine print; t8 is the desktop sidebar's section labels.
+     Lightened just enough to clear 4.5:1 against both --tpl-bg-deep and
+     --tpl-bg-mid with a small margin -- see contrast math in the PR. */
+  --tpl-t7: #717f98;
+  --tpl-t8: #6e7e98;
+  --tpl-t9: #707f9b;
   --tpl-ok: #4ade80;
   --tpl-okd: #7fcfa0;
   --tpl-warn: #fbbf24;
@@ -221,6 +230,21 @@
 }
 .tpl-fld input::placeholder {
   color: var(--tpl-t9);
+}
+/* Unlike input, a bare <select> has no default color rule to inherit from
+   here -- it was falling back to the browser's own near-black form-control
+   text color, unreadable against this dark theme. color-scheme: dark also
+   asks the browser to render the native option-list popup in a matching
+   dark palette instead of defaulting to light. */
+.tpl-fld select {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--tpl-t2);
+  font-size: 14px;
+  font-family: inherit;
+  width: 100%;
+  color-scheme: dark;
 }
 .tpl-fld:focus-within {
   border: 1px solid var(--tpl-a1);
@@ -899,6 +923,29 @@
   flex: 1;
   overflow-y: auto;
 }
+.tpl-main:focus {
+  outline: none;
+}
+
+/* Off-screen until focused, so keyboard/screen-reader users can jump past
+   the sidebar nav straight to page content without changing the visual
+   layout for everyone else. */
+.tpl-skip-link {
+  position: absolute;
+  top: -100%;
+  left: 12px;
+  z-index: 100;
+  background: var(--tpl-a1);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.tpl-skip-link:focus {
+  top: 12px;
+}
 
 .tpl-mobile-header {
   align-items: center;
@@ -1162,6 +1209,10 @@
 .tpl-tile.tpl-on .tpl-tpr {
   color: var(--tpl-a4);
 }
+.tpl-tile:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
 /* Small pill option button — network picker, quick-cash tiles */
 .tpl-opt {
@@ -1176,6 +1227,10 @@
   font-size: 13px;
   cursor: pointer;
   font-family: inherit;
+}
+.tpl-opt:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .tpl-opt.tpl-on {
   background: rgba(76, 141, 255, 0.18);
@@ -1578,6 +1633,18 @@
 .ti-building-store {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2021h18M4%2021V10.5M20%2021V10.5M2%206l2-3h16l2%203M2%206a2.5%202.5%200%200%200%205%200a2.5%202.5%200%200%200%205%200a2.5%202.5%200%200%200%205%200a2.5%202.5%200%200%200%205%200M9%2021v-5a2%202%200%200%201%202-2h2a2%202%200%200%201%202%202v5%22%2F%3E%3C%2Fsvg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%2021h18M4%2021V10.5M20%2021V10.5M2%206l2-3h16l2%203M2%206a2.5%202.5%200%200%200%205%200a2.5%202.5%200%200%200%205%200a2.5%202.5%200%200%200%205%200a2.5%202.5%200%200%200%205%200M9%2021v-5a2%202%200%200%201%202-2h2a2%202%200%200%201%202%202v5%22%2F%3E%3C%2Fsvg%3E");
+}
+.ti-device-desktop-analytics {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%204a1%201%200%200%201%201-1h16a1%201%200%200%201%201%201v10a1%201%200%200%201-1%201H4a1%201%200%200%201-1-1zM7%2020h10M9%2016v4M15%2016v4M8%2012v-2M12%2012v-5M16%2012v-3%22%2F%3E%3C%2Fsvg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%204a1%201%200%200%201%201-1h16a1%201%200%200%201%201%201v10a1%201%200%200%201-1%201H4a1%201%200%200%201-1-1zM7%2020h10M9%2016v4M15%2016v4M8%2012v-2M12%2012v-5M16%2012v-3%22%2F%3E%3C%2Fsvg%3E");
+}
+.ti-hourglass-empty {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%204h12M6%2020h12M6%204c0%204%203.5%206%203.5%208s-3.5%204-3.5%208M18%204c0%204-3.5%206-3.5%208s3.5%204%203.5%208%22%2F%3E%3C%2Fsvg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M6%204h12M6%2020h12M6%204c0%204%203.5%206%203.5%208s-3.5%204-3.5%208M18%204c0%204-3.5%206-3.5%208s3.5%204%203.5%208%22%2F%3E%3C%2Fsvg%3E");
+}
+.ti-clock {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%229%22%2F%3E%3Cpath%20d%3D%22M12%207v5l3%203%22%2F%3E%3C%2Fsvg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%229%22%2F%3E%3Cpath%20d%3D%22M12%207v5l3%203%22%2F%3E%3C%2Fsvg%3E");
 }
 .ti-receipt {
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%2021V5a2%202%200%200%201%202-2h10a2%202%200%200%201%202%202v16l-2-1-2%201-2-1-2%201-2-1-2%201-2-1zM8%208h8M8%2012h5%22%2F%3E%3C%2Fsvg%3E");

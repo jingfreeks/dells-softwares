@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import { useRef, type FormEvent } from "react";
 import {
   BUTTON_ADD_STAFF,
   TEXT_ADD_CASHIER_DESCRIPTION,
@@ -8,6 +8,8 @@ import {
   BUTTON_CANCEL,
   BUTTON_CREATING,
   BUTTON_CREATE_CASHIER_ACCOUNT,
+  useEscapeToClose,
+  useFocusTrap,
 } from "@/lib";
 import type { StaffFormValues } from "../../hooks";
 import { RoleSelector } from "./roleselector";
@@ -26,9 +28,14 @@ interface AddStaffModalProps {
 }
 
 export function AddStaffModal({ form, formError, submitting, onFormChange, onCancel, onSubmit }: AddStaffModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEscapeToClose(true, onCancel);
+  useFocusTrap(true, dialogRef);
+
   return (
     <div className="tpl-modal-overlay" onClick={onCancel}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"

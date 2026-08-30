@@ -12,7 +12,7 @@ import {
   NetworkProvider,
   OfflineQueueProvider,
 } from "@/lib";
-import { ProtectedRoute, OnboardingRoute } from "@/components";
+import { ProtectedRoute, OnboardingRoute, HomeRedirect, RequireRole } from "@/components";
 import {
   Login,
   Register,
@@ -36,6 +36,11 @@ import {
   Onboarding,
   Reports,
   PlanSettings,
+  Privacy,
+  Terms,
+  DemoStore,
+  Pricing,
+  TrialExpired,
 } from "@/pages";
 
 function App() {
@@ -57,6 +62,8 @@ function App() {
                         <Route path="/register" element={<Register />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/pair" element={<Pair />} />
+                        <Route path="/privacy" element={<Privacy />} />
+                        <Route path="/terms" element={<Terms />} />
                         <Route element={<ProtectedRoute />}>
                           <Route path="/pos" element={<Pos />} />
                           <Route path="/inventory" element={<Inventory />} />
@@ -67,14 +74,73 @@ function App() {
                           <Route path="/customers" element={<Customers />} />
                           <Route path="/suppliers" element={<Suppliers />} />
                           <Route path="/settings/profile" element={<ProfileSettings />} />
-                          <Route path="/settings/store" element={<StoreDetails />} />
-                          <Route path="/settings/receipts" element={<ReceiptsSettings />} />
-                          <Route path="/settings/fees" element={<FeesLimits />} />
-                          <Route path="/settings/alerts" element={<AlertsSettings />} />
-                          <Route path="/settings/backup" element={<BackupSettings />} />
-                          <Route path="/settings/devices" element={<DevicesSettings />} />
-                          <Route path="/settings/plan" element={<PlanSettings />} />
-                          <Route path="/settings/audit-log" element={<AuditLogSettings />} />
+                          <Route
+                            path="/settings/store"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <StoreDetails />
+                              </RequireRole>
+                            }
+                          />
+                          <Route
+                            path="/settings/receipts"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <ReceiptsSettings />
+                              </RequireRole>
+                            }
+                          />
+                          <Route
+                            path="/settings/fees"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <FeesLimits />
+                              </RequireRole>
+                            }
+                          />
+                          <Route
+                            path="/settings/alerts"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <AlertsSettings />
+                              </RequireRole>
+                            }
+                          />
+                          <Route
+                            path="/settings/backup"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <BackupSettings />
+                              </RequireRole>
+                            }
+                          />
+                          <Route
+                            path="/settings/devices"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <DevicesSettings />
+                              </RequireRole>
+                            }
+                          />
+                          <Route
+                            path="/settings/plan"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <PlanSettings />
+                              </RequireRole>
+                            }
+                          />
+                          <Route
+                            path="/settings/audit-log"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <AuditLogSettings />
+                              </RequireRole>
+                            }
+                          />
+                          <Route path="/demo" element={<DemoStore />} />
+                          <Route path="/pricing" element={<Pricing />} />
+                          <Route path="/trial-expired" element={<TrialExpired />} />
                         </Route>
                         <Route path="/settings" element={<Navigate to="/settings/profile" replace />} />
                         <Route path="/profile" element={<Navigate to="/settings/profile" replace />} />
@@ -86,14 +152,7 @@ function App() {
                             </OnboardingRoute>
                           }
                         />
-                        {/* A fresh HTTP request for "/" never reaches this route at all --
-                            vite.config.ts's serveLandingAtRoot plugin (dev/preview) and
-                            vercel.json's rewrite (production) both intercept it and serve
-                            public/landing.html directly. This only handles CLIENT-SIDE
-                            navigation to "/" from inside the already-mounted SPA (e.g. a
-                            stale bookmark within app state, or code that still assumes "/"
-                            means "home") -- same plain redirect this route has always been. */}
-                        <Route path="/" element={<Navigate to="/pos" replace />} />
+                        <Route path="/" element={<HomeRedirect />} />
                         <Route path="*" element={<Navigate to="/pos" replace />} />
                       </Routes>
                     </BrowserRouter>

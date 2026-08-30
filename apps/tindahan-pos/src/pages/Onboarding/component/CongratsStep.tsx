@@ -33,6 +33,7 @@ import {
   LABEL_CHECK_YOUR_SERVICE_FEES,
   TEXT_SERVICE_FEES_DESC,
   BUTTON_REVIEW_CHIP,
+  TEXT_TRIAL_STARTED_BANNER,
 } from "@/lib";
 import "@/pages/authTheme.css";
 import { useCongratsStep } from "../useCongratsStep";
@@ -41,9 +42,10 @@ interface CongratsStepProps {
   finishError: string | null;
   finishing: boolean;
   onFinish: (destination: "/pos" | "/admin") => void;
+  trialStarted: boolean;
 }
 
-export function CongratsStep({ finishError, finishing, onFinish }: CongratsStepProps) {
+export function CongratsStep({ finishError, finishing, onFinish, trialStarted }: CongratsStepProps) {
   const { name, storeName, productCount, thresholdDays, dailySummary, registerFloat, openTimeLabel, closeTimeLabel } =
     useCongratsStep();
 
@@ -58,6 +60,11 @@ export function CongratsStep({ finishError, finishing, onFinish }: CongratsStepP
         <span className="tpl-chip tpl-g" style={{ marginBottom: 20 }}>
           <i className="ti ti-check" aria-hidden /> {LABEL_SETUP_COMPLETE_CHIP}
         </span>
+        {trialStarted && (
+          <p className="tpl-ts" style={{ color: "var(--tpl-ok)", marginBottom: 6 }}>
+            <i className="ti ti-circle-check" aria-hidden /> {TEXT_TRIAL_STARTED_BANNER}
+          </p>
+        )}
         <p style={{ color: "var(--tpl-t1)", fontSize: 34, fontWeight: 500, lineHeight: 1.2, marginBottom: 12 }}>
           {TEXT_REGISTER_IS_OPEN_PREFIX} {displayName}.
         </p>

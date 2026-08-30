@@ -79,6 +79,8 @@ export const LABEL_STORE_NAME = "Store name";
 export const LABEL_OWNER_NAME = "Your name";
 export const HINT_EMAIL_RECEIPT = "We'll send your receipt template here.";
 export const HINT_PASSWORD_MIN_LENGTH = "At least 8 characters.";
+export const LABEL_CONFIRM_PASSWORD = "Confirm password";
+export const ERROR_MUST_AGREE_TO_TERMS = "Please agree to the Terms of Service and Privacy Policy first.";
 export const TEXT_PASSWORD_STRENGTH_WEAK = "Too weak";
 export const TEXT_PASSWORD_STRENGTH_FAIR = "Fair";
 export const TEXT_PASSWORD_STRENGTH_GOOD = "Strong";
@@ -280,6 +282,8 @@ export const LABEL_DELETE_ACCOUNT_CONFIRM_HEADING = "Delete your account?";
 export const TEXT_DELETE_ACCOUNT_MODAL_BODY =
   "This permanently deletes your login and profile. It cannot be undone. Sales and other records you created stay in the store's history, just no longer attributed to you by name.";
 export const BUTTON_DELETING = "Deleting…";
+export const LABEL_DELETE_ACCOUNT_REQUEST_SUBMITTED_HEADING = "Request submitted";
+export const BUTTON_OK = "OK";
 export const ERROR_COULD_NOT_PROCESS_IMAGE = "Could not process that image.";
 export const ERROR_COULD_NOT_SAVE_PROFILE = "Could not save profile.";
 
@@ -512,6 +516,10 @@ export const LABEL_CASHIER_BREAKDOWN = "By cashier";
 export const LABEL_VOID_SUMMARY = "Voids & cancellations";
 export const LABEL_VOIDED_COUNT = "Voided sales";
 export const LABEL_VOIDED_TOTAL = "Total voided amount";
+export const LABEL_REFUND_SUMMARY = "Refunds";
+export const LABEL_REFUNDED_COUNT = "Refunds issued";
+export const LABEL_REFUNDED_TOTAL = "Total refunded amount";
+export const BUTTON_EXPORT_REFUNDS_CSV = "Export refunds report";
 export const LABEL_PAYMENT_BREAKDOWN = "By payment method";
 export const COLUMN_PAYMENT_TYPE = "Payment type";
 export const TEXT_NO_VOIDS_IN_RANGE = "No voided sales in this period.";
@@ -539,6 +547,7 @@ export const LABEL_STATUS_VOIDED = "Voided";
 export const BUTTON_VOID_SALE = "Void";
 export const BUTTON_REPRINT_RECEIPT = "Reprint";
 export const TEXT_REPRINT_MARKER = "*** REPRINT ***";
+export const TEXT_VOIDED_MARKER = "*** VOIDED — NOT VALID ***";
 export const TEXT_VOID_SALE_TITLE = "Void this sale?";
 export const TEXT_VOID_SALE_BODY_PREFIX =
   "This restores the product stock and, for a credit sale, reverses the customer's utang balance. The receipt/invoice number is not reissued to another sale. This cannot be undone.";
@@ -757,6 +766,17 @@ export const TEXT_WELCOME_STEP_PROFILE_DESC = "Your name and shop details";
 export const TEXT_WELCOME_STEP_PRODUCTS_DESC = "Start from a ready-made list";
 export const TEXT_WELCOME_STEP_STOCK_ALERTS_DESC = "We suggest a sensible default";
 export const TEXT_WELCOME_STEP_OPEN_REGISTER_DESC = "Count your starting cash";
+
+// Onboarding — Welcome/Choose (Demo Store vs. real trial)
+export const TEXT_WELCOME_CHOOSE_HEADLINE_PREFIX = "Welcome,";
+export const LABEL_EXPLORE_DEMO_STORE = "Explore Demo Store";
+export const TEXT_EXPLORE_DEMO_STORE_DESC =
+  "Try Tindahan POS with sample products and sales. Nothing you do here touches your real store.";
+export const BUTTON_EXPLORE_DEMO_STORE = "Explore Demo Store";
+export const LABEL_SET_UP_MY_STORE = "Set Up My Store";
+export const TEXT_SET_UP_MY_STORE_DESC = "Start your real 30-day free trial. No card needed.";
+export const BUTTON_SET_UP_MY_STORE = "Set Up My Store";
+export const TEXT_TRIAL_STARTED_BANNER = "Your 30-day free trial has started.";
 export const TEXT_ABOUT_LOWERCASE_PREFIX = "about";
 export const TEXT_MIN_SUFFIX = "min";
 export const TEXT_YOU_CAN_LEAVE_ANY_STEP_TITLE = "You can leave any step for later";
@@ -921,7 +941,6 @@ export const LABEL_TOTAL_POS = "Total";
 
 // Inventory page
 export const TEXT_PRODUCTS_TRACKED_SUFFIX = "products tracked.";
-export const LABEL_VERSION_1_1 = "v1.1";
 export const BUTTON_CATEGORIES = "Categories";
 export const BUTTON_ADD_PRODUCT = "Add product";
 export const TEXT_LOW_STOCK_ALERT_SUFFIX = "running low or out of stock —";
@@ -1001,6 +1020,7 @@ export const ARIA_MAIN_NAV = "Main";
 export const ARIA_LOADING = "Loading";
 export const LABEL_LOG_OUT = "Log out";
 export const LABEL_MENU = "Menu";
+export const LABEL_SKIP_TO_CONTENT = "Skip to content";
 
 // CategoryManager
 export const LABEL_MANAGE_CATEGORIES = "Manage categories";
@@ -1109,7 +1129,7 @@ export const LABEL_VAT_STATUS = "VAT status";
 export const LABEL_VAT_RATE = "VAT rate (%)";
 export const TEXT_VAT_RATE_HINT = "The statutory rate is 12% — adjust only if the applicable BIR rate changes.";
 export const TEXT_VAT_STATUS_HINT =
-  "Your registered tax status with BIR. This app doesn't compute or break down VAT amounts yet.";
+  "Your registered tax status with BIR. When VAT Registered, receipts show the VATable sales / VAT amount breakdown automatically, computed at the rate below.";
 export const LABEL_VAT_REGISTERED = "VAT Registered";
 export const LABEL_NON_VAT = "Non-VAT";
 export const LABEL_VAT_EXEMPT = "VAT-Exempt";
@@ -1254,6 +1274,7 @@ export const LABEL_OWNER_APPROVAL_NEEDED = "Owner approval needed";
 export const TEXT_OWNER_APPROVAL_RECORDED_HINT = "This override is recorded with your name as the approving admin.";
 export const BUTTON_PAY_CASH_INSTEAD = "Pay cash instead";
 export const ERROR_INVALID_OVERRIDE_PIN = "That PIN doesn't match any admin at this store.";
+export const ERROR_OVERRIDE_PIN_LOCKED = "Too many wrong attempts. Please wait 15 minutes and try again.";
 export const ERROR_COULD_NOT_SET_PIN = "Could not save your PIN.";
 export const TEXT_PIN_UPDATED = "PIN updated.";
 export const LABEL_YOUR_OVERRIDE_PIN_ENTER = "Enter a new 4-digit PIN";
@@ -1338,7 +1359,7 @@ export const BUTTON_COMPARE_PLANS = "Compare plans";
 export const BUTTON_MAYBE_LATER = "Maybe later";
 export const ARIA_VIEW_UPGRADE_OPTIONS = "View upgrade options";
 export const LINK_BACK_TO_HOME = "← Back to home";
-export const TEXT_REGISTER_TRIAL_PREFIX = "14-day free trial of ";
+export const TEXT_REGISTER_TRIAL_PREFIX = "30-day free trial of ";
 export const TEXT_REGISTER_TRIAL_THEN_PREFIX = ", then ";
 export const TEXT_ADDONS_HEADING = "Add-ons";
 export const TEXT_ADDON_ACCOUNTING_NAME = "Accounting";

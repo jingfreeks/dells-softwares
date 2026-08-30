@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { supabase } from "@/lib/supabaseClient";
 import { togglablePersistenceStorage } from "@/lib/supabaseClient/togglablePersistenceStorage";
 import type { DeviceSession, StaffAccount, Store, StoreFeeConfig, VatStatus } from "@/lib/types";
-import { AuthContext, type AuthResult, type RegisterResult } from "./authContext";
+import { AuthContext, type AuthResult, type RegisterResult, type DeleteAccountResult } from "./authContext";
 import { ERROR_COULD_NOT_START_SESSION } from "@/lib/textLabels";
 
 async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
@@ -222,6 +222,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
+  /**
+   * Same call for sign-in and sign-up -- Supabase doesn't distinguish them
+   * for OAuth, it creates the auth.users row on first login if one doesn't
+   * exist yet. That row fires the same handle_new_user trigger a password
+   * signUp does, so a brand-new Google user gets a store/staff row (falling
+   * back to "My Store"/their email, since Google's profile fields don't
+   * match the store_name/owner_name keys the trigger reads from
+   * raw_user_meta_data) and lands in the same onboarding wizard.
+   *
+   * `planCode`, when given, rides along as a query param on the redirect
+   * target -- Supabase sends the browser back to exactly this URL once
+   * OAuth completes, so it's the only way a value survives the round trip.
+   * HomeRedirect (where "/" always lands) reads it back off the URL and
+   * starts the trial once a session exists.
+   */
+  async function loginWithGoogle(planCode?: string): Promise<AuthResult> {
+    const redirectTo = planCode
+      ? `${window.location.origin}/?plan=${encodeURIComponent(planCode)}`
+      : `${window.location.origin}/`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo },
+    });
+    if (error) return { ok: false, error: friendlyAuthError(error.message) };
+    return { ok: true };
+  }
+
   async function register(input: {
     storeName: string;
     ownerName: string;
@@ -331,7 +358,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     cashierCanEditPrices?: boolean;
   }): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("stores")
       .update({
         ...(patch.name !== undefined && { name: patch.name }),
@@ -348,8 +375,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...(patch.invoiceType !== undefined && { invoice_type: patch.invoiceType }),
         ...(patch.cashierCanEditPrices !== undefined && { cashier_can_edit_prices: patch.cashierCanEditPrices }),
       })
-      .eq("id", user.storeId);
+      .eq("id", user.storeId)
+      .select("id");
     if (error) return { ok: false, error: error.message };
+    // RLS on `stores` restricts UPDATE to admins and staff holding
+    // settings.store.manage -- a caller lacking that returns no error at
+    // all, just an empty result set (Postgres silently filters the row
+    // rather than raising), which without checking here would read as a
+    // false "Saved!" while nothing was actually written.
+    if (!data || data.length === 0) {
+      return { ok: false, error: "You don't have permission to update store settings." };
+    }
     setStore(await loadStore(user.storeId));
     return { ok: true };
   }
@@ -366,7 +402,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
-  async function deleteAccount(): Promise<AuthResult> {
+  async function deleteAccount(): Promise<DeleteAccountResult> {
     if (!user) return { ok: false, error: "Not signed in." };
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
@@ -384,6 +420,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (data?.error) return { ok: false, error: data.error };
 
+    if (data?.requiresReview) {
+      // The account still exists -- a platform admin has to act on the
+      // filed request first -- so the caller stays signed in.
+      return { ok: true, requiresReview: true, message: data.message };
+    }
+
     await supabase.auth.signOut();
     setUser(null);
     setStore(null);
@@ -400,6 +442,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authError,
         retryAuth,
         login,
+        loginWithGoogle,
         register,
         logout,
         requestPasswordReset,

@@ -19,6 +19,9 @@ import {
   LABEL_ZERO_RATED_SALES,
   TEXT_NOT_VAT_REGISTERED,
   TEXT_REPRINT_MARKER,
+  TEXT_VOIDED_MARKER,
+  TEXT_VOID_REASON_PREFIX,
+  TEXT_VOIDED_BY_PREFIX,
   LABEL_SUBTOTAL,
   LABEL_DISCOUNT,
 } from "@/lib/textLabels";
@@ -70,6 +73,11 @@ export function Receipt({
 
   return (
     <div className="print-area tpl-receipt">
+      {sale.status === "voided" && (
+        <p className="tpl-receipt-center tpl-receipt-line" style={{ fontWeight: 700 }}>
+          {TEXT_VOIDED_MARKER}
+        </p>
+      )}
       {isReprint && (
         <p className="tpl-receipt-center tpl-receipt-line" style={{ fontWeight: 600 }}>
           {TEXT_REPRINT_MARKER}
@@ -194,6 +202,22 @@ export function Receipt({
         <p className="tpl-receipt-line" style={{ marginTop: 6 }}>
           {LABEL_UTANG_BALANCE_NOTE}
         </p>
+      )}
+
+      {sale.status === "voided" && (
+        <>
+          <div className="tpl-receipt-hr" />
+          {sale.voidedByName && (
+            <p className="tpl-receipt-line">
+              {TEXT_VOIDED_BY_PREFIX} {sale.voidedByName}
+            </p>
+          )}
+          {sale.voidReason && (
+            <p className="tpl-receipt-line">
+              {TEXT_VOID_REASON_PREFIX} {sale.voidReason}
+            </p>
+          )}
+        </>
       )}
 
       {settings.footerMessage && (

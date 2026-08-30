@@ -14,7 +14,9 @@ import {
   ERROR_PRODUCT_NOT_FOUND_BARCODE_PREFIX,
   ERROR_COULD_NOT_ADD_CUSTOMER,
   ERROR_COULD_NOT_COMPLETE_SALE,
+  ERROR_INVALID_DISCOUNT_VALUE,
   ERROR_INVALID_OVERRIDE_PIN,
+  ERROR_OVERRIDE_PIN_LOCKED,
   ERROR_COULD_NOT_HOLD_SALE,
   ERROR_RESUME_BLOCKED_CART_NOT_EMPTY,
   TEXT_CASHIER_SESSION_EXPIRED,
@@ -464,6 +466,17 @@ export function usePosPage() {
     if (cart.length === 0 && serviceLines.length === 0) return;
     if (paymentType === "credit" && !selectedCustomerId) return;
     if (paymentType === "qr" && !referenceNo.trim()) return;
+    // checkout_sale() rejects a >100% discount outright (see
+    // generic_discount migration) -- caught here for instant UX, same as
+    // the credit-limit/insufficient-stock checks below. Without this, the
+    // rejection only surfaced after the RPC round trip, and (until the
+    // offline queue's connectivity classifier learned about
+    // INVALID_DISCOUNT_VALUE) was misclassified as a dropped connection and
+    // queued as if the sale had gone through.
+    if (discount?.type === "percentage" && discount.value > 100) {
+      setCheckoutError(ERROR_INVALID_DISCOUNT_VALUE);
+      return;
+    }
     const insufficientLines = findInsufficientStock(cart);
     if (insufficientLines.length > 0) {
       setCheckoutError(formatInsufficientStockMessage(insufficientLines));
@@ -521,7 +534,13 @@ export function usePosPage() {
         setCheckoutError(TEXT_CASHIER_SESSION_EXPIRED);
         return;
       }
-      setOverridePinError(message.includes("INVALID_OVERRIDE_PIN") ? ERROR_INVALID_OVERRIDE_PIN : message);
+      setOverridePinError(
+        message.includes("OVERRIDE_PIN_LOCKED")
+          ? ERROR_OVERRIDE_PIN_LOCKED
+          : message.includes("INVALID_OVERRIDE_PIN")
+            ? ERROR_INVALID_OVERRIDE_PIN
+            : message
+      );
       setOverridePin("");
     } finally {
       setOverrideSubmitting(false);

@@ -12,6 +12,7 @@ import { useOnboardingWizard } from "./hooks";
 export function Onboarding() {
   const {
     step,
+    goToExploreDemo,
     goToProfileStep,
     goToStockAlertsStep,
     goToOpenRegisterStep,
@@ -50,14 +51,22 @@ export function Onboarding() {
     finishing,
     finishError,
     onFinish,
+    trialStarted,
   } = useOnboardingWizard();
 
   if (step === "welcome") {
-    return <WelcomeStep onStartSetup={goToProfileStep} onSkipToRegister={goToOpenRegisterStep} />;
+    return <WelcomeStep onExploreDemo={goToExploreDemo} onSetUpStore={goToProfileStep} />;
   }
 
   if (step === "congrats") {
-    return <CongratsStep finishError={finishError} finishing={finishing} onFinish={onFinish} />;
+    return (
+      <CongratsStep
+        finishError={finishError}
+        finishing={finishing}
+        onFinish={onFinish}
+        trialStarted={trialStarted}
+      />
+    );
   }
 
   return (

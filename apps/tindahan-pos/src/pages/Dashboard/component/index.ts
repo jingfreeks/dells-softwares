@@ -9,6 +9,7 @@ export * from "./dailyreport";
 export * from "./dailytransactiondetailscard";
 export * from "./dashboarddetails";
 export * from "./subscriptioncard";
+export * from "./onboardingchecklistcard";
 export * from "./salesreportmodal";
 export * from "./lowstockreportmodal";
 export * from "./utangreportmodal";

@@ -34,6 +34,13 @@ vi.mock("@/lib/billing/billingContext", async (orig) => ({
   ...(await orig<typeof import("@/lib/billing/billingContext")>()),
   useBillingState: () => ({ organizationStatus: "ACTIVE", subscriptionStatus: "ACTIVE", writesAllowed: true, graceEndsAt: null }),
 }));
+// OnboardingChecklistCard (via useOnboardingChecklist) needs DrawerFloatProvider,
+// which Dashboard itself didn't require before -- same "mock the seam, not the
+// provider tree" approach as the two mocks above.
+vi.mock("@/lib/drawerFloat/drawerFloatContext", async (orig) => ({
+  ...(await orig<typeof import("@/lib/drawerFloat/drawerFloatContext")>()),
+  useDrawerFloat: () => ({ balance: 0, setBalance: vi.fn(), add: vi.fn(), deduct: vi.fn() }),
+}));
 vi.mock("@/lib/supabaseClient", () => ({
   supabase: {
     rpc: (name: string) =>
@@ -69,6 +76,17 @@ function renderPage() {
     <MemoryRouter>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+      </Routes>
+    </MemoryRouter>
+  );
+}
+
+function renderPageWithPosRoute() {
+  return render(
+    <MemoryRouter initialEntries={["/"]}>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/pos" element={<p>POS page</p>} />
       </Routes>
     </MemoryRouter>
   );
@@ -111,6 +129,14 @@ describe("Dashboard", () => {
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ loading: true }));
     renderPage();
     expect(screen.queryByText("Today's sales", { exact: false })).not.toBeInTheDocument();
+  });
+
+  it("redirects a cashier to /pos instead of rendering the dashboard", () => {
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: { ...makeAuthValue().user!, role: "cashier" } }));
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue());
+    renderPageWithPosRoute();
+    expect(screen.getByText("POS page")).toBeInTheDocument();
+    expect(screen.queryByText("TODAY'S SALES")).not.toBeInTheDocument();
   });
 
   it("shows an error banner", () => {

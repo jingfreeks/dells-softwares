@@ -26,30 +26,32 @@ export function CustomerTable({
   onSelect,
 }: CustomerTableProps) {
   return (
-    <div className="tpl-card" style={{ padding: 0 }}>
-      <div className="tpl-thead" style={{ gridTemplateColumns: CUSTOMER_ROW_COLUMNS }}>
-        <span>{COLUMN_CUSTOMER}</span>
-        <span className="tpl-right">{COLUMN_BALANCE}</span>
-        <span>{COLUMN_CREDIT_USED}</span>
-        <span />
+    <div className="tpl-card" style={{ padding: 0, overflowX: "auto" }}>
+      <div style={{ minWidth: 442 }}>
+        <div className="tpl-thead" style={{ gridTemplateColumns: CUSTOMER_ROW_COLUMNS }}>
+          <span>{COLUMN_CUSTOMER}</span>
+          <span className="tpl-right">{COLUMN_BALANCE}</span>
+          <span>{COLUMN_CREDIT_USED}</span>
+          <span />
+        </div>
+
+        {customers.map((customer) => (
+          <CustomerRow
+            key={customer.id}
+            customer={customer}
+            oldestDebtDays={oldestDebtDaysById.get(customer.id) ?? null}
+            thresholdDays={thresholdDays}
+            selectedId={selectedId}
+            onSelect={onSelect}
+          />
+        ))}
+
+        {customers.length === 0 && (
+          <p className="tpl-ts" style={{ padding: "32px 15px", textAlign: "center" }}>
+            {query ? `${TEXT_NO_CUSTOMERS_MATCH_PREFIX} "${query}".` : EMPTY_STATE_NO_CUSTOMERS}
+          </p>
+        )}
       </div>
-
-      {customers.map((customer) => (
-        <CustomerRow
-          key={customer.id}
-          customer={customer}
-          oldestDebtDays={oldestDebtDaysById.get(customer.id) ?? null}
-          thresholdDays={thresholdDays}
-          selectedId={selectedId}
-          onSelect={onSelect}
-        />
-      ))}
-
-      {customers.length === 0 && (
-        <p className="tpl-ts" style={{ padding: "32px 15px", textAlign: "center" }}>
-          {query ? `${TEXT_NO_CUSTOMERS_MATCH_PREFIX} "${query}".` : EMPTY_STATE_NO_CUSTOMERS}
-        </p>
-      )}
     </div>
   );
 }

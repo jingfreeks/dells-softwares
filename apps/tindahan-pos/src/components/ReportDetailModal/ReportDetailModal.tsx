@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { ARIA_CLOSE_MODAL, BUTTON_CLOSE, BUTTON_PRINT } from "@/lib";
+import { useRef, type ReactNode } from "react";
+import { ARIA_CLOSE_MODAL, BUTTON_CLOSE, BUTTON_PRINT, useEscapeToClose, useFocusTrap } from "@/lib";
 
 export interface ReportSummaryTile {
   label: string;
@@ -25,9 +25,14 @@ interface ReportDetailModalProps {
  * pattern as ConfirmDialog/AddSupplierModal.
  */
 export function ReportDetailModal({ title, subtitle, summaryTiles, onClose, onPrint, children }: ReportDetailModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEscapeToClose(true, onClose);
+  useFocusTrap(true, dialogRef);
+
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"

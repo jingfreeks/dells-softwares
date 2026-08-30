@@ -26,7 +26,12 @@ export function SubscriptionCard() {
 
   return (
     <div className="tpl-card" style={{ marginBottom: 14 }}>
-      <div className="tpl-sp" style={{ alignItems: "center" }}>
+      {/* .tpl-sp is a plain flex row with no wrap, and .tpl-btn defaults to
+          width:100% (it's normally used standalone, e.g. Login's Sign-in
+          button) -- without the overrides below, "Upgrade plan" fights the
+          plan-name text and the Manage-subscription chip for space on a
+          narrow screen and wraps mid-label inside an undersized pill. */}
+      <div className="tpl-sp" style={{ alignItems: "center", flexWrap: "wrap", gap: 10 }}>
         <div>
           <p className="tpl-mlbl" style={{ margin: 0 }}>
             {LABEL_YOUR_PLAN.toUpperCase()}
@@ -37,11 +42,16 @@ export function SubscriptionCard() {
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           {nextTier && (
-            <button type="button" onClick={() => setUpgradeTarget(nextTier)} className="tpl-btn" style={{ marginBottom: 0 }}>
+            <button
+              type="button"
+              onClick={() => setUpgradeTarget(nextTier)}
+              className="tpl-btn"
+              style={{ width: "auto", marginBottom: 0, padding: "0 14px", whiteSpace: "nowrap" }}
+            >
               {BUTTON_UPGRADE_PLAN}
             </button>
           )}
-          <Link to="/settings/plan" className="tpl-chip" style={{ textDecoration: "none" }}>
+          <Link to="/settings/plan" className="tpl-chip" style={{ textDecoration: "none", whiteSpace: "nowrap" }}>
             {BUTTON_MANAGE_SUBSCRIPTION}
           </Link>
         </div>

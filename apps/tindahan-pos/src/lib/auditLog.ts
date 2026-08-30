@@ -84,12 +84,15 @@ export function useAuditLog(options: { limit?: number } = {}) {
     setEntries(
       rows.map((row) => {
         const receiptNumber = row.entity_type === "sale" ? receiptNumberBySaleId.get(row.entity_id) : null;
+        const staffName = row.entity_type === "staff" ? staffNameById.get(row.entity_id) : null;
         return {
           id: row.id,
           action: row.action,
           actionLabel: friendlyActionLabel(row.action),
           actorName: (row.actor_id && staffNameById.get(row.actor_id)) ?? "—",
-          entityLabel: receiptNumber ? `Receipt ${receiptNumber}` : `${row.entity_type} ${row.entity_id.slice(0, 8)}`,
+          entityLabel: receiptNumber
+            ? `Receipt ${receiptNumber}`
+            : (staffName ?? `${row.entity_type} ${row.entity_id.slice(0, 8)}`),
           reason: row.reason,
           createdAt: row.created_at,
         };

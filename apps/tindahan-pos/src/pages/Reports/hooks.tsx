@@ -2,10 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useAuth,
   useStoreData,
+  useCan,
+  usePermissions,
   supabase,
   salesToCsv,
   vatSalesToCsv,
   voidsToCsv,
+  refundsToCsv,
   paymentBreakdownToCsv,
   downloadTextFile,
   computeOldestDebtDays,
@@ -13,8 +16,9 @@ import {
   ERROR_COULD_NOT_VOID_SALE,
   ERROR_COULD_NOT_REFUND_SALE,
   type SaleRecord,
+  type RefundRecord,
 } from "@/lib";
-import { buildRangeReport } from "@/lib/reports";
+import { buildRangeReport, refundSummary } from "@/lib/reports";
 import { describePlatformError } from "@/lib/platformErrors";
 import { DEFAULT_ALERTS_MOCK, loadAlertsMock } from "@/pages/Settings/alertsMock";
 import {
@@ -35,7 +39,17 @@ interface DeviceOption {
 
 export function useReportsPage() {
   const { products, customers, sales: allSales, fetchSalesInRange, voidSale, refundSale } = useStoreData();
-  const { store } = useAuth();
+  const { user, store } = useAuth();
+  // Computed here (not just in Reports.tsx's own redirect check) so every
+  // fetch effect below can be gated on it directly -- a hook's effects run
+  // on the very first render regardless of what the calling component does
+  // with the result, so gating only in the component (a conditional
+  // `return <Navigate />` after this hook is already called) still let
+  // staff/devices/sales/refunds requests fire for an unauthorized role
+  // during the brief window before that redirect takes effect.
+  const { loading: permissionsLoading } = usePermissions();
+  const canViewReports = useCan("pos.report.view");
+  const authorized = !!user && !permissionsLoading && canViewReports;
   const thresholdDays = useMemo(
     () => (store ? loadAlertsMock(store.id).utangAgingThresholdDays : DEFAULT_ALERTS_MOCK.utangAgingThresholdDays),
     [store]
@@ -49,6 +63,7 @@ export function useReportsPage() {
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [devices, setDevices] = useState<DeviceOption[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
+  const [refunds, setRefunds] = useState<RefundRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [voidError, setVoidError] = useState<string | null>(null);
@@ -64,14 +79,16 @@ export function useReportsPage() {
   );
 
   useEffect(() => {
+    if (!authorized) return;
     supabase
       .from("staff")
       .select("id, name")
       .order("name")
       .then(({ data }) => setCashiers(data ?? []));
-  }, []);
+  }, [authorized]);
 
   useEffect(() => {
+    if (!authorized) return;
     // No unpaired_at filter, unlike DevicesSettings — a report needs to
     // show historical sales from a since-unpaired device too.
     supabase
@@ -79,7 +96,7 @@ export function useReportsPage() {
       .select("id, name")
       .order("name")
       .then(({ data }) => setDevices(data ?? []));
-  }, []);
+  }, [authorized]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -87,18 +104,46 @@ export function useReportsPage() {
     try {
       const rows = await fetchSalesInRange({ startDate, endDate, cashierId, deviceId });
       setSales(rows);
+
+      // refund_sale_items() writes to its own append-only table, never to
+      // `sales` (see handleRefundSale below), so it needs its own fetch --
+      // best-effort here (silently empty on error, same tolerance as the
+      // cashiers/devices effects above) rather than failing the whole report
+      // over a supplementary card.
+      let refundQuery = supabase
+        .from("refunds")
+        .select("id, sale_id, actor_id, reason, total_amount, created_at")
+        .gte("created_at", startDate)
+        .lte("created_at", endDate);
+      if (cashierId) refundQuery = refundQuery.eq("actor_id", cashierId);
+      const { data: refundRows } = await refundQuery;
+      const salesById = new Map(rows.map((s) => [s.id, s]));
+      const cashierNameById = new Map(cashiers.map((c) => [c.id, c.name]));
+      setRefunds(
+        (refundRows ?? []).map((r) => ({
+          id: r.id,
+          saleId: r.sale_id,
+          receiptNumber: salesById.get(r.sale_id)?.receiptNumber ?? null,
+          cashierName: r.actor_id ? (cashierNameById.get(r.actor_id) ?? null) : null,
+          reason: r.reason,
+          totalAmount: r.total_amount,
+          createdAt: r.created_at,
+        }))
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load the report.");
     } finally {
       setLoading(false);
     }
-  }, [fetchSalesInRange, startDate, endDate, cashierId, deviceId]);
+  }, [fetchSalesInRange, startDate, endDate, cashierId, deviceId, cashiers]);
 
   useEffect(() => {
+    if (!authorized) return;
     load();
-  }, [load]);
+  }, [authorized, load]);
 
   const report = useMemo(() => buildRangeReport(sales, products), [sales, products]);
+  const refundReport = useMemo(() => refundSummary(refunds), [refunds]);
 
   // Aging is a point-in-time snapshot of current balances, not scoped to
   // the selected date-range preset, so it's computed from the full sales
@@ -127,6 +172,11 @@ export function useReportsPage() {
   function exportVoidsCsv() {
     const filename = `voids-report-${startDate.slice(0, 10)}-to-${endDate.slice(0, 10)}.csv`;
     downloadTextFile(filename, voidsToCsv(sales), "text/csv");
+  }
+
+  function exportRefundsCsv() {
+    const filename = `refunds-report-${startDate.slice(0, 10)}-to-${endDate.slice(0, 10)}.csv`;
+    downloadTextFile(filename, refundsToCsv(refunds), "text/csv");
   }
 
   function exportPaymentBreakdownCsv() {
@@ -202,11 +252,13 @@ export function useReportsPage() {
     setDeviceId,
     devices,
     report,
+    refundReport,
     loading,
     error,
     exportCsv,
     exportVatCsv,
     exportVoidsCsv,
+    exportRefundsCsv,
     exportPaymentBreakdownCsv,
     onRetry: load,
     debtAging,

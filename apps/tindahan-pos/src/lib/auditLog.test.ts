@@ -79,6 +79,48 @@ describe("useAuditLog", () => {
     ]);
   });
 
+  it("resolves entityLabel to the staff member's name for a staff-entity event", async () => {
+    mockedSupabase.__mocks.auditLogSelect.mockReturnValue(
+      chain([
+        {
+          id: "log-1",
+          actor_id: "staff-1",
+          action: "staff_logged_in",
+          entity_type: "staff",
+          entity_id: "staff-1",
+          reason: null,
+          created_at: "2026-08-15T08:54:57Z",
+        },
+      ])
+    );
+
+    const { result } = renderHook(() => useAuditLog());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.entries[0].entityLabel).toBe("Aling Nena");
+  });
+
+  it("falls back to a truncated id when a staff entity can't be resolved to a name", async () => {
+    mockedSupabase.__mocks.auditLogSelect.mockReturnValue(
+      chain([
+        {
+          id: "log-1",
+          actor_id: "staff-1",
+          action: "staff_logged_out",
+          entity_type: "staff",
+          entity_id: "deleted-staff-id",
+          reason: null,
+          created_at: "2026-08-15T08:54:57Z",
+        },
+      ])
+    );
+
+    const { result } = renderHook(() => useAuditLog());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.entries[0].entityLabel).toBe("staff deleted-");
+  });
+
   // BIR Compliance Audit, Phase 1: audit_log now records four more action
   // types beyond sale_voided (sale creation, price changes, store config
   // changes, customer deletion, staff role changes) -- each needs a

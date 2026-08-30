@@ -6,6 +6,7 @@ import {
   LABEL_OWNER_NAME,
   LABEL_EMAIL_ADDRESS,
   LABEL_PASSWORD,
+  LABEL_CONFIRM_PASSWORD,
   HINT_EMAIL_RECEIPT,
   HINT_PASSWORD_MIN_LENGTH,
   HINT_ADD_SYMBOL_TO_MAX_OUT,
@@ -58,6 +59,8 @@ export function Register() {
     setEmail,
     password,
     setPassword,
+    confirmPassword,
+    setConfirmPassword,
     passwordStrength,
     showPassword,
     toggleShowPassword,
@@ -67,6 +70,8 @@ export function Register() {
     submitting,
     awaitingConfirmation,
     handleSubmit,
+    googleSubmitting,
+    handleGoogleSignUp,
   } = useRegisterForm();
 
   if (user) return <Navigate to="/pos" replace />;
@@ -79,14 +84,50 @@ export function Register() {
     <div className="tpl-root tpl-shell">
       <div className="tpl-form-pane">
         <div className="tpl-form-inner">
-          {/* A plain <a>, not react-router's <Link> -- see Login.tsx for why. */}
-          <a href="/" className="tpl-lnk" style={{ display: "inline-block", marginBottom: 12, fontSize: 13 }}>
+          <Link to="/" className="tpl-lnk" style={{ display: "inline-block", marginBottom: 12, fontSize: 13 }}>
             {LINK_BACK_TO_HOME}
-          </a>
+          </Link>
           <Header />
 
           <Buttonsigninscreen />
-          <Googlebtnsignup />
+
+          <div className="tpl-terms-row">
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={agreedToTerms}
+              aria-label="I agree to the Terms of Service and Privacy Policy"
+              onClick={() => setAgreedToTerms(!agreedToTerms)}
+              className={`tpl-checkbox${agreedToTerms ? " tpl-on" : ""}`}
+              style={{ padding: 0 }}
+            >
+              {agreedToTerms && <i className="ti ti-check" aria-hidden />}
+            </button>
+            <span className="tpl-terms-label" onClick={() => setAgreedToTerms(!agreedToTerms)}>
+              {LABEL_AGREE_TO_TERMS_PREFIX}{" "}
+              <Link to="/terms" className="tpl-lnk" onClick={(e) => e.stopPropagation()}>
+                {LINK_TERMS_OF_SERVICE}
+              </Link>{" "}
+              {TEXT_AND}{" "}
+              <Link to="/privacy" className="tpl-lnk" onClick={(e) => e.stopPropagation()}>
+                {LINK_PRIVACY_POLICY}
+              </Link>
+              .
+            </span>
+          </div>
+
+          <Googlebtnsignup
+            agreedToTerms={agreedToTerms}
+            submitting={googleSubmitting}
+            onClick={handleGoogleSignUp}
+          />
+
+          {error && (
+            <p role="alert" className="tpl-emsg" style={{ marginTop: -6, marginBottom: 12 }}>
+              <i className="ti ti-alert-circle" aria-hidden />
+              {error}
+            </p>
+          )}
 
           <form onSubmit={handleSubmit} noValidate>
             <label htmlFor="storeName" className="tpl-lbl">
@@ -172,29 +213,28 @@ export function Register() {
               <p className="tpl-strength-hint">{HINT_PASSWORD_MIN_LENGTH}</p>
             )}
 
-            {error && (
-              <p role="alert" className="tpl-emsg" style={{ marginTop: -6, marginBottom: 12 }}>
-                <i className="ti ti-alert-circle" aria-hidden />
-                {error}
-              </p>
-            )}
-
-            <button
-              type="button"
-              role="checkbox"
-              aria-checked={agreedToTerms}
-              aria-label="I agree to the Terms of Service and Privacy Policy"
-              onClick={() => setAgreedToTerms(!agreedToTerms)}
-              className="tpl-terms-row"
-            >
-              <span className={`tpl-checkbox${agreedToTerms ? " tpl-on" : ""}`}>
-                {agreedToTerms && <i className="ti ti-check" aria-hidden />}
-              </span>
-              <span className="tpl-terms-label">
-                {LABEL_AGREE_TO_TERMS_PREFIX} <span className="tpl-lnk">{LINK_TERMS_OF_SERVICE}</span> {TEXT_AND}{" "}
-                <span className="tpl-lnk">{LINK_PRIVACY_POLICY}</span>.
-              </span>
-            </button>
+            <label htmlFor="regConfirmPassword" className="tpl-lbl">
+              {LABEL_CONFIRM_PASSWORD}
+            </label>
+            <div className={`tpl-fld${error ? " tpl-err" : ""}`} style={{ marginBottom: 14 }}>
+              <input
+                id="regConfirmPassword"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                required
+                minLength={8}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={toggleShowPassword}
+                aria-label={showPassword ? "Hide confirm password" : "Show confirm password"}
+                className="tpl-eye-btn"
+              >
+                <i className={`ti ${showPassword ? "ti-eye-off" : "ti-eye"}`} aria-hidden />
+              </button>
+            </div>
 
             <button type="submit" disabled={!canSubmit} className="tpl-btnp">
               {submitting && <span aria-hidden className="tpl-spinner" />}

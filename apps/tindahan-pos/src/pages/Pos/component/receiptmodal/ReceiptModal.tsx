@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Receipt, type ReceiptDisplaySettings } from "@/components";
-import { BUTTON_PRINT_RECEIPT, BUTTON_NEW_SALE, type SaleRecord, type Store } from "@/lib";
+import { BUTTON_PRINT_RECEIPT, BUTTON_NEW_SALE, useEscapeToClose, useFocusTrap, type SaleRecord, type Store } from "@/lib";
 
 interface ReceiptModalProps {
   open: boolean;
@@ -42,11 +42,16 @@ export function ReceiptModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEscapeToClose(open, onClose);
+  useFocusTrap(open, dialogRef);
+
   if (!open || !sale || !store) return null;
 
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         style={{ maxWidth: 380 }}
         role="dialog"

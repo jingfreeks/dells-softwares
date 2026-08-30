@@ -336,6 +336,28 @@ describe("ProfileSettings", () => {
       expect(deleteAccount).toHaveBeenCalled();
       expect(await screen.findByText("Login page")).toBeInTheDocument();
     });
+
+    it("shows a review-pending message and stays signed in when the caller is the store's only admin", async () => {
+      const user = userEvent.setup();
+      const deleteAccount = vi.fn().mockResolvedValue({
+        ok: true,
+        requiresReview: true,
+        message: "You're the only admin for this store, so deleting your account closes the whole store.",
+      });
+      vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount(), deleteAccount }));
+      renderPage();
+
+      await user.click(screen.getByRole("button", { name: "Delete my account" }));
+      const dialogButtons = screen.getAllByRole("button", { name: "Delete my account" });
+      await user.click(dialogButtons[dialogButtons.length - 1]);
+
+      expect(await screen.findByText("Request submitted")).toBeInTheDocument();
+      expect(screen.getByText(/closes the whole store/)).toBeInTheDocument();
+      expect(screen.queryByText("Login page")).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "OK" }));
+      expect(screen.queryByText("Request submitted")).not.toBeInTheDocument();
+    });
   });
 
   describe("settings sidebar", () => {

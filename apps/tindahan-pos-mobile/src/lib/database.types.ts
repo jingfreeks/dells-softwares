@@ -6,6 +6,7 @@
 export type StaffRole = "admin" | "cashier";
 export type SaleItemType = "product" | "service";
 export type PaymentType = "cash" | "credit" | "qr";
+export type SaleStatus = "completed" | "voided";
 
 export interface Database {
   public: {
@@ -161,6 +162,11 @@ export interface Database {
           payment_type: PaymentType;
           reference_no: string | null;
           created_at: string;
+          // Added by a later migration than 0001_init.sql (offline-sync +
+          // BIR-audit work) -- set only for a sale queued offline and
+          // synced later; null for a normal live sale (see mapSaleRow).
+          occurred_at: string | null;
+          status: SaleStatus;
         };
         Insert: {
           id?: string;
@@ -171,6 +177,8 @@ export interface Database {
           payment_type?: PaymentType;
           reference_no?: string | null;
           created_at?: string;
+          occurred_at?: string | null;
+          status?: SaleStatus;
         };
         Update: {
           id?: string;
@@ -181,6 +189,8 @@ export interface Database {
           payment_type?: PaymentType;
           reference_no?: string | null;
           created_at?: string;
+          occurred_at?: string | null;
+          status?: SaleStatus;
         };
         Relationships: [
           {
@@ -458,6 +468,88 @@ export interface Database {
         Update: { key?: string; enabled?: boolean; description?: string; updated_at?: string };
         Relationships: [];
       };
+      devices: {
+        Row: {
+          id: string;
+          store_id: string;
+          name: string;
+          paired_by: string;
+          paired_at: string;
+          last_seen_at: string | null;
+          unpaired_at: string | null;
+        };
+        Insert: {
+          id: string;
+          store_id: string;
+          name: string;
+          paired_by: string;
+          paired_at?: string;
+          last_seen_at?: string | null;
+          unpaired_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          name?: string;
+          paired_by?: string;
+          paired_at?: string;
+          last_seen_at?: string | null;
+          unpaired_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "devices_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      demo_products: {
+        Row: {
+          id: string;
+          name: string;
+          category: string;
+          price: number;
+          stock: number;
+          low_stock_threshold: number;
+          sort_order: number;
+          sold_count: number;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          category: string;
+          price: number;
+          stock: number;
+          low_stock_threshold?: number;
+          sort_order?: number;
+          sold_count?: number;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          category?: string;
+          price?: number;
+          stock?: number;
+          low_stock_threshold?: number;
+          sort_order?: number;
+          sold_count?: number;
+        };
+        Relationships: [];
+      };
+      demo_sales: {
+        Row: { id: string; occurred_at: string; total: number; item_count: number };
+        Insert: { id?: string; occurred_at: string; total: number; item_count: number };
+        Update: { id?: string; occurred_at?: string; total?: number; item_count?: number };
+        Relationships: [];
+      };
+      demo_customers: {
+        Row: { id: string; name: string; balance: number };
+        Insert: { id?: string; name: string; balance?: number };
+        Update: { id?: string; name?: string; balance?: number };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -468,6 +560,9 @@ export interface Database {
           p_customer_id?: string | null;
           p_payment_type?: PaymentType;
           p_reference_no?: string | null;
+          p_discount_type?: "percentage" | "flat" | null;
+          p_discount_value?: number | null;
+          p_cashier_token?: string | null;
         };
         Returns: { sale_id: string; total: number }[];
       };
@@ -478,6 +573,74 @@ export interface Database {
           p_note?: string | null;
         };
         Returns: { customer_id: string; new_balance: number }[];
+      };
+      generate_pairing_code: {
+        Args: Record<string, never>;
+        Returns: { code: string; expires_at: string }[];
+      };
+      admin_unpair_device: {
+        Args: { p_device_id: string; p_owner_pin: string };
+        Returns: undefined;
+      };
+      list_pickable_cashiers: {
+        Args: Record<string, never>;
+        Returns: { id: string; name: string; avatar_url: string | null }[];
+      };
+      start_cashier_session: {
+        Args: { p_staff_id: string; p_pin: string; p_opening_float: number };
+        Returns: {
+          ok: boolean;
+          error_code: string | null;
+          token: string | null;
+          staff_id: string | null;
+          name: string | null;
+          role: StaffRole | null;
+          avatar_url: string | null;
+          expires_at: string | null;
+        }[];
+      };
+      end_cashier_session: {
+        Args: { p_token: string; p_closing_float?: number | null };
+        Returns: undefined;
+      };
+      start_trial: {
+        Args: { p_plan_code: string };
+        Returns: undefined;
+      };
+      my_store_billing_state: {
+        Args: Record<string, never>;
+        Returns: {
+          organization_status: string;
+          subscription_status: string;
+          writes_allowed: boolean;
+          grace_ends_at: string | null;
+          trial_ends_at: string | null;
+        }[];
+      };
+      my_store_plan: {
+        Args: Record<string, never>;
+        Returns: {
+          plan_code: string;
+          name: string;
+          price_php: number | null;
+          billing_interval: string;
+          features: string[];
+        }[];
+      };
+      plan_prices: {
+        Args: Record<string, never>;
+        Returns: {
+          plan_code: string;
+          name: string;
+          price_php: number | null;
+          billing_interval: string;
+          features: string[];
+          sort_order: number;
+        }[];
+      };
+      my_store_features: {
+        Args: Record<string, never>;
+        Returns: { feature_code: string; module_code: string; name: string; enabled: boolean }[];
       };
     };
     Enums: {
