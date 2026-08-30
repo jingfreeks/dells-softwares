@@ -537,39 +537,28 @@ describe("StoreDataProvider", () => {
     expect(mockedSupabase.from).toHaveBeenCalledWith("products");
   });
 
-  it("does nothing when restocking an unknown product id", async () => {
-    const productsChain = makeChain("products");
-    mockedSupabase.from.mockImplementation((table: string) =>
-      table === "products" ? productsChain : makeChain(table)
-    );
-    renderProvider(<Capture />);
-    await waitFor(() => expect(captured?.loading).toBe(false));
-    await captured!.restock("does-not-exist", 5);
-    expect(productsChain.update).not.toHaveBeenCalled();
-  });
-
-  it("restocks an existing product using its current stock", async () => {
-    tableResults.products.list = {
-      data: [
-        {
-          id: "p1",
-          barcode: null,
-          name: "Sardines",
-          price: 25,
-          stock: 20,
-          low_stock_threshold: 5,
-          category_id: "cat1",
-          pack_quantity: null,
-          pack_price: null,
-          categories: { name: "Canned" },
-        },
-      ],
-      error: null,
-    };
+  it("restocks via the atomic adjust_product_stock RPC, not a client-computed absolute value", async () => {
+    // Regression coverage for the lost-update race this RPC exists to fix
+    // (see adjust_product_stock's migration comment): restock() must never
+    // read this client's own cached product.stock and write it back as an
+    // absolute value, since a concurrent restock elsewhere would silently
+    // lose its delta. Asserting the call is p_delta-shaped, not
+    // stock-shaped, is what would catch a regression back to that pattern.
+    mockedSupabase.rpc.mockResolvedValue({ data: [{ stock: 25 }], error: null });
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
     await captured!.restock("p1", 5);
-    expect(mockedSupabase.from).toHaveBeenCalledWith("products");
+    expect(mockedSupabase.rpc).toHaveBeenCalledWith("adjust_product_stock", {
+      p_product_id: "p1",
+      p_delta: 5,
+    });
+  });
+
+  it("propagates an error from adjust_product_stock (e.g. product not found in this store)", async () => {
+    mockedSupabase.rpc.mockResolvedValue({ data: null, error: new Error("Product not found in this store") });
+    renderProvider(<Capture />);
+    await waitFor(() => expect(captured?.loading).toBe(false));
+    await expect(captured!.restock("does-not-exist", 5)).rejects.toThrow("Product not found in this store");
   });
 
   it("checks out a cash sale via the RPC", async () => {
@@ -989,6 +978,7 @@ describe("StoreDataProvider", () => {
   });
 
   it("receives stock: restocks each line and records the entry", async () => {
+    mockedSupabase.rpc.mockResolvedValue({ data: [{ stock: 25 }], error: null });
     tableResults.receiving_entries.single = { data: { id: "r1" }, error: null };
     const entriesChain = makeChain("receiving_entries");
     entriesChain.insert = vi.fn(() => ({
@@ -1012,6 +1002,7 @@ describe("StoreDataProvider", () => {
   });
 
   it("defaults to 'Unspecified supplier' for a blank supplier name", async () => {
+    mockedSupabase.rpc.mockResolvedValue({ data: [{ stock: 25 }], error: null });
     const entriesChain = makeChain("receiving_entries");
     entriesChain.insert = vi.fn((row: { supplier: string }) => {
       expect(row.supplier).toBe("Unspecified supplier");
@@ -1036,6 +1027,7 @@ describe("StoreDataProvider", () => {
   });
 
   it("propagates an error creating the receiving entry", async () => {
+    mockedSupabase.rpc.mockResolvedValue({ data: [{ stock: 25 }], error: null });
     const entriesChain = makeChain("receiving_entries");
     entriesChain.insert = vi.fn(() => ({
       select: vi.fn(() => ({
@@ -1053,6 +1045,7 @@ describe("StoreDataProvider", () => {
   });
 
   it("propagates an error inserting receiving lines", async () => {
+    mockedSupabase.rpc.mockResolvedValue({ data: [{ stock: 25 }], error: null });
     const entriesChain = makeChain("receiving_entries");
     entriesChain.insert = vi.fn(() => ({
       select: vi.fn(() => ({ single: vi.fn().mockResolvedValue({ data: { id: "r1" }, error: null }) })),
