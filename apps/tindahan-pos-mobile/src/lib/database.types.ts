@@ -11,6 +11,40 @@ export type SaleStatus = "completed" | "voided";
 export interface Database {
   public: {
     Tables: {
+      document_series: {
+        Row: {
+          id: string;
+          store_id: string;
+          series_key: string;
+          prefix: string;
+          next_number: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          series_key?: string;
+          prefix?: string;
+          next_number?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          series_key?: string;
+          prefix?: string;
+          next_number?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "document_series_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       stores: {
         Row: {
           id: string;
