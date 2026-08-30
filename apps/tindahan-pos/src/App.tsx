@@ -17,6 +17,7 @@ import {
   Login,
   Register,
   ForgotPassword,
+  ResetPassword,
   Pair,
   Pos,
   Inventory,
@@ -61,6 +62,7 @@ function App() {
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/pair" element={<Pair />} />
                         <Route path="/privacy" element={<Privacy />} />
                         <Route path="/terms" element={<Terms />} />

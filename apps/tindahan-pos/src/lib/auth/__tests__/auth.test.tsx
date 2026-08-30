@@ -627,7 +627,7 @@ describe("AuthProvider", () => {
     await waitFor(() =>
       expect(mockedSupabase.auth.resetPasswordForEmail).toHaveBeenCalledWith(
         "nena@example.com",
-        expect.objectContaining({ redirectTo: expect.stringContaining("/login") })
+        expect.objectContaining({ redirectTo: expect.stringContaining("/reset-password") })
       )
     );
   });
