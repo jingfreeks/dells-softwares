@@ -82,6 +82,12 @@ describe("Reports", () => {
     renderPageWithPosRoute();
     expect(screen.getByText("POS page")).toBeInTheDocument();
     expect(screen.queryByTestId("summary-cards")).not.toBeInTheDocument();
+    // useReportsPage's fetch effects (staff, devices, sales, refunds) must
+    // never fire for an unauthorized role -- a hook's effects otherwise run
+    // on the very first render regardless of the component's own redirect,
+    // which previously let a `refunds` query reach the network before the
+    // redirect took effect.
+    expect(from).not.toHaveBeenCalled();
   });
 
   it("shows summary totals computed from the filtered sales", async () => {
