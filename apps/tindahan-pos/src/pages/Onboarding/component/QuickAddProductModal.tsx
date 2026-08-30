@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import { useRef, type FormEvent } from "react";
 import {
   LABEL_QUICK_ADD_PRODUCT,
   LABEL_NAME,
@@ -8,6 +8,7 @@ import {
   BUTTON_ADD_PRODUCT,
   BUTTON_DONE,
   useEscapeToClose,
+  useFocusTrap,
 } from "@/lib";
 import type { QuickAddForm } from "../useProductsStep";
 
@@ -33,11 +34,14 @@ export function QuickAddProductModal({
     onSubmit();
   }
 
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEscapeToClose(true, onClose);
+  useFocusTrap(true, dialogRef);
 
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"

@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import { useRef, type FormEvent } from "react";
 import type { Customer } from "@/lib";
 import {
   BUTTON_ADD_CUSTOMER,
@@ -10,6 +10,7 @@ import {
   BUTTON_CANCEL,
   BUTTON_ADDING,
   useEscapeToClose,
+  useFocusTrap,
 } from "@/lib";
 import type { PaymentSchedule } from "../../hooks";
 import { DuplicateWarning } from "../duplicatewarning";
@@ -50,11 +51,14 @@ export function AddCustomerModal({
   onCancel,
   onSubmit,
 }: AddCustomerModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEscapeToClose(true, onCancel);
+  useFocusTrap(true, dialogRef);
 
   return (
     <div className="tpl-modal-overlay" onClick={onCancel}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"

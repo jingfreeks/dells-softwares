@@ -10,7 +10,9 @@ import {
   EMPTY_STATE_NO_VARIANCE_THIS_WEEK,
   TEXT_VARIANCE_SCOPE_NOTE,
   useEscapeToClose,
+  useFocusTrap,
 } from "@/lib";
+import { useRef } from "react";
 import type { ClosedShift } from "../../lib";
 
 interface DrawerVarianceModalProps {
@@ -19,11 +21,14 @@ interface DrawerVarianceModalProps {
 }
 
 export function DrawerVarianceModal({ closedShifts, onClose }: DrawerVarianceModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEscapeToClose(true, onClose);
+  useFocusTrap(true, dialogRef);
 
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"

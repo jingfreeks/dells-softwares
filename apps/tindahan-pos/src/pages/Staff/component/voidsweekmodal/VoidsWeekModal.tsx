@@ -9,8 +9,10 @@ import {
   COLUMN_REASON,
   EMPTY_STATE_NO_VOIDS_THIS_WEEK,
   useEscapeToClose,
+  useFocusTrap,
   type SaleRecord,
 } from "@/lib";
+import { useRef } from "react";
 
 interface VoidsWeekModalProps {
   voidedSales: SaleRecord[];
@@ -18,11 +20,14 @@ interface VoidsWeekModalProps {
 }
 
 export function VoidsWeekModal({ voidedSales, onClose }: VoidsWeekModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEscapeToClose(true, onClose);
+  useFocusTrap(true, dialogRef);
 
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"

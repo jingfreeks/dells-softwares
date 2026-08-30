@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PinKeypad } from "@/components/PinKeypad";
 import {
   LABEL_YOUR_OVERRIDE_PIN,
@@ -7,6 +7,7 @@ import {
   ERROR_PINS_DO_NOT_MATCH,
   BUTTON_CANCEL,
   useEscapeToClose,
+  useFocusTrap,
 } from "@/lib";
 
 interface SetPinModalProps {
@@ -36,7 +37,9 @@ export function SetPinModal({ open, submitting, error, onCancel, onSubmit, headi
     onCancel();
   }
 
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEscapeToClose(open, handleCancel);
+  useFocusTrap(open, dialogRef);
 
   if (!open) return null;
 
@@ -58,6 +61,7 @@ export function SetPinModal({ open, submitting, error, onCancel, onSubmit, headi
   return (
     <div className="tpl-modal-overlay" onClick={handleCancel}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         style={{ maxWidth: 360, textAlign: "center" }}
         role="dialog"

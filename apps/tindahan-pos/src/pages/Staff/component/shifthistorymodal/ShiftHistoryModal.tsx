@@ -16,7 +16,9 @@ import {
   TEXT_SHIFT_COMPLETED,
   TEXT_SHIFT_NO_COUNT,
   useEscapeToClose,
+  useFocusTrap,
 } from "@/lib";
+import { useRef } from "react";
 import { useShiftHistory, type ShiftHistoryRow } from "../../hooksShifts";
 
 interface ShiftHistoryModalProps {
@@ -32,11 +34,14 @@ function statusLabel(status: ShiftHistoryRow["status"]): string {
 export function ShiftHistoryModal({ onClose }: ShiftHistoryModalProps) {
   const { shifts, loading, loadError } = useShiftHistory();
 
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEscapeToClose(true, onClose);
+  useFocusTrap(true, dialogRef);
 
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"

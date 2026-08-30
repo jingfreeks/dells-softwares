@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import {
   PESO,
   HEADING_ON_SHIFT_NOW,
@@ -9,6 +10,7 @@ import {
   COLUMN_TRANSACTIONS,
   EMPTY_STATE_NO_ONE_ON_SHIFT,
   useEscapeToClose,
+  useFocusTrap,
 } from "@/lib";
 import type { OpenShift } from "../../hooksShifts";
 
@@ -18,11 +20,14 @@ interface OnShiftNowModalProps {
 }
 
 export function OnShiftNowModal({ openShifts, onClose }: OnShiftNowModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEscapeToClose(true, onClose);
+  useFocusTrap(true, dialogRef);
 
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"

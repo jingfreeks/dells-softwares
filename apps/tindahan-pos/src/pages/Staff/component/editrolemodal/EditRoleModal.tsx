@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   HEADING_EDIT_ROLE,
   ARIA_CLOSE_MODAL,
@@ -7,6 +7,7 @@ import {
   BUTTON_SAVE,
   ERROR_COULD_NOT_SAVE_ROLE,
   useEscapeToClose,
+  useFocusTrap,
   type Store,
 } from "@/lib";
 
@@ -21,7 +22,9 @@ export function EditRoleModal({ store, onSave, onClose }: EditRoleModalProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEscapeToClose(true, onClose);
+  useFocusTrap(true, dialogRef);
 
   async function handleSave() {
     setSaving(true);
@@ -38,6 +41,7 @@ export function EditRoleModal({ store, onSave, onClose }: EditRoleModalProps) {
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"

@@ -1,5 +1,6 @@
+import { useRef } from "react";
 import { PinKeypad } from "@/components";
-import { LABEL_UNPAIR_DEVICE_HEADING, TEXT_ENTER_OWNER_PIN, BUTTON_CANCEL, useEscapeToClose } from "@/lib";
+import { LABEL_UNPAIR_DEVICE_HEADING, TEXT_ENTER_OWNER_PIN, BUTTON_CANCEL, useEscapeToClose, useFocusTrap } from "@/lib";
 
 interface UnpairDeviceModalProps {
   open: boolean;
@@ -12,13 +13,16 @@ interface UnpairDeviceModalProps {
 }
 
 export function UnpairDeviceModal({ open, pin, onPinChange, onSubmit, error, submitting, onCancel }: UnpairDeviceModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEscapeToClose(open, onCancel);
+  useFocusTrap(open, dialogRef);
 
   if (!open) return null;
 
   return (
     <div className="tpl-modal-overlay" onClick={onCancel}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         style={{ maxWidth: 360, textAlign: "center" }}
         role="dialog"
