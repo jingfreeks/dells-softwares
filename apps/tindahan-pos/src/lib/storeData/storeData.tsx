@@ -455,13 +455,16 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     await fetchProducts();
   }
 
+  // Atomic on the database side (adjust_product_stock does `stock = stock +
+  // p_delta` in a single UPDATE) rather than reading product.stock from
+  // this client's own React state and writing an absolute value back --
+  // the latter loses concurrent receipts on the same product silently.
+  // See adjust_product_stock's migration comment for the full story.
   async function restock(id: string, quantity: number) {
-    const product = products.find((p) => p.id === id);
-    if (!product) return;
-    const { error: err } = await supabase
-      .from("products")
-      .update({ stock: product.stock + quantity })
-      .eq("id", id);
+    const { error: err } = await supabase.rpc("adjust_product_stock", {
+      p_product_id: id,
+      p_delta: quantity,
+    });
     if (err) throw err;
     await fetchProducts();
   }

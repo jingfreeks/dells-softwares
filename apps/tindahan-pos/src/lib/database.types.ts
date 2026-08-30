@@ -1139,6 +1139,13 @@ export interface Database {
         };
         Returns: { customer_id: string; new_balance: number }[];
       };
+      adjust_product_stock: {
+        Args: {
+          p_product_id: string;
+          p_delta: number;
+        };
+        Returns: { new_stock: number }[];
+      };
       set_own_pin: {
         Args: {
           p_pin: string;
