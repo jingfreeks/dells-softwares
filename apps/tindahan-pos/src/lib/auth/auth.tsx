@@ -301,7 +301,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function requestPasswordReset(email: string): Promise<AuthResult> {
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     // Always report success even if the email isn't registered — don't leak
     // which emails have accounts.
