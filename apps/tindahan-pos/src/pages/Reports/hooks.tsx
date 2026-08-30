@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useAuth,
   useStoreData,
+  useCan,
+  usePermissions,
   supabase,
   salesToCsv,
   vatSalesToCsv,
@@ -37,7 +39,17 @@ interface DeviceOption {
 
 export function useReportsPage() {
   const { products, customers, sales: allSales, fetchSalesInRange, voidSale, refundSale } = useStoreData();
-  const { store } = useAuth();
+  const { user, store } = useAuth();
+  // Computed here (not just in Reports.tsx's own redirect check) so every
+  // fetch effect below can be gated on it directly -- a hook's effects run
+  // on the very first render regardless of what the calling component does
+  // with the result, so gating only in the component (a conditional
+  // `return <Navigate />` after this hook is already called) still let
+  // staff/devices/sales/refunds requests fire for an unauthorized role
+  // during the brief window before that redirect takes effect.
+  const { loading: permissionsLoading } = usePermissions();
+  const canViewReports = useCan("pos.report.view");
+  const authorized = !!user && !permissionsLoading && canViewReports;
   const thresholdDays = useMemo(
     () => (store ? loadAlertsMock(store.id).utangAgingThresholdDays : DEFAULT_ALERTS_MOCK.utangAgingThresholdDays),
     [store]
@@ -67,14 +79,16 @@ export function useReportsPage() {
   );
 
   useEffect(() => {
+    if (!authorized) return;
     supabase
       .from("staff")
       .select("id, name")
       .order("name")
       .then(({ data }) => setCashiers(data ?? []));
-  }, []);
+  }, [authorized]);
 
   useEffect(() => {
+    if (!authorized) return;
     // No unpaired_at filter, unlike DevicesSettings — a report needs to
     // show historical sales from a since-unpaired device too.
     supabase
@@ -82,7 +96,7 @@ export function useReportsPage() {
       .select("id, name")
       .order("name")
       .then(({ data }) => setDevices(data ?? []));
-  }, []);
+  }, [authorized]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -124,8 +138,9 @@ export function useReportsPage() {
   }, [fetchSalesInRange, startDate, endDate, cashierId, deviceId, cashiers]);
 
   useEffect(() => {
+    if (!authorized) return;
     load();
-  }, [load]);
+  }, [authorized, load]);
 
   const report = useMemo(() => buildRangeReport(sales, products), [sales, products]);
   const refundReport = useMemo(() => refundSummary(refunds), [refunds]);

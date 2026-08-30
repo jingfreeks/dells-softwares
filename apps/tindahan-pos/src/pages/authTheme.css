@@ -231,6 +231,21 @@
 .tpl-fld input::placeholder {
   color: var(--tpl-t9);
 }
+/* Unlike input, a bare <select> has no default color rule to inherit from
+   here -- it was falling back to the browser's own near-black form-control
+   text color, unreadable against this dark theme. color-scheme: dark also
+   asks the browser to render the native option-list popup in a matching
+   dark palette instead of defaulting to light. */
+.tpl-fld select {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--tpl-t2);
+  font-size: 14px;
+  font-family: inherit;
+  width: 100%;
+  color-scheme: dark;
+}
 .tpl-fld:focus-within {
   border: 1px solid var(--tpl-a1);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
