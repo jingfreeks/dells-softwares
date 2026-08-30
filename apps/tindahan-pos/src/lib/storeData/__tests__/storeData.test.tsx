@@ -646,6 +646,88 @@ describe("StoreDataProvider", () => {
     await waitFor(() => expect(captured!.customers.find((c) => c.id === "c1")?.balance).toBe(150));
   });
 
+  it("resolves the override PIN to a token via check_credit_override_pin before checkout_sale", async () => {
+    tableResults.customers.list = {
+      data: [{ id: "c1", name: "Mang Jose", phone: null, credit_limit: 100, balance: 90 }],
+      error: null,
+    };
+    mockedSupabase.rpc.mockImplementation((fn: string) => {
+      if (fn === "check_credit_override_pin") {
+        return Promise.resolve({ data: [{ ok: true, error_code: null, override_token: "tok-123" }], error: null });
+      }
+      return Promise.resolve({ data: [{ sale_id: "sale-1", total: 50 }], error: null });
+    });
+    renderProvider(<Capture />);
+    await waitFor(() => expect(captured?.loading).toBe(false));
+
+    await captured!.checkout([], [{ id: "svc1", label: "E-Load", amount: 50, fee: 0 }], "Aling Nena", {
+      type: "credit",
+      customerId: "c1",
+      overridePin: "1234",
+    });
+
+    expect(mockedSupabase.rpc).toHaveBeenCalledWith(
+      "check_credit_override_pin",
+      expect.objectContaining({ p_pin: "1234" })
+    );
+    expect(mockedSupabase.rpc).toHaveBeenCalledWith(
+      "checkout_sale",
+      expect.objectContaining({ p_override_token: "tok-123" })
+    );
+  });
+
+  it("rejects immediately (no queueing) when check_credit_override_pin reports the PIN is wrong", async () => {
+    tableResults.customers.list = {
+      data: [{ id: "c1", name: "Mang Jose", phone: null, credit_limit: 100, balance: 90 }],
+      error: null,
+    };
+    mockedSupabase.rpc.mockImplementation((fn: string) => {
+      if (fn === "check_credit_override_pin") {
+        return Promise.resolve({ data: [{ ok: false, error_code: "INVALID_OVERRIDE_PIN", override_token: null }], error: null });
+      }
+      return Promise.resolve({ data: [{ sale_id: "sale-1", total: 50 }], error: null });
+    });
+    renderProvider(<Capture />);
+    await waitFor(() => expect(captured?.loading).toBe(false));
+
+    await expect(
+      captured!.checkout([], [{ id: "svc1", label: "E-Load", amount: 50, fee: 0 }], "Aling Nena", {
+        type: "credit",
+        customerId: "c1",
+        overridePin: "9999",
+      })
+    ).rejects.toThrow("INVALID_OVERRIDE_PIN");
+    expect(mockedEnqueueSale).not.toHaveBeenCalled();
+  });
+
+  it("queues the sale with the raw override PIN when check_credit_override_pin itself can't be reached (offline)", async () => {
+    tableResults.customers.list = {
+      data: [{ id: "c1", name: "Mang Jose", phone: null, credit_limit: 100, balance: 90 }],
+      error: null,
+    };
+    mockedSupabase.rpc.mockImplementation((fn: string) => {
+      if (fn === "check_credit_override_pin") {
+        return Promise.reject(new TypeError("Failed to fetch"));
+      }
+      return Promise.reject(new TypeError("Failed to fetch"));
+    });
+    renderProvider(<Capture />);
+    await waitFor(() => expect(captured?.loading).toBe(false));
+
+    const sale = await captured!.checkout(
+      [],
+      [{ id: "svc1", label: "E-Load", amount: 50, fee: 0 }],
+      "Aling Nena",
+      { type: "credit", customerId: "c1", overridePin: "1234" }
+    );
+
+    expect(sale.syncStatus).toBe("pending");
+    expect(mockedEnqueueSale).toHaveBeenCalledWith(
+      "store-1",
+      expect.objectContaining({ payload: expect.objectContaining({ overridePin: "1234" }) })
+    );
+  });
+
   it("throws when a QR sale has no reference number", async () => {
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));

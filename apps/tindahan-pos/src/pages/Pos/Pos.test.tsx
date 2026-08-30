@@ -418,6 +418,29 @@ describe("Pos", () => {
     expect(await within(dialog).findByRole("alert")).toHaveTextContent("That PIN doesn't match any admin at this store.");
   });
 
+  it("shows a friendly lockout message when the override PIN is locked", async () => {
+    const user = userEvent.setup();
+    const customers = [makeCustomer({ id: "c1", name: "Aling Rosa", balance: 1132, creditLimit: 1000 })];
+    const checkout = vi.fn().mockRejectedValue(new Error("OVERRIDE_PIN_LOCKED"));
+    setup({ customers, checkout });
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    await user.click(screen.getByRole("button", { name: "Utang" }));
+    await user.type(screen.getByLabelText("Charge to customer"), "Rosa");
+    await user.click(screen.getByText("Aling Rosa"));
+    await user.click(screen.getByRole("button", { name: /Needs owner's PIN/ }));
+
+    const dialog = await screen.findByRole("dialog");
+    for (const digit of ["9", "9", "9", "9"]) {
+      await user.click(within(dialog).getByRole("button", { name: digit }));
+    }
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      "Too many wrong attempts. Please wait 15 minutes and try again."
+    );
+  });
+
   it("switches to cash and closes the modal via 'Pay cash instead'", async () => {
     const user = userEvent.setup();
     const customers = [makeCustomer({ id: "c1", name: "Aling Rosa", balance: 1132, creditLimit: 1000 })];
