@@ -15,6 +15,12 @@ const KNOWN_BUSINESS_RULE_MESSAGES = [
   // A sale that cannot happen would look to them like a sale that did.
   "FEATURE_NOT_ENABLED",
   "INVALID_OVERRIDE_PIN",
+  // Raised by checkout_sale()'s credit-override lockout (20260815146000) --
+  // without this here, a genuinely locked-out cashier's rejected attempt
+  // would fall through to "assume connectivity", get queued for offline
+  // replay, and fail the same way on every retry while looking like a
+  // completed sale in the meantime.
+  "OVERRIDE_PIN_LOCKED",
   "EXPIRED_CASHIER_SESSION",
   // Raised by checkout_sale()'s own discount validation (>100% off, a
   // negative/zero value, or an unrecognized discount type) -- without these

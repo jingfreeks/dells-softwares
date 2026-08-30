@@ -22,6 +22,7 @@ describe("isConnectivityFailure", () => {
   it.each([
     "CREDIT_LIMIT_EXCEEDED",
     "INVALID_OVERRIDE_PIN",
+    "OVERRIDE_PIN_LOCKED",
     "EXPIRED_CASHIER_SESSION",
     "INVALID_OCCURRED_AT",
     "INVALID_DISCOUNT_TYPE",

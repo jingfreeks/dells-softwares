@@ -16,6 +16,7 @@ import {
   ERROR_COULD_NOT_COMPLETE_SALE,
   ERROR_INVALID_DISCOUNT_VALUE,
   ERROR_INVALID_OVERRIDE_PIN,
+  ERROR_OVERRIDE_PIN_LOCKED,
   ERROR_COULD_NOT_HOLD_SALE,
   ERROR_RESUME_BLOCKED_CART_NOT_EMPTY,
   TEXT_CASHIER_SESSION_EXPIRED,
@@ -533,7 +534,13 @@ export function usePosPage() {
         setCheckoutError(TEXT_CASHIER_SESSION_EXPIRED);
         return;
       }
-      setOverridePinError(message.includes("INVALID_OVERRIDE_PIN") ? ERROR_INVALID_OVERRIDE_PIN : message);
+      setOverridePinError(
+        message.includes("OVERRIDE_PIN_LOCKED")
+          ? ERROR_OVERRIDE_PIN_LOCKED
+          : message.includes("INVALID_OVERRIDE_PIN")
+            ? ERROR_INVALID_OVERRIDE_PIN
+            : message
+      );
       setOverridePin("");
     } finally {
       setOverrideSubmitting(false);

@@ -1275,6 +1275,7 @@ export const LABEL_OWNER_APPROVAL_NEEDED = "Owner approval needed";
 export const TEXT_OWNER_APPROVAL_RECORDED_HINT = "This override is recorded with your name as the approving admin.";
 export const BUTTON_PAY_CASH_INSTEAD = "Pay cash instead";
 export const ERROR_INVALID_OVERRIDE_PIN = "That PIN doesn't match any admin at this store.";
+export const ERROR_OVERRIDE_PIN_LOCKED = "Too many wrong attempts. Please wait 15 minutes and try again.";
 export const ERROR_COULD_NOT_SET_PIN = "Could not save your PIN.";
 export const TEXT_PIN_UPDATED = "PIN updated.";
 export const LABEL_YOUR_OVERRIDE_PIN_ENTER = "Enter a new 4-digit PIN";
