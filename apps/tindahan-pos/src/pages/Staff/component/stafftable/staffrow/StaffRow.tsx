@@ -13,7 +13,13 @@ import type { StaffRow as StaffRowData } from "../../../hooks";
 import { staffInitials, computeSalesToday, lastActiveLabel } from "../../../lib";
 import { StaffActionsMenu } from "../../staffactionsmenu";
 
-export const STAFF_ROW_COLUMNS = "minmax(0,2fr) 86px 92px minmax(0,1.2fr) 34px";
+// Same collapse bug as the Inventory/Customers tables (#329, #330): the
+// three fixed columns (role/sales/menu) plus gaps take up ~230px, and on a
+// narrow viewport minmax(0, ...) let the two flexible columns collapse to a
+// few px each -- name, role badge, and status all rendered stacked on the
+// same point. The floors below stop that; StaffTable's own overflow-x:auto
+// lets the row scroll sideways past this width instead.
+export const STAFF_ROW_COLUMNS = "minmax(140px,2fr) 86px 92px minmax(110px,1.2fr) 34px";
 
 interface StaffRowProps {
   member: StaffRowData;

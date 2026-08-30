@@ -10,61 +10,66 @@ import {
   LINK_BACK_TO_LOGIN,
 } from "@/lib";
 import { useForgotPasswordForm } from "./hooks";
+import "@/pages/authTheme.css";
 
+// Was built with plain Tailwind slate/white utilities instead of the tpl-*
+// dark theme every other auth screen uses (Login, Register, Pair) -- a
+// light card flashed on top of an otherwise all-dark product whenever a
+// cashier followed "Forgot password?" from the (correctly dark) Login page.
 export function ForgotPassword() {
   const { email, setEmail, sent, submitting, error, handleSubmit } = useForgotPasswordForm();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-sm font-medium text-[var(--color-brand)]">{APP_NAME}</p>
-        <h1 className="mt-1 text-xl font-semibold text-slate-900">{PAGE_HEADING_FORGOT_PASSWORD}</h1>
+    <div
+      className="tpl-root flex min-h-screen items-center justify-center p-6"
+      style={{ background: "radial-gradient(90% 80% at 90% 0%, #12244A 0%, #0B142A 45%, #070B14 100%)" }}
+    >
+      <div className="tpl-card" style={{ width: "100%", maxWidth: 380, padding: "32px 28px" }}>
+        <p className="tpl-acc" style={{ fontSize: 13, fontWeight: 500 }}>
+          {APP_NAME}
+        </p>
+        <h1 className="tpl-h2" style={{ marginTop: 4 }}>
+          {PAGE_HEADING_FORGOT_PASSWORD}
+        </h1>
 
         {sent ? (
-          <p role="status" className="mt-4 text-sm text-slate-600">
-            {TEXT_RESET_LINK_SENT_PREFIX} <span className="font-medium">{email}</span>
+          <p role="status" className="tpl-sub" style={{ marginTop: 8, marginBottom: 0 }}>
+            {TEXT_RESET_LINK_SENT_PREFIX} <span style={{ color: "var(--tpl-t2)", fontWeight: 500 }}>{email}</span>
             {TEXT_RESET_LINK_SENT_SUFFIX}
           </p>
         ) : (
-          <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
+          <form style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 14 }} onSubmit={handleSubmit} noValidate>
             <div>
-              <label htmlFor="resetEmail" className="text-sm font-medium text-slate-700">
+              <label htmlFor="resetEmail" className="tpl-lbl">
                 {LABEL_EMAIL_ADDRESS}
               </label>
-              <input
-                id="resetEmail"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
-              />
+              <div className="tpl-fld">
+                <input
+                  id="resetEmail"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
             </div>
 
             {error && (
-              <p role="alert" className="text-sm text-red-600">
+              <p role="alert" className="tpl-emsg">
+                <i className="ti ti-alert-circle" aria-hidden />
                 {error}
               </p>
             )}
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--color-brand)] text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {submitting && (
-                <span
-                  aria-hidden
-                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
-                />
-              )}
+            <button type="submit" disabled={submitting} className="tpl-btnp">
+              {submitting && <span aria-hidden className="tpl-spinner" />}
               {submitting ? BUTTON_SENDING : BUTTON_SEND_RESET_LINK}
             </button>
           </form>
         )}
 
-        <p className="mt-6 text-center text-sm text-slate-600">
-          <Link to="/login" className="font-medium text-[var(--color-brand)] hover:underline">
+        <p className="tpl-sub" style={{ marginTop: 22, marginBottom: 0, textAlign: "center" }}>
+          <Link to="/login" className="tpl-lnk" style={{ fontWeight: 500 }}>
             {LINK_BACK_TO_LOGIN}
           </Link>
         </p>

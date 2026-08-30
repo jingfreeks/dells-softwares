@@ -516,6 +516,10 @@ export const LABEL_CASHIER_BREAKDOWN = "By cashier";
 export const LABEL_VOID_SUMMARY = "Voids & cancellations";
 export const LABEL_VOIDED_COUNT = "Voided sales";
 export const LABEL_VOIDED_TOTAL = "Total voided amount";
+export const LABEL_REFUND_SUMMARY = "Refunds";
+export const LABEL_REFUNDED_COUNT = "Refunds issued";
+export const LABEL_REFUNDED_TOTAL = "Total refunded amount";
+export const BUTTON_EXPORT_REFUNDS_CSV = "Export refunds report";
 export const LABEL_PAYMENT_BREAKDOWN = "By payment method";
 export const COLUMN_PAYMENT_TYPE = "Payment type";
 export const TEXT_NO_VOIDS_IN_RANGE = "No voided sales in this period.";
@@ -543,6 +547,7 @@ export const LABEL_STATUS_VOIDED = "Voided";
 export const BUTTON_VOID_SALE = "Void";
 export const BUTTON_REPRINT_RECEIPT = "Reprint";
 export const TEXT_REPRINT_MARKER = "*** REPRINT ***";
+export const TEXT_VOIDED_MARKER = "*** VOIDED — NOT VALID ***";
 export const TEXT_VOID_SALE_TITLE = "Void this sale?";
 export const TEXT_VOID_SALE_BODY_PREFIX =
   "This restores the product stock and, for a credit sale, reverses the customer's utang balance. The receipt/invoice number is not reissued to another sale. This cannot be undone.";
@@ -1016,6 +1021,7 @@ export const ARIA_MAIN_NAV = "Main";
 export const ARIA_LOADING = "Loading";
 export const LABEL_LOG_OUT = "Log out";
 export const LABEL_MENU = "Menu";
+export const LABEL_SKIP_TO_CONTENT = "Skip to content";
 
 // CategoryManager
 export const LABEL_MANAGE_CATEGORIES = "Manage categories";
@@ -1124,7 +1130,7 @@ export const LABEL_VAT_STATUS = "VAT status";
 export const LABEL_VAT_RATE = "VAT rate (%)";
 export const TEXT_VAT_RATE_HINT = "The statutory rate is 12% — adjust only if the applicable BIR rate changes.";
 export const TEXT_VAT_STATUS_HINT =
-  "Your registered tax status with BIR. This app doesn't compute or break down VAT amounts yet.";
+  "Your registered tax status with BIR. When VAT Registered, receipts show the VATable sales / VAT amount breakdown automatically, computed at the rate below.";
 export const LABEL_VAT_REGISTERED = "VAT Registered";
 export const LABEL_NON_VAT = "Non-VAT";
 export const LABEL_VAT_EXEMPT = "VAT-Exempt";
@@ -1269,6 +1275,7 @@ export const LABEL_OWNER_APPROVAL_NEEDED = "Owner approval needed";
 export const TEXT_OWNER_APPROVAL_RECORDED_HINT = "This override is recorded with your name as the approving admin.";
 export const BUTTON_PAY_CASH_INSTEAD = "Pay cash instead";
 export const ERROR_INVALID_OVERRIDE_PIN = "That PIN doesn't match any admin at this store.";
+export const ERROR_OVERRIDE_PIN_LOCKED = "Too many wrong attempts. Please wait 15 minutes and try again.";
 export const ERROR_COULD_NOT_SET_PIN = "Could not save your PIN.";
 export const TEXT_PIN_UPDATED = "PIN updated.";
 export const LABEL_YOUR_OVERRIDE_PIN_ENTER = "Enter a new 4-digit PIN";

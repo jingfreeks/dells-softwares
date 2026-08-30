@@ -7,7 +7,14 @@ import { StockIndicator } from "../stockindicator";
 import { ProductActionsMenu } from "../productactionsmenu";
 import { truncateBarcode, productMarginPercent } from "../../lib";
 
-export const PRODUCT_ROW_COLUMNS = "minmax(0,2.1fr) 96px minmax(0,1.5fr) 74px 34px";
+// The 96/74/34px fixed columns (price/status/menu) plus 4 gaps already add
+// up to ~250px; on a narrow viewport that leaves nothing for the two `fr`
+// columns, and minmax(0, ...) let them collapse straight to 0 -- every cell
+// in the product/stock columns then rendered at the same point, stacked
+// unreadably on top of the neighboring fixed columns. The floors below stop
+// that collapse; InventoryTable's own overflow-x:auto lets the row scroll
+// sideways past this width instead.
+export const PRODUCT_ROW_COLUMNS = "minmax(140px,2.1fr) 96px minmax(110px,1.5fr) 74px 34px";
 
 interface ProductRowProps {
   product: Product;

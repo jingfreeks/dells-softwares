@@ -1082,8 +1082,17 @@ export interface Database {
           p_is_offline_replay?: boolean;
           p_discount_type?: string | null;
           p_discount_value?: number | null;
+          p_override_token?: string | null;
         };
         Returns: { sale_id: string; total: number; receipt_number: string | null }[];
+      };
+      // 20260815146000_credit_override_pin_lockout.sql
+      check_credit_override_pin: {
+        Args: {
+          p_pin: string;
+          p_cashier_token?: string | null;
+        };
+        Returns: { ok: boolean; error_code: string | null; override_token: string | null }[];
       };
       void_sale: {
         Args: {

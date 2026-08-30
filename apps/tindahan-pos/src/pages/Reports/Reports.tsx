@@ -1,3 +1,4 @@
+import { Navigate } from "react-router-dom";
 import {
   PAGE_HEADING_REPORTS,
   TEXT_REPORTS_DESCRIPTION,
@@ -7,6 +8,7 @@ import {
   BUTTON_CLOSE,
   useCan,
   useAuth,
+  usePermissions,
 } from "@/lib";
 import { DebtAgeCard } from "@/components";
 import { ReceiptModal } from "@/pages/Pos/component/receiptmodal";
@@ -19,6 +21,7 @@ import {
   SalesTable,
   VatSummaryCard,
   VoidSummaryCard,
+  RefundSummaryCard,
   PaymentBreakdownTable,
   ZReadingCard,
 } from "./component";
@@ -40,11 +43,13 @@ export function Reports() {
     setDeviceId,
     devices,
     report,
+    refundReport,
     loading,
     error,
     exportCsv,
     exportVatCsv,
     exportVoidsCsv,
+    exportRefundsCsv,
     exportPaymentBreakdownCsv,
     onRetry,
     debtAging,
@@ -66,6 +71,18 @@ export function Reports() {
   // doesn't hold it, instead of letting them hit a server rejection.
   const canVoidSale = useCan("pos.sale.void");
   const canRefundSale = useCan("pos.sale.refund");
+
+  // Route-level guard, same pattern as Staff.tsx: nav.ts's `roles` list only
+  // hides the sidebar link, it was never enforced against a direct
+  // navigation. A plain Cashier holds neither role nor pos.report.view and
+  // must be bounced, same as Staff -- wait for permissions to resolve first
+  // so a direct deep-link/refresh doesn't bounce an authorized Owner or
+  // Supervisor before their permissions have loaded.
+  const { loading: permissionsLoading } = usePermissions();
+  const canViewReports = useCan("pos.report.view");
+  if (user && !permissionsLoading && !canViewReports) {
+    return <Navigate to="/pos" replace />;
+  }
 
   return (
     <div className="tpl-root">
@@ -114,6 +131,7 @@ export function Reports() {
           </div>
           <VatSummaryCard summary={report.vatSummary} vatStatus={store?.vatStatus ?? null} onExport={exportVatCsv} />
           <VoidSummaryCard summary={report.voidSummary} onExport={exportVoidsCsv} />
+          <RefundSummaryCard summary={refundReport} onExport={exportRefundsCsv} />
           <CashierBreakdownTable rows={report.byCashier} grandTotal={report.totalSales} />
           <PaymentBreakdownTable
             rows={report.byPaymentType}

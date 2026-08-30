@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ARIA_CLOSE_MODAL,
   LABEL_COUNT_CLOSING_CASH,
@@ -6,6 +6,8 @@ import {
   ERROR_INVALID_CLOSING_FLOAT,
   BUTTON_END_SHIFT,
   BUTTON_SKIP_COUNT,
+  useEscapeToClose,
+  useFocusTrap,
 } from "@/lib";
 
 interface CloseShiftModalProps {
@@ -17,6 +19,10 @@ interface CloseShiftModalProps {
 export function CloseShiftModal({ onConfirm, onSkip, onCancel }: CloseShiftModalProps) {
   const [closingFloat, setClosingFloat] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEscapeToClose(true, onCancel);
+  useFocusTrap(true, dialogRef);
 
   function handleConfirm() {
     const parsed = Number(closingFloat);
@@ -30,6 +36,7 @@ export function CloseShiftModal({ onConfirm, onSkip, onCancel }: CloseShiftModal
   return (
     <div className="tpl-modal-overlay" onClick={onCancel}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"

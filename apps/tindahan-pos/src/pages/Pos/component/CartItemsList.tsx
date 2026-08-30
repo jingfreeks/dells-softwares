@@ -63,7 +63,15 @@ export function CartItemsList({
           </li>
         );
       })}
-      {cart.map((line) => (
+      {cart.map((line) => {
+        // findInsufficientStock() (checkout validation) treats a negative
+        // stock reading as zero available -- mirror that here so the +
+        // button disables at the same threshold the checkout error uses,
+        // instead of letting the cart quantity silently drift past what
+        // the sale can actually complete for.
+        const availableStock = Math.max(0, line.product.stock);
+        const atStockLimit = line.quantity >= availableStock;
+        return (
         <li key={line.product.id} className="tpl-lr">
           <div className="tpl-flex1">
             <p className="tpl-tp">{line.product.name}</p>
@@ -89,6 +97,7 @@ export function CartItemsList({
               type="button"
               aria-label={`${ARIA_INCREASE_QUANTITY_PREFIX} ${line.product.name}`}
               onClick={() => onIncrement(line.product.id, line.quantity + 1)}
+              disabled={atStockLimit}
               className="tpl-opt"
               style={{ width: 34 }}
             >
@@ -104,7 +113,8 @@ export function CartItemsList({
             </button>
           </div>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }

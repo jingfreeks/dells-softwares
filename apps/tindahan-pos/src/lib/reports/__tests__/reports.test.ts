@@ -12,8 +12,9 @@ import {
   totalDiscounts,
   vatSummary,
   voidSummary,
+  refundSummary,
 } from "../reports";
-import type { Customer, Product, SaleRecord } from "../../types";
+import type { Customer, Product, RefundRecord, SaleRecord } from "../../types";
 
 function makeCustomer(overrides: Partial<Customer> = {}): Customer {
   return {
@@ -503,6 +504,33 @@ describe("voidSummary (BIR compliance §39)", () => {
   it("is zero when there are no voided sales", () => {
     expect(voidSummary([makeSale({ status: "completed" })])).toEqual({ count: 0, totalAmount: 0 });
     expect(voidSummary([])).toEqual({ count: 0, totalAmount: 0 });
+  });
+});
+
+function makeRefund(overrides: Partial<RefundRecord> = {}): RefundRecord {
+  return {
+    id: "r1",
+    saleId: "s1",
+    receiptNumber: "000001",
+    cashierName: "Aling Nena",
+    reason: "Wrong item",
+    totalAmount: 25,
+    createdAt: "2026-07-27T10:00:00Z",
+    ...overrides,
+  };
+}
+
+// refund_sale_items() is append-only and never touches the original sale
+// (unlike void_sale()), so unlike voidSummary() this can't be derived from
+// a `sales` array -- it sums whatever refund rows the caller fetched.
+describe("refundSummary", () => {
+  it("counts and sums refunds", () => {
+    const refunds = [makeRefund({ id: "r1", totalAmount: 25 }), makeRefund({ id: "r2", totalAmount: 50 })];
+    expect(refundSummary(refunds)).toEqual({ count: 2, totalAmount: 75 });
+  });
+
+  it("is zero when there are no refunds", () => {
+    expect(refundSummary([])).toEqual({ count: 0, totalAmount: 0 });
   });
 });
 

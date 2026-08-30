@@ -1,4 +1,4 @@
-import type { ChangeEvent, FormEvent } from "react";
+import { useRef, type ChangeEvent, type FormEvent } from "react";
 import { PESO } from "@/lib";
 import type { Category, Product } from "@/lib";
 import {
@@ -23,6 +23,8 @@ import {
   HINT_LEAVE_COST_BLANK,
   BUTTON_SAVING,
   BUTTON_SAVE_CHANGES,
+  useEscapeToClose,
+  useFocusTrap,
 } from "@/lib";
 import { ProductPhotoField } from "./ProductPhotoField";
 import { ProductPricingFields } from "./ProductPricingFields";
@@ -152,9 +154,14 @@ export function ProductFormModal({
   onCancel,
   onSubmit,
 }: ProductFormModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEscapeToClose(true, onCancel);
+  useFocusTrap(true, dialogRef);
+
   return (
     <div className="tpl-modal-overlay" onClick={onCancel}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"

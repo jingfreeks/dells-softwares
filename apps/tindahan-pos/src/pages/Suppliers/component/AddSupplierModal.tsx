@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import { useRef, type FormEvent } from "react";
 import type { Category, Supplier, SupplierPaymentTerms } from "@/lib";
 import {
   ARIA_CLOSE_MODAL,
@@ -34,6 +34,8 @@ import {
   DAY_FRI,
   DAY_SAT,
   DAY_SUN,
+  useEscapeToClose,
+  useFocusTrap,
 } from "@/lib";
 import { ChipMultiSelect } from "@/components";
 import type { SupplierFormValues } from "../hooks";
@@ -81,9 +83,14 @@ export function AddSupplierModal({
   onCancel,
   onSubmit,
 }: AddSupplierModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEscapeToClose(true, onCancel);
+  useFocusTrap(true, dialogRef);
+
   return (
     <div className="tpl-modal-overlay" onClick={onCancel}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"

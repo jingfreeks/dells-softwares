@@ -358,7 +358,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     cashierCanEditPrices?: boolean;
   }): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("stores")
       .update({
         ...(patch.name !== undefined && { name: patch.name }),
@@ -375,8 +375,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...(patch.invoiceType !== undefined && { invoice_type: patch.invoiceType }),
         ...(patch.cashierCanEditPrices !== undefined && { cashier_can_edit_prices: patch.cashierCanEditPrices }),
       })
-      .eq("id", user.storeId);
+      .eq("id", user.storeId)
+      .select("id");
     if (error) return { ok: false, error: error.message };
+    // RLS on `stores` restricts UPDATE to admins and staff holding
+    // settings.store.manage -- a caller lacking that returns no error at
+    // all, just an empty result set (Postgres silently filters the row
+    // rather than raising), which without checking here would read as a
+    // false "Saved!" while nothing was actually written.
+    if (!data || data.length === 0) {
+      return { ok: false, error: "You don't have permission to update store settings." };
+    }
     setStore(await loadStore(user.storeId));
     return { ok: true };
   }

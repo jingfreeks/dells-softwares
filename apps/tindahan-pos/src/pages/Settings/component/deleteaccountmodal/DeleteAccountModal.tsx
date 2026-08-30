@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import {
   LABEL_DELETE_ACCOUNT_CONFIRM_HEADING,
   LABEL_DELETE_ACCOUNT_REQUEST_SUBMITTED_HEADING,
@@ -6,6 +7,8 @@ import {
   BUTTON_DELETING,
   BUTTON_DELETE_MY_ACCOUNT,
   BUTTON_OK,
+  useEscapeToClose,
+  useFocusTrap,
 } from "@/lib";
 
 interface DeleteAccountModalProps {
@@ -25,6 +28,10 @@ export function DeleteAccountModal({
   onCancel,
   onConfirm,
 }: DeleteAccountModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEscapeToClose(open, onCancel);
+  useFocusTrap(open, dialogRef);
+
   if (!open) return null;
 
   const headingId = "deleteAccountModalHeading";
@@ -33,6 +40,7 @@ export function DeleteAccountModal({
     return (
       <div className="tpl-modal-overlay" onClick={onCancel}>
         <div
+          ref={dialogRef}
           className="tpl-modal-panel tpl-card"
           role="dialog"
           aria-modal="true"
@@ -58,6 +66,7 @@ export function DeleteAccountModal({
   return (
     <div className="tpl-modal-overlay" onClick={onCancel}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"

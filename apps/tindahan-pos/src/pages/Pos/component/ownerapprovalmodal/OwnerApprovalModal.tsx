@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { PinKeypad } from "@/components";
 import {
   PESO,
@@ -7,6 +8,8 @@ import {
   TEXT_OWNER_APPROVAL_RECORDED_HINT,
   BUTTON_CANCEL,
   BUTTON_PAY_CASH_INSTEAD,
+  useEscapeToClose,
+  useFocusTrap,
   type Customer,
 } from "@/lib";
 
@@ -35,6 +38,10 @@ export function OwnerApprovalModal({
   onCancel,
   onPayCashInstead,
 }: OwnerApprovalModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEscapeToClose(open, onCancel);
+  useFocusTrap(open, dialogRef);
+
   if (!open || !customer) return null;
 
   const overage = creditOverageAmount(customer, total);
@@ -42,6 +49,7 @@ export function OwnerApprovalModal({
   return (
     <div className="tpl-modal-overlay" onClick={onCancel}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         style={{ maxWidth: 400, textAlign: "center" }}
         role="dialog"

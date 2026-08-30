@@ -12,7 +12,7 @@ import {
   NetworkProvider,
   OfflineQueueProvider,
 } from "@/lib";
-import { ProtectedRoute, OnboardingRoute, HomeRedirect } from "@/components";
+import { ProtectedRoute, OnboardingRoute, HomeRedirect, RequireRole } from "@/components";
 import {
   Login,
   Register,
@@ -74,14 +74,70 @@ function App() {
                           <Route path="/customers" element={<Customers />} />
                           <Route path="/suppliers" element={<Suppliers />} />
                           <Route path="/settings/profile" element={<ProfileSettings />} />
-                          <Route path="/settings/store" element={<StoreDetails />} />
-                          <Route path="/settings/receipts" element={<ReceiptsSettings />} />
-                          <Route path="/settings/fees" element={<FeesLimits />} />
-                          <Route path="/settings/alerts" element={<AlertsSettings />} />
-                          <Route path="/settings/backup" element={<BackupSettings />} />
-                          <Route path="/settings/devices" element={<DevicesSettings />} />
-                          <Route path="/settings/plan" element={<PlanSettings />} />
-                          <Route path="/settings/audit-log" element={<AuditLogSettings />} />
+                          <Route
+                            path="/settings/store"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <StoreDetails />
+                              </RequireRole>
+                            }
+                          />
+                          <Route
+                            path="/settings/receipts"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <ReceiptsSettings />
+                              </RequireRole>
+                            }
+                          />
+                          <Route
+                            path="/settings/fees"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <FeesLimits />
+                              </RequireRole>
+                            }
+                          />
+                          <Route
+                            path="/settings/alerts"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <AlertsSettings />
+                              </RequireRole>
+                            }
+                          />
+                          <Route
+                            path="/settings/backup"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <BackupSettings />
+                              </RequireRole>
+                            }
+                          />
+                          <Route
+                            path="/settings/devices"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <DevicesSettings />
+                              </RequireRole>
+                            }
+                          />
+                          <Route
+                            path="/settings/plan"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <PlanSettings />
+                              </RequireRole>
+                            }
+                          />
+                          <Route
+                            path="/settings/audit-log"
+                            element={
+                              <RequireRole roles={["admin"]}>
+                                <AuditLogSettings />
+                              </RequireRole>
+                            }
+                          />
                           <Route path="/demo" element={<DemoStore />} />
                           <Route path="/pricing" element={<Pricing />} />
                           <Route path="/trial-expired" element={<TrialExpired />} />

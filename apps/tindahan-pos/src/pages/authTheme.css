@@ -22,9 +22,18 @@
   --tpl-t4: #b6c1d4;
   --tpl-t5: #94a2b8;
   --tpl-t6: #7c8aa5;
-  --tpl-t7: #66738a;
-  --tpl-t8: #4a5567;
-  --tpl-t9: #5b677e;
+  /* t7/t8/t9 were #66738a/#4a5567/#5b677e -- 4.1:1, 2.6:1, and 3.4:1 against
+     --tpl-bg-mid, all below WCAG AA's 4.5:1 floor for text. These three are
+     used for real, frequently-read content, not decoration: t7 is every
+     table header (.tpl-thead) and metric label (.tpl-mlbl -- "TODAY'S
+     SALES", "VOIDED SALES", etc.) plus form hints (.tpl-hint) and
+     not-yet-done onboarding checklist items; t9 is input placeholder text
+     and footer fine print; t8 is the desktop sidebar's section labels.
+     Lightened just enough to clear 4.5:1 against both --tpl-bg-deep and
+     --tpl-bg-mid with a small margin -- see contrast math in the PR. */
+  --tpl-t7: #717f98;
+  --tpl-t8: #6e7e98;
+  --tpl-t9: #707f9b;
   --tpl-ok: #4ade80;
   --tpl-okd: #7fcfa0;
   --tpl-warn: #fbbf24;
@@ -899,6 +908,29 @@
   flex: 1;
   overflow-y: auto;
 }
+.tpl-main:focus {
+  outline: none;
+}
+
+/* Off-screen until focused, so keyboard/screen-reader users can jump past
+   the sidebar nav straight to page content without changing the visual
+   layout for everyone else. */
+.tpl-skip-link {
+  position: absolute;
+  top: -100%;
+  left: 12px;
+  z-index: 100;
+  background: var(--tpl-a1);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.tpl-skip-link:focus {
+  top: 12px;
+}
 
 .tpl-mobile-header {
   align-items: center;
@@ -1162,6 +1194,10 @@
 .tpl-tile.tpl-on .tpl-tpr {
   color: var(--tpl-a4);
 }
+.tpl-tile:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
 /* Small pill option button — network picker, quick-cash tiles */
 .tpl-opt {
@@ -1176,6 +1212,10 @@
   font-size: 13px;
   cursor: pointer;
   font-family: inherit;
+}
+.tpl-opt:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .tpl-opt.tpl-on {
   background: rgba(76, 141, 255, 0.18);

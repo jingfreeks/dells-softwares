@@ -486,13 +486,43 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     const clientRequestId = crypto.randomUUID();
     const occurredAt = new Date().toISOString();
 
+    // checkout_sale()'s real-time credit-override path requires a token
+    // already validated (and rate-limited) by check_credit_override_pin()
+    // rather than matching the raw PIN itself -- see
+    // supabase/migrations/20260815146000_credit_override_pin_lockout.sql
+    // for why a raw-PIN check inline in checkout_sale() can never persist a
+    // failed-attempt counter. If this pre-check can't be reached at all
+    // (the device is offline right now), fall through with no token: the
+    // main checkout_sale attempt below will also fail on connectivity and
+    // this sale gets queued with the raw PIN, exactly as before -- the sync
+    // engine's later replay uses p_is_offline_replay's own unchanged,
+    // pre-existing raw-PIN path, not this token.
+    let overrideToken: string | null = null;
+    const rawOverridePin = payment.type === "credit" ? payment.overridePin?.trim() || null : null;
+    if (rawOverridePin) {
+      try {
+        const { data: checkData, error: checkErr } = await supabase.rpc("check_credit_override_pin", {
+          p_pin: rawOverridePin,
+          p_cashier_token: cashierToken,
+        });
+        if (checkErr) throw checkErr;
+        const result = checkData?.[0];
+        if (!result) throw new Error("Could not verify the override PIN.");
+        if (!result.ok) throw new Error(result.error_code ?? "INVALID_OVERRIDE_PIN");
+        overrideToken = result.override_token;
+      } catch (err) {
+        if (!isConnectivityFailure(err)) throw err;
+      }
+    }
+
     const rpcParams = {
       p_items: cart.map((line) => ({ product_id: line.product.id, quantity: line.quantity })),
       p_services: services.map((line) => ({ label: line.label, amount: line.amount, fee: line.fee })),
       p_customer_id: payment.type === "credit" ? payment.customerId : null,
       p_payment_type: payment.type,
       p_reference_no: payment.type === "qr" ? payment.referenceNo!.trim() : null,
-      p_override_pin: payment.type === "credit" ? (payment.overridePin?.trim() || null) : null,
+      p_override_pin: rawOverridePin,
+      p_override_token: overrideToken,
       p_cashier_token: cashierToken,
       p_client_request_id: clientRequestId,
       p_occurred_at: occurredAt,
