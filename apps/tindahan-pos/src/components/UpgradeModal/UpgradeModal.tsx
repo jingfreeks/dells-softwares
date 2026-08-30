@@ -6,6 +6,7 @@ import {
   TEXT_PLAN_LOCKED_HINT,
   BUTTON_COMPARE_PLANS,
   BUTTON_MAYBE_LATER,
+  useEscapeToClose,
   type LockedByPlan,
 } from "@/lib";
 
@@ -27,6 +28,8 @@ interface UpgradeModalProps {
  * button that would submit nothing.
  */
 export function UpgradeModal({ group, onClose }: UpgradeModalProps) {
+  useEscapeToClose(!!group, onClose);
+
   if (!group) return null;
 
   const headingId = "upgradeModalHeading";

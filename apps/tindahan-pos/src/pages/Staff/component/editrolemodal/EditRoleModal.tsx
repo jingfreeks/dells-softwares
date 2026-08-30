@@ -6,6 +6,7 @@ import {
   TEXT_CASHIER_EDIT_PRICES_DESC,
   BUTTON_SAVE,
   ERROR_COULD_NOT_SAVE_ROLE,
+  useEscapeToClose,
   type Store,
 } from "@/lib";
 
@@ -19,6 +20,8 @@ export function EditRoleModal({ store, onSave, onClose }: EditRoleModalProps) {
   const [cashierCanEditPrices, setCashierCanEditPrices] = useState(store.cashierCanEditPrices);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEscapeToClose(true, onClose);
 
   async function handleSave() {
     setSaving(true);

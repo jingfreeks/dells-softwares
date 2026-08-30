@@ -8,6 +8,7 @@ import {
   BUTTON_CANCEL,
   BUTTON_CREATING,
   BUTTON_CREATE_CASHIER_ACCOUNT,
+  useEscapeToClose,
 } from "@/lib";
 import type { StaffFormValues } from "../../hooks";
 import { RoleSelector } from "./roleselector";
@@ -26,6 +27,8 @@ interface AddStaffModalProps {
 }
 
 export function AddStaffModal({ form, formError, submitting, onFormChange, onCancel, onSubmit }: AddStaffModalProps) {
+  useEscapeToClose(true, onCancel);
+
   return (
     <div className="tpl-modal-overlay" onClick={onCancel}>
       <div

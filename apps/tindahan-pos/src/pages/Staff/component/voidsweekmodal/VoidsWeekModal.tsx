@@ -8,6 +8,7 @@ import {
   COLUMN_AMOUNT,
   COLUMN_REASON,
   EMPTY_STATE_NO_VOIDS_THIS_WEEK,
+  useEscapeToClose,
   type SaleRecord,
 } from "@/lib";
 
@@ -17,6 +18,8 @@ interface VoidsWeekModalProps {
 }
 
 export function VoidsWeekModal({ voidedSales, onClose }: VoidsWeekModalProps) {
+  useEscapeToClose(true, onClose);
+
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>
       <div

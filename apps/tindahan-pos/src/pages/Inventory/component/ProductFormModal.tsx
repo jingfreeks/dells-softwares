@@ -23,6 +23,7 @@ import {
   HINT_LEAVE_COST_BLANK,
   BUTTON_SAVING,
   BUTTON_SAVE_CHANGES,
+  useEscapeToClose,
 } from "@/lib";
 import { ProductPhotoField } from "./ProductPhotoField";
 import { ProductPricingFields } from "./ProductPricingFields";
@@ -152,6 +153,8 @@ export function ProductFormModal({
   onCancel,
   onSubmit,
 }: ProductFormModalProps) {
+  useEscapeToClose(true, onCancel);
+
   return (
     <div className="tpl-modal-overlay" onClick={onCancel}>
       <div

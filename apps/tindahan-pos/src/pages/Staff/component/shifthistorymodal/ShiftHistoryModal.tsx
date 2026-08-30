@@ -15,6 +15,7 @@ import {
   TEXT_SHIFT_IN_PROGRESS,
   TEXT_SHIFT_COMPLETED,
   TEXT_SHIFT_NO_COUNT,
+  useEscapeToClose,
 } from "@/lib";
 import { useShiftHistory, type ShiftHistoryRow } from "../../hooksShifts";
 
@@ -30,6 +31,8 @@ function statusLabel(status: ShiftHistoryRow["status"]): string {
 
 export function ShiftHistoryModal({ onClose }: ShiftHistoryModalProps) {
   const { shifts, loading, loadError } = useShiftHistory();
+
+  useEscapeToClose(true, onClose);
 
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>

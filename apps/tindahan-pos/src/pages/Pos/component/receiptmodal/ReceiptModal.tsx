@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Receipt, type ReceiptDisplaySettings } from "@/components";
-import { BUTTON_PRINT_RECEIPT, BUTTON_NEW_SALE, type SaleRecord, type Store } from "@/lib";
+import { BUTTON_PRINT_RECEIPT, BUTTON_NEW_SALE, useEscapeToClose, type SaleRecord, type Store } from "@/lib";
 
 interface ReceiptModalProps {
   open: boolean;
@@ -41,6 +41,8 @@ export function ReceiptModal({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  useEscapeToClose(open, onClose);
 
   if (!open || !sale || !store) return null;
 

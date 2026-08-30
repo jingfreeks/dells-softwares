@@ -6,6 +6,7 @@ import {
   ERROR_INVALID_CLOSING_FLOAT,
   BUTTON_END_SHIFT,
   BUTTON_SKIP_COUNT,
+  useEscapeToClose,
 } from "@/lib";
 
 interface CloseShiftModalProps {
@@ -17,6 +18,8 @@ interface CloseShiftModalProps {
 export function CloseShiftModal({ onConfirm, onSkip, onCancel }: CloseShiftModalProps) {
   const [closingFloat, setClosingFloat] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  useEscapeToClose(true, onCancel);
 
   function handleConfirm() {
     const parsed = Number(closingFloat);
