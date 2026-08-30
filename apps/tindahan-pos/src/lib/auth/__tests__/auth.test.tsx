@@ -847,7 +847,8 @@ describe("AuthProvider", () => {
     mockedSupabase.auth.getSession.mockResolvedValue({
       data: { session: { user: { id: "u1" } } },
     });
-    const storeUpdateEq = vi.fn().mockResolvedValue({ error: null });
+    const storeUpdateSelect = vi.fn().mockResolvedValue({ data: [{ id: "s1" }], error: null });
+    const storeUpdateEq = vi.fn(() => ({ select: storeUpdateSelect }));
     mockedSupabase.from.mockImplementation(
       multiTableFrom({
         staff: staffSelectChain({ id: "u1", store_id: "s1", name: "Nena", email: "nena@example.com", role: "admin" }),
@@ -911,7 +912,11 @@ describe("AuthProvider", () => {
         staff: staffSelectChain({ id: "u1", store_id: "s1", name: "Nena", email: "nena@example.com", role: "admin" }),
         stores: {
           select: staffSelectChain({ id: "s1", name: "X", address: null, photo_url: null }).select,
-          update: vi.fn(() => ({ eq: vi.fn().mockResolvedValue({ error: { message: "store boom" } }) })),
+          update: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              select: vi.fn().mockResolvedValue({ data: null, error: { message: "store boom" } }),
+            })),
+          })),
         },
       })
     );
@@ -929,6 +934,41 @@ describe("AuthProvider", () => {
     await waitFor(() => screen.getByText("go"));
     screen.getByText("go").click();
     await waitFor(() => expect(result).toEqual({ ok: false, error: "store boom" }));
+  });
+
+  it("returns an error when RLS silently drops the store update (no error, no rows)", async () => {
+    mockedSupabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: "u1" } } },
+    });
+    mockedSupabase.from.mockImplementation(
+      multiTableFrom({
+        staff: staffSelectChain({ id: "u1", store_id: "s1", name: "Nena", email: "nena@example.com", role: "cashier" }),
+        stores: {
+          select: staffSelectChain({ id: "s1", name: "X", address: null, photo_url: null }).select,
+          update: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              select: vi.fn().mockResolvedValue({ data: [], error: null }),
+            })),
+          })),
+        },
+      })
+    );
+
+    let result: unknown;
+    function Capture() {
+      const { updateStore } = useAuth();
+      return <button onClick={async () => (result = await updateStore({ tin: "999-999-999-000" }))}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    await waitFor(() => screen.getByText("go"));
+    screen.getByText("go").click();
+    await waitFor(() =>
+      expect(result).toEqual({ ok: false, error: "You don't have permission to update store settings." })
+    );
   });
 
   it("returns an error from completeOnboarding when not signed in", async () => {
