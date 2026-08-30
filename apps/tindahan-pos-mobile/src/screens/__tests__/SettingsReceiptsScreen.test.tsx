@@ -40,6 +40,7 @@ const store: Store = {
   tin: "123-456-789-000",
   businessPermitNo: "QC-2026-08841",
   birRegistered: true,
+  feeConfig: null,
 };
 
 /** Mimics the PostgREST chain the hook builds, ending in a thenable maybeSingle(). */

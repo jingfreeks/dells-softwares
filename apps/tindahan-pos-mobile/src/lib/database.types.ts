@@ -3,6 +3,11 @@
 // Once the project is live, prefer regenerating this from the real schema:
 //   npx supabase gen types typescript --project-id <ref> > src/lib/database.types.ts
 
+import type { StoreFeeConfig } from "./types";
+
+/** `stores.fee_config` is jsonb, but its shape is ours -- same alias the web app's own generated types use. */
+export type StoreFeeConfigRow = StoreFeeConfig;
+
 export type StaffRole = "admin" | "cashier";
 export type SaleItemType = "product" | "service";
 export type PaymentType = "cash" | "credit" | "qr";
@@ -57,6 +62,7 @@ export interface Database {
           tin: string | null;
           business_permit_no: string | null;
           bir_registered: boolean;
+          fee_config: StoreFeeConfigRow | null;
         };
         Insert: {
           id?: string;
@@ -69,6 +75,7 @@ export interface Database {
           tin?: string | null;
           business_permit_no?: string | null;
           bir_registered?: boolean;
+          fee_config?: StoreFeeConfigRow | null;
         };
         Update: {
           id?: string;
@@ -81,6 +88,7 @@ export interface Database {
           tin?: string | null;
           business_permit_no?: string | null;
           bir_registered?: boolean;
+          fee_config?: StoreFeeConfigRow | null;
         };
         Relationships: [];
       };

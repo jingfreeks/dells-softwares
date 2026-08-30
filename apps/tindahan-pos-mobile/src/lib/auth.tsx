@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "./supabaseClient";
 import { largeSecureStore } from "./secureStorage";
-import type { StaffAccount, Store } from "./types";
+import type { StaffAccount, Store, StoreFeeConfig } from "./types";
 
 type AuthResult = { ok: true } | { ok: false; error: string };
 type RegisterResult = { ok: true; needsEmailConfirmation: boolean } | { ok: false; error: string };
@@ -64,6 +64,7 @@ interface AuthContextValue {
     tin?: string | null;
     businessPermitNo?: string | null;
     birRegistered?: boolean;
+    feeConfig?: StoreFeeConfig | null;
   }) => Promise<AuthResult>;
   /**
    * Sets this staff member's own override PIN via set_own_pin() -- the RPC
@@ -128,7 +129,7 @@ async function loadDevice(deviceId: string): Promise<DeviceIdentity | null> {
 async function loadStore(storeId: string): Promise<Store | null> {
   const { data, error } = await supabase
     .from("stores")
-    .select("id, name, address, photo_url, contact_number, city, tin, business_permit_no, bir_registered")
+    .select("id, name, address, photo_url, contact_number, city, tin, business_permit_no, bir_registered, fee_config")
     .eq("id", storeId)
     .single();
 
@@ -144,6 +145,7 @@ async function loadStore(storeId: string): Promise<Store | null> {
     tin: data.tin,
     businessPermitNo: data.business_permit_no,
     birRegistered: data.bir_registered,
+    feeConfig: data.fee_config,
   };
 }
 
@@ -321,6 +323,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     tin?: string | null;
     businessPermitNo?: string | null;
     birRegistered?: boolean;
+    feeConfig?: StoreFeeConfig | null;
   }): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
     const { data, error } = await supabase
@@ -334,6 +337,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...(patch.tin !== undefined && { tin: patch.tin }),
         ...(patch.businessPermitNo !== undefined && { business_permit_no: patch.businessPermitNo }),
         ...(patch.birRegistered !== undefined && { bir_registered: patch.birRegistered }),
+        ...(patch.feeConfig !== undefined && { fee_config: patch.feeConfig }),
       })
       .eq("id", user.storeId)
       .select("id");

@@ -22,9 +22,10 @@ import { PairDeviceScreen } from "./src/screens/pairdevicescreen";
 import { PosScreen } from "./src/screens/posscreen";
 import { PricingScreen } from "./src/screens/pricingscreen";
 import { RestockScreen } from "./src/screens/restockscreen";
+import { SettingsAlertsScreen } from "./src/screens/settingsalertsscreen";
+import { SettingsFeesScreen } from "./src/screens/settingsfeesscreen";
 import { SettingsMenuScreen } from "./src/screens/settingsmenuscreen";
 import type { SettingsSectionKey } from "./src/screens/settingsmenuscreen/types";
-import { SettingsAlertsScreen } from "./src/screens/settingsalertsscreen";
 import { SettingsProfileScreen } from "./src/screens/settingsprofilescreen";
 import { SettingsReceiptsScreen } from "./src/screens/settingsreceiptsscreen";
 import { SettingsStoreScreen } from "./src/screens/settingsstorescreen";
@@ -134,15 +135,19 @@ function AdminHome() {
     return <SettingsAlertsScreen onBack={() => setSettingsSection(null)} />;
   }
 
+  if (settingsSection === "fees") {
+    return <SettingsFeesScreen onBack={() => setSettingsSection(null)} />;
+  }
+
   if (showSettings) {
     return (
       <SettingsMenuScreen
         onBack={() => setShowSettings(false)}
-        // The remaining sections land in their own PRs -- until then a tap
-        // is a no-op rather than a route to a blank screen, the same call
-        // "More" itself carried before the menu existed.
+        // Backup lands in its own PR -- until then a tap is a no-op rather
+        // than a route to a blank screen, the same call "More" itself
+        // carried before the menu existed.
         onOpenSection={(key) => {
-          if (key === "profile" || key === "store" || key === "receipts" || key === "alerts") setSettingsSection(key);
+          if (key !== "backup") setSettingsSection(key);
         }}
       />
     );

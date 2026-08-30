@@ -23,6 +23,24 @@ export interface CashierProfile {
   avatarUrl: string | null;
 }
 
+/** One row of a fee table: any amount at or below `max` costs `fee`. */
+export interface FeeBracket {
+  max: number;
+  fee: number;
+}
+
+/**
+ * The store's own service-fee tables (`stores.fee_config`). Genuinely
+ * consumed at checkout -- the web app's e-load/cash-in/cash-out panels
+ * price every service sale from these, so editing them here changes what
+ * the register actually charges.
+ */
+export interface StoreFeeConfig {
+  eload?: FeeBracket[];
+  cashIn?: FeeBracket[];
+  cashOut?: FeeBracket[];
+}
+
 export interface Store {
   id: string;
   name: string;
@@ -34,6 +52,7 @@ export interface Store {
   tin: string | null;
   businessPermitNo: string | null;
   birRegistered: boolean;
+  feeConfig: StoreFeeConfig | null;
 }
 
 export interface Category {
