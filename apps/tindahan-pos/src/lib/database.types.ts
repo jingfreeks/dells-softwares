@@ -363,6 +363,7 @@ export interface Database {
           note: string | null;
           created_by: string;
           created_at: string;
+          resulting_balance: number | null;
         };
         Insert: {
           id?: string;
@@ -372,6 +373,7 @@ export interface Database {
           note?: string | null;
           created_by: string;
           created_at?: string;
+          resulting_balance?: number | null;
         };
         Update: {
           id?: string;
@@ -381,6 +383,7 @@ export interface Database {
           note?: string | null;
           created_by?: string;
           created_at?: string;
+          resulting_balance?: number | null;
         };
         Relationships: [
           {

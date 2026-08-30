@@ -8,6 +8,7 @@ import type {
   Customer,
   PaymentType,
   Product,
+  RecentCreditPayment,
   SaleRecord,
   ServiceLine,
   Supplier,
@@ -96,6 +97,7 @@ export interface StoreDataContextValue {
   addCustomer: (name: string, phone?: string | null, creditLimit?: number | null) => Promise<Customer>;
   recordCreditPayment: (customerId: string, amount: number, note?: string) => Promise<void>;
   fetchCreditPayments: (customerId: string) => Promise<CreditPayment[]>;
+  fetchRecentCreditPayments: (limit?: number) => Promise<RecentCreditPayment[]>;
   addSupplier: (input: AddSupplierInput) => Promise<Supplier>;
   updateSupplier: (
     id: string,
