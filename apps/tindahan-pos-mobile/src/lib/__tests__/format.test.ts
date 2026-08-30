@@ -1,4 +1,24 @@
-import { formatRelativeTime, greetingForHour } from "./format";
+import { formatRelativeTime, greetingForHour, initialsOf } from "./format";
+
+describe("initialsOf", () => {
+  it("takes the first and last initial of a multi-word name", () => {
+    expect(initialsOf("Lyndell Dobluis")).toBe("LD");
+    expect(initialsOf("Maria Clara de Jesus")).toBe("MJ");
+  });
+
+  it("takes the first two letters of a single-word name", () => {
+    expect(initialsOf("Maricel")).toBe("MA");
+  });
+
+  it("never renders an empty badge for a blank name", () => {
+    expect(initialsOf("")).toBe("?");
+    expect(initialsOf("   ")).toBe("?");
+  });
+
+  it("ignores extra whitespace between names", () => {
+    expect(initialsOf("  Aling   Rosa  ")).toBe("AR");
+  });
+});
 
 describe("greetingForHour", () => {
   it("greets morning before noon", () => {

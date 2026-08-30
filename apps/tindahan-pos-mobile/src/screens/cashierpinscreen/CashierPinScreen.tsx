@@ -5,8 +5,9 @@ import { Avatar } from "../../components/avatar";
 import { Card } from "../../components/card";
 import { PrimaryButton } from "../../components/primarybutton";
 import { TextField } from "../../components/textfield";
+import { initialsOf } from "../../lib/format";
 import { colors } from "../../theme/colors";
-import { KEYPAD_ROWS, PIN_LENGTH, initials, useCashierPinScreen } from "./hooks";
+import { KEYPAD_ROWS, PIN_LENGTH, useCashierPinScreen } from "./hooks";
 
 /** "Who's on the register?" PIN lock (mobile-cashier-pin.html) -- gates a paired counter device. */
 export function CashierPinScreen() {
@@ -60,7 +61,7 @@ export function CashierPinScreen() {
                   onPress={() => selectCashier(cashier)}
                   className="items-center gap-1.5 w-16"
                 >
-                  <Avatar initial={initials(cashier.name)} size={46} shape="circle" />
+                  <Avatar initial={initialsOf(cashier.name)} size={46} shape="circle" />
                   <Text className="text-xs text-text-dim">{cashier.name}</Text>
                 </Pressable>
               ))}

@@ -8,11 +8,6 @@ function avatarTone(variant: CreditUsageVariant, balance: number): AvatarTone {
   return "info";
 }
 
-export function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  return parts.length === 1 ? parts[0].slice(0, 2).toUpperCase() : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
 /** All derived display data for UtangRow -- UtangRow.tsx stays presentational. */
 export function useUtangRow({ customer, days }: UtangRowProps) {
   const variant = creditUsageVariant(customer, days);

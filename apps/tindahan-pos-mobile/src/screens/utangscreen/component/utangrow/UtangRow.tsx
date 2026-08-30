@@ -1,7 +1,8 @@
 import { Text, View } from "react-native";
 import { Avatar } from "../../../../components/avatar";
 import { PESO } from "../../../../lib/money";
-import { initialsOf, useUtangRow } from "./hooks";
+import { initialsOf } from "../../../../lib/format";
+import { useUtangRow } from "./hooks";
 import type { UtangRowProps } from "./types";
 
 export function UtangRow({ customer, days }: UtangRowProps) {
