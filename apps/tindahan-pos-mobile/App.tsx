@@ -23,6 +23,8 @@ import { PosScreen } from "./src/screens/posscreen";
 import { PricingScreen } from "./src/screens/pricingscreen";
 import { RestockScreen } from "./src/screens/restockscreen";
 import { SettingsMenuScreen } from "./src/screens/settingsmenuscreen";
+import type { SettingsSectionKey } from "./src/screens/settingsmenuscreen/types";
+import { SettingsProfileScreen } from "./src/screens/settingsprofilescreen";
 import { SetupRegisterScreen } from "./src/screens/setupregisterscreen";
 import { SplashScreen } from "./src/screens/splashscreen";
 import { TodaysSalesScreen } from "./src/screens/todayssalesscreen";
@@ -102,6 +104,7 @@ function AdminHome() {
   const [showSetupRegister, setShowSetupRegister] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<SettingsSectionKey | null>(null);
 
   function handleChangeTab(next: string) {
     if (next === "more") {
@@ -112,14 +115,20 @@ function AdminHome() {
     setTab(next);
   }
 
+  if (settingsSection === "profile") {
+    return <SettingsProfileScreen onBack={() => setSettingsSection(null)} />;
+  }
+
   if (showSettings) {
     return (
       <SettingsMenuScreen
         onBack={() => setShowSettings(false)}
-        // Each section's own screen lands in its own PR -- until then a tap
+        // The remaining sections land in their own PRs -- until then a tap
         // is a no-op rather than a route to a blank screen, the same call
-        // "More" itself carried before this one.
-        onOpenSection={() => {}}
+        // "More" itself carried before the menu existed.
+        onOpenSection={(key) => {
+          if (key === "profile") setSettingsSection(key);
+        }}
       />
     );
   }

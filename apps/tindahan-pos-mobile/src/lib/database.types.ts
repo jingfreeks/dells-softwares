@@ -41,6 +41,7 @@ export interface Database {
           address: string | null;
           onboarded_at: string | null;
           created_at: string;
+          pin_hash: string | null;
         };
         Insert: {
           id: string;
@@ -53,6 +54,7 @@ export interface Database {
           address?: string | null;
           onboarded_at?: string | null;
           created_at?: string;
+          pin_hash?: string | null;
         };
         Update: {
           id?: string;
@@ -65,6 +67,7 @@ export interface Database {
           address?: string | null;
           onboarded_at?: string | null;
           created_at?: string;
+          pin_hash?: string | null;
         };
         Relationships: [
           {
@@ -601,6 +604,10 @@ export interface Database {
       };
       end_cashier_session: {
         Args: { p_token: string; p_closing_float?: number | null };
+        Returns: undefined;
+      };
+      set_own_pin: {
+        Args: { p_pin: string };
         Returns: undefined;
       };
       start_trial: {

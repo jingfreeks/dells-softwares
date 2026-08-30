@@ -11,6 +11,8 @@ export interface StaffAccount {
   address: string | null;
   /** Set once this admin finishes the post-registration onboarding wizard. */
   onboardedAt: string | null;
+  /** Whether an override PIN has been set (staff.pin_hash is non-null) -- never the hash itself. */
+  hasPin: boolean;
 }
 
 /** The staff member currently verified as operating a shared register (see cashierSession.tsx) — a lighter shape than StaffAccount, all a PIN picker/keypad needs. */

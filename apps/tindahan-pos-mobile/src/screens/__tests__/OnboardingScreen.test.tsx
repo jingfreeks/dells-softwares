@@ -54,7 +54,7 @@ function setup(
   const onExploreDemo = overrides.onExploreDemo ?? jest.fn();
 
   mockedUseAuth.mockReturnValue({
-    user: { id: "u1", storeId: "s1", name: "Lyndell", email: "a@b.com", role: "admin", avatarUrl: null, phone: null, address: null, onboardedAt: null },
+    user: { id: "u1", storeId: "s1", name: "Lyndell", email: "a@b.com", role: "admin", avatarUrl: null, phone: null, address: null, onboardedAt: null, hasPin: false },
     store: { id: "s1", name: "Dell's Store", address: null, photoUrl: null },
     updateProfile,
     updateStore,

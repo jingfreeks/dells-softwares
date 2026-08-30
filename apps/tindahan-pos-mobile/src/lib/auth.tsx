@@ -56,6 +56,17 @@ interface AuthContextValue {
   }) => Promise<AuthResult>;
   /** Mirrors the web app's updateStore() -- patches the current store's row. */
   updateStore: (patch: { name?: string; address?: string | null; photoUrl?: string | null }) => Promise<AuthResult>;
+  /**
+   * Sets this staff member's own override PIN via set_own_pin() -- the RPC
+   * hashes it server-side into staff.pin_hash. Mirrors the web app's
+   * setOwnPin(); the raw PIN is never stored client-side or sent anywhere
+   * but this call.
+   */
+  setOwnPin: (pin: string) => Promise<AuthResult>;
+  /** Changes the signed-in user's password through Supabase Auth. */
+  changePassword: (newPassword: string) => Promise<AuthResult>;
+  /** Ends every other session for this account (Supabase global sign-out). */
+  signOutEverywhere: () => Promise<AuthResult>;
   /** Marks the onboarding wizard finished so it doesn't show again on next sign-in. */
   completeOnboarding: () => Promise<AuthResult>;
   /**
@@ -71,7 +82,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
   const { data, error } = await supabase
     .from("staff")
-    .select("id, store_id, name, email, role, avatar_url, phone, address, onboarded_at")
+    .select("id, store_id, name, email, role, avatar_url, phone, address, onboarded_at, pin_hash")
     .eq("id", userId)
     .single();
 
@@ -87,6 +98,8 @@ async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
     phone: data.phone,
     address: data.address,
     onboardedAt: data.onboarded_at,
+    // Presence only -- the hash itself never leaves this function.
+    hasPin: data.pin_hash !== null,
   };
 }
 
@@ -260,6 +273,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
+  async function setOwnPin(pin: string): Promise<AuthResult> {
+    if (!user) return { ok: false, error: "Not signed in." };
+    const { error } = await supabase.rpc("set_own_pin", { p_pin: pin });
+    if (error) return { ok: false, error: error.message };
+    setUser(await loadStaffProfile(user.id));
+    return { ok: true };
+  }
+
+  async function changePassword(newPassword: string): Promise<AuthResult> {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  }
+
+  /**
+   * scope: "global" ends every session for this account, including this
+   * one -- the onAuthStateChange listener then clears local state, so
+   * there's no separate sign-out call to make here.
+   */
+  async function signOutEverywhere(): Promise<AuthResult> {
+    const { error } = await supabase.auth.signOut({ scope: "global" });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  }
+
   async function updateStore(patch: { name?: string; address?: string | null; photoUrl?: string | null }): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
     const { error } = await supabase
@@ -297,6 +335,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         updateProfile,
+        setOwnPin,
+        changePassword,
+        signOutEverywhere,
         updateStore,
         completeOnboarding,
         pairDevice,
