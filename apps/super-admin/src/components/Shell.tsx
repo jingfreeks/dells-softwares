@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
-import { usePlatform } from "../lib/platform";
+import { usePlatform, type MfaEnrollment } from "../lib/platform";
 
 /**
  * The console has four states, and conflating any two of them would be a
@@ -96,43 +96,131 @@ export function NoAccess() {
 }
 
 /**
- * Administrator whose second factor is stale. The button does not "unlock"
- * anything client-side -- it calls platform_verify_mfa(), which the server
- * refuses unless the session JWT actually carries aal2.
+ * Administrator whose second factor is stale (admin.mfaFresh === false).
+ * This covers two genuinely different situations, distinguished by whether
+ * the account has ever enrolled a TOTP factor at all:
+ *
+ *   - never enrolled -> show the QR code and take them through enrollment
+ *     once, verifying the first code as part of turning it on
+ *   - already enrolled, but this session hasn't proven it recently ->
+ *     just ask for the next code from their existing authenticator
+ *
+ * Either way, the button does not "unlock" anything client-side --
+ * verifyMfaCode() challenges the real factor and only then calls
+ * platform_verify_mfa(), which the server refuses unless the session JWT
+ * actually carries aal2.
  */
 export function MfaGate() {
-  const { verifyMfa, signOut } = usePlatform();
+  const { getMfaStatus, enrollMfa, verifyMfaCode, signOut } = usePlatform();
+  const [checkingStatus, setCheckingStatus] = useState(true);
+  const [factorId, setFactorId] = useState<string | null>(null);
+  const [enrollment, setEnrollment] = useState<MfaEnrollment | null>(null);
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function handleVerify() {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const status = await getMfaStatus();
+      if (cancelled) return;
+      if (status.enrolled && status.factorId) {
+        setFactorId(status.factorId);
+      } else {
+        const result = await enrollMfa();
+        if (cancelled) return;
+        if (result.ok && result.enrollment) {
+          setEnrollment(result.enrollment);
+          setFactorId(result.enrollment.factorId);
+        } else {
+          setError(result.error ?? "Could not start enrollment.");
+        }
+      }
+      setCheckingStatus(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleVerify(e: FormEvent) {
+    e.preventDefault();
+    if (!factorId) return;
     setBusy(true);
     setError(null);
-    const result = await verifyMfa();
+    const result = await verifyMfaCode(factorId, code);
     setBusy(false);
-    if (!result.ok) setError(result.error ?? "Could not verify your second factor.");
+    if (!result.ok) {
+      setError(result.error ?? "Could not verify that code.");
+      setCode("");
+    }
+  }
+
+  if (checkingStatus) {
+    return (
+      <CenteredCard title="Second factor required">
+        <div
+          role="status"
+          aria-label="Loading"
+          className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-[var(--color-brand)]"
+        />
+      </CenteredCard>
+    );
   }
 
   return (
-    <CenteredCard title="Second factor required">
-      <p className="text-sm text-slate-600">
-        Platform administration needs a second factor verified in the last 8 hours.
-      </p>
-      {error && (
-        <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error === "MFA_REQUIRED: platform administration requires a second factor"
-            ? "Your current session doesn’t carry a second factor. Sign in again with MFA enrolled on this account."
-            : error}
+    <CenteredCard title={enrollment ? "Set up your second factor" : "Second factor required"}>
+      {enrollment ? (
+        <>
+          <p className="text-sm text-slate-600">
+            Platform administration requires a second factor. Scan this with an authenticator app
+            (Google Authenticator, 1Password, Authy), then enter the 6-digit code it shows.
+          </p>
+          <div className="mt-3 w-fit rounded-lg border border-slate-200 p-2">
+            <img src={enrollment.qrCodeDataUri} alt="Scan with your authenticator app" width={220} height={220} />
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            Can&apos;t scan? Enter this code manually:{" "}
+            <code className="rounded bg-slate-100 px-1 py-0.5 text-slate-700">{enrollment.secret}</code>
+          </p>
+        </>
+      ) : (
+        <p className="text-sm text-slate-600">
+          Enter the 6-digit code from your authenticator app for this account.
         </p>
       )}
-      <button
-        type="button"
-        onClick={handleVerify}
-        disabled={busy}
-        className="mt-4 w-full cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {busy ? "Verifying…" : "Verify second factor"}
-      </button>
+
+      <form onSubmit={handleVerify}>
+        <label htmlFor="mfaCode" className="sr-only">
+          Authentication code
+        </label>
+        <input
+          id="mfaCode"
+          type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          value={code}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+          className="mt-4 w-full rounded-xl border border-slate-300 px-3 py-2 text-center text-lg tracking-[0.3em] focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+          placeholder="000000"
+        />
+
+        {error && (
+          <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={busy || code.length !== 6}
+          className="mt-4 w-full cursor-pointer rounded-xl bg-[var(--color-brand)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-brand-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {busy ? "Verifying…" : enrollment ? "Verify and enable" : "Verify second factor"}
+        </button>
+      </form>
       <button
         type="button"
         onClick={signOut}
