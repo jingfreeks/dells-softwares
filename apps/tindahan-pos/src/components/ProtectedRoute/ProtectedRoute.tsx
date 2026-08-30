@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth, TITLE_UNABLE_TO_CONNECT } from "@/lib";
+import { useAuth, TITLE_UNABLE_TO_CONNECT, LABEL_SKIP_TO_CONTENT } from "@/lib";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileHeader } from "@/components/MobileHeader";
 import { BillingBanner } from "@/components/BillingBanner";
@@ -61,11 +61,14 @@ export function ProtectedRoute() {
 
   return (
     <div className="tpl-root tpl-shell-bg flex h-screen flex-col lg:flex-row">
+      <a href="#main-content" className="tpl-skip-link">
+        {LABEL_SKIP_TO_CONTENT}
+      </a>
       <Sidebar />
       <div className="flex min-h-0 flex-1 flex-col">
         <MobileHeader />
         <BillingBanner />
-        <main className="tpl-main flex-1 pb-16 lg:pb-0">
+        <main id="main-content" className="tpl-main flex-1 pb-16 lg:pb-0" tabIndex={-1}>
           <Outlet />
         </main>
       </div>

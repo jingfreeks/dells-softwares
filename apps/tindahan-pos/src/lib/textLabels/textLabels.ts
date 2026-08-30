@@ -1021,6 +1021,7 @@ export const ARIA_MAIN_NAV = "Main";
 export const ARIA_LOADING = "Loading";
 export const LABEL_LOG_OUT = "Log out";
 export const LABEL_MENU = "Menu";
+export const LABEL_SKIP_TO_CONTENT = "Skip to content";
 
 // CategoryManager
 export const LABEL_MANAGE_CATEGORIES = "Manage categories";

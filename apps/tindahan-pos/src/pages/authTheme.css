@@ -908,6 +908,29 @@
   flex: 1;
   overflow-y: auto;
 }
+.tpl-main:focus {
+  outline: none;
+}
+
+/* Off-screen until focused, so keyboard/screen-reader users can jump past
+   the sidebar nav straight to page content without changing the visual
+   layout for everyone else. */
+.tpl-skip-link {
+  position: absolute;
+  top: -100%;
+  left: 12px;
+  z-index: 100;
+  background: var(--tpl-a1);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.tpl-skip-link:focus {
+  top: 12px;
+}
 
 .tpl-mobile-header {
   align-items: center;
