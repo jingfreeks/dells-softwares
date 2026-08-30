@@ -55,7 +55,16 @@ interface AuthContextValue {
     avatarUrl?: string | null;
   }) => Promise<AuthResult>;
   /** Mirrors the web app's updateStore() -- patches the current store's row. */
-  updateStore: (patch: { name?: string; address?: string | null; photoUrl?: string | null }) => Promise<AuthResult>;
+  updateStore: (patch: {
+    name?: string;
+    address?: string | null;
+    photoUrl?: string | null;
+    contactNumber?: string | null;
+    city?: string | null;
+    tin?: string | null;
+    businessPermitNo?: string | null;
+    birRegistered?: boolean;
+  }) => Promise<AuthResult>;
   /**
    * Sets this staff member's own override PIN via set_own_pin() -- the RPC
    * hashes it server-side into staff.pin_hash. Mirrors the web app's
@@ -119,7 +128,7 @@ async function loadDevice(deviceId: string): Promise<DeviceIdentity | null> {
 async function loadStore(storeId: string): Promise<Store | null> {
   const { data, error } = await supabase
     .from("stores")
-    .select("id, name, address, photo_url")
+    .select("id, name, address, photo_url, contact_number, city, tin, business_permit_no, bir_registered")
     .eq("id", storeId)
     .single();
 
@@ -130,6 +139,11 @@ async function loadStore(storeId: string): Promise<Store | null> {
     name: data.name,
     address: data.address,
     photoUrl: data.photo_url,
+    contactNumber: data.contact_number,
+    city: data.city,
+    tin: data.tin,
+    businessPermitNo: data.business_permit_no,
+    birRegistered: data.bir_registered,
   };
 }
 
@@ -298,17 +312,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
-  async function updateStore(patch: { name?: string; address?: string | null; photoUrl?: string | null }): Promise<AuthResult> {
+  async function updateStore(patch: {
+    name?: string;
+    address?: string | null;
+    photoUrl?: string | null;
+    contactNumber?: string | null;
+    city?: string | null;
+    tin?: string | null;
+    businessPermitNo?: string | null;
+    birRegistered?: boolean;
+  }): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("stores")
       .update({
         ...(patch.name !== undefined && { name: patch.name }),
         ...(patch.address !== undefined && { address: patch.address }),
         ...(patch.photoUrl !== undefined && { photo_url: patch.photoUrl }),
+        ...(patch.contactNumber !== undefined && { contact_number: patch.contactNumber }),
+        ...(patch.city !== undefined && { city: patch.city }),
+        ...(patch.tin !== undefined && { tin: patch.tin }),
+        ...(patch.businessPermitNo !== undefined && { business_permit_no: patch.businessPermitNo }),
+        ...(patch.birRegistered !== undefined && { bir_registered: patch.birRegistered }),
       })
-      .eq("id", user.storeId);
+      .eq("id", user.storeId)
+      .select("id");
     if (error) return { ok: false, error: error.message };
+    // Mirrors the web app's own guard: RLS on `stores` restricts UPDATE to
+    // admins and staff holding settings.store.manage -- a caller lacking
+    // that gets no error at all, just an empty result set (Postgres
+    // silently filters the row rather than raising). Without this check
+    // that reads as a false "Saved!" while nothing was written.
+    if (!data || data.length === 0) {
+      return { ok: false, error: "You don't have permission to update store settings." };
+    }
     setStore(await loadStore(user.storeId));
     return { ok: true };
   }

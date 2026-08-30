@@ -8,11 +8,11 @@ import { PrimaryButton } from "../../components/primarybutton";
 import { TextField } from "../../components/textfield";
 import { Toggle } from "../../components/toggle";
 import { ScreenContainer } from "../../components/screencontainer";
+import { SmallButton } from "../../components/smallbutton";
 import { colors } from "../../theme/colors";
 import { ChangePasswordModal } from "./component/changepasswordmodal";
 import { ChangePinModal } from "./component/changepinmodal";
 import { SignOutAllModal } from "./component/signoutallmodal";
-import { SmallButton } from "./component/smallbutton";
 import { useSettingsProfileScreen } from "./hooks";
 import { NOTIFICATION_ROWS, type SettingsProfileScreenProps } from "./types";
 

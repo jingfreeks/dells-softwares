@@ -28,6 +28,12 @@ export interface Store {
   name: string;
   address: string | null;
   photoUrl: string | null;
+  contactNumber: string | null;
+  city: string | null;
+  /** BIR compliance §48 -- real, admin-editable columns on `stores`, printed on receipts. */
+  tin: string | null;
+  businessPermitNo: string | null;
+  birRegistered: boolean;
 }
 
 export interface Category {
