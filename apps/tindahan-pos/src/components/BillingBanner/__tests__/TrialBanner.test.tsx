@@ -8,12 +8,14 @@ describe("TrialBanner", () => {
     render(<TrialBanner daysRemaining={8} onUpgradeClick={vi.fn()} />);
     const banner = screen.getByRole("status");
     expect(banner).toHaveTextContent(/8 days left/i);
-    expect(banner.className).toContain("amber-50");
+    expect(banner.className).toContain("blue-50");
   });
 
-  it("reads as a warning at 3 days", () => {
+  it("reads as a warning at 3 days, visually distinct from the info state", () => {
     render(<TrialBanner daysRemaining={3} onUpgradeClick={vi.fn()} />);
-    expect(screen.getByRole("status").className).toContain("amber-100");
+    const className = screen.getByRole("status").className;
+    expect(className).toContain("amber-100");
+    expect(className).not.toContain("blue-50");
   });
 
   it("reads as urgent on the final day", () => {

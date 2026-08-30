@@ -182,6 +182,16 @@ export interface CreditPayment {
   timestamp: string;
 }
 
+export interface RecentCreditPayment {
+  id: string;
+  customerId: string;
+  customerName: string;
+  amount: number;
+  timestamp: string;
+  /** Derived from the balance snapshot taken when the payment was recorded; null for payments recorded before that snapshot existed. */
+  status: "settled" | "partial" | null;
+}
+
 export type SupplierPaymentTerms = "cash" | "7_days" | "15_days";
 
 export interface Supplier {

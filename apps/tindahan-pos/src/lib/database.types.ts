@@ -363,6 +363,7 @@ export interface Database {
           note: string | null;
           created_by: string;
           created_at: string;
+          resulting_balance: number | null;
         };
         Insert: {
           id?: string;
@@ -372,6 +373,7 @@ export interface Database {
           note?: string | null;
           created_by: string;
           created_at?: string;
+          resulting_balance?: number | null;
         };
         Update: {
           id?: string;
@@ -381,6 +383,7 @@ export interface Database {
           note?: string | null;
           created_by?: string;
           created_at?: string;
+          resulting_balance?: number | null;
         };
         Relationships: [
           {
@@ -1135,6 +1138,13 @@ export interface Database {
           p_note?: string | null;
         };
         Returns: { customer_id: string; new_balance: number }[];
+      };
+      adjust_product_stock: {
+        Args: {
+          p_product_id: string;
+          p_delta: number;
+        };
+        Returns: { new_stock: number }[];
       };
       set_own_pin: {
         Args: {

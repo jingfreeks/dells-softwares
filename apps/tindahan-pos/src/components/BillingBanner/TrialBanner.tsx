@@ -13,8 +13,14 @@ interface TrialBannerProps {
 export function TrialBanner({ daysRemaining, onUpgradeClick }: TrialBannerProps) {
   const severity = daysRemaining <= 1 ? "urgent" : daysRemaining <= 3 ? "warning" : "info";
 
+  // Genuinely distinct per severity -- info was previously amber-50/200/900,
+  // one shade lighter than warning's amber-100/300/950, which read as the
+  // same banner at a glance. Confirmed live: at 10 days remaining ("info")
+  // the banner was visually indistinguishable from 3 days remaining
+  // ("warning"). Blue for info keeps the escalation (neutral -> amber ->
+  // red) actually readable as urgency increasing.
   const classesBySeverity = {
-    info: "border-amber-200 bg-amber-50 text-amber-900",
+    info: "border-blue-200 bg-blue-50 text-blue-900",
     warning: "border-amber-300 bg-amber-100 text-amber-950",
     urgent: "border-red-300 bg-red-50 text-red-900",
   } as const;
