@@ -12,6 +12,7 @@ import type {
   CreditPayment,
   Customer,
   Product,
+  RecentCreditPayment,
   SaleRecord,
   ServiceLine,
   Supplier,
@@ -939,6 +940,31 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  // Cross-customer feed for the Customers page's "Recent payments" card --
+  // distinct from fetchCreditPayments() above, which is scoped to one
+  // customer's own history modal.
+  async function fetchRecentCreditPayments(limit = 4): Promise<RecentCreditPayment[]> {
+    const { data, error: err } = await supabase
+      .from("credit_payments")
+      .select("id, customer_id, amount, created_at, resulting_balance, customer:customer_id(name)")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (err) throw err;
+    return (data ?? []).map((row) => {
+      const customer = row.customer as unknown as { name: string } | { name: string }[] | null;
+      const customerName = Array.isArray(customer) ? customer[0]?.name : customer?.name;
+      return {
+        id: row.id,
+        customerId: row.customer_id,
+        customerName: customerName ?? "Unknown",
+        amount: row.amount,
+        timestamp: row.created_at,
+        status:
+          row.resulting_balance === null ? null : row.resulting_balance <= 0 ? "settled" : "partial",
+      };
+    });
+  }
+
   async function addSupplier(input: AddSupplierInput): Promise<Supplier> {
     if (!user) throw new Error("Not signed in.");
     const storeId = user.storeId;
@@ -1057,6 +1083,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         addCustomer,
         recordCreditPayment,
         fetchCreditPayments,
+        fetchRecentCreditPayments,
         addSupplier,
         updateSupplier,
         deactivateSupplier,

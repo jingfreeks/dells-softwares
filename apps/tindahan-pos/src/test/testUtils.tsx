@@ -8,6 +8,7 @@ import type {
   Customer,
   DeviceSession,
   Product,
+  RecentCreditPayment,
   Role,
   SaleRecord,
   StaffAccount,
@@ -135,6 +136,20 @@ export function makeCreditPayment(overrides: Partial<CreditPayment> = {}): Credi
   };
 }
 
+export function makeRecentCreditPayment(
+  overrides: Partial<RecentCreditPayment> = {}
+): RecentCreditPayment {
+  return {
+    id: "pay-1",
+    customerId: "cust-1",
+    customerName: "Aling Rosa",
+    amount: 50,
+    timestamp: "2026-07-27T10:00:00Z",
+    status: "partial",
+    ...overrides,
+  };
+}
+
 export function makeSupplier(overrides: Partial<Supplier> = {}): Supplier {
   return {
     id: "sup-1",
@@ -233,6 +248,7 @@ function baseStoreDataValue() {
     addCustomer: vi.fn().mockResolvedValue(makeCustomer()),
     recordCreditPayment: vi.fn().mockResolvedValue(undefined),
     fetchCreditPayments: vi.fn().mockResolvedValue([] as CreditPayment[]),
+    fetchRecentCreditPayments: vi.fn().mockResolvedValue([] as RecentCreditPayment[]),
     addSupplier: vi.fn().mockResolvedValue(makeSupplier()),
     updateSupplier: vi.fn().mockResolvedValue(undefined),
     deactivateSupplier: vi.fn().mockResolvedValue(undefined),
