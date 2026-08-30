@@ -941,7 +941,6 @@ export const LABEL_TOTAL_POS = "Total";
 
 // Inventory page
 export const TEXT_PRODUCTS_TRACKED_SUFFIX = "products tracked.";
-export const LABEL_VERSION_1_1 = "v1.1";
 export const BUTTON_CATEGORIES = "Categories";
 export const BUTTON_ADD_PRODUCT = "Add product";
 export const TEXT_LOW_STOCK_ALERT_SUFFIX = "running low or out of stock —";
