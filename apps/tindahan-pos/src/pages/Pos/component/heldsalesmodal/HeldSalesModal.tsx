@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   PESO,
   cartTotal,
@@ -11,6 +11,7 @@ import {
   TEXT_DISCARD_CONFIRM_HAS_SERVICE,
   BUTTON_CLOSE,
   useEscapeToClose,
+  useFocusTrap,
   type HeldSale,
   type Product,
 } from "@/lib";
@@ -38,7 +39,9 @@ function heldSaleDisplayTotal(held: HeldSale, products: Product[]): number {
 export function HeldSalesModal({ open, heldSales, products, resumeError, onResume, onDiscard, onClose }: HeldSalesModalProps) {
   const [confirmingDiscardId, setConfirmingDiscardId] = useState<string | null>(null);
 
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEscapeToClose(open, onClose);
+  useFocusTrap(open, dialogRef);
 
   if (!open) return null;
 
@@ -54,6 +57,7 @@ export function HeldSalesModal({ open, heldSales, products, resumeError, onResum
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         style={{ maxWidth: 460 }}
         role="dialog"

@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import { useRef, type FormEvent } from "react";
 import {
   LABEL_CHANGE_PASSWORD_HEADING,
   LABEL_NEW_PASSWORD,
@@ -8,6 +8,7 @@ import {
   BUTTON_UPDATING,
   TEXT_PASSWORD_UPDATED,
   useEscapeToClose,
+  useFocusTrap,
 } from "@/lib";
 import "@/pages/authTheme.css";
 
@@ -36,13 +37,16 @@ export function ChangePasswordModal({
   onCancel,
   onSubmit,
 }: ChangePasswordModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEscapeToClose(open, onCancel);
+  useFocusTrap(open, dialogRef);
 
   if (!open) return null;
 
   return (
     <div className="tpl-modal-overlay" onClick={onCancel}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"

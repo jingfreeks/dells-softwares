@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   ARIA_CLOSE_MODAL,
@@ -7,6 +8,7 @@ import {
   BUTTON_COMPARE_PLANS,
   BUTTON_MAYBE_LATER,
   useEscapeToClose,
+  useFocusTrap,
   type LockedByPlan,
 } from "@/lib";
 
@@ -28,7 +30,9 @@ interface UpgradeModalProps {
  * button that would submit nothing.
  */
 export function UpgradeModal({ group, onClose }: UpgradeModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   useEscapeToClose(!!group, onClose);
+  useFocusTrap(!!group, dialogRef);
 
   if (!group) return null;
 
@@ -37,6 +41,7 @@ export function UpgradeModal({ group, onClose }: UpgradeModalProps) {
   return (
     <div className="tpl-modal-overlay" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="tpl-modal-panel tpl-card"
         role="dialog"
         aria-modal="true"
