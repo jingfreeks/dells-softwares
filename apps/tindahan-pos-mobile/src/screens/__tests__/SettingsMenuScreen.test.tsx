@@ -20,6 +20,7 @@ function staff(overrides: Partial<StaffAccount> = {}): StaffAccount {
     phone: null,
     address: null,
     onboardedAt: "2026-08-01T00:00:00.000Z",
+    hasPin: false,
     ...overrides,
   };
 }

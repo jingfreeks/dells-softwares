@@ -7,4 +7,10 @@ export interface AvatarProps {
   /** "square" for the app's own brand mark (§5 M-004), "circle" for a person (Utang's customer avatars). */
   shape?: "square" | "circle";
   tone?: AvatarTone;
+  /**
+   * Photo to show instead of the initials -- a staff member's
+   * `avatar_url` or a store's `photo_url`. Falls back to `initial` when
+   * null/undefined, which is also what happens before anyone uploads one.
+   */
+  uri?: string | null;
 }
