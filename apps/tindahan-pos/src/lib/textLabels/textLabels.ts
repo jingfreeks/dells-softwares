@@ -1102,6 +1102,8 @@ export const ERROR_PASSWORD_TOO_SHORT = "Password must be at least 8 characters.
 export const ERROR_PASSWORDS_DO_NOT_MATCH = "Passwords don't match.";
 export const TEXT_PASSWORD_UPDATED = "Password updated.";
 export const ERROR_COULD_NOT_UPDATE_PASSWORD = "Could not update password.";
+export const PAGE_HEADING_RESET_PASSWORD = "Set a new password";
+export const LINK_CONTINUE_TO_APP = "Continue";
 export const ERROR_COULD_NOT_SIGN_OUT_EVERYWHERE = "Could not sign out other sessions.";
 export const TEXT_SIGNED_OUT_EVERYWHERE = "Signed out of all other sessions.";
 
