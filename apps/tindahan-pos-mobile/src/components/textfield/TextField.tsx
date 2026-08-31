@@ -17,9 +17,14 @@ export function TextField({
   ...props
 }: TextFieldProps) {
   const { focused, handleFocus, handleBlur } = useTextField(onFocus, onBlur);
+  // A field the user cannot type in has to look different from one they
+  // can. Rendered identically, a read-only value reads as an editable
+  // one the app is silently refusing.
+  const readOnly = props.editable === false;
 
   const inputRowClasses = [
-    "min-h-11 flex-row items-center border rounded-input px-3.5 bg-panel-strong",
+    "min-h-11 flex-row items-center border rounded-input px-3.5",
+    readOnly ? "bg-transparent border-hairline-faint" : "bg-panel-strong",
     focused ? "border-accent" : "border-hairline",
     error ? "border-error bg-[rgba(248,113,113,0.08)]" : "",
     success ? "border-success" : "",
@@ -36,7 +41,7 @@ export function TextField({
           placeholderTextColor={colors.textMuted}
           onFocus={handleFocus}
           onBlur={handleBlur}
-          className="flex-1 py-3 text-base font-normal text-text-primary"
+          className={`flex-1 py-3 text-base font-normal ${readOnly ? "text-text-dim" : "text-text-primary"}`}
           style={{ outlineStyle: "none" } as unknown as TextStyle}
           {...props}
         />

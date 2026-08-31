@@ -146,6 +146,7 @@ export function PosScreen(props: PosScreenProps = {}) {
         <Pressable
           accessibilityRole="button"
           onPress={() => setSelectedCategoryId(ALL_CATEGORY)}
+          hitSlop={{ top: 6, bottom: 6 }}
           className={`h-8 px-3.5 rounded-chip border items-center justify-center ${
             selectedCategoryId === ALL_CATEGORY ? "bg-accent border-accent" : "bg-panel-strong border-hairline"
           }`}
@@ -159,6 +160,7 @@ export function PosScreen(props: PosScreenProps = {}) {
             key={category.id}
             accessibilityRole="button"
             onPress={() => setSelectedCategoryId(category.id)}
+            hitSlop={{ top: 6, bottom: 6 }}
             className={`h-8 px-3.5 rounded-chip border items-center justify-center ${
               selectedCategoryId === category.id ? "bg-accent border-accent" : "bg-panel-strong border-hairline"
             }`}
