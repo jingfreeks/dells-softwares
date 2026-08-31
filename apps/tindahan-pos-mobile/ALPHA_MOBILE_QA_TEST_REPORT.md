@@ -313,3 +313,122 @@ Unchanged: READY FOR BETA
 
 Round 3 adds no new defects. Still untested on mobile: trial lifecycle
 edge cases, and tablet/landscape rendering.
+
+---
+
+# Round 4 — Trial lifecycle and billing enforcement
+
+Covers §14/§15 (trial lifecycle) and the §15 requirement to *"verify that
+the backend remains authoritative"*. All results were produced against
+staging by manipulating billing state and observing the server, with
+before-values recorded first.
+
+| ID | Test | Result | Severity |
+|---|---|---|---|
+| TRIAL-M-001 | Trial state is decided server-side | **PASS** | — |
+| TRIAL-M-002 | Trial expiry downgrades rather than locks | **PASS (intentional)** | — |
+| BILL-M-003 | Suspension is not enforced on the POS path | **FAIL** | HIGH |
+
+## TRIAL-M-001 — The backend is authoritative — PASS
+
+The client never computes trial state. `my_store_billing_state()` is
+`SECURITY DEFINER` and calls `core.expire_trial_if_due()` on every read,
+so the transition happens **on the server, during the client's own
+query**. A client cannot report itself as still trialing.
+
+Verified: with `trial_ends_at` set two days in the past, the very next
+`my_store_billing_state()` call returned the post-expiry state and had
+already written the transition to the database.
+
+## TRIAL-M-002 — Expiry downgrades to Basic — PASS, intentional
+
+Setting `trial_ends_at` into the past and triggering the read moved the
+subscription to plan **BASIC / status ACTIVE**, with `writes_allowed`
+still true — the store keeps trading on the free tier rather than being
+locked out.
+
+That is deliberate, not a defect. `core.expire_trial_if_due()` explicitly
+swaps `plan_id` to BASIC and re-materializes modules and features, which
+matches the "Continue on Basic" choice the Trial Expired screen offers.
+
+Recorded explicitly because a naive test would report *"trial expiry does
+not lock the store"* as a bug. It is the designed behaviour.
+
+## BILL-M-003 — A suspended organization can still sell — FAIL (HIGH)
+
+```
+Severity:  HIGH
+Category:  Authorization / subscription state
+```
+
+**Expected:** `core.org_writes_allowed()` returns false for a SUSPENDED
+organization, and the function's own comment states the intent plainly:
+
+> "This is what finally makes `is_org_member()`'s **suspended =
+> read-only**, still visible true."
+
+So a suspended org should be read-only.
+
+**Actual:** it is not. With the QA organization set to `SUSPENDED` and
+`core.org_writes_allowed()` confirmed returning **false**:
+
+| Path | Result | Effect verified in the database |
+|---|---|---|
+| `PATCH /rest/v1/products` (direct table write) | **HTTP 204** | stock changed 6 → 99 |
+| `POST /rest/v1/rpc/checkout_sale` | **succeeded** | sale created, **receipt 000016 issued**, stock decremented to 98 |
+
+A suspended store completed a real sale and was issued a real receipt
+number.
+
+**Root cause:** `writes_allowed` is enforced by 27 RLS policies, but all
+of them sit on inventory and purchasing tables:
+
+```
+warehouses, suppliers, purchase_orders, purchase_order_lines,
+product_unit_conversions, inventory_beginning_balances, warehouse_stock,
+receiving_entries, inventory_counts, inventory_count_lines, receiving_lines
+```
+
+**`products`, `sales` and `sale_items` have none** — a count of policies
+referencing `writes_allowed` on those three tables returns **0**. And
+`checkout_sale()` is `SECURITY DEFINER`, so it bypasses RLS entirely; it
+checks features, but never `writes_allowed`, org status, or `SUSPENDED`.
+
+The result is that the billing ladder gates the back-office module and
+leaves the till open.
+
+**Impact:** suspension is the lever for non-payment and for
+administratively disabling a tenant. Today it stops a store reordering
+stock but not selling, which is the opposite of the priority you would
+want. `writes_allowed` is still surfaced to the client, so the app can
+*display* the state it does not enforce.
+
+**Recommendation:** decide the intended rule first — most likely
+"suspended = no new sales" — then enforce it in one place rather than
+per-table. Adding the check inside `checkout_sale()` (alongside its
+existing feature checks) covers the POS path in a single edit; extending
+the RLS policy set to `products`/`sales`/`sale_items` covers direct
+writes. **Not implemented here:** this changes a business rule about who
+may transact, which is a product decision, and §50 limits QA to reporting
+unless a fix is asked for.
+
+## Test data
+
+Before-values were recorded, then restored and re-verified:
+`org_status ACTIVE`, `subscription TRIALING` on plan **BUSINESS**,
+`trial_ends_at 2026-09-27`, sales back to **15**, probe sale deleted,
+product stock back to **6**, `writes_allowed` true.
+
+Recovering the original `plan_id` needed `core.audit_logs` — the trial
+downgrade had already overwritten it, and the audit trail's `old_data`
+held the answer. A second argument for SEC-M-007.
+
+## Readiness
+
+```
+READY FOR BETA  ->  NEEDS FIXES before production
+```
+
+BILL-M-003 is the first HIGH-severity functional defect these rounds have
+produced. It does not endanger tenant data — isolation still holds — but
+it means a suspended tenant keeps trading.
