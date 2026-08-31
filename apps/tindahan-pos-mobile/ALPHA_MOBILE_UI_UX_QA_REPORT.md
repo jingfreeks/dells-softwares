@@ -10,7 +10,7 @@ Round 1. Produced against `TINDAHAN_POS_UI_UX_Design_QA_Checklist.md` and
 | System under test | `apps/tindahan-pos-mobile` (Expo SDK 54, React Native 0.81.5) |
 | Backend | Staging Supabase `qfkdecarbqwbpkzqqdxk` ("DellsSoftware-staging") |
 | Device | iOS Simulator, iPhone (393 × 852 pt) |
-| Test account | `lyndell.dobluis+qa-tenant5@gmail.com` (admin/owner, staging only) |
+| Test account | A staging admin/owner account (`QA_OWNER_EMAIL`) — the address is a real person's alias and is held in the environment, not recorded here |
 | Expected-behaviour reference | `apps/tindahan-pos/ALPHA_QA_HANDOFF.md` |
 | Date | 2026-08-31 |
 | Overall status | **NEEDS UI/UX FIXES** → remediated to **READY FOR INTERNAL QA** (see Remediation) |
