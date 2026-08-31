@@ -1,7 +1,7 @@
 import { Image } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
-import * as FileSystem from "expo-file-system";
+import { File } from "expo-file-system";
 import { decode } from "base64-arraybuffer";
 import { supabase } from "./supabaseClient";
 
@@ -57,8 +57,11 @@ export async function pickAndOptimizeImage(maxDimension: number, quality = 0.82)
   if (result.canceled || result.assets.length === 0) return null;
   const asset = result.assets[0];
 
-  const info = await FileSystem.getInfoAsync(asset.uri);
-  if (info.exists && info.size !== undefined && info.size > MAX_RAW_FILE_BYTES) {
+  // `info()` is synchronous in the new expo-file-system API, and reports a
+  // missing file as `{ exists: false, size: null }` rather than throwing --
+  // hence `!= null` and not `!== undefined`.
+  const info = new File(asset.uri).info();
+  if (info.exists && info.size != null && info.size > MAX_RAW_FILE_BYTES) {
     throw new Error("That image is too large (max 8MB).");
   }
 
