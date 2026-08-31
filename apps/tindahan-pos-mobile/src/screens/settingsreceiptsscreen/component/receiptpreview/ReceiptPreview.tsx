@@ -1,4 +1,5 @@
 import { Text, View } from "react-native";
+import { printGuardrails } from "../../../../lib/appMode";
 import type { ReceiptPreviewProps } from "./types";
 
 /** Thermal-paper colours from the mockup -- deliberately not theme tokens: this is paper, not app chrome. */
@@ -18,9 +19,12 @@ const SAMPLE_LINES = [
 /**
  * A live preview of what the toggles above would actually print. Sample
  * line items are fixed (this is a preview, not a real sale), but the
- * store's own name/address/contact/TIN come from the real store row, so
- * turning "TIN & permit" on shows this store's actual TIN -- or nothing,
- * honestly, if they haven't set one.
+ * store's own name/address/contact come from the real store row.
+ *
+ * §8: the preview and the printed document must show the same
+ * safeguards, from the same source. The guardrails are read here rather
+ * than passed in, so there is no prop a caller could omit to render an
+ * unmarked preview.
  */
 export function ReceiptPreview({
   storeName,
@@ -31,9 +35,23 @@ export function ReceiptPreview({
   footerMessage,
 }: ReceiptPreviewProps) {
   const addressLine = [store?.address, store?.city].filter(Boolean).join(", ");
+  const guard = printGuardrails();
 
   return (
     <View style={{ backgroundColor: PAPER, borderRadius: 8, padding: 13 }}>
+      {guard.mandatoryHeader && (
+        <Text
+          accessibilityLabel={guard.mandatoryHeader}
+          style={{ color: INK, fontSize: 9.5, textAlign: "center", fontWeight: "700", marginBottom: 6 }}
+        >
+          {guard.mandatoryHeader}
+        </Text>
+      )}
+      {guard.documentTitle && (
+        <Text style={{ color: INK, fontSize: 11, textAlign: "center", fontWeight: "700", marginBottom: 4 }}>
+          {guard.documentTitle}
+        </Text>
+      )}
       {includeLogo && (
         <Text style={{ color: INK, fontSize: 12.5, textAlign: "center", fontWeight: "500" }}>
           {storeName.toUpperCase()}
@@ -47,7 +65,7 @@ export function ReceiptPreview({
           {store.contactNumber}
         </Text>
       )}
-      {includeTinAndPermit && (store?.tin || store?.businessPermitNo) && (
+      {guard.allowTaxIdentifiers && includeTinAndPermit && (store?.tin || store?.businessPermitNo) && (
         <Text style={{ color: INK_SOFT, fontSize: 9.5, textAlign: "center", lineHeight: 14 }}>
           {[store?.tin && `TIN ${store.tin}`, store?.businessPermitNo].filter(Boolean).join(" · ")}
         </Text>
@@ -92,6 +110,17 @@ export function ReceiptPreview({
           </Text>
           <Text style={{ color: INK_SOFT, fontSize: 9.5, textAlign: "center" }}>{footerMessage}</Text>
         </>
+      )}
+
+      {/* Rendered after the store's own footer message on purpose: the
+          operator's copy can never be the last word on the document. */}
+      {guard.mandatoryFooter && (
+        <Text
+          accessibilityLabel={guard.mandatoryFooter}
+          style={{ color: INK, fontSize: 9.5, textAlign: "center", fontWeight: "700", marginTop: 8 }}
+        >
+          {guard.mandatoryFooter}
+        </Text>
       )}
     </View>
   );

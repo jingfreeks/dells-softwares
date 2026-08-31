@@ -8,6 +8,7 @@ import { ListRow } from "../../components/listrow";
 import { MetricCard } from "../../components/metriccard";
 import { ScreenContainer } from "../../components/screencontainer";
 import { SectionHeader } from "../../components/sectionheader";
+import { AlphaModeBadge } from "../../components/alphamodebadge";
 import { OnboardingChecklistCard } from "./component/onboardingchecklistcard";
 import { formatDayLabel, formatRelativeTime, greetingForHour, saleSummaryLabel } from "../../lib/format";
 import { PESO } from "../../lib/money";
@@ -44,7 +45,10 @@ export function OwnerHomeScreen(props: OwnerHomeScreenProps) {
         <View className="flex-row items-center mb-4.5">
           <Avatar initial={(store?.name ?? "T")[0]} />
           <View className="flex-1 ml-3">
-            <Text className="text-[19px] font-medium text-text-primary">{greetingForHour(now)}</Text>
+            <View className="flex-row items-center gap-2">
+              <Text className="text-[19px] font-medium text-text-primary">{greetingForHour(now)}</Text>
+              <AlphaModeBadge compact />
+            </View>
             <Text className="text-xs text-text-faint mt-0.5">
               {store?.name ?? "Store"} · {formatDayLabel(now)}
             </Text>
