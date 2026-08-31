@@ -154,4 +154,30 @@ describe("SettingsReceiptsScreen", () => {
     fireEvent.press(screen.getByLabelText("Back"));
     expect(onBack).toHaveBeenCalled();
   });
+
+describe("alpha/test print guardrails", () => {
+  it("stamps both mandatory disclaimers on the preview", async () => {
+    setup();
+    await waitFor(() => expect(mockedLoad).toHaveBeenCalled());
+
+    // The preview and the printed document share one source (§8), so
+    // what is asserted here is what would print.
+    expect(screen.getByLabelText("*** TEST MODE / TRAINING ONLY ***")).toBeTruthy();
+    expect(screen.getByLabelText("*** NOT AN OFFICIAL BIR INVOICE/RECEIPT ***")).toBeTruthy();
+  });
+
+  it("calls the document an ORDER SLIP, never a receipt or invoice", async () => {
+    setup();
+    await waitFor(() => expect(mockedLoad).toHaveBeenCalled());
+    expect(screen.getByText("ORDER SLIP")).toBeTruthy();
+  });
+
+  it("locks TIN and permit so a tester cannot dress the slip up as official", async () => {
+    setup();
+    await waitFor(() => expect(mockedLoad).toHaveBeenCalled());
+
+    const chip = screen.getByLabelText("TIN & permit (unavailable in test mode)");
+    expect(chip.props.accessibilityState.disabled).toBe(true);
+  });
+});
 });
