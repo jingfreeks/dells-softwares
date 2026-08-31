@@ -23,6 +23,7 @@ import { PosScreen } from "./src/screens/posscreen";
 import { PricingScreen } from "./src/screens/pricingscreen";
 import { RestockScreen } from "./src/screens/restockscreen";
 import { SettingsAlertsScreen } from "./src/screens/settingsalertsscreen";
+import { SettingsBackupScreen } from "./src/screens/settingsbackupscreen";
 import { SettingsFeesScreen } from "./src/screens/settingsfeesscreen";
 import { SettingsMenuScreen } from "./src/screens/settingsmenuscreen";
 import type { SettingsSectionKey } from "./src/screens/settingsmenuscreen/types";
@@ -139,17 +140,13 @@ function AdminHome() {
     return <SettingsFeesScreen onBack={() => setSettingsSection(null)} />;
   }
 
+  if (settingsSection === "backup") {
+    return <SettingsBackupScreen onBack={() => setSettingsSection(null)} />;
+  }
+
   if (showSettings) {
     return (
-      <SettingsMenuScreen
-        onBack={() => setShowSettings(false)}
-        // Backup lands in its own PR -- until then a tap is a no-op rather
-        // than a route to a blank screen, the same call "More" itself
-        // carried before the menu existed.
-        onOpenSection={(key) => {
-          if (key !== "backup") setSettingsSection(key);
-        }}
-      />
+      <SettingsMenuScreen onBack={() => setShowSettings(false)} onOpenSection={setSettingsSection} />
     );
   }
 
