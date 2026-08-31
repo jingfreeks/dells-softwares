@@ -11,6 +11,8 @@ export interface StaffAccount {
   address: string | null;
   /** Set once this admin finishes the post-registration onboarding wizard. */
   onboardedAt: string | null;
+  /** Whether an override PIN has been set (staff.pin_hash is non-null) -- never the hash itself. */
+  hasPin: boolean;
 }
 
 /** The staff member currently verified as operating a shared register (see cashierSession.tsx) — a lighter shape than StaffAccount, all a PIN picker/keypad needs. */
@@ -21,11 +23,36 @@ export interface CashierProfile {
   avatarUrl: string | null;
 }
 
+/** One row of a fee table: any amount at or below `max` costs `fee`. */
+export interface FeeBracket {
+  max: number;
+  fee: number;
+}
+
+/**
+ * The store's own service-fee tables (`stores.fee_config`). Genuinely
+ * consumed at checkout -- the web app's e-load/cash-in/cash-out panels
+ * price every service sale from these, so editing them here changes what
+ * the register actually charges.
+ */
+export interface StoreFeeConfig {
+  eload?: FeeBracket[];
+  cashIn?: FeeBracket[];
+  cashOut?: FeeBracket[];
+}
+
 export interface Store {
   id: string;
   name: string;
   address: string | null;
   photoUrl: string | null;
+  contactNumber: string | null;
+  city: string | null;
+  /** BIR compliance §48 -- real, admin-editable columns on `stores`, printed on receipts. */
+  tin: string | null;
+  businessPermitNo: string | null;
+  birRegistered: boolean;
+  feeConfig: StoreFeeConfig | null;
 }
 
 export interface Category {

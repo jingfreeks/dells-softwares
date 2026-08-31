@@ -1,4 +1,4 @@
-import { computeDiscountAmount } from "./discount";
+import { computeDiscountAmount } from "../discount";
 
 describe("computeDiscountAmount", () => {
   it("returns 0 when no discount is given", () => {

@@ -1,13 +1,13 @@
 import { Image } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
-import * as FileSystem from "expo-file-system";
-import { pickAndOptimizeImage, uploadImage } from "./imageUpload";
+import { File } from "expo-file-system";
+import { pickAndOptimizeImage, uploadImage } from "../imageUpload";
 
 const mockUpload = jest.fn();
 const mockGetPublicUrl = jest.fn();
 
-jest.mock("./supabaseClient", () => ({
+jest.mock("../supabaseClient", () => ({
   supabase: {
     storage: {
       from: (bucket: string) => ({
@@ -29,15 +29,17 @@ jest.mock("expo-image-manipulator", () => ({
   SaveFormat: { JPEG: "jpeg" },
 }));
 
+const mockInfo = jest.fn();
+
 jest.mock("expo-file-system", () => ({
-  getInfoAsync: jest.fn(),
+  File: jest.fn().mockImplementation((uri: string) => ({ uri, info: () => mockInfo(uri) })),
 }));
 
 describe("pickAndOptimizeImage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (ImagePicker.requestMediaLibraryPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true });
-    (FileSystem.getInfoAsync as jest.Mock).mockResolvedValue({ exists: true, size: 1000 });
+    mockInfo.mockReturnValue({ exists: true, size: 1000 });
     jest.spyOn(Image, "getSize").mockImplementation((_uri, success) => success(2000, 1000));
     (ImageManipulator.manipulateAsync as jest.Mock).mockResolvedValue({
       uri: "file:///tmp/optimized.jpg",
@@ -48,6 +50,7 @@ describe("pickAndOptimizeImage", () => {
   it("returns null when the user cancels", async () => {
     (ImagePicker.launchImageLibraryAsync as jest.Mock).mockResolvedValue({ canceled: true, assets: [] });
     expect(await pickAndOptimizeImage(512)).toBeNull();
+    expect(File).not.toHaveBeenCalled();
   });
 
   it("throws if permission is denied", async () => {
@@ -60,9 +63,10 @@ describe("pickAndOptimizeImage", () => {
       canceled: false,
       assets: [{ uri: "file:///tmp/huge.jpg" }],
     });
-    (FileSystem.getInfoAsync as jest.Mock).mockResolvedValue({ exists: true, size: 9 * 1024 * 1024 });
+    mockInfo.mockReturnValue({ exists: true, size: 9 * 1024 * 1024 });
 
     await expect(pickAndOptimizeImage(512)).rejects.toThrow("too large");
+    expect(File).toHaveBeenCalledWith("file:///tmp/huge.jpg");
     expect(ImageManipulator.manipulateAsync).not.toHaveBeenCalled();
   });
 

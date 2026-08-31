@@ -1,0 +1,1 @@
+export { SettingsReceiptsScreen } from "./SettingsReceiptsScreen";

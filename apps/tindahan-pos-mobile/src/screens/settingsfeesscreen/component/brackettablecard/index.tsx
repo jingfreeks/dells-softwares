@@ -1,0 +1,1 @@
+export { BracketTableCard } from "./BracketTableCard";

@@ -1,4 +1,4 @@
-import { largeSecureStore } from "./secureStorage";
+import { largeSecureStore } from "../secureStorage";
 
 describe("largeSecureStore", () => {
   it("round-trips a value through encrypt/decrypt", async () => {

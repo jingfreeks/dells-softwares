@@ -48,6 +48,18 @@ export function formatRelativeTime(isoTimestamp: string, now: Date = new Date())
   return formatTime(isoTimestamp);
 }
 
+/**
+ * Up to two uppercase letters for an avatar badge -- first + last initial,
+ * or the first two letters of a single-word name. Falls back to "?" so an
+ * empty/whitespace name can never render an empty badge.
+ */
+export function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 /** A short, human summary of a sale's line items, e.g. "555 Sardines ×10" or "Coke Sakto, Skyflakes +1 more". */
 export function saleSummaryLabel(items: { name: string; quantity: number }[]): string {
   if (items.length === 0) return "Sale";
