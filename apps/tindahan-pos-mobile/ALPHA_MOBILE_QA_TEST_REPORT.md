@@ -218,3 +218,98 @@ Remaining before production:
 4. Still untested on mobile: trial lifecycle edge cases, tablet/landscape,
    and the paired-device role, which has no `staff` row and was not
    exercised here.
+
+---
+
+# Round 3 — Paired-device role
+
+The previous round listed the paired device as untested: it holds a real
+Supabase Auth session but **no `staff` row**, runs unattended on a shop
+counter, and is the one identity in the system nobody is logged in as.
+Both tests below were run live against staging with a genuinely paired
+device, not reasoned from the schema.
+
+| ID | Test | Result | Severity |
+|---|---|---|---|
+| SEC-M-008 | Paired device is confined to register data | **PASS** | — |
+| SEC-M-009 | Unpairing revokes an already-issued session | **PASS** | — |
+
+## How the device identity works
+
+`pair-device` creates a real auth user, deletes the throwaway store and
+staff row its signup trigger produced, and links it to the real store
+through a `devices` row instead. RLS then resolves it via:
+
+```sql
+select store_id from staff   where id = auth.uid()
+union all
+select store_id from devices where id = auth.uid() and unpaired_at is null
+limit 1
+```
+
+`auth_role()` reads from `staff` only, so a device resolves to **NULL**
+role and every admin-gated policy fails closed for it.
+
+## SEC-M-008 — Confined to register data — PASS
+
+A device paired to Tenant A, then queried directly:
+
+| Table | Device sees | Tenant A truth | Verdict |
+|---|---|---|---|
+| products | 41 | 41 | needed to ring up sales |
+| categories | 7 | 7 | needed |
+| customers | 1 | 1 | needed for utang |
+| stores | 1 | 1 | needed for the receipt header |
+| **sales** | **0** | 15 | correctly denied — no sales history |
+| **staff** | **0** | 3 | correctly denied — no staff emails or PIN hashes |
+| **audit_log** | **0** | — | correctly denied |
+| any Tenant B table | **0** | — | correctly denied |
+| `PATCH stores.fee_config` | **0 rows** | — | cannot change pricing |
+
+This is a genuine least-privilege boundary: the till can do its job and
+learn nothing else. A device left on an unattended counter cannot be used
+to enumerate staff, read takings, or reprice the store.
+
+## SEC-M-009 — Revocation is immediate — PASS
+
+The important case is a **stolen or lost till whose session is already
+live**. A JWT normally stays valid until it expires, so the question is
+whether unpairing waits for that.
+
+It does not. Using the **same token, with no re-login and no refresh**:
+
+```
+BEFORE unpair — products: 41 rows
+AFTER  unpair — products:  0 rows
+                customers: 0 rows
+                stores:    0 rows
+```
+
+Access dies the moment `unpaired_at` is set, because `auth_store_id()`
+re-evaluates it on every query rather than trusting the token. On top of
+that, `unpair-device` calls `auth.admin.deleteUser()`, so the credentials
+are destroyed too — belt and braces.
+
+## Observation — not a defect
+
+A `devices` row cannot be hard-deleted: `device_pairing_codes
+.consumed_by_device_id` has an FK to it. That is intentional — the unpair
+function's own comment notes the row is never deleted, and keeping it
+preserves which code paired which till. Recorded so a future tester does
+not re-diagnose it as the account-deletion FK class of bug.
+
+## Test data
+
+The probe device was paired, exercised, unpaired, and its auth user
+deleted — leaving the `devices` row marked unpaired, exactly the state
+the production unpair flow produces. The two genuine staging devices were
+untouched, and `fee_config` remains `null`.
+
+## Readiness
+
+```
+Unchanged: READY FOR BETA
+```
+
+Round 3 adds no new defects. Still untested on mobile: trial lifecycle
+edge cases, and tablet/landscape rendering.
