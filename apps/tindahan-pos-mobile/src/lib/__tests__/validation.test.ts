@@ -1,4 +1,4 @@
-import { isValidEmail, isValidPassword, MIN_PASSWORD_LENGTH } from "./validation";
+import { isValidEmail, isValidPassword, MIN_PASSWORD_LENGTH } from "../validation";
 
 describe("isValidEmail", () => {
   it("accepts a well-formed email", () => {

@@ -1,4 +1,4 @@
-import { clearOnboardingStep, loadOnboardingStep, saveOnboardingStep } from "./onboardingSettings";
+import { clearOnboardingStep, loadOnboardingStep, saveOnboardingStep } from "../onboardingSettings";
 
 jest.mock("@react-native-async-storage/async-storage", () => ({
   getItem: jest.fn(),

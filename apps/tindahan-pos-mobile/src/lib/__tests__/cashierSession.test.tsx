@@ -1,11 +1,11 @@
 import { Text } from "react-native";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import { CashierSessionProvider, useCashierSession } from "./cashierSession";
-import { useAuth } from "./auth";
+import { CashierSessionProvider, useCashierSession } from "../cashierSession";
+import { useAuth } from "../auth";
 
 const mockRpc = jest.fn();
 
-jest.mock("./supabaseClient", () => ({
+jest.mock("../supabaseClient", () => ({
   supabase: { rpc: (...args: unknown[]) => mockRpc(...args) },
 }));
 jest.mock("@react-native-async-storage/async-storage", () => ({
@@ -13,7 +13,7 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   setItem: jest.fn().mockResolvedValue(undefined),
   removeItem: jest.fn().mockResolvedValue(undefined),
 }));
-jest.mock("./auth", () => ({ useAuth: jest.fn() }));
+jest.mock("../auth", () => ({ useAuth: jest.fn() }));
 
 const mockedUseAuth = useAuth as jest.Mock;
 

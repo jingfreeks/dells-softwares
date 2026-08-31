@@ -30,7 +30,17 @@ const PRODUCT: Product = {
 const SALE: SaleRecord = {
   id: "s1",
   timestamp: "2026-08-31T02:15:00.000Z",
-  items: [{ productId: "p1", name: "Lucky Me Pancit Canton", quantity: 2, price: 18 }],
+  items: [
+    {
+      productId: "p1",
+      name: "Lucky Me Pancit Canton",
+      quantity: 2,
+      price: 18,
+      itemType: "product",
+      fee: 0,
+      lineTotal: 36,
+    },
+  ],
   total: 36,
   cashierName: "Aling Nena",
   paymentType: "cash",

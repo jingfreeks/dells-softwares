@@ -1,5 +1,5 @@
-import { bestSellers, buildDailyReport, salesByCategory, salesByPaymentType } from "./reports";
-import type { Customer, Product, SaleRecord } from "./types";
+import { bestSellers, buildDailyReport, salesByCategory, salesByPaymentType } from "../reports";
+import type { Customer, Product, SaleRecord } from "../types";
 
 function makeCustomer(overrides: Partial<Customer> = {}): Customer {
   return {

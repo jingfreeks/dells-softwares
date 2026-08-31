@@ -6,8 +6,8 @@ import {
   buildDebtAgingSummary,
   computeOldestDebtDays,
   latestTransactionForCustomer,
-} from "./customers";
-import type { Customer, SaleRecord } from "./types";
+} from "../customers";
+import type { Customer, SaleRecord } from "../types";
 
 function makeCustomer(overrides: Partial<Customer> = {}): Customer {
   return {
