@@ -269,19 +269,35 @@ Permission codes are literal strings checked via `has_permission('<code>')` serv
 
 **These accounts now exist**, created directly against the **staging** Supabase project (`qfkdecarbqwbpkzqqdxk` / "DellsSoftware-staging") — never production. All three share the store "QA Test Store" (created automatically as part of the Owner's self-registration), so QA data is isolated from any real tenant.
 
-| Account | Role | Email | Password | Purpose |
-|---|---|---|---|---|
-| QA Owner | Owner (`admin`) | `lyndell.dobluis+qa-owner@gmail.com` | `QaOwner!2026Test` | Full app testing: Dashboard, Staff, Settings, Reports, Plan |
-| QA Supervisor | Cashier + `SUPERVISOR` role | `lyndell.dobluis+qa-supervisor@gmail.com` | `QaSupervisor!2026Test` | Void/refund, reports, inventory-manage permission testing |
-| QA Cashier | Cashier (default, no extra role grant) | `lyndell.dobluis+qa-cashier@gmail.com` | `QaCashier!2026Test` | POS/utang-within-limit/needs-PIN-blocked-action testing |
+> **Credentials are not recorded in this document.** This repository is
+> public. Earlier revisions of this file listed the three accounts'
+> e-mail addresses and passwords in plain text, which published working
+> logins to the staging project. Supply them through the environment
+> instead, and never paste them back into a tracked file.
+>
+> ```bash
+> export QA_OWNER_EMAIL=...        QA_OWNER_PASSWORD=...
+> export QA_SUPERVISOR_EMAIL=...   QA_SUPERVISOR_PASSWORD=...
+> export QA_CASHIER_EMAIL=...      QA_CASHIER_PASSWORD=...
+> ```
+>
+> Ask the engineering owner for the current values. Because the previous
+> values were published, they must be rotated before use — see the
+> rotation issue linked from this section's history.
+
+| Account | Role | Credentials | Purpose |
+|---|---|---|---|
+| QA Owner | Owner (`admin`) | `QA_OWNER_EMAIL` / `QA_OWNER_PASSWORD` | Full app testing: Dashboard, Staff, Settings, Reports, Plan |
+| QA Supervisor | Cashier + `SUPERVISOR` role | `QA_SUPERVISOR_EMAIL` / `QA_SUPERVISOR_PASSWORD` | Void/refund, reports, inventory-manage permission testing |
+| QA Cashier | Cashier (default, no extra role grant) | `QA_CASHIER_EMAIL` / `QA_CASHIER_PASSWORD` | POS/utang-within-limit/needs-PIN-blocked-action testing |
 
 Notes for the tester:
 
-- These are real Gmail **plus-addressed** aliases off one real inbox (used only because this Supabase project requires email confirmation on signup, and `@example.test`-style addresses are rejected as invalid by Supabase's own email validation) — they are not disposable "no such domain" addresses. Do not repurpose them for anything other than this QA effort.
+- These are real, plus-addressed aliases off one real inbox (used only because this Supabase project requires email confirmation on signup, and `@example.test`-style addresses are rejected as invalid by Supabase's own email validation) — they are not disposable "no such domain" addresses. The addresses themselves belong to a person, so they are held in the environment rather than written down here. Do not repurpose them for anything other than this QA effort.
 - The Supervisor and Cashier accounts were created via the app's own `create-cashier` Edge Function (the same path "Add Staff" in Settings → Staff uses), authenticated as the QA Owner — so they are fully real staff rows in staging, not fixtures inserted by hand.
 - **No PIN is set yet** on any of these accounts — PIN-based quick-switch cashier login (§14) and the owner-approval-PIN override flow (§17) both need a PIN first. Sign in as QA Owner → Settings → Staff → set a PIN for QA Cashier/QA Supervisor (or sign in as each and set their own PIN under Settings → Profile → Signing in), and set the QA Owner's own PIN the same way (needed for the credit-limit-override flow).
 - **No device is paired yet.** If a "paired device / bare register" test is needed, pair one live during testing via `/pair` (Login page → "Pair a device") using a pairing code generated from Settings → Devices while signed in as QA Owner.
-- If any of these accounts stop working (e.g. staging gets reset), recreate them via `/register` (Owner) and Settings → Staff → Add Staff (Supervisor/Cashier) — do not invent new credentials without documenting them here.
+- If any of these accounts stop working (e.g. staging gets reset), recreate them via `/register` (Owner) and Settings → Staff → Add Staff (Supervisor/Cashier). Record the new values in the team's secret store and update the environment — **not** in this file.
 - **`[New 2026-08-29]`** These three accounts are already onboarded (`onboardedAt` set) from prior testing, so they will **not** show the new Welcome/Choose screen (§9.1) or be eligible to start a fresh trial (`start_trial` is one-time-per-store, and this store may already have `trial_ends_at` set from earlier work). To test FLOW-029/030/031 (Welcome/Choose, Explore Demo, trial start) as a genuinely fresh signup, register a **new** `QA Trial Test` store via `/register` rather than reusing QA Owner — do not repurpose QA Owner's store for this, since it would consume its one-time trial and make future re-tests of the trial-start flow impossible on that store.
 - **Which frontend URL to point the browser at**: this document's own §1 "Application URL" row is `UNKNOWN` — the frontend's staging deployment domain wasn't discoverable from the repo itself (only the Supabase *backend* project, `qfkdecarbqwbpkzqqdxk`, is known, and that's what these accounts live in). Get the staging frontend URL from the engineering team before testing, or run the app locally with `npm run dev` from a checkout whose `.env` is linked to this same staging project.
 
