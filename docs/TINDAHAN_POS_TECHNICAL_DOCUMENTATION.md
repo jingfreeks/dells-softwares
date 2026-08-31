@@ -1445,3 +1445,311 @@ should be corrected.
 throughout the product. "Order slip" is the Alpha document type,
 deliberately chosen so it is not confused with an official receipt or
 invoice.
+
+---
+
+## 48. Screenshots, user flows and operating procedures
+
+This part demonstrates the system rather than describing it. Every figure
+is a capture of the **actual running application** at the documented
+revision. No mock-ups, stock images, generated UI, or screens for
+functionality that does not exist.
+
+### 48.1 How the evidence was produced
+
+| | |
+|---|---|
+| Web captures | Playwright, `apps/tindahan-pos/e2e/capture-screenshots.spec.ts`, Chromium at 1440×900, against the built application signed in as a real staff account |
+| Mobile captures | `xcrun simctl io … screenshot`, iPhone 15 Pro simulator, Expo development build |
+| Reproducibility | Re-running the capture spec regenerates the whole web set against whatever is currently built |
+| Credentials | Supplied by environment variable at run time; never committed and never visible in a figure |
+
+**Disclosure — mobile figures.** The mobile captures come from an **Expo
+development build**, so the React Native performance overlay (RAM / JS
+frame rate) is visible in the top-left. That overlay is a development
+artifact and is **not part of the shipped interface**. It is left in
+rather than edited out, because editing screenshots would breach the
+requirement that evidence be unaltered captures of the real application.
+
+### 48.2 Screenshot evidence table
+
+| Fig. | App | Screen / flow | Role | Purpose | Status |
+|---|---|---|---|---|---|
+| 1 | Web | Login | Public | Authentication entry point | CAPTURED |
+| 2 | Web | Landing page | Public | Product presentation | CAPTURED |
+| 3 | Web | POS / register | Admin, Cashier | Sales entry | CAPTURED |
+| 4 | Web | POS with cart | Cashier | Cart, quantity, totals | CAPTURED |
+| 5 | Web | Dashboard | Admin | Business overview, ALPHA indicator | CAPTURED |
+| 6 | Web | Inventory | Admin, Cashier | Stock levels | CAPTURED |
+| 7 | Web | Customers / utang | Admin, Cashier | Credit balances | CAPTURED |
+| 8 | Web | Reports | Admin + `pos.report.view` | Sales reporting, Z-Reading | CAPTURED |
+| 9 | Web | Settings → Receipts | Admin | **Alpha order slip and guardrails** | CAPTURED |
+| 10 | Web | Audit log | Admin | Tamper-evident history | CAPTURED |
+| 11 | Web | Staff and roles | Admin + `staff.manage` | Segregation of duties | CAPTURED |
+| 12 | Web | Settings → Store | Admin | Store and BIR fields | CAPTURED |
+| 13 | Mobile | Settings → Receipts | Admin | **Alpha order slip and guardrails** | CAPTURED |
+| — | Mobile | Home, POS, settings menu | Admin | Mobile navigation and register | **PENDING CAPTURE** |
+| — | Web | Completed-sale receipt modal, reprint | Cashier | Transaction document and reprint marker | **PENDING CAPTURE** — requires completing a live sale against staging |
+| — | Web | Registration, onboarding, shift | Admin | Signup and shift lifecycle | **PENDING CAPTURE** |
+
+Figures are stored in `docs/screenshots/`. Pending items are listed
+rather than omitted, per the requirement to identify missing evidence.
+
+### 48.3 Figure index
+
+**Figure 1 — Login.** Module: Authentication. Role: all users. Email and
+password fields, "Forgot password", Google sign-in (provider not
+enabled, §29), and "Set it up as a register" for device pairing.
+
+**Figure 2 — Landing page.** Public marketing page served at `/`.
+
+**Figure 3 — POS / register.** Module: Sales. The register with product
+tiles, search, and category filters.
+
+**Figure 4 — POS with cart.** Cart lines, quantities and running total
+before payment.
+
+**Figure 5 — Dashboard.** Module: Reporting. Today's sales, transaction
+count, low stock, utang outstanding, restocking list. The
+**ALPHA TEST MODE** indicator (§13 of the guardrail specification) is
+visible in the top bar, as is the trial banner.
+
+**Figure 6 — Inventory.** Product list with stock levels and restocking.
+
+**Figure 7 — Customers / utang.** Customer balances and credit.
+
+**Figure 8 — Reports.** Date/cashier/device filters, sales tables, VAT
+summary, void and refund summaries, and the Z-Reading card.
+
+**Figure 9 — Settings → Receipts (web).** The most BIR-relevant web
+figure. Shows the order-slip preview carrying
+`*** TEST MODE / TRAINING ONLY ***`, the document type **ORDER SLIP**,
+and `*** NOT AN OFFICIAL BIR INVOICE/RECEIPT ***` below the operator's
+own footer message. The **TIN and permit chip is off and locked**, with
+the explanation that registration identifiers stay off in test mode.
+Receipt numbering shows the next server-assigned number.
+
+**Figure 10 — Audit log.** Module: Governance. Recorded actions with
+actor and timestamp (§17).
+
+**Figure 11 — Staff and roles.** Staff accounts and role assignment
+(§12).
+
+**Figure 12 — Settings → Store.** Store identity and BIR-related fields
+(TIN, permit number, BIR-registered flag, VAT status).
+
+**Figure 13 — Settings → Receipts (mobile).** The mobile equivalent of
+Figure 9, showing the same guardrails on the mobile preview and the same
+locked TIN chip. Development-build overlay present, see §48.1.
+
+### 48.4 Flow — user login
+
+```
+Open application
+      ↓
+/login — email + password
+      ↓
+Supabase Auth (GoTrue) issues JWT
+      ↓
+auth_store_id() resolves the tenant
+      ↓
+staff row → role;  staff_roles → permissions
+      ↓
+admin → /admin (dashboard)      cashier → /pos (register)
+      ↓
+audit_log 'staff_logged_in'
+```
+
+Verified behaviour: failed sign-in returns an explicit error and creates
+no session. An onboarded admin lands on `/admin`; a cashier lands on
+`/pos`. Route access is gated client-side **and** independently by RLS
+(§15.2). Evidence: Figure 1, Figure 3, Figure 5.
+
+### 48.5 Flow — POS sales transaction
+
+The authoritative sequence is in §8.4. In operating terms:
+
+```
+Cashier at the register (Fig 3)
+      ↓  select products / scan barcode
+Cart with quantities and total (Fig 4)
+      ↓  optional discount; customer for a credit sale
+Choose payment: cash · QR (reference no.) · credit
+      ↓
+checkout_sale()  — one database transaction
+      ↓
+sale + items written · stock deducted · customer balance updated
+receipt number allocated · audit_log 'sale_created'
+      ↓
+Order slip rendered (Fig 9) — marked TEST MODE / ORDER SLIP
+      ↓
+Dashboard, reports and audit log reflect the sale (Figs 5, 8, 10)
+```
+
+**Insufficient stock.** Validation happens inside `checkout_sale()`, not
+in the client. A sale that exceeds available stock is rejected, no sale
+row is created, and no stock is deducted — there is no partial state,
+because the whole operation is one transaction.
+
+**Insufficient credit.** A credit sale beyond the customer's limit
+raises `CREDIT_LIMIT_EXCEEDED` and is rejected. A null limit means
+unlimited. An owner PIN override exists, with lockout.
+
+**Duplicate submission.** The client disables the button while a
+checkout is in flight and re-checks on entry; the server additionally
+de-duplicates on `p_client_request_id`. A double-tap cannot produce two
+sales.
+
+### 48.6 Flow — customer credit and collection
+
+```
+Credit sale → checkout_sale() → customers.balance increases
+Collection  → credit_payments row (records resulting balance)
+            → balance decreases → aging and history update
+```
+
+Balances are server-computed and never client-settable (§9).
+Evidence: Figure 7.
+
+### 48.7 Flow — reprint
+
+```
+Reports / sales history → select sale → reprint
+      ↓
+Same Receipt component, isReprint = true
+      ↓
+*** TEST MODE / TRAINING ONLY ***      (header, unchanged)
+*** REPRINT ***                        (added)
+… document …
+*** NOT AN OFFICIAL BIR INVOICE/RECEIPT ***   (footer, unchanged)
+      ↓
+audit_log 'receipt_reprinted'
+```
+
+A reprint **cannot** bypass the disclaimers: the header renders before
+the reprint marker and the footer after everything else, from the same
+template. Reprints are audited — `receipt_reprinted` is one of the 12
+verified audit actions (§17). Evidence for the marker: §18.2 and the
+Receipt test suite; screenshot **PENDING CAPTURE**.
+
+### 48.8 Role-based operating procedures
+
+**Owner / Administrator** (`staff.role = 'admin'`, all 20 permissions)
+
+```
+Sign in → Dashboard (Fig 5) → Inventory (Fig 6) → Customers (Fig 7)
+        → Staff and roles (Fig 11) → Reports incl. Z-Reading (Fig 8)
+        → Settings: store, receipts, fees, alerts, backup, devices,
+          plan, audit log (Figs 9, 10, 12)
+```
+
+**Supervisor** (`staff.role = 'cashier'` + SUPERVISOR, 15 permissions)
+
+```
+Sign in → POS → sell · void · refund
+        → Inventory: manage products, adjust, receive, count
+        → Customers → Reports
+        (no staff management, no organization/branch settings)
+```
+
+**Cashier** (`staff.role = 'cashier'`, no granular permissions)
+
+```
+Sign in (or PIN on a shared device) → POS → sell
+        → cash · QR · credit within the customer's limit
+        → print order slip
+        (no reports, no staff, no settings — verified server-side:
+         a cashier's API read of `sales` returns zero rows, §15.2)
+```
+
+**Paired device** (no `staff` row)
+
+```
+Pair once with a code → choose cashier → PIN → register only
+        (verified: no sales history, no staff, no audit log, §11)
+```
+
+**There is no separate "Manager" or "Staff" role.** The specification's
+example matrix lists them; this system implements Owner/Admin,
+Supervisor, Cashier and Paired Device only. They are not documented here
+because they do not exist.
+
+### 48.9 End-to-end scenario — cash sale
+
+| # | Step | System behaviour | Evidence |
+|---|---|---|---|
+| 1 | Cashier signs in | JWT issued; `staff_logged_in` audited | Fig 1 |
+| 2 | Opens the register | Catalogue loaded, store-scoped by RLS | Fig 3 |
+| 3 | Adds items | Cart totals computed client-side for display | Fig 4 |
+| 4 | Takes ₱200 cash for a ₱177 sale | Change ₱23 computed | Fig 9 (slip) |
+| 5 | Completes the sale | One transaction: sale + items + stock + number + audit | §8.4 |
+| 6 | Document produced | Order slip, both disclaimers, ORDER SLIP type | Fig 9 |
+| 7 | Reporting updates | Dashboard and reports reflect the sale | Figs 5, 8 |
+| 8 | Audit written | `sale_created` | Fig 10 |
+
+### 48.10 BIR-relevant lifecycle demonstration
+
+```
+Product (Fig 6)
+   ↓
+POS (Figs 3, 4)
+   ↓
+Sale — checkout_sale(), atomic (§8)
+   ↓
+Payment recorded · inventory deducted · customer balance updated
+   ↓
+Transaction document — ORDER SLIP, test-marked (Figs 9, 13)
+   ↓
+Reports incl. Z-Reading (Fig 8)
+   ↓
+Audit trail incl. reprints (Fig 10)
+```
+
+**ALPHA / TEST OUTPUT — what exists today.** An order slip marked
+`*** TEST MODE / TRAINING ONLY ***` and
+`*** NOT AN OFFICIAL BIR INVOICE/RECEIPT ***`, with no VAT breakdown and
+no registration identifiers.
+
+**FUTURE BIR PRODUCTION OUTPUT — FOR BIR VALIDATION.** An accredited
+invoice or receipt, its required content and layout, accumulating
+non-resettable totals, X-Reading, and any electronic transmission. None
+of that is implemented, and none of it is claimed.
+
+### 48.11 Completeness checklist
+
+| Item | Status |
+|---|---|
+| Login flow documented | DONE (§48.4) |
+| POS flow documented | DONE (§48.5) |
+| Payment flows documented | DONE (§48.5, §10) |
+| Credit/utang flow documented | DONE (§48.6) |
+| Customer payment flow documented | DONE (§48.6) |
+| Reprint flow documented | DONE (§48.7) |
+| Reports documented | DONE (§20, §21) |
+| Role-based procedures documented | DONE (§48.8) |
+| End-to-end transaction demonstrated | DONE (§48.9) |
+| BIR lifecycle demonstrated | DONE (§48.10) |
+| Print output documented | DONE (§18, Figs 9, 13) |
+| Audit trail documented | DONE (§17, Fig 10) |
+| Major web screens captured | DONE — 12 figures |
+| Major mobile screens captured | **PARTIAL** — 1 of 4 |
+| Registration / onboarding captured | **NOT DONE** |
+| Shift lifecycle captured | **NOT DONE** — feature itself is partial (§11) |
+| Completed-sale receipt and reprint captured | **NOT DONE** |
+| Screenshots match the documented revision | YES |
+| No fabricated screenshots | YES |
+| Missing features identified | YES (§36, §37) |
+| BIR gaps identified | YES (§35, §36) |
+
+### 48.12 Product setup, inventory receiving and shift — status
+
+**Product setup and inventory receiving** are implemented (§7.3) and
+visible in Figure 6. Step-by-step figures for adding a product and
+receiving stock are **PENDING CAPTURE**.
+
+**Cashier shift** is **PARTIALLY IMPLEMENTED** (§11). Cashier PIN
+sessions exist and are audited (`cashier_session_started` /
+`_ended`), but a formal shift lifecycle with declared opening float,
+blind close and variance sign-off was not verified. The specification's
+shift flow is therefore **not** documented as implemented — documenting
+it would assert functionality that has not been confirmed.

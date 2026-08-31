@@ -5,6 +5,7 @@
 | `TINDAHAN_POS_TECHNICAL_DOCUMENTATION.md` | **Source of truth.** Technical system documentation for the BIR accreditation process. |
 | `Tindahan_POS_Technical_Documentation.docx` | Word rendering, for editing and completing before submission. |
 | `Tindahan_POS_Technical_Documentation.pdf` | PDF rendering (A4), for submission. |
+| `screenshots/` | Figure evidence captured from the running applications. |
 
 ## Rebuilding the documents
 
@@ -24,6 +25,19 @@ node scripts/build-bir-pdf-html.mjs .
   "file://$PWD/docs/_bir-doc.html"
 rm docs/_bir-doc.html
 ```
+
+## Regenerating the screenshots
+
+Web figures are captured by Playwright against the built application:
+
+```bash
+cd apps/tindahan-pos
+DOC_EMAIL="<staff email>" DOC_PASSWORD="<password>" \
+  npx playwright test e2e/capture-screenshots.spec.ts --project=chromium
+```
+
+Credentials are read from the environment and are never committed.
+Mobile figures are captured with `xcrun simctl io <udid> screenshot`.
 
 ## Before submitting
 

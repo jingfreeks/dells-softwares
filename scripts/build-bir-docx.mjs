@@ -11,7 +11,7 @@ import path from "node:path";
 import {
   AlignmentType, BorderStyle, Document, Footer, Header, HeadingLevel, LevelFormat,
   PageBreak, PageNumber, Packer, Paragraph, ShadingType, Table, TableCell, TableRow,
-  TextRun, WidthType,
+  ImageRun, TextRun, WidthType,
 } from "docx";
 
 const REPO = process.argv[2];
@@ -26,6 +26,40 @@ const HEAD_BG = "EDF1F6";
 const WARN_BG = "FDF3E3";
 
 const CONTENT_W = 9360; // A4 portrait minus 1" margins, in DXA
+
+const SHOTS = path.join(REPO, "docs/screenshots");
+const FIGS = {
+  1: "web-01-login.png", 2: "web-02-landing.png", 3: "web-03-pos.png",
+  4: "web-04-pos-cart.png", 5: "web-05-dashboard.png", 6: "web-06-inventory.png",
+  7: "web-07-customers.png", 8: "web-08-reports.png",
+  9: "web-09-settings-receipts-order-slip.png", 10: "web-10-audit-log.png",
+  11: "web-11-staff.png", 12: "web-12-settings-store.png",
+  13: "mobile-01-settings-receipts-order-slip.png",
+};
+
+/** Figure image sized to the text column, preserving aspect ratio. */
+function figure(n) {
+  const file = FIGS[n];
+  if (!file) return [];
+  const full = path.join(SHOTS, file);
+  if (!fs.existsSync(full)) return [];
+  const mobile = file.startsWith("mobile");
+  // Captures are 1440x900 (web) and 1179x2556 (mobile device pixels).
+  const w = mobile ? 210 : 580;
+  const h = mobile ? Math.round((210 * 2556) / 1179) : Math.round((580 * 900) / 1440);
+  return [
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 120, after: 40 },
+      children: [new ImageRun({ type: "png", data: fs.readFileSync(full), transformation: { width: w, height: h } })],
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 160 },
+      children: [new TextRun({ text: `Figure ${n}`, italics: true, size: 16, color: MUTED })],
+    }),
+  ];
+}
 
 /** Inline markdown -> TextRuns. Handles **bold**, `code`, and plain text. */
 function runs(text, base = {}) {
@@ -216,7 +250,12 @@ function parse(md) {
       !/^#{2,4}\s/.test(lines[i]) && !/^\|/.test(lines[i]) &&
       !/^```/.test(lines[i]) && !/^>/.test(lines[i]) && !/^---+\s*$/.test(lines[i])
     ) buf.push(lines[i++]);
-    if (buf.length) out.push(para(buf.join(" ").replace(/\s+/g, " "), { base: { size: 20, color: INK } }));
+    if (buf.length) {
+      const text = buf.join(" ").replace(/\s+/g, " ");
+      const fig = text.match(/^\*\*Figure (\d+) —/);
+      if (fig) out.push(...figure(Number(fig[1])));
+      out.push(para(text, { base: { size: 20, color: INK } }));
+    }
   }
   return out;
 }

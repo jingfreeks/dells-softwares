@@ -102,7 +102,23 @@ function render(md) {
   return out.join("\n");
 }
 
-const body = render(fs.readFileSync(SRC, "utf8"));
+const FIGS = {
+  1: "web-01-login.png", 2: "web-02-landing.png", 3: "web-03-pos.png",
+  4: "web-04-pos-cart.png", 5: "web-05-dashboard.png", 6: "web-06-inventory.png",
+  7: "web-07-customers.png", 8: "web-08-reports.png",
+  9: "web-09-settings-receipts-order-slip.png", 10: "web-10-audit-log.png",
+  11: "web-11-staff.png", 12: "web-12-settings-store.png",
+  13: "mobile-01-settings-receipts-order-slip.png",
+};
+
+let body = render(fs.readFileSync(SRC, "utf8"));
+// Place each captured figure directly beneath its own caption paragraph.
+body = body.replace(/<p><strong>Figure (\d+) — ([^<]*)<\/strong>/g, (m, n, title) => {
+  const file = FIGS[Number(n)];
+  if (!file) return m;
+  const cls = file.startsWith("mobile") ? "fig mobile" : "fig";
+  return `<figure class="${cls}"><img src="screenshots/${file}" alt="Figure ${n} — ${title}"><figcaption>Figure ${n} — ${title}</figcaption></figure><p><strong>Figure ${n} — ${title}</strong>`;
+});
 
 const html = `<!doctype html><html><head><meta charset="utf-8"><title>Tindahan POS — Technical System Documentation</title>
 <style>
@@ -134,6 +150,10 @@ th, td { border: 1px solid #C9CDD3; padding: 4px 6px; vertical-align: top; }
 .callout { background: #FDF3E3; border-left: 4px solid #D08700; padding: 10px 12px; margin: 0 0 13px; page-break-inside: avoid; }
 .callout .ct { font-weight: 700; color: #8A5A00; margin: 0 0 5px; }
 .callout p { margin: 0; font-size: 9pt; }
+figure.fig { margin: 10px 0 6px; page-break-inside: avoid; text-align: center; }
+figure.fig img { max-width: 100%; max-height: 150mm; border: 1px solid #C9CDD3; border-radius: 3px; }
+figure.fig.mobile img { max-height: 175mm; }
+figure.fig figcaption { font-size: 8pt; color: #5A5F66; margin-top: 5px; font-style: italic; }
 </style></head><body>
 <div class="cover">
   <div class="brand">TINDAHAN POS</div>
