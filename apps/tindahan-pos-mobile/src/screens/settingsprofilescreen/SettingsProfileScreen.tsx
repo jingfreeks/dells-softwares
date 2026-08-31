@@ -56,6 +56,7 @@ export function SettingsProfileScreen({ onBack }: SettingsProfileScreenProps) {
           <TextField
             accessibilityLabel="Display name"
             label="Display name"
+            placeholder="Shown to your staff"
             value={s.displayName}
             onChangeText={s.setDisplayName}
           />
@@ -71,6 +72,7 @@ export function SettingsProfileScreen({ onBack }: SettingsProfileScreenProps) {
           <TextField
             accessibilityLabel="Mobile"
             label="Mobile"
+            placeholder="09XX XXX XXXX"
             value={s.phone}
             onChangeText={s.setPhone}
             keyboardType="phone-pad"
