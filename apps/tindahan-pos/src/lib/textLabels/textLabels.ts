@@ -1158,6 +1158,8 @@ export const LABEL_WHAT_TO_INCLUDE = "What to include";
 export const LABEL_INCLUDE_LOGO = "Logo";
 export const LABEL_INCLUDE_TIN_AND_PERMIT = "TIN and permit";
 export const TEXT_TIN_REQUIRED_HINT = "Your store is BIR registered, so your TIN always prints — this can't be turned off.";
+export const TEXT_TIN_WITHHELD_ALPHA_HINT =
+  "TIN and permit number stay off while the app is in test mode. Order slips printed now are not official BIR receipts.";
 export const LABEL_INCLUDE_CASHIER_NAME = "Cashier name";
 export const LABEL_INCLUDE_UTANG_BALANCE = "Utang balance";
 export const LABEL_INCLUDE_QR_TO_PAY = "QR to pay";
