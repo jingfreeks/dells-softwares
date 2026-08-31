@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { AlphaModeBadge } from "../../components/alphamodebadge";
 import { colors } from "../../theme/colors";
 import { PESO } from "../../lib/money";
 import { BarcodeScannerModal } from "../../components/barcodescannermodal";
@@ -87,7 +88,10 @@ export function PosScreen(props: PosScreenProps = {}) {
           <Feather name="camera" size={17} color={colors.textPrimary} />
         </Pressable>
         <View className="flex-1">
-          <Text className="text-lg font-medium text-text-primary">Sell</Text>
+          <View className="flex-row items-center gap-2">
+            <Text className="text-lg font-medium text-text-primary">Sell</Text>
+            <AlphaModeBadge compact />
+          </View>
           <Text className="text-xs text-text-faint mt-px">
             {activeCashier?.name ?? user?.name ?? "Cashier"}
             {store?.name ? ` · ${store.name}` : ""}
@@ -146,6 +150,7 @@ export function PosScreen(props: PosScreenProps = {}) {
         <Pressable
           accessibilityRole="button"
           onPress={() => setSelectedCategoryId(ALL_CATEGORY)}
+          hitSlop={{ top: 6, bottom: 6 }}
           className={`h-8 px-3.5 rounded-chip border items-center justify-center ${
             selectedCategoryId === ALL_CATEGORY ? "bg-accent border-accent" : "bg-panel-strong border-hairline"
           }`}
@@ -159,6 +164,7 @@ export function PosScreen(props: PosScreenProps = {}) {
             key={category.id}
             accessibilityRole="button"
             onPress={() => setSelectedCategoryId(category.id)}
+            hitSlop={{ top: 6, bottom: 6 }}
             className={`h-8 px-3.5 rounded-chip border items-center justify-center ${
               selectedCategoryId === category.id ? "bg-accent border-accent" : "bg-panel-strong border-hairline"
             }`}

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Receipt, type ReceiptDisplaySettings } from "@/components";
-import { BUTTON_PRINT_RECEIPT, BUTTON_NEW_SALE, useEscapeToClose, useFocusTrap, type SaleRecord, type Store } from "@/lib";
+import { BUTTON_NEW_SALE, printGuardrails, useEscapeToClose, useFocusTrap, type SaleRecord, type Store } from "@/lib";
 
 interface ReceiptModalProps {
   open: boolean;
@@ -77,7 +77,7 @@ export function ReceiptModal({
             style={{ flex: 1, marginBottom: 0, justifyContent: "center", height: 40 }}
             onClick={() => window.print()}
           >
-            {BUTTON_PRINT_RECEIPT}
+            {printGuardrails().printActionLabel}
           </button>
           <button
             type="button"

@@ -3,6 +3,7 @@ import { useAuth, TITLE_UNABLE_TO_CONNECT, LABEL_SKIP_TO_CONTENT } from "@/lib";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileHeader } from "@/components/MobileHeader";
 import { BillingBanner } from "@/components/BillingBanner";
+import { AlphaModeBadge } from "@/components/AlphaModeBadge";
 import { BottomNav } from "@/components/BottomNav";
 import { PageLoadingOverlay } from "@/components/PageLoadingOverlay";
 import { PageErrorOverlay } from "@/components/PageErrorOverlay";
@@ -68,6 +69,7 @@ export function ProtectedRoute() {
       <div className="flex min-h-0 flex-1 flex-col">
         <MobileHeader />
         <BillingBanner />
+        <AlphaModeBadge />
         <main id="main-content" className="tpl-main flex-1 pb-16 lg:pb-0" tabIndex={-1}>
           <Outlet />
         </main>

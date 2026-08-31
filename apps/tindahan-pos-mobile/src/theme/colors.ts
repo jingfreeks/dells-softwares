@@ -28,8 +28,13 @@ export const colors = {
   hairlineFaint: "rgba(255, 255, 255, 0.06)", // --bd3
   textStrong: "#F2F5FA", // --t1
   textDim: "#94A2B8", // --t5
-  textFaint: "#66738A", // --t7
-  textFaintest: "#4A5567", // --t8
+  // Raised from #66738A: at 11.5-12px on this palette's lightest surface
+  // it measured 2.97:1, below the 4.5:1 WCAG AA floor for small text.
+  textFaint: "#8592A9", // --t7
+  // Raised from #4A5567 (1.89:1). AA leaves no room for a third muted
+  // step below textFaint on a ground this dark, so the two now match --
+  // the ramp needs re-tuning by the design owner, not a dimmer value.
+  textFaintest: "#8592A9", // --t8
   successDim: "#7FCFA0", // --okd
   warningDim: "#B08A2E", // --warnd
   errorDim: "#B06B6B", // --badd
