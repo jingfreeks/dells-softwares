@@ -8,6 +8,7 @@ import { ScreenContainer } from "../../components/screencontainer";
 import { SmallButton } from "../../components/smallbutton";
 import { TextField } from "../../components/textfield";
 import { Toggle } from "../../components/toggle";
+import { printGuardrails } from "../../lib/appMode";
 import { colors } from "../../theme/colors";
 import { ReceiptPreview } from "./component/receiptpreview";
 import { useSettingsReceiptsScreen } from "./hooks";
@@ -16,6 +17,7 @@ import { DELIVERY_ROWS, INCLUDE_CHIPS, type SettingsReceiptsScreenProps } from "
 /** mobile-settings-receipts.html -- what the customer gets after a sale. */
 export function SettingsReceiptsScreen({ onBack }: SettingsReceiptsScreenProps) {
   const s = useSettingsReceiptsScreen();
+  const guard = printGuardrails();
   const { store } = useAuth();
 
   return (
@@ -43,21 +45,30 @@ export function SettingsReceiptsScreen({ onBack }: SettingsReceiptsScreenProps) 
         <Text className="text-[13.5px] font-medium text-text-primary mb-2.5">What to include</Text>
         <View className="flex-row flex-wrap gap-2">
           {INCLUDE_CHIPS.map((chip) => {
-            const on = s.settings[chip.key];
+            // TIN and permit number are registration identifiers. While
+            // the app is unaccredited, letting a tester switch them on
+            // would be letting them dress a test document up as an
+            // official one, so the chip is locked rather than hidden --
+            // the setting still exists, it just cannot be used yet.
+            const locked = chip.key === "includeTinAndPermit" && !guard.allowTaxIdentifiers;
+            const on = s.settings[chip.key] && !locked;
             return (
               <Pressable
                 key={chip.key}
                 accessibilityRole="checkbox"
-                accessibilityState={{ checked: on }}
-                accessibilityLabel={chip.label}
-                onPress={() => s.toggle(chip.key)}
+                accessibilityState={{ checked: on, disabled: locked }}
+                accessibilityLabel={locked ? `${chip.label} (unavailable in test mode)` : chip.label}
+                onPress={() => !locked && s.toggle(chip.key)}
+                disabled={locked}
                 className="h-8 px-3 flex-row items-center rounded-full border"
                 style={{
                   backgroundColor: on ? "rgba(76,141,255,0.14)" : colors.panelStrong,
                   borderColor: on ? "rgba(76,141,255,0.40)" : colors.hairline,
+                  opacity: locked ? 0.45 : 1,
                 }}
               >
                 {on && <Feather name="check" size={12} color={colors.accent} style={{ marginRight: 5 }} />}
+                {locked && <Feather name="lock" size={11} color={colors.textFaint} style={{ marginRight: 5 }} />}
                 <Text className="text-[12.5px]" style={{ color: on ? colors.accent : colors.textDim }}>
                   {chip.label}
                 </Text>
@@ -65,6 +76,12 @@ export function SettingsReceiptsScreen({ onBack }: SettingsReceiptsScreenProps) 
             );
           })}
         </View>
+        {guard.testMode && (
+          <Text className="text-[11.5px] text-text-faint mt-2">
+            TIN and permit number stay off while the app is in test mode. Order slips printed now are not
+            official BIR receipts.
+          </Text>
+        )}
       </Card>
 
       <Card padding={14} style={{ marginBottom: 14 }}>

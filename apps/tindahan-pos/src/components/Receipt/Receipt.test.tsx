@@ -1,4 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AppMode } from "@/lib/appMode";
+
+// The receipt renders whatever the guardrails permit, and the mode is a
+// module-level constant. Swapping it here lets the same component be
+// asserted in both regimes: ALPHA must suppress the official-invoice
+// presentation, and PRODUCTION must still be able to produce it, since
+// the underlying VAT data is kept for the future BIR mode.
+let currentMode: AppMode = "ALPHA";
+vi.mock("@/lib/appMode", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/appMode")>();
+  return { ...actual, printGuardrails: () => actual.printGuardrails(currentMode) };
+});
+function setMode(mode: AppMode) {
+  currentMode = mode;
+}
 import { render, screen } from "@testing-library/react";
 import { makeSaleRecord, makeStore } from "@/test/testUtils";
 import { Receipt, type ReceiptDisplaySettings } from "./Receipt";
@@ -11,7 +26,9 @@ const baseSettings: ReceiptDisplaySettings = {
 };
 
 describe("Receipt", () => {
+  beforeEach(() => setMode("ALPHA"));
   it("renders store, receipt number, cashier, items, total, and footer for a cash sale", () => {
+    setMode("PRODUCTION");
     render(
       <Receipt
         sale={makeSaleRecord({ receiptNumber: "000042" })}
@@ -39,6 +56,7 @@ describe("Receipt", () => {
   });
 
   it("renders the store's configured invoice type as the heading, not a hardcoded label", () => {
+    setMode("PRODUCTION");
     render(
       <Receipt
         sale={makeSaleRecord()}
@@ -77,6 +95,7 @@ describe("Receipt", () => {
   // registered store printing a TIN-less receipt is exactly the gap this
   // closes.
   it("shows TIN/permit for a BIR-registered store even when the toggle is off", () => {
+    setMode("PRODUCTION");
     render(
       <Receipt
         sale={makeSaleRecord()}
@@ -257,6 +276,7 @@ describe("Receipt", () => {
 
   describe("VAT breakdown (BIR compliance §35)", () => {
     it("shows VATable Sales and VAT Amount for a VAT-registered sale", () => {
+      setMode("PRODUCTION");
       render(
         <Receipt
           sale={makeSaleRecord({ vatStatus: "vat_registered", vatableSales: 100, vatAmount: 12 })}
@@ -275,6 +295,7 @@ describe("Receipt", () => {
     });
 
     it("shows Zero-Rated Sales for a zero-rated sale", () => {
+      setMode("PRODUCTION");
       render(
         <Receipt
           sale={makeSaleRecord({ vatStatus: "zero_rated", zeroRatedSales: 250, total: 250 })}
@@ -290,6 +311,7 @@ describe("Receipt", () => {
     });
 
     it("shows VAT-Exempt Sales for a VAT-exempt sale", () => {
+      setMode("PRODUCTION");
       render(
         <Receipt
           sale={makeSaleRecord({ vatStatus: "vat_exempt", vatExemptSales: 75, total: 75 })}
@@ -305,6 +327,7 @@ describe("Receipt", () => {
     });
 
     it("shows a plain non-VAT disclosure for a non-VAT sale, with no VAT line items", () => {
+      setMode("PRODUCTION");
       render(
         <Receipt
           sale={makeSaleRecord({ vatStatus: "non_vat" })}
@@ -322,6 +345,7 @@ describe("Receipt", () => {
     });
 
     it("shows the non-VAT disclosure for a sale still queued offline (vatStatus null)", () => {
+      setMode("PRODUCTION");
       render(
         <Receipt
           sale={makeSaleRecord({ vatStatus: null, syncStatus: "pending" })}
@@ -361,6 +385,69 @@ describe("Receipt", () => {
 
       expect(screen.queryByText("Subtotal")).not.toBeInTheDocument();
       expect(screen.queryByText("Discount")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Alpha/Test print guardrails", () => {
+    function renderAlphaReceipt(overrides = {}) {
+      return render(
+        <Receipt
+          sale={makeSaleRecord({ receiptNumber: "000042", vatStatus: "vat_registered", ...overrides })}
+          store={makeStore({ birRegistered: true, invoiceType: "Sales Invoice" })}
+          settings={baseSettings}
+          tin="123-456-789-000"
+          businessPermitNo="BP-2026-001"
+        />
+      );
+    }
+
+    it("stamps both mandatory disclaimers", () => {
+      renderAlphaReceipt();
+      expect(screen.getByText("*** TEST MODE / TRAINING ONLY ***")).toBeInTheDocument();
+      expect(screen.getByText("*** NOT AN OFFICIAL BIR INVOICE/RECEIPT ***")).toBeInTheDocument();
+    });
+
+    it("keeps the disclaimers on a reprint", () => {
+      render(
+        <Receipt
+          sale={makeSaleRecord({ receiptNumber: "000042" })}
+          store={makeStore()}
+          settings={baseSettings}
+          isReprint
+        />
+      );
+      expect(screen.getByText("*** TEST MODE / TRAINING ONLY ***")).toBeInTheDocument();
+      expect(screen.getByText("*** NOT AN OFFICIAL BIR INVOICE/RECEIPT ***")).toBeInTheDocument();
+      expect(screen.getByText("*** REPRINT ***")).toBeInTheDocument();
+    });
+
+    it("does not call itself a Sales Invoice", () => {
+      renderAlphaReceipt();
+      expect(screen.getByText("ORDER SLIP")).toBeInTheDocument();
+      expect(screen.queryByText("Sales Invoice")).not.toBeInTheDocument();
+    });
+
+    it("withholds TIN and permit even for a BIR-registered store", () => {
+      // The store row says birRegistered -- the app is what is not
+      // accredited, so the identifiers stay off regardless.
+      renderAlphaReceipt();
+      expect(screen.queryByText(/TIN:/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Permit:/)).not.toBeInTheDocument();
+    });
+
+    it("shows no VAT breakdown and no 'invoice' wording", () => {
+      renderAlphaReceipt();
+      expect(screen.queryByText("VATable sales")).not.toBeInTheDocument();
+      expect(screen.queryByText("VAT amount")).not.toBeInTheDocument();
+      // The old copy read "This invoice is NOT VAT Registered." -- a
+      // document calling itself an invoice is the exact red flag. The
+      // disclaimer necessarily contains the word, so match the line.
+      expect(screen.queryByText(/This invoice is NOT VAT Registered/i)).not.toBeInTheDocument();
+    });
+
+    it("labels the number as an order slip, not a receipt", () => {
+      renderAlphaReceipt();
+      expect(screen.getByText(/Order Slip No\./)).toBeInTheDocument();
     });
   });
 });
