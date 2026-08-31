@@ -8,6 +8,7 @@ import {
   TEXT_PREVIEW_CASH,
   TEXT_PREVIEW_CHANGE,
 } from "@/lib";
+import { printGuardrails } from "@/lib/appMode";
 
 const SAMPLE_ITEMS = [
   { name: "Pancit Canton x3", amount: "54.00" },
@@ -56,6 +57,8 @@ export function ReceiptPreviewPanel({
   const addressLine = storeAddress ?? TEXT_PREVIEW_STORE_ADDRESS_FALLBACK;
   const cityAndPhone = [city, contactNumber].filter(Boolean).join(" · ");
 
+  const guard = printGuardrails();
+
   return (
     <div>
       <p className="tpl-seclbl" style={{ marginBottom: 8 }}>
@@ -70,6 +73,12 @@ export function ReceiptPreviewPanel({
           boxShadow: "0 10px 28px rgba(0,0,0,.35)",
         }}
       >
+        {/* First thing on the paper, before the store name (§3). */}
+        {guard.mandatoryHeader && (
+          <p style={{ color: "#1A1A18", fontSize: 9.5, textAlign: "center", fontWeight: 700, marginBottom: 6 }}>
+            {guard.mandatoryHeader}
+          </p>
+        )}
         {includeLogo && (
           <p style={{ color: "#1A1A18", fontSize: 13, textAlign: "center", fontWeight: 500 }}>
             {storeName.toUpperCase()}
@@ -84,11 +93,11 @@ export function ReceiptPreviewPanel({
             </>
           )}
         </p>
-        {(birRegistered || includeTinAndPermit) && tin && (
+        {guard.allowTaxIdentifiers && (birRegistered || includeTinAndPermit) && tin && (
           <p style={{ color: "#5F5E5A", fontSize: 9.5, textAlign: "center", marginTop: 4 }}>TIN {tin}</p>
         )}
         <p style={{ color: "#1A1A18", fontSize: 11, textAlign: "center", fontWeight: 500, marginTop: 4 }}>
-          {invoiceType}
+          {guard.documentTitle ?? invoiceType}
         </p>
         <p style={{ margin: "8px 0", color: "#B4B2A9", fontSize: 10, textAlign: "center" }}>
           - - - - - - - - - - - - - - - - -
@@ -133,6 +142,13 @@ export function ReceiptPreviewPanel({
             </p>
             <p style={{ color: "#5F5E5A", fontSize: 10, textAlign: "center" }}>{footerMessage}</p>
           </>
+        )}
+        {/* After the store's own footer message: the operator's copy can
+            never be the last word on the document (§3, §10). */}
+        {guard.mandatoryFooter && (
+          <p style={{ color: "#1A1A18", fontSize: 9.5, textAlign: "center", fontWeight: 700, marginTop: 8 }}>
+            {guard.mandatoryFooter}
+          </p>
         )}
       </div>
       <div className="tpl-row" style={{ gap: 6, marginTop: 10 }}>

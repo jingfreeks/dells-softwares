@@ -22,6 +22,7 @@ export * from "./offlineQueue";
 export * from "./permissions";
 export * from "./platformErrors";
 export * from "./pos";
+export * from "./appMode";
 export * from "./printReport";
 export * from "./qr";
 export * from "./reports";
