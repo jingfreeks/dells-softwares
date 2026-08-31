@@ -1,5 +1,5 @@
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
+import { File } from "expo-file-system";
 
 /**
  * Opens the OS file picker and returns the picked file's text content, or
@@ -14,5 +14,5 @@ export async function pickCsvFileText(): Promise<string | null> {
     copyToCacheDirectory: true,
   });
   if (result.canceled || result.assets.length === 0) return null;
-  return FileSystem.readAsStringAsync(result.assets[0].uri);
+  return new File(result.assets[0].uri).text();
 }
