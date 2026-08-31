@@ -1,5 +1,5 @@
-import { buildRestockRows, computeRestockSuggestions, lowStockProducts, stockStatus } from "./inventory";
-import type { Product, SaleRecord } from "./types";
+import { buildRestockRows, computeRestockSuggestions, lowStockProducts, stockStatus } from "../inventory";
+import type { Product, SaleRecord } from "../types";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {

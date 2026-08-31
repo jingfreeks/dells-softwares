@@ -1,4 +1,4 @@
-import { formatRelativeTime, greetingForHour, initialsOf } from "./format";
+import { formatRelativeTime, greetingForHour, initialsOf } from "../format";
 
 describe("initialsOf", () => {
   it("takes the first and last initial of a multi-word name", () => {

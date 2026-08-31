@@ -1,4 +1,4 @@
-import { parseProductsCsv } from "./csv";
+import { parseProductsCsv } from "../csv";
 
 describe("parseProductsCsv", () => {
   it("returns an 'empty' error when there's no data row", () => {

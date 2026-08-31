@@ -1,12 +1,12 @@
 import { Text } from "react-native";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
-import { AuthProvider, useAuth } from "./auth";
+import { AuthProvider, useAuth } from "../auth";
 
 const mockSignUp = jest.fn();
 const mockInvoke = jest.fn();
 const mockSignInWithPassword = jest.fn();
 
-jest.mock("./supabaseClient", () => ({
+jest.mock("../supabaseClient", () => ({
   supabase: {
     auth: {
       getSession: jest.fn().mockResolvedValue({ data: { session: null } }),
