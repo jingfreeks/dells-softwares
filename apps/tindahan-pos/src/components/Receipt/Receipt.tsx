@@ -1,3 +1,4 @@
+import { printGuardrails } from "@/lib/appMode";
 import { PESO } from "@/lib/money";
 import type { SaleRecord, Store } from "@/lib/types";
 import {
@@ -70,9 +71,17 @@ export function Receipt({
   isReprint,
 }: ReceiptProps) {
   const timestamp = new Date(sale.timestamp);
+  const guard = printGuardrails();
 
   return (
     <div className="print-area tpl-receipt">
+      {/* Before anything else on the page, including the voided and
+          reprint markers -- §3/§7: a reprint must never bypass it. */}
+      {guard.mandatoryHeader && (
+        <p className="tpl-receipt-center tpl-receipt-line" style={{ fontWeight: 700 }}>
+          {guard.mandatoryHeader}
+        </p>
+      )}
       {sale.status === "voided" && (
         <p className="tpl-receipt-center tpl-receipt-line" style={{ fontWeight: 700 }}>
           {TEXT_VOIDED_MARKER}
@@ -86,19 +95,23 @@ export function Receipt({
       <div className="tpl-receipt-center">
         <p className="tpl-receipt-store">{store.name}</p>
         {store.address && <p className="tpl-receipt-line">{store.address}</p>}
-        {(store.birRegistered || settings.includeTinAndPermit) && tin && (
+        {guard.allowTaxIdentifiers && (store.birRegistered || settings.includeTinAndPermit) && tin && (
           <p className="tpl-receipt-line">TIN: {tin}</p>
         )}
-        {(store.birRegistered || settings.includeTinAndPermit) && businessPermitNo && (
+        {guard.allowTaxIdentifiers && (store.birRegistered || settings.includeTinAndPermit) && businessPermitNo && (
           <p className="tpl-receipt-line">Permit: {businessPermitNo}</p>
         )}
-        <p className="tpl-receipt-heading">{store.invoiceType}</p>
+        {/* The store's own invoiceType is "Sales Invoice" -- printing it
+            here would announce an unaccredited document as an official
+            one, so ALPHA substitutes its own title (§4). */}
+        <p className="tpl-receipt-heading">{guard.documentTitle ?? store.invoiceType}</p>
       </div>
 
       <div className="tpl-receipt-hr" />
 
       <p className="tpl-receipt-line">
-        {LABEL_RECEIPT_NUMBER_PREFIX} {sale.receiptNumber ?? TEXT_RECEIPT_NUMBER_PENDING}
+        {guard.documentNumberLabel ?? LABEL_RECEIPT_NUMBER_PREFIX}{" "}
+        {sale.receiptNumber ?? TEXT_RECEIPT_NUMBER_PENDING}
       </p>
       <p className="tpl-receipt-line">
         {timestamp.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })}{" "}
@@ -139,7 +152,11 @@ export function Receipt({
         </>
       )}
 
-      {sale.vatStatus === "vat_registered" && (
+      {/* §5: VAT breakdowns and the "not VAT registered" line are
+          official-invoice presentation. They are hidden while in ALPHA,
+          not removed -- sale.vatableSales/vatAmount/vatExemptSales are
+          still recorded on the sale for the future BIR mode. */}
+      {guard.allowTaxBreakdown && sale.vatStatus === "vat_registered" && (
         <>
           <div className="tpl-receipt-row">
             <span>{LABEL_VATABLE_SALES}</span>
@@ -151,19 +168,19 @@ export function Receipt({
           </div>
         </>
       )}
-      {sale.vatStatus === "zero_rated" && (
+      {guard.allowTaxBreakdown && sale.vatStatus === "zero_rated" && (
         <div className="tpl-receipt-row">
           <span>{LABEL_ZERO_RATED_SALES}</span>
           <span>{PESO.format(sale.zeroRatedSales)}</span>
         </div>
       )}
-      {sale.vatStatus === "vat_exempt" && (
+      {guard.allowTaxBreakdown && sale.vatStatus === "vat_exempt" && (
         <div className="tpl-receipt-row">
           <span>{LABEL_VAT_EXEMPT_SALES}</span>
           <span>{PESO.format(sale.vatExemptSales)}</span>
         </div>
       )}
-      {(sale.vatStatus === "non_vat" || sale.vatStatus === null) && (
+      {guard.allowTaxBreakdown && (sale.vatStatus === "non_vat" || sale.vatStatus === null) && (
         <p className="tpl-receipt-line">{TEXT_NOT_VAT_REGISTERED}</p>
       )}
 
@@ -225,6 +242,14 @@ export function Receipt({
           <div className="tpl-receipt-hr" />
           <p className="tpl-receipt-center tpl-receipt-line">{settings.footerMessage}</p>
         </>
+      )}
+
+      {/* Last thing on the page, after the store's own footer message:
+          the operator's copy can never be the final word (§3, §10). */}
+      {guard.mandatoryFooter && (
+        <p className="tpl-receipt-center tpl-receipt-line" style={{ fontWeight: 700, marginTop: 8 }}>
+          {guard.mandatoryFooter}
+        </p>
       )}
     </div>
   );
