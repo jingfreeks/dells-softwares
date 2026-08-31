@@ -35,6 +35,7 @@ function store(overrides: Partial<Store> = {}): Store {
     tin: "123-456-789-000",
     businessPermitNo: "QC-2026-08841",
     birRegistered: true,
+    feeConfig: null,
     ...overrides,
   };
 }

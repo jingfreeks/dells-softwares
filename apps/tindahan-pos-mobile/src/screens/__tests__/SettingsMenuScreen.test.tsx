@@ -17,6 +17,7 @@ const store: Store = {
   tin: null,
   businessPermitNo: null,
   birRegistered: false,
+  feeConfig: null,
 };
 
 function staff(overrides: Partial<StaffAccount> = {}): StaffAccount {
