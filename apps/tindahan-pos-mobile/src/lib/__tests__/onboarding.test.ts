@@ -6,8 +6,8 @@ import {
   computeStockAlertPreview,
   onboardingMinutesLeft,
   onboardingProgressPercent,
-} from "./onboarding";
-import type { Product, SaleRecord } from "./types";
+} from "../onboarding";
+import type { Product, SaleRecord } from "../types";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {

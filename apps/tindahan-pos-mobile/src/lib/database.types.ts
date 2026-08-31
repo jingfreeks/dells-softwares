@@ -3,6 +3,11 @@
 // Once the project is live, prefer regenerating this from the real schema:
 //   npx supabase gen types typescript --project-id <ref> > src/lib/database.types.ts
 
+import type { StoreFeeConfig } from "./types";
+
+/** `stores.fee_config` is jsonb, but its shape is ours -- same alias the web app's own generated types use. */
+export type StoreFeeConfigRow = StoreFeeConfig;
+
 export type StaffRole = "admin" | "cashier";
 export type SaleItemType = "product" | "service";
 export type PaymentType = "cash" | "credit" | "qr";
@@ -11,14 +16,66 @@ export type SaleStatus = "completed" | "voided";
 export interface Database {
   public: {
     Tables: {
+      document_series: {
+        Row: {
+          id: string;
+          store_id: string;
+          series_key: string;
+          prefix: string;
+          next_number: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          series_key?: string;
+          prefix?: string;
+          next_number?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          series_key?: string;
+          prefix?: string;
+          next_number?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "document_series_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       stores: {
-        Row: { id: string; name: string; address: string | null; photo_url: string | null; created_at: string };
+        Row: {
+          id: string;
+          name: string;
+          address: string | null;
+          photo_url: string | null;
+          created_at: string;
+          contact_number: string | null;
+          city: string | null;
+          tin: string | null;
+          business_permit_no: string | null;
+          bir_registered: boolean;
+          fee_config: StoreFeeConfigRow | null;
+        };
         Insert: {
           id?: string;
           name: string;
           address?: string | null;
           photo_url?: string | null;
           created_at?: string;
+          contact_number?: string | null;
+          city?: string | null;
+          tin?: string | null;
+          business_permit_no?: string | null;
+          bir_registered?: boolean;
+          fee_config?: StoreFeeConfigRow | null;
         };
         Update: {
           id?: string;
@@ -26,6 +83,12 @@ export interface Database {
           address?: string | null;
           photo_url?: string | null;
           created_at?: string;
+          contact_number?: string | null;
+          city?: string | null;
+          tin?: string | null;
+          business_permit_no?: string | null;
+          bir_registered?: boolean;
+          fee_config?: StoreFeeConfigRow | null;
         };
         Relationships: [];
       };
@@ -41,6 +104,7 @@ export interface Database {
           address: string | null;
           onboarded_at: string | null;
           created_at: string;
+          pin_hash: string | null;
         };
         Insert: {
           id: string;
@@ -53,6 +117,7 @@ export interface Database {
           address?: string | null;
           onboarded_at?: string | null;
           created_at?: string;
+          pin_hash?: string | null;
         };
         Update: {
           id?: string;
@@ -65,6 +130,7 @@ export interface Database {
           address?: string | null;
           onboarded_at?: string | null;
           created_at?: string;
+          pin_hash?: string | null;
         };
         Relationships: [
           {
@@ -601,6 +667,10 @@ export interface Database {
       };
       end_cashier_session: {
         Args: { p_token: string; p_closing_float?: number | null };
+        Returns: undefined;
+      };
+      set_own_pin: {
+        Args: { p_pin: string };
         Returns: undefined;
       };
       start_trial: {

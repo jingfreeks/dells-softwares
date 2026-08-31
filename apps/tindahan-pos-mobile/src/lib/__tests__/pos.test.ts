@@ -9,8 +9,8 @@ import {
   removeFromCart,
   searchProductsByName,
   setQuantity,
-} from "./pos";
-import type { CartLine, Product } from "./types";
+} from "../pos";
+import type { CartLine, Product } from "../types";
 
 const chips: Product = {
   id: "p1",

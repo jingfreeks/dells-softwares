@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "./supabaseClient";
 import { largeSecureStore } from "./secureStorage";
-import type { StaffAccount, Store } from "./types";
+import type { StaffAccount, Store, StoreFeeConfig } from "./types";
 
 type AuthResult = { ok: true } | { ok: false; error: string };
 type RegisterResult = { ok: true; needsEmailConfirmation: boolean } | { ok: false; error: string };
@@ -55,7 +55,28 @@ interface AuthContextValue {
     avatarUrl?: string | null;
   }) => Promise<AuthResult>;
   /** Mirrors the web app's updateStore() -- patches the current store's row. */
-  updateStore: (patch: { name?: string; address?: string | null; photoUrl?: string | null }) => Promise<AuthResult>;
+  updateStore: (patch: {
+    name?: string;
+    address?: string | null;
+    photoUrl?: string | null;
+    contactNumber?: string | null;
+    city?: string | null;
+    tin?: string | null;
+    businessPermitNo?: string | null;
+    birRegistered?: boolean;
+    feeConfig?: StoreFeeConfig | null;
+  }) => Promise<AuthResult>;
+  /**
+   * Sets this staff member's own override PIN via set_own_pin() -- the RPC
+   * hashes it server-side into staff.pin_hash. Mirrors the web app's
+   * setOwnPin(); the raw PIN is never stored client-side or sent anywhere
+   * but this call.
+   */
+  setOwnPin: (pin: string) => Promise<AuthResult>;
+  /** Changes the signed-in user's password through Supabase Auth. */
+  changePassword: (newPassword: string) => Promise<AuthResult>;
+  /** Ends every other session for this account (Supabase global sign-out). */
+  signOutEverywhere: () => Promise<AuthResult>;
   /** Marks the onboarding wizard finished so it doesn't show again on next sign-in. */
   completeOnboarding: () => Promise<AuthResult>;
   /**
@@ -71,7 +92,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
   const { data, error } = await supabase
     .from("staff")
-    .select("id, store_id, name, email, role, avatar_url, phone, address, onboarded_at")
+    .select("id, store_id, name, email, role, avatar_url, phone, address, onboarded_at, pin_hash")
     .eq("id", userId)
     .single();
 
@@ -87,6 +108,8 @@ async function loadStaffProfile(userId: string): Promise<StaffAccount | null> {
     phone: data.phone,
     address: data.address,
     onboardedAt: data.onboarded_at,
+    // Presence only -- the hash itself never leaves this function.
+    hasPin: data.pin_hash !== null,
   };
 }
 
@@ -106,7 +129,7 @@ async function loadDevice(deviceId: string): Promise<DeviceIdentity | null> {
 async function loadStore(storeId: string): Promise<Store | null> {
   const { data, error } = await supabase
     .from("stores")
-    .select("id, name, address, photo_url")
+    .select("id, name, address, photo_url, contact_number, city, tin, business_permit_no, bir_registered, fee_config")
     .eq("id", storeId)
     .single();
 
@@ -117,6 +140,12 @@ async function loadStore(storeId: string): Promise<Store | null> {
     name: data.name,
     address: data.address,
     photoUrl: data.photo_url,
+    contactNumber: data.contact_number,
+    city: data.city,
+    tin: data.tin,
+    businessPermitNo: data.business_permit_no,
+    birRegistered: data.bir_registered,
+    feeConfig: data.fee_config,
   };
 }
 
@@ -260,17 +289,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }
 
-  async function updateStore(patch: { name?: string; address?: string | null; photoUrl?: string | null }): Promise<AuthResult> {
+  async function setOwnPin(pin: string): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
-    const { error } = await supabase
+    const { error } = await supabase.rpc("set_own_pin", { p_pin: pin });
+    if (error) return { ok: false, error: error.message };
+    setUser(await loadStaffProfile(user.id));
+    return { ok: true };
+  }
+
+  async function changePassword(newPassword: string): Promise<AuthResult> {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  }
+
+  /**
+   * scope: "global" ends every session for this account, including this
+   * one -- the onAuthStateChange listener then clears local state, so
+   * there's no separate sign-out call to make here.
+   */
+  async function signOutEverywhere(): Promise<AuthResult> {
+    const { error } = await supabase.auth.signOut({ scope: "global" });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  }
+
+  async function updateStore(patch: {
+    name?: string;
+    address?: string | null;
+    photoUrl?: string | null;
+    contactNumber?: string | null;
+    city?: string | null;
+    tin?: string | null;
+    businessPermitNo?: string | null;
+    birRegistered?: boolean;
+    feeConfig?: StoreFeeConfig | null;
+  }): Promise<AuthResult> {
+    if (!user) return { ok: false, error: "Not signed in." };
+    const { data, error } = await supabase
       .from("stores")
       .update({
         ...(patch.name !== undefined && { name: patch.name }),
         ...(patch.address !== undefined && { address: patch.address }),
         ...(patch.photoUrl !== undefined && { photo_url: patch.photoUrl }),
+        ...(patch.contactNumber !== undefined && { contact_number: patch.contactNumber }),
+        ...(patch.city !== undefined && { city: patch.city }),
+        ...(patch.tin !== undefined && { tin: patch.tin }),
+        ...(patch.businessPermitNo !== undefined && { business_permit_no: patch.businessPermitNo }),
+        ...(patch.birRegistered !== undefined && { bir_registered: patch.birRegistered }),
+        ...(patch.feeConfig !== undefined && { fee_config: patch.feeConfig }),
       })
-      .eq("id", user.storeId);
+      .eq("id", user.storeId)
+      .select("id");
     if (error) return { ok: false, error: error.message };
+    // Mirrors the web app's own guard: RLS on `stores` restricts UPDATE to
+    // admins and staff holding settings.store.manage -- a caller lacking
+    // that gets no error at all, just an empty result set (Postgres
+    // silently filters the row rather than raising). Without this check
+    // that reads as a false "Saved!" while nothing was written.
+    if (!data || data.length === 0) {
+      return { ok: false, error: "You don't have permission to update store settings." };
+    }
     setStore(await loadStore(user.storeId));
     return { ok: true };
   }
@@ -297,6 +376,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         updateProfile,
+        setOwnPin,
+        changePassword,
+        signOutEverywhere,
         updateStore,
         completeOnboarding,
         pairDevice,

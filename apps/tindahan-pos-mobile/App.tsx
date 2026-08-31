@@ -22,6 +22,14 @@ import { PairDeviceScreen } from "./src/screens/pairdevicescreen";
 import { PosScreen } from "./src/screens/posscreen";
 import { PricingScreen } from "./src/screens/pricingscreen";
 import { RestockScreen } from "./src/screens/restockscreen";
+import { SettingsAlertsScreen } from "./src/screens/settingsalertsscreen";
+import { SettingsBackupScreen } from "./src/screens/settingsbackupscreen";
+import { SettingsFeesScreen } from "./src/screens/settingsfeesscreen";
+import { SettingsMenuScreen } from "./src/screens/settingsmenuscreen";
+import type { SettingsSectionKey } from "./src/screens/settingsmenuscreen/types";
+import { SettingsProfileScreen } from "./src/screens/settingsprofilescreen";
+import { SettingsReceiptsScreen } from "./src/screens/settingsreceiptsscreen";
+import { SettingsStoreScreen } from "./src/screens/settingsstorescreen";
 import { SetupRegisterScreen } from "./src/screens/setupregisterscreen";
 import { SplashScreen } from "./src/screens/splashscreen";
 import { TodaysSalesScreen } from "./src/screens/todayssalesscreen";
@@ -84,8 +92,8 @@ type OwnerTab = "home" | "sell" | "stock" | "utang";
  * The admin's real post-onboarding home: Owner Home plus its drill-downs
  * (Today's Sales -> Insights, Restock, Utang) and the register itself, all
  * sharing the same BottomTabBar those screens were already built to
- * accept. "More" has no destination yet (§5/§7 TBD) -- tapping it is a
- * no-op rather than navigating to a blank screen.
+ * accept. "More" opens Settings -- the hub for profile/store/receipts/
+ * fees/alerts/backup, matching the desktop sidebar's own six sections.
  *
  * TrialBanner mounts here, above whichever tab renders -- same reasoning
  * as the web app's BillingBanner (shown on every protected route, not
@@ -100,10 +108,46 @@ function AdminHome() {
   const [showInsights, setShowInsights] = useState(false);
   const [showSetupRegister, setShowSetupRegister] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<SettingsSectionKey | null>(null);
 
   function handleChangeTab(next: string) {
+    if (next === "more") {
+      setShowSettings(true);
+      return;
+    }
     if (next !== "home" && next !== "sell" && next !== "stock" && next !== "utang") return;
     setTab(next);
+  }
+
+  if (settingsSection === "profile") {
+    return <SettingsProfileScreen onBack={() => setSettingsSection(null)} />;
+  }
+
+  if (settingsSection === "store") {
+    return <SettingsStoreScreen onBack={() => setSettingsSection(null)} />;
+  }
+
+  if (settingsSection === "receipts") {
+    return <SettingsReceiptsScreen onBack={() => setSettingsSection(null)} />;
+  }
+
+  if (settingsSection === "alerts") {
+    return <SettingsAlertsScreen onBack={() => setSettingsSection(null)} />;
+  }
+
+  if (settingsSection === "fees") {
+    return <SettingsFeesScreen onBack={() => setSettingsSection(null)} />;
+  }
+
+  if (settingsSection === "backup") {
+    return <SettingsBackupScreen onBack={() => setSettingsSection(null)} />;
+  }
+
+  if (showSettings) {
+    return (
+      <SettingsMenuScreen onBack={() => setShowSettings(false)} onOpenSection={setSettingsSection} />
+    );
   }
 
   if (showPricing) {
