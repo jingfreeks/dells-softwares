@@ -6,6 +6,7 @@ import { Organizations } from "./pages/Organizations";
 import { OrganizationDetail } from "./pages/OrganizationDetail";
 import { DeletionRequests } from "./pages/DeletionRequests";
 import { Audit } from "./pages/Audit";
+import { Dashboard } from "./pages/Dashboard";
 
 /**
  * The gate is resolved once, here, rather than per route -- so there is no
@@ -17,11 +18,11 @@ function Console() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[var(--color-canvas)]">
+      <div className="flex h-screen items-center justify-center">
         <div
           role="status"
           aria-label="Loading"
-          className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-[var(--color-brand)]"
+          className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[var(--bad)]"
         />
       </div>
     );
@@ -34,11 +35,12 @@ function Console() {
   return (
     <Shell>
       <Routes>
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/organizations" element={<Organizations />} />
         <Route path="/organizations/:orgId" element={<OrganizationDetail />} />
         <Route path="/deletion-requests" element={<DeletionRequests />} />
         <Route path="/audit" element={<Audit />} />
-        <Route path="*" element={<Navigate to="/organizations" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Shell>
   );
