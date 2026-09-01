@@ -6,7 +6,11 @@ import { MfaGate } from "./Shell";
 
 const auth = {
   getSession: vi.fn(),
-  onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
+  // Typed to accept the arguments the client passes, so the forwarding
+  // wrapper below can spread into it under `tsc -b`.
+  onAuthStateChange: vi.fn((..._args: unknown[]) => ({
+    data: { subscription: { unsubscribe: vi.fn() } },
+  })),
   mfa: {
     listFactors: vi.fn(),
     enroll: vi.fn(),

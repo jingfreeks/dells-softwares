@@ -14,7 +14,6 @@ vi.mock("./lib/platform", async () => {
     listOrganizations: vi.fn().mockResolvedValue([]),
     listDeletionRequests: vi.fn().mockResolvedValue([]),
     listPlatformAudit: vi.fn().mockResolvedValue([]),
-    listPlatformAudit: vi.fn().mockResolvedValue([]),
   };
 });
 
