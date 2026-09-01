@@ -29,7 +29,7 @@ const REQUEST = {
   id: "req-1",
   organizationId: "org-1",
   organizationName: "Aling Nena's Sari-Sari Store",
-  requestedByEmail: "owner@example.test",
+  requestedEmail: "owner@example.test",
   requestedAt: "2026-08-30T02:00:00.000Z",
   status: "PENDING",
   reason: "Closing the shop",
@@ -96,6 +96,20 @@ describe("DeletionRequests", () => {
       expect(mockedApprove).not.toHaveBeenCalled();
     });
 
+    it("names what will be destroyed at the point of confirming", async () => {
+      // The page header explains the consequence, but it is out of view by
+      // the time the button is reached, so the confirmation restates it
+      // against this store and this account.
+      const user = userEvent.setup();
+      render(<DeletionRequests />);
+      await screen.findByText(/Aling Nena/);
+      await user.click(screen.getByRole("button", { name: /review/i }));
+
+      const consequence = screen.getByText(/cannot be undone/i);
+      expect(consequence).toHaveTextContent("Aling Nena's Sari-Sari Store");
+      expect(consequence).toHaveTextContent("owner@example.test");
+    });
+
     it("passes the operator's note through and reloads the queue", async () => {
       const user = userEvent.setup();
       render(<DeletionRequests />);
@@ -132,7 +146,8 @@ describe("DeletionRequests", () => {
 
       expect(await screen.findByText(/UNAUTHORIZED_ACTION/)).toBeInTheDocument();
       // Still listed: a failed approval must not look like a completed one.
-      expect(screen.getByText(/Aling Nena/)).toBeInTheDocument();
+      // Matched on the heading -- the open confirmation names the store too.
+      expect(screen.getByRole("heading", { name: /Aling Nena/ })).toBeInTheDocument();
     });
   });
 
