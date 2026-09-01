@@ -38,3 +38,8 @@ coverage/
 # Agent worktrees. These are nested git repositories; staging one from the
 # root turns it into a broken gitlink rather than committing its contents.
 **/.claude/worktrees/
+
+# Private BIR technical documentation. Kept local only -- this repo is
+# public, and the documents carry business identifiers, contacts and
+# screenshots of real data.
+/docs/
