@@ -10,7 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   AlignmentType, BorderStyle, Document, Footer, Header, HeadingLevel, LevelFormat,
-  PageBreak, PageNumber, Packer, Paragraph, ShadingType, Table, TableCell, TableRow,
+  PageBreak, PageNumber, Packer, Paragraph, ShadingType, Table, TableCell, TableRow, TableOfContents,
   ImageRun, TextRun, WidthType,
 } from "docx";
 
@@ -295,8 +295,27 @@ const cover = [
 ];
 
 const toc = [
-  new Paragraph({ heading: HeadingLevel.HEADING_1, spacing: { after: 200 }, children: [new TextRun({ text: "Table of contents", bold: true, size: 30, color: ACCENT })] }),
-  new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: "Right-click and choose “Update Field” in Word to populate page numbers.", size: 18, color: MUTED, italics: true })] }),
+  new Paragraph({
+    heading: HeadingLevel.HEADING_1,
+    spacing: { after: 160 },
+    children: [new TextRun({ text: "Table of contents", bold: true, size: 30, color: ACCENT })],
+  }),
+  // A real TOC field, not a rendered list: Word builds it from the
+  // heading styles, so it stays correct when the document is edited to
+  // fill in the outstanding values.
+  new TableOfContents("Contents", { hyperlink: true, headingStyleRange: "1-3" }),
+  new Paragraph({
+    spacing: { before: 200, after: 200 },
+    children: [
+      new TextRun({
+        text: "If the entries below are blank, select them and press F9 (or right-click and choose \u201cUpdate Field\u201d) to build the contents.",
+        size: 17,
+        color: MUTED,
+        italics: true,
+      }),
+    ],
+  }),
+  new Paragraph({ children: [new PageBreak()] }),
 ];
 
 const md = fs.readFileSync(SRC, "utf8");

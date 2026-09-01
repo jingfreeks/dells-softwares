@@ -16,6 +16,8 @@ const inline = (s) =>
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/`([^`]+)`/g, "<code>$1</code>");
 
+const sections = [];
+
 function render(md) {
   const lines = md.split("\n");
   const out = [];
@@ -61,7 +63,13 @@ function render(md) {
     const h = line.match(/^(#{2,4})\s+(.*)$/);
     if (h) {
       const lv = h[1].length;
-      out.push(`<h${lv} class="${lv === 2 ? "sec" : ""}">${inline(h[2])}</h${lv}>`);
+      if (lv === 2) {
+        const id = `sec-${sections.length}`;
+        sections.push({ id, title: h[2].replace(/\*\*/g, "") });
+        out.push(`<h2 class="sec" id="${id}">${inline(h[2])}</h2>`);
+      } else {
+        out.push(`<h${lv}>${inline(h[2])}</h${lv}>`);
+      }
       i++; continue;
     }
 
@@ -150,6 +158,12 @@ th, td { border: 1px solid #C9CDD3; padding: 4px 6px; vertical-align: top; }
 .callout { background: #FDF3E3; border-left: 4px solid #D08700; padding: 10px 12px; margin: 0 0 13px; page-break-inside: avoid; }
 .callout .ct { font-weight: 700; color: #8A5A00; margin: 0 0 5px; }
 .callout p { margin: 0; font-size: 9pt; }
+.toc { page-break-after: always; }
+.toc h2.toc-h { page-break-before: avoid; }
+.toc-row { display: flex; align-items: baseline; gap: 6px; margin: 0 0 5px; font-size: 9pt; }
+.toc-t { white-space: nowrap; }
+.toc-d { flex: 1; border-bottom: 1px dotted #B9BEC6; transform: translateY(-3px); }
+.toc-p { font-variant-numeric: tabular-nums; color: #5A5F66; }
 figure.fig { margin: 10px 0 6px; page-break-inside: avoid; text-align: center; }
 figure.fig img { max-width: 100%; max-height: 150mm; border: 1px solid #C9CDD3; border-radius: 3px; }
 figure.fig.mobile img { max-height: 175mm; }
@@ -166,6 +180,10 @@ figure.fig figcaption { font-size: 8pt; color: #5A5F66; margin-top: 5px; font-st
     <p class="nt">COMPLIANCE NOTICE</p>
     <p>Tindahan POS is currently in ALPHA and is <strong>NOT BIR-accredited</strong>. This document describes the current implementation based on inspected source code and deployed configuration. Documentation of a technical control does not by itself constitute BIR accreditation, certification, approval, or legal compliance. Final compliance status and applicable requirements must be determined through the appropriate BIR process and applicable regulations.</p>
   </div>
+</div>
+<div class="toc">
+  <h2 class="sec toc-h">Table of contents</h2>
+  ${sections.map((sec) => `<p class="toc-row"><span class="toc-t">${esc(sec.title)}</span><span class="toc-d"></span><span class="toc-p" data-for="${sec.id}">@@${sec.id}@@</span></p>`).join("\n  ")}
 </div>
 ${body}
 </body></html>`;
