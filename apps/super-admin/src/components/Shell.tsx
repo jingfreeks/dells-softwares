@@ -112,13 +112,14 @@ export function NoAccess() {
   const { signOut } = usePlatform();
   return (
     <CenteredCard title="No access">
-      <p className="text-sm text-slate-600">
+      <p className="text-[13px]" style={{ color: "var(--t5)" }}>
         This account isn&apos;t authorised for the platform console.
       </p>
       <button
         type="button"
         onClick={signOut}
-        className="mt-4 w-full cursor-pointer rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        className="mt-4 w-full cursor-pointer rounded-xl border px-4 py-2 text-[13px] font-medium hover:bg-white/5"
+        style={{ borderColor: "var(--bd)", color: "var(--t3)" }}
       >
         Sign out
       </button>
@@ -194,7 +195,7 @@ export function MfaGate() {
         <div
           role="status"
           aria-label="Loading"
-          className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-[var(--color-brand)]"
+          className="h-6 w-6 animate-spin rounded-full border-2 border-white/15 border-t-[var(--bad)]"
         />
       </CenteredCard>
     );
@@ -204,20 +205,25 @@ export function MfaGate() {
     <CenteredCard title={enrollment ? "Set up your second factor" : "Second factor required"}>
       {enrollment ? (
         <>
-          <p className="text-sm text-slate-600">
+          <p className="text-[13px]" style={{ color: "var(--t5)" }}>
             Platform administration requires a second factor. Scan this with an authenticator app
             (Google Authenticator, 1Password, Authy), then enter the 6-digit code it shows.
           </p>
-          <div className="mt-3 w-fit rounded-lg border border-slate-200 p-2">
+          {/* The QR stays on white regardless of the console's dark theme:
+              the modules are dark-on-transparent, and a scanner needs the
+              light ground behind them. */}
+          <div className="mt-3 w-fit rounded-lg bg-white p-2">
             <img src={enrollment.qrCodeDataUri} alt="Scan with your authenticator app" width={220} height={220} />
           </div>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2.5 text-[11.5px]" style={{ color: "var(--t6)" }}>
             Can&apos;t scan? Enter this code manually:{" "}
-            <code className="rounded bg-slate-100 px-1 py-0.5 text-slate-700">{enrollment.secret}</code>
+            <code className="techno rounded px-1.5 py-0.5" style={{ background: "var(--gl3)", color: "var(--t3)" }}>
+              {enrollment.secret}
+            </code>
           </p>
         </>
       ) : (
-        <p className="text-sm text-slate-600">
+        <p className="text-[13px]" style={{ color: "var(--t5)" }}>
           Enter the 6-digit code from your authenticator app for this account.
         </p>
       )}
@@ -234,12 +240,17 @@ export function MfaGate() {
           maxLength={6}
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          className="mt-4 w-full rounded-xl border border-slate-300 px-3 py-2 text-center text-lg tracking-[0.3em] focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+          className="mt-4 w-full rounded-xl border px-3 py-2.5 text-center text-lg tracking-[0.3em] outline-none focus:border-[var(--bad)]"
+          style={{ background: "var(--gl3)", borderColor: "var(--bd)", color: "var(--t1)" }}
           placeholder="000000"
         />
 
         {error && (
-          <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p
+            role="alert"
+            className="mt-3 rounded-lg border px-3 py-2 text-[12.5px]"
+            style={{ background: "rgba(248,113,113,.07)", borderColor: "rgba(248,113,113,.24)", color: "var(--bad)" }}
+          >
             {error}
           </p>
         )}
@@ -255,7 +266,8 @@ export function MfaGate() {
       <button
         type="button"
         onClick={signOut}
-        className="mt-2 w-full cursor-pointer rounded-xl px-4 py-2 text-sm text-slate-500 hover:bg-slate-50"
+        className="mt-2 w-full cursor-pointer rounded-xl px-4 py-2 text-[12.5px] hover:bg-white/5"
+        style={{ color: "var(--t6)" }}
       >
         Sign out
       </button>
