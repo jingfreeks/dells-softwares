@@ -99,23 +99,63 @@ describe("computeOldestDebtDays", () => {
     expect(computeOldestDebtDays([], customer, now)).toBeNull();
   });
 
-  it("is the number of days since the earliest credit sale for that customer", () => {
+  it("is null when the customer owes money but has no credit sales on record", () => {
     const customer = makeCustomer({ id: "c1", balance: 100 });
+    expect(computeOldestDebtDays([makeSale({ customerId: "other" })], customer, now)).toBeNull();
+  });
+
+  it("ages the debt from the newest sale when that alone covers the balance", () => {
+    const customer = makeCustomer({ id: "c1", balance: 50 });
     const sales = [
-      makeSale({ customerId: "c1", timestamp: "2026-07-01T00:00:00Z" }),
-      makeSale({ customerId: "c1", timestamp: "2026-07-20T00:00:00Z" }),
-      makeSale({ customerId: "other", timestamp: "2026-01-01T00:00:00Z" }),
+      makeSale({ id: "old", customerId: "c1", total: 200, timestamp: "2026-07-01T00:00:00Z" }),
+      makeSale({ id: "new", customerId: "c1", total: 80, timestamp: "2026-07-20T00:00:00Z" }),
+    ];
+    // A payment settles what was borrowed first, so ₱50 outstanding against
+    // an ₱80 purchase on the 20th is 12 days old -- not 31.
+    expect(computeOldestDebtDays(sales, customer, now)).toBe(12);
+  });
+
+  it("reaches further back when the newest sale does not cover the balance", () => {
+    const customer = makeCustomer({ id: "c1", balance: 150 });
+    const sales = [
+      makeSale({ id: "old", customerId: "c1", total: 200, timestamp: "2026-07-01T00:00:00Z" }),
+      makeSale({ id: "new", customerId: "c1", total: 80, timestamp: "2026-07-20T00:00:00Z" }),
     ];
     expect(computeOldestDebtDays(sales, customer, now)).toBe(31);
+  });
+
+  it("does not age a fresh debt from a credit sale that was long since repaid", () => {
+    // The regression this replaced: a customer whose first-ever credit
+    // purchase was two years ago, and who now owes for one recent
+    // purchase, was reported as two years overdue -- and isOverdueDebt()
+    // flagged them, which drives the overdue filter and the aging summary.
+    const customer = makeCustomer({ id: "c1", balance: 50 });
+    const sales = [
+      makeSale({ id: "ancient", customerId: "c1", total: 500, timestamp: "2024-07-01T00:00:00Z" }),
+      makeSale({ id: "recent", customerId: "c1", total: 60, timestamp: "2026-07-30T00:00:00Z" }),
+    ];
+    expect(computeOldestDebtDays(sales, customer, now)).toBe(2);
   });
 
   it("ignores a voided credit sale — void_sale() already reversed its balance effect", () => {
     const customer = makeCustomer({ id: "c1", balance: 100 });
     const sales = [
-      makeSale({ customerId: "c1", timestamp: "2026-07-01T00:00:00Z", status: "voided" }),
-      makeSale({ customerId: "c1", timestamp: "2026-07-20T00:00:00Z" }),
+      makeSale({ customerId: "c1", total: 500, timestamp: "2026-07-01T00:00:00Z", status: "voided" }),
+      makeSale({ customerId: "c1", total: 500, timestamp: "2026-07-20T00:00:00Z" }),
     ];
     expect(computeOldestDebtDays(sales, customer, now)).toBe(12);
+  });
+
+  it("falls back to the oldest credit sale when the sales on record cannot account for the balance", () => {
+    // An opening balance, or history older than what was loaded. The
+    // oldest sale is the best available answer rather than a confident
+    // wrong one.
+    const customer = makeCustomer({ id: "c1", balance: 10_000 });
+    const sales = [
+      makeSale({ customerId: "c1", total: 100, timestamp: "2026-07-01T00:00:00Z" }),
+      makeSale({ customerId: "c1", total: 100, timestamp: "2026-07-20T00:00:00Z" }),
+    ];
+    expect(computeOldestDebtDays(sales, customer, now)).toBe(31);
   });
 });
 

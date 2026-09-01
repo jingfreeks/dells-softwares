@@ -24,14 +24,28 @@ export function creditOverageAmount(customer: Customer, saleTotal: number): numb
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
- * Days since this customer's earliest recorded "credit" (utang) sale —
- * a stand-in for "how old is the oldest unpaid debt". The backend has
- * no ledger linking a payment to the specific sale it settles (only a
- * running balance), so this is an approximation from real sales data
- * rather than an exact unpaid-since date.
- * TODO: replace with a precise value once the backend tracks which
- * credit sale(s) a customer's current balance traces back to.
- * Returns null when the customer has no balance or no credit sales.
+ * Days since the oldest credit (utang) sale the customer's current balance
+ * can still be traced to.
+ *
+ * The backend has no ledger linking a payment to the sale it settles --
+ * only a running balance -- so which specific debts are outstanding has to
+ * be inferred. Credit sales are walked newest-first, accumulating totals
+ * until they cover the balance; the last one reached is the oldest debt
+ * still owed. That is the FIFO assumption, and it is the right one for
+ * utang: a payment settles what was borrowed first.
+ *
+ * This previously returned the age of the customer's *earliest ever*
+ * credit sale, whether or not it had long since been repaid. A reliable
+ * customer who first bought on credit two years ago and owes for
+ * yesterday's purchase was reported as two years overdue, and
+ * isOverdueDebt() flagged them -- which drives the overdue filter and the
+ * aging summary, so it affected who a storekeeper chases for money.
+ *
+ * Still an approximation: without a real ledger, a partially-paid sale
+ * cannot be distinguished from a fully-paid one. It is bounded by the
+ * balance now, rather than unbounded by history.
+ *
+ * Returns null when the customer owes nothing or has no credit sales.
  */
 export function computeOldestDebtDays(
   sales: SaleRecord[],
@@ -39,14 +53,28 @@ export function computeOldestDebtDays(
   now: Date = new Date()
 ): number | null {
   if (customer.balance <= 0) return null;
-  const creditSaleTimestamps = sales
+
+  const creditSales = sales
     .filter(
       (sale) => sale.status !== "voided" && sale.paymentType === "credit" && sale.customerId === customer.id
     )
-    .map((sale) => new Date(sale.timestamp).getTime());
-  if (creditSaleTimestamps.length === 0) return null;
-  const oldest = Math.min(...creditSaleTimestamps);
-  return Math.floor((now.getTime() - oldest) / MS_PER_DAY);
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  if (creditSales.length === 0) return null;
+
+  // Newest first, until the accumulated total covers what is still owed.
+  let covered = 0;
+  let oldestOwed = creditSales[0];
+  for (const sale of creditSales) {
+    oldestOwed = sale;
+    covered += sale.total;
+    if (covered >= customer.balance) break;
+  }
+
+  // If the credit sales on record cannot account for the balance -- an
+  // opening balance, or history older than what was loaded -- the oldest
+  // sale is the best available answer rather than a wrong precise one.
+  return Math.floor((now.getTime() - new Date(oldestOwed.timestamp).getTime()) / MS_PER_DAY);
 }
 
 export interface LatestTransaction {
