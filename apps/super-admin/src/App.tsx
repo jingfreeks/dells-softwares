@@ -7,6 +7,7 @@ import { OrganizationDetail } from "./pages/OrganizationDetail";
 import { DeletionRequests } from "./pages/DeletionRequests";
 import { Audit } from "./pages/Audit";
 import { Dashboard } from "./pages/Dashboard";
+import { Security } from "./pages/Security";
 
 /**
  * The gate is resolved once, here, rather than per route -- so there is no
@@ -40,6 +41,7 @@ function Console() {
         <Route path="/organizations/:orgId" element={<OrganizationDetail />} />
         <Route path="/deletion-requests" element={<DeletionRequests />} />
         <Route path="/audit" element={<Audit />} />
+        <Route path="/security" element={<Security />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Shell>

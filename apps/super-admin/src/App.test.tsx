@@ -90,3 +90,23 @@ describe("Console gate", () => {
     expect(screen.getByRole("heading", { name: "Platform overview" })).toBeInTheDocument();
   });
 });
+
+describe("nav destinations", () => {
+  beforeEach(() => {
+    vi.mocked(listOrganizations).mockResolvedValue([]);
+    vi.mocked(usePlatform).mockReturnValue(
+      platformValue({ session: { user: { email: "admin@example.test" } } as never, admin })
+    );
+  });
+
+  it("renders the Security page at /security instead of redirecting away", async () => {
+    // The Security nav entry existed for a while with no matching route, so
+    // it fell through the catch-all to /dashboard -- a dead link that looked
+    // like a working one.
+    window.history.pushState({}, "", "/security");
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Security" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Platform overview" })).not.toBeInTheDocument();
+  });
+});
