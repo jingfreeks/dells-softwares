@@ -25,6 +25,7 @@ import {
   featuresLostByPlanChange,
   planPriceLabel,
 } from "../lib/platform";
+import { StatusChip } from "../components/StatusChip";
 
 export function OrganizationDetail() {
   const { orgId = "" } = useParams();
@@ -42,6 +43,7 @@ export function OrganizationDetail() {
   const [busyModule, setBusyModule] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [grantAsAddon, setGrantAsAddon] = useState(false);
+  const [tab, setTab] = useState<TabKey>("overview");
 
   const load = useCallback(async () => {
     const [orgs, mods, planList, limitList, featureList] = await Promise.all([
@@ -168,28 +170,49 @@ export function OrganizationDetail() {
     }
   }
 
-  if (loading) return <p className="p-6 text-sm text-slate-400">Loading…</p>;
+
+  if (loading) {
+    return (
+      <p className="px-7 py-10 text-[13px]" style={{ color: "var(--t6)" }}>Loading…</p>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <Link to="/organizations" className="text-sm text-[var(--color-brand)] hover:underline">
+    <div className="px-7 py-6">
+      <Link to="/organizations" className="text-[12.5px] hover:underline" style={{ color: "var(--a4)" }}>
         ← Organizations
       </Link>
 
-      <h1 className="mt-2 text-xl font-bold tracking-tight text-slate-900">{org?.name ?? "Organization"}</h1>
-      <p className="text-sm text-slate-500">
-        {org?.planCode ?? "No plan"} · {org?.subscriptionStatus ?? "—"} · {org?.branchCount ?? 0} branch(es) ·{" "}
-        {org?.staffCount ?? 0} staff
-      </p>
+      <header className="mt-2 mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-[19px] font-semibold" style={{ color: "var(--t1)" }}>
+            {org?.name ?? "Organization"}
+          </h1>
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12.5px]" style={{ color: "var(--t6)" }}>
+            <span className="techno" style={{ color: "var(--t9)" }}>{orgId}</span>
+            <span>·</span>
+            <span>{org?.branchCount ?? 0} branch(es)</span>
+            <span>·</span>
+            <span>{org?.staffCount ?? 0} staff</span>
+          </p>
+        </div>
+        {org && <StatusChip status={org.subscriptionStatus} orgStatus={org.status} />}
+      </header>
 
       {error && (
-        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
+        <div
+          role="alert"
+          className="mb-4 max-w-3xl rounded-xl border p-3.5"
+          style={{ background: "rgba(248,113,113,.07)", borderColor: "rgba(248,113,113,.24)" }}
+        >
+          <p className="text-[13px]" style={{ color: "var(--bad)" }}>{error}</p>
+        </div>
       )}
 
-      <div className="mt-6 max-w-2xl">
-        <label htmlFor="reason" className="text-xs font-medium text-slate-700">
+      {/* The reason travels with every action on this page, so it sits above
+          the tabs rather than inside one of them. */}
+      <div className="card mb-4 max-w-3xl p-4">
+        <label htmlFor="reason" className="mb-1 block text-[11px] font-medium" style={{ color: "var(--t6)" }}>
           Reason (recorded in the platform audit)
         </label>
         <input
@@ -198,340 +221,463 @@ export function OrganizationDetail() {
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder="e.g. pilot customer, paid upgrade, ticket #42"
-          className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+          className="w-full rounded-xl border px-3 py-2 text-[13px] outline-none focus:border-[var(--a3)]"
+          style={{ background: "var(--gl3)", borderColor: "var(--bd)", color: "var(--t1)" }}
         />
-        <label className="mt-2 flex items-center gap-2 text-xs text-slate-600">
+        <label className="mt-2.5 flex items-start gap-2 text-[11.5px]" style={{ color: "var(--t6)" }}>
           <input
             type="checkbox"
             checked={grantAsAddon}
             onChange={(e) => setGrantAsAddon(e.target.checked)}
-            className="rounded border-slate-300"
+            className="mt-0.5 rounded"
           />
-          Grant the next module toggle as a paid add-on, not a comp — tagged
-          distinctly (ADDON, not MANUAL) so it reads as revenue, not a favor.
+          <span>
+            Grant the next module toggle as a paid add-on, not a comp — tagged distinctly (ADDON,
+            not MANUAL) so it reads as revenue, not a favor.
+          </span>
         </label>
       </div>
 
-      <div className="mt-4 max-w-2xl rounded-2xl border border-slate-200 bg-white p-4">
-        <p className="text-sm font-medium text-slate-800">Plan</p>
-        <p className="mt-0.5 text-xs text-slate-500">
-          Changing the plan re-derives this tenant&apos;s modules <em>and features</em>. Prefer it
-          over toggling them one by one — a manual toggle opts that module or feature out of plan
-          control until it is handed back.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {plans.map((p) => {
-            const current = p.planCode === org?.planCode;
-            // What this button would actually take away. Only SUBSCRIPTION
-            // grants are at risk -- comped and grandfathered ones outrank the
-            // plan and survive, so counting them here would frighten an
-            // operator out of a safe action.
-            const lost = current ? [] : featuresLostByPlanChange(features, p);
-            return (
-              <button
-                key={p.planCode}
-                type="button"
-                onClick={() => handleSetPlan(p.planCode)}
-                disabled={busyPlan || current || !p.isActive}
-                title={
-                  `Price: ${planPriceLabel(p)}\n` +
-                  `Modules: ${p.modules.filter((m) => m !== "CORE").join(", ") || "none"}\n` +
-                  `Features: ${p.features.length}` +
-                  (lost.length > 0
-                    ? `\n\nSwitches off: ${lost.map((f) => f.name).join(", ")}`
-                    : "")
-                }
-                className={`cursor-pointer rounded-xl px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed ${
-                  current
-                    ? "bg-[var(--color-brand)] text-white disabled:opacity-100"
-                    : "border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-60"
-                }`}
-              >
-                {p.name}
-                {current ? " ·  current" : ` · ${planPriceLabel(p)}`}
-                {lost.length > 0 && (
-                  <span className="ml-1 text-amber-600" title="">
-                    −{lost.length}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-        {plans.some((p) => p.planCode !== org?.planCode &&
-                           featuresLostByPlanChange(features, p).length > 0) && (
-          <p className="mt-2 text-xs text-amber-700">
-            A number in amber is how many capabilities that plan would switch off for this tenant.
-            Comped and grandfathered features are not counted — those outrank the plan and survive
-            the change.
-          </p>
-        )}
-      </div>
-
-      <div className="mt-4 max-w-2xl rounded-2xl border border-slate-200 bg-white p-4">
-        <p className="text-sm font-medium text-slate-800">Billing state</p>
-        <p className="mt-0.5 text-xs text-slate-500">
-          Suspending or cancelling stops this tenant creating new records. It never hides,
-          blocks or deletes what they already have — they can still read and export
-          everything. Both require a reason.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {SUBSCRIPTION_STATUSES.map((s) => {
-            const current = s === org?.subscriptionStatus;
-            const destructive = blocksWrites(s);
-            return (
-              <button
-                key={s}
-                type="button"
-                onClick={() => handleSetStatus(s)}
-                disabled={busyStatus || current}
-                className={`cursor-pointer rounded-xl px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed ${
-                  current
-                    ? destructive
-                      ? "bg-red-600 text-white disabled:opacity-100"
-                      : "bg-[var(--color-brand)] text-white disabled:opacity-100"
-                    : destructive
-                      ? "border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-60"
-                      : "border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-60"
-                }`}
-              >
-                {s.replace("_", " ")}
-                {current && " ·  current"}
-              </button>
-            );
-          })}
-        </div>
-        {org && blocksWrites(org.subscriptionStatus) && (
-          <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
-            This tenant cannot create new records. Their data is untouched and still readable
-            by them. Changing their plan will not lift this — reinstate them here.
-          </p>
-        )}
-        {org?.subscriptionStatus === "PAST_DUE" && (
-          <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            In grace: still fully usable, and warned in their own app. Nothing escalates this
-            automatically — suspending is a decision someone has to make here.
-          </p>
-        )}
-      </div>
-
-      <div className="mt-4 max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        {modules.map((m) => {
-          // CORE is always on and not sellable; the server refuses to disable
-          // it, so offering a control here would be a lie.
-          const locked = !m.isSellable;
+      <div role="tablist" aria-label="Organization sections" className="mb-4 flex flex-wrap gap-1 border-b" style={{ borderColor: "var(--bd3)" }}>
+        {TABS.map((t) => {
+          const active = tab === t.key;
           return (
-            <div
-              key={m.moduleCode}
-              className="flex items-center justify-between gap-4 border-b border-slate-100 px-4 py-3 last:border-b-0"
+            <button
+              key={t.key}
+              role="tab"
+              type="button"
+              id={`tab-${t.key}`}
+              aria-selected={active}
+              aria-controls={`panel-${t.key}`}
+              onClick={() => setTab(t.key)}
+              className="-mb-px cursor-pointer border-b-2 px-3 py-2 text-[12.5px] font-medium"
+              style={{
+                borderColor: active ? "var(--bad)" : "transparent",
+                color: active ? "var(--t1)" : "var(--t6)",
+              }}
             >
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-slate-800">{m.name}</p>
-                <p className="text-xs text-slate-400">
-                  {m.moduleCode}
-                  {m.source ? ` · ${m.source}` : ""}
-                  {m.validUntil ? ` · until ${new Date(m.validUntil).toLocaleDateString()}` : ""}
-                </p>
-              </div>
-
-              {locked ? (
-                <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
-                  Always on
-                </span>
-              ) : (
-                <div className="flex shrink-0 items-center gap-2">
-                {outranksPlan(m.source) && (
-                  <button
-                    type="button"
-                    onClick={() => handleReset(m)}
-                    disabled={busyModule === m.moduleCode}
-                    title="Drop the manual/add-on override so this tenant's plan governs the module again"
-                    className="cursor-pointer rounded-xl px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    Follow plan
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => handleToggle(m)}
-                  disabled={busyModule === m.moduleCode}
-                  aria-pressed={m.enabled}
-                  className={`shrink-0 cursor-pointer rounded-xl px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60 ${
-                    m.enabled
-                      ? "bg-[var(--color-brand-light)] text-[var(--color-brand)] hover:bg-[var(--color-brand)]/15"
-                      : "border border-slate-300 text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  {busyModule === m.moduleCode ? "Saving…" : m.enabled ? "Enabled" : "Disabled"}
-                </button>
-                </div>
-              )}
-            </div>
+              {t.label}
+            </button>
           );
         })}
       </div>
 
-      {limits.length > 0 && (
-        <div className="mt-4 max-w-2xl rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-sm font-medium text-slate-800">Limits</p>
-          <p className="mt-0.5 text-xs text-slate-500">
-            Usage is counted the same way the database counts it when refusing a new record, so
-            these numbers are what the tenant is actually hitting. Retired devices and closed
-            branches don&apos;t count.
-          </p>
-
-          <div className="mt-3 space-y-2">
-            {limits.map((l) => (
-              <div
-                key={`${l.moduleCode}.${l.limitKey}`}
-                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-slate-100 px-3 py-2"
-              >
-                <div className="min-w-[9rem] flex-1">
-                  <p className="text-sm text-slate-800">
-                    {l.limitKey}{" "}
-                    <span
-                      className={`font-medium ${l.atOrOver ? "text-red-600" : "text-slate-500"}`}
-                    >
-                      {l.currentUsage ?? "—"} / {l.cap ?? "∞"}
-                    </span>
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {l.moduleCode}
-                    {l.atOrOver && " · at the ceiling"}
-                  </p>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleSetLimit(l, (l.cap ?? 0) + 1)}
-                    disabled={busyLimit === l.limitKey || l.cap === null}
-                    title="Raise this ceiling by one"
-                    className="cursor-pointer rounded-lg border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    +1
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSetLimit(l, Math.max(0, (l.cap ?? 0) - 1))}
-                    disabled={busyLimit === l.limitKey || l.cap === null || l.cap === 0}
-                    title="Lower this ceiling by one. Existing records are never removed."
-                    className="cursor-pointer rounded-lg border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    −1
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSetLimit(l, null)}
-                    disabled={busyLimit === l.limitKey || l.cap === null}
-                    title="Remove the ceiling entirely — unlimited, which is not the same as zero"
-                    className="cursor-pointer rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Uncap
-                  </button>
-                </div>
-              </div>
-            ))}
+      {tab === "overview" && (
+        <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" className="max-w-3xl">
+          <div className="card p-4">
+            <h2 className="mb-3 text-[13.5px] font-semibold" style={{ color: "var(--t2)" }}>Overview</h2>
+            <dl className="grid gap-2.5 sm:grid-cols-2">
+              <Fact label="Plan" value={org?.planCode ?? "No plan"} />
+              <Fact label="Subscription" value={org?.subscriptionStatus ?? "—"} />
+              <Fact label="Organization status" value={org?.status ?? "—"} />
+              <Fact
+                label="Created"
+                value={org ? new Date(org.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "—"}
+              />
+              <Fact label="Branches" value={String(org?.branchCount ?? 0)} />
+              <Fact label="Staff" value={String(org?.staffCount ?? 0)} />
+            </dl>
           </div>
 
-          <p className="mt-3 text-xs text-slate-400">
-            Lowering a ceiling below current usage never deletes anything — the tenant keeps what
-            they have and simply cannot add more. Changing a plan re-derives these.
-          </p>
+          {/* Two of the designed tabs have no backend behind them. An empty
+              tab would read as "this tenant has no staff and no history",
+              which is a claim, so they are absent and named instead. */}
+          <div className="card mt-4 p-4">
+            <h2 className="mb-1 text-[13.5px] font-semibold" style={{ color: "var(--t2)" }}>
+              Not shown here
+            </h2>
+            <ul className="mt-2 grid gap-1.5">
+              <li className="text-[12.5px]" style={{ color: "var(--t5)" }}>
+                <span style={{ color: "var(--t3)" }}>This tenant&apos;s staff</span>
+                <span style={{ color: "var(--t9)" }}>
+                  {" "}
+                  — no RPC returns them. platform_organizations() gives a count and nothing more.
+                </span>
+              </li>
+              <li className="text-[12.5px]" style={{ color: "var(--t5)" }}>
+                <span style={{ color: "var(--t3)" }}>This tenant&apos;s activity</span>
+                <span style={{ color: "var(--t9)" }}>
+                  {" "}
+                  — platform_audit() takes a row limit and no organization filter, so it cannot be
+                  narrowed to one tenant.
+                </span>
+              </li>
+            </ul>
+          </div>
         </div>
       )}
 
-      {features.length > 0 && (
-        <div className="mt-4 max-w-2xl rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-sm font-medium text-slate-800">Features</p>
-          <p className="mt-0.5 text-xs text-slate-500">
-            What this tenant gets <em>within</em> the modules they hold. A sari-sari store and a
-            convenience store can both be on POS and still have different products. Nothing
-            enforces these yet — they are recorded and ready for when it does.
-          </p>
-
-          {Array.from(new Set(features.map((f) => f.moduleCode))).map((moduleCode) => (
-            <div key={moduleCode} className="mt-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                {moduleCode}
-              </p>
-              <div className="mt-1 space-y-1.5">
-                {features
-                  .filter((f) => f.moduleCode === moduleCode)
-                  .map((f) => {
-                    // A feature is dark whenever its module is off, however its
-                    // own row reads. Saying so beats showing "Enabled" on
-                    // something the tenant cannot reach.
-                    const dark = !f.moduleHeld;
-                    return (
-                      <div
-                        key={f.featureCode}
-                        className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-slate-100 px-3 py-2"
-                      >
-                        <div className="min-w-[11rem] flex-1">
-                          <p className="text-sm text-slate-800">{f.name}</p>
-                          <p className="text-xs text-slate-400">
-                            {f.featureCode}
-                            {f.source === "MANUAL" && " · comped"}
-                            {f.source === "GRANDFATHERED" && " · grandfathered"}
-                            {dark && " · off because " + moduleCode + " is disabled"}
-                          </p>
-                        </div>
-
-                        <div className="flex shrink-0 items-center gap-1">
-                          {outranksPlan(f.source) && (
-                            <button
-                              type="button"
-                              onClick={() => handleResetFeature(f)}
-                              disabled={busyFeature === f.featureCode}
-                              title={
-                                f.source === "GRANDFATHERED"
-                                  ? "Held from before the plans were tiered. Hand it back to the plan."
-                                  : "Hand this feature back to the plan"
-                              }
-                              className="cursor-pointer rounded-lg px-2 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-                            >
-                              Follow plan
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => handleSetFeature(f, !f.enabled)}
-                            disabled={busyFeature === f.featureCode}
-                            className={`cursor-pointer rounded-lg px-3 py-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-40 ${
-                              f.enabled && !dark
-                                ? "bg-[var(--color-brand-soft,#fdecea)] text-[var(--color-brand)]"
-                                : "border border-slate-300 text-slate-500"
-                            }`}
-                          >
-                            {f.enabled ? (dark ? "On, but dark" : "Enabled") : "Disabled"}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
+      {tab === "subscription" && (
+        <div role="tabpanel" id="panel-subscription" aria-labelledby="tab-subscription" className="max-w-3xl">
+          <div className="card p-4">
+            <h2 className="text-[13.5px] font-semibold" style={{ color: "var(--t2)" }}>Plan</h2>
+            <p className="mt-0.5 text-[12px]" style={{ color: "var(--t6)" }}>
+              Changing the plan re-derives this tenant&apos;s modules <em>and features</em>. Prefer it
+              over toggling them one by one — a manual toggle opts that module or feature out of plan
+              control until it is handed back.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {plans.map((p) => {
+                const current = p.planCode === org?.planCode;
+                // What this button would actually take away. Only SUBSCRIPTION
+                // grants are at risk -- comped and grandfathered ones outrank the
+                // plan and survive, so counting them here would frighten an
+                // operator out of a safe action.
+                const lost = current ? [] : featuresLostByPlanChange(features, p);
+                return (
+                  <button
+                    key={p.planCode}
+                    type="button"
+                    onClick={() => handleSetPlan(p.planCode)}
+                    disabled={busyPlan || current || !p.isActive}
+                    title={
+                      `Price: ${planPriceLabel(p)}\n` +
+                      `Modules: ${p.modules.filter((m) => m !== "CORE").join(", ") || "none"}\n` +
+                      `Features: ${p.features.length}` +
+                      (lost.length > 0 ? `\n\nSwitches off: ${lost.map((f) => f.name).join(", ")}` : "")
+                    }
+                    className="cursor-pointer rounded-xl border px-3 py-1.5 text-[12.5px] font-medium disabled:cursor-not-allowed"
+                    style={
+                      current
+                        ? { background: "var(--color-brand)", borderColor: "var(--color-brand)", color: "#fff", opacity: 1 }
+                        : { borderColor: "var(--bd)", color: "var(--t3)" }
+                    }
+                  >
+                    {p.name}
+                    {current ? " ·  current" : ` · ${planPriceLabel(p)}`}
+                    {lost.length > 0 && (
+                      <span className="ml-1" style={{ color: "var(--warn)" }} title="">
+                        −{lost.length}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          ))}
+            {plans.some((p) => p.planCode !== org?.planCode && featuresLostByPlanChange(features, p).length > 0) && (
+              <p className="mt-2.5 text-[11.5px]" style={{ color: "var(--warn)" }}>
+                A number in amber is how many capabilities that plan would switch off for this tenant.
+                Comped and grandfathered features are not counted — those outrank the plan and survive
+                the change.
+              </p>
+            )}
+          </div>
 
-          <p className="mt-3 text-xs text-slate-400">
-            Turning one off records a manual decision that survives the tenant&apos;s next plan
-            change — use <span className="font-medium">Follow plan</span> to hand it back.
-          </p>
-          <p className="mt-1 text-xs text-slate-400">
-            <span className="font-medium">Grandfathered</span> means the tenant held it before the
-            plans were tiered and kept it, rather than anyone choosing it for them. It outranks the
-            plan the same way a comp does, and <span className="font-medium">Follow plan</span>
-            &nbsp;hands it back the same way.
-          </p>
+          <div className="card mt-4 p-4">
+            <h2 className="text-[13.5px] font-semibold" style={{ color: "var(--t2)" }}>Billing state</h2>
+            <p className="mt-0.5 text-[12px]" style={{ color: "var(--t6)" }}>
+              Suspending or cancelling stops this tenant creating new records. It never hides, blocks
+              or deletes what they already have — they can still read and export everything. Both
+              require a reason.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {SUBSCRIPTION_STATUSES.map((s) => {
+                const current = s === org?.subscriptionStatus;
+                const destructive = blocksWrites(s);
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => handleSetStatus(s)}
+                    disabled={busyStatus || current}
+                    className="cursor-pointer rounded-xl border px-3 py-1.5 text-[12.5px] font-medium disabled:cursor-not-allowed"
+                    style={
+                      current
+                        ? destructive
+                          ? { background: "#DC2626", borderColor: "#DC2626", color: "#fff", opacity: 1 }
+                          : { background: "var(--color-brand)", borderColor: "var(--color-brand)", color: "#fff", opacity: 1 }
+                        : destructive
+                          ? { borderColor: "rgba(248,113,113,.35)", color: "var(--bad)" }
+                          : { borderColor: "var(--bd)", color: "var(--t3)" }
+                    }
+                  >
+                    {s.replace("_", " ")}
+                    {current && " ·  current"}
+                  </button>
+                );
+              })}
+            </div>
+            {org && blocksWrites(org.subscriptionStatus) && (
+              <p
+                className="mt-3 rounded-lg border px-3 py-2 text-[11.5px]"
+                style={{ background: "rgba(248,113,113,.07)", borderColor: "rgba(248,113,113,.24)", color: "var(--bad)" }}
+              >
+                This tenant cannot create new records. Their data is untouched and still readable by
+                them. Changing their plan will not lift this — reinstate them here.
+              </p>
+            )}
+            {org?.subscriptionStatus === "PAST_DUE" && (
+              <p
+                className="mt-3 rounded-lg border px-3 py-2 text-[11.5px]"
+                style={{ background: "rgba(251,191,36,.07)", borderColor: "rgba(251,191,36,.24)", color: "var(--warn)" }}
+              >
+                In grace: still fully usable, and warned in their own app. Nothing escalates this
+                automatically — suspending is a decision someone has to make here.
+              </p>
+            )}
+          </div>
         </div>
       )}
 
-      <p className="mt-3 max-w-2xl text-xs text-slate-400">
+      {tab === "modules" && (
+        <div role="tabpanel" id="panel-modules" aria-labelledby="tab-modules" className="max-w-3xl">
+          <div className="card overflow-hidden">
+            {modules.map((m) => {
+              // CORE is always on and not sellable; the server refuses to disable
+              // it, so offering a control here would be a lie.
+              const locked = !m.isSellable;
+              return (
+                <div
+                  key={m.moduleCode}
+                  className="flex items-center justify-between gap-4 border-b px-4 py-3 last:border-0"
+                  style={{ borderColor: "var(--bd3)" }}
+                >
+                  <div className="min-w-0">
+                    <p className="text-[13.5px] font-medium" style={{ color: "var(--t2)" }}>{m.name}</p>
+                    <p className="techno" style={{ color: "var(--t9)" }}>
+                      {m.moduleCode}
+                      {m.source ? ` · ${m.source}` : ""}
+                      {m.validUntil ? ` · until ${new Date(m.validUntil).toLocaleDateString()}` : ""}
+                    </p>
+                  </div>
+
+                  {locked ? (
+                    <span
+                      className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium"
+                      style={{ background: "var(--gl3)", color: "var(--t6)" }}
+                    >
+                      Always on
+                    </span>
+                  ) : (
+                    <div className="flex shrink-0 items-center gap-2">
+                      {outranksPlan(m.source) && (
+                        <button
+                          type="button"
+                          onClick={() => handleReset(m)}
+                          disabled={busyModule === m.moduleCode}
+                          title="Drop the manual/add-on override so this tenant's plan governs the module again"
+                          className="cursor-pointer rounded-xl px-2.5 py-1.5 text-[11.5px] font-medium hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
+                          style={{ color: "var(--t6)" }}
+                        >
+                          Follow plan
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleToggle(m)}
+                        disabled={busyModule === m.moduleCode}
+                        aria-pressed={m.enabled}
+                        className="shrink-0 cursor-pointer rounded-xl border px-3 py-1.5 text-[12.5px] font-medium disabled:cursor-not-allowed disabled:opacity-60"
+                        style={
+                          m.enabled
+                            ? { background: "rgba(201,59,46,.16)", borderColor: "rgba(201,59,46,.35)", color: "#F2A79E" }
+                            : { borderColor: "var(--bd)", color: "var(--t5)" }
+                        }
+                      >
+                        {busyModule === m.moduleCode ? "Saving…" : m.enabled ? "Enabled" : "Disabled"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {limits.length > 0 && (
+            <div className="card mt-4 p-4">
+              <h2 className="text-[13.5px] font-semibold" style={{ color: "var(--t2)" }}>Limits</h2>
+              <p className="mt-0.5 text-[12px]" style={{ color: "var(--t6)" }}>
+                Usage is counted the same way the database counts it when refusing a new record, so
+                these numbers are what the tenant is actually hitting. Retired devices and closed
+                branches don&apos;t count.
+              </p>
+
+              <div className="mt-3 space-y-2">
+                {limits.map((l) => (
+                  <div
+                    key={`${l.moduleCode}.${l.limitKey}`}
+                    className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border px-3 py-2"
+                    style={{ borderColor: "var(--bd3)" }}
+                  >
+                    <div className="min-w-[9rem] flex-1">
+                      <p className="text-[13px]" style={{ color: "var(--t3)" }}>
+                        {l.limitKey}{" "}
+                        <span
+                          className="font-medium tabular-nums"
+                          style={{ color: l.atOrOver ? "var(--bad)" : "var(--t5)" }}
+                        >
+                          {l.currentUsage ?? "—"} / {l.cap ?? "∞"}
+                        </span>
+                      </p>
+                      <p className="techno" style={{ color: "var(--t9)" }}>
+                        {l.moduleCode}
+                        {l.atOrOver && " · at the ceiling"}
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSetLimit(l, (l.cap ?? 0) + 1)}
+                        disabled={busyLimit === l.limitKey || l.cap === null}
+                        title="Raise this ceiling by one"
+                        className="cursor-pointer rounded-lg border px-2 py-1 text-[11.5px] font-medium hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                        style={{ borderColor: "var(--bd)", color: "var(--t3)" }}
+                      >
+                        +1
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetLimit(l, Math.max(0, (l.cap ?? 0) - 1))}
+                        disabled={busyLimit === l.limitKey || l.cap === null || l.cap === 0}
+                        title="Lower this ceiling by one. Existing records are never removed."
+                        className="cursor-pointer rounded-lg border px-2 py-1 text-[11.5px] font-medium hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                        style={{ borderColor: "var(--bd)", color: "var(--t3)" }}
+                      >
+                        −1
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetLimit(l, null)}
+                        disabled={busyLimit === l.limitKey || l.cap === null}
+                        title="Remove the ceiling entirely — unlimited, which is not the same as zero"
+                        className="cursor-pointer rounded-lg px-2 py-1 text-[11.5px] font-medium hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                        style={{ color: "var(--t6)" }}
+                      >
+                        Uncap
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="mt-3 text-[11.5px]" style={{ color: "var(--t9)" }}>
+                Lowering a ceiling below current usage never deletes anything — the tenant keeps what
+                they have and simply cannot add more. Changing a plan re-derives these.
+              </p>
+            </div>
+          )}
+
+          {features.length > 0 && (
+            <div className="card mt-4 p-4">
+              <h2 className="text-[13.5px] font-semibold" style={{ color: "var(--t2)" }}>Features</h2>
+              <p className="mt-0.5 text-[12px]" style={{ color: "var(--t6)" }}>
+                What this tenant gets <em>within</em> the modules they hold. A sari-sari store and a
+                convenience store can both be on POS and still have different products. Nothing
+                enforces these yet — they are recorded and ready for when it does.
+              </p>
+
+              {Array.from(new Set(features.map((f) => f.moduleCode))).map((moduleCode) => (
+                <div key={moduleCode} className="mt-3.5">
+                  <p className="text-[11px] font-semibold" style={{ color: "var(--t6)", letterSpacing: ".5px" }}>
+                    {moduleCode}
+                  </p>
+                  <div className="mt-1.5 space-y-1.5">
+                    {features
+                      .filter((f) => f.moduleCode === moduleCode)
+                      .map((f) => {
+                        // A feature is dark whenever its module is off, however its
+                        // own row reads. Saying so beats showing "Enabled" on
+                        // something the tenant cannot reach.
+                        const dark = !f.moduleHeld;
+                        return (
+                          <div
+                            key={f.featureCode}
+                            className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border px-3 py-2"
+                            style={{ borderColor: "var(--bd3)" }}
+                          >
+                            <div className="min-w-[11rem] flex-1">
+                              <p className="text-[13px]" style={{ color: "var(--t3)" }}>{f.name}</p>
+                              <p className="techno" style={{ color: "var(--t9)" }}>
+                                {f.featureCode}
+                                {f.source === "MANUAL" && " · comped"}
+                                {f.source === "GRANDFATHERED" && " · grandfathered"}
+                                {dark && " · off because " + moduleCode + " is disabled"}
+                              </p>
+                            </div>
+
+                            <div className="flex shrink-0 items-center gap-1">
+                              {outranksPlan(f.source) && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetFeature(f)}
+                                  disabled={busyFeature === f.featureCode}
+                                  title={
+                                    f.source === "GRANDFATHERED"
+                                      ? "Held from before the plans were tiered. Hand it back to the plan."
+                                      : "Hand this feature back to the plan"
+                                  }
+                                  className="cursor-pointer rounded-lg px-2 py-1 text-[11.5px] font-medium hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                                  style={{ color: "var(--t6)" }}
+                                >
+                                  Follow plan
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleSetFeature(f, !f.enabled)}
+                                disabled={busyFeature === f.featureCode}
+                                className="cursor-pointer rounded-lg border px-3 py-1 text-[11.5px] font-medium disabled:cursor-not-allowed disabled:opacity-40"
+                                style={
+                                  f.enabled && !dark
+                                    ? { background: "rgba(201,59,46,.16)", borderColor: "rgba(201,59,46,.35)", color: "#F2A79E" }
+                                    : { borderColor: "var(--bd)", color: "var(--t6)" }
+                                }
+                              >
+                                {f.enabled ? (dark ? "On, but dark" : "Enabled") : "Disabled"}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              ))}
+
+              <p className="mt-3 text-[11.5px]" style={{ color: "var(--t9)" }}>
+                Turning one off records a manual decision that survives the tenant&apos;s next plan
+                change — use <span className="font-medium">Follow plan</span> to hand it back.
+              </p>
+              <p className="mt-1 text-[11.5px]" style={{ color: "var(--t9)" }}>
+                <span className="font-medium">Grandfathered</span> means the tenant held it before the
+                plans were tiered and kept it, rather than anyone choosing it for them. It outranks the
+                plan the same way a comp does, and <span className="font-medium">Follow plan</span>
+                &nbsp;hands it back the same way.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      <p className="mt-4 max-w-3xl text-[11.5px]" style={{ color: "var(--t9)" }}>
         Changes take effect immediately and are recorded as a manual grant, so they survive the
         tenant&apos;s next plan change. Disabling a module blocks new records but never hides or
         deletes existing data.
       </p>
+    </div>
+  );
+}
+
+type TabKey = "overview" | "subscription" | "modules";
+
+/**
+ * The design also specifies Users and Activity tabs. Neither has a backend:
+ * no RPC returns a tenant's staff, and platform_audit() has no organization
+ * filter. They are omitted rather than rendered empty -- an empty Users tab
+ * asserts that the tenant has no staff, which is a claim, and a false one.
+ * The Overview tab names both gaps instead.
+ */
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "overview", label: "Overview" },
+  { key: "subscription", label: "Subscription" },
+  { key: "modules", label: "Modules" },
+];
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <dt className="shrink-0 text-[12px]" style={{ color: "var(--t6)" }}>{label}</dt>
+      <dd className="min-w-0 truncate text-right text-[12.5px]" style={{ color: "var(--t3)" }}>{value}</dd>
     </div>
   );
 }

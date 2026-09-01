@@ -68,17 +68,25 @@ beforeEach(() => {
   mockedStatus.mockResolvedValue(undefined as never);
 });
 
+/** Billing lives on the Subscription tab; Overview is the landing tab. */
+async function openSubscription(user: ReturnType<typeof userEvent.setup>) {
+  await screen.findByText(/Aling Nena/);
+  await user.click(screen.getByRole("tab", { name: "Subscription" }));
+}
+
 describe("OrganizationDetail — billing state", () => {
   it("shows the organization and marks its current billing state", async () => {
+    const user = userEvent.setup();
     renderPage();
     expect(await screen.findByText(/Aling Nena's Sari-Sari Store/)).toBeInTheDocument();
+    await openSubscription(user);
     expect(screen.getByRole("button", { name: /ACTIVE ·\s*current/i })).toBeDisabled();
   });
 
   it("suspends the tenant with the operator's reason", async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText(/Aling Nena/);
+    await openSubscription(user);
 
     const reason = screen.getByPlaceholderText(/pilot customer/i);
     await user.type(reason, "non-payment, ticket #91");
@@ -92,7 +100,7 @@ describe("OrganizationDetail — billing state", () => {
   it("reloads after a status change so the page cannot show a stale state", async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText(/Aling Nena/);
+    await openSubscription(user);
 
     await user.click(screen.getByRole("button", { name: /^SUSPENDED$/ }));
     // Suspension is the lever that stops a tenant transacting; the page
@@ -103,7 +111,7 @@ describe("OrganizationDetail — billing state", () => {
   it("does not re-send the status the tenant is already on", async () => {
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText(/Aling Nena/);
+    await openSubscription(user);
 
     // The current state's button is disabled, so no request is issued.
     await user.click(screen.getByRole("button", { name: /ACTIVE ·\s*current/i }));
@@ -117,7 +125,7 @@ describe("OrganizationDetail — billing state", () => {
     mockedStatus.mockRejectedValue(new Error("UNAUTHORIZED_ACTION"));
     const user = userEvent.setup();
     renderPage();
-    await screen.findByText(/Aling Nena/);
+    await openSubscription(user);
 
     await user.click(screen.getByRole("button", { name: /^SUSPENDED$/ }));
 
@@ -132,3 +140,37 @@ describe("OrganizationDetail — billing state", () => {
     expect(await screen.findByText(/Could not reach the platform API\./)).toBeInTheDocument();
   });
 });
+
+describe("OrganizationDetail — sections", () => {
+  it("lands on the overview", async () => {
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("moves between sections", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+
+    await user.click(screen.getByRole("tab", { name: "Modules" }));
+
+    expect(screen.getByRole("tab", { name: "Modules" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "false");
+    expect(screen.queryByRole("button", { name: /^SUSPENDED$/ })).not.toBeInTheDocument();
+  });
+
+  it("offers no Users or Activity tab, and says why instead of showing them empty", async () => {
+    // An empty Users tab asserts the tenant has no staff, which is a claim
+    // and a false one -- no RPC returns them. Same for Activity:
+    // platform_audit() has no organization filter.
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+
+    expect(screen.queryByRole("tab", { name: "Users" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Activity" })).not.toBeInTheDocument();
+    expect(screen.getByText(/no RPC returns them/i)).toBeInTheDocument();
+    expect(screen.getByText(/no organization filter/i)).toBeInTheDocument();
+  });
+});
+
