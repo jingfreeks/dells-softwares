@@ -35,7 +35,7 @@ export function DevicesSettings() {
           {allowance && (
             <p
               className="tpl-sub"
-              style={{ marginTop: 2, color: allowance.atLimit ? "var(--tpl-danger, #b91c1c)" : undefined }}
+              style={{ marginTop: 2, color: allowance.atLimit ? "var(--tpl-bad)" : undefined }}
             >
               Using {allowance.used} of {allowance.cap} registers included in your plan
               {allowance.atLimit && " — contact support to pair another"}
