@@ -71,35 +71,35 @@ select isnt_empty(
 
 select is(
   (select previous_value->>'stock' from audit_log
-    where action = 'stock_adjusted' order by created_at desc limit 1),
+    where action = 'stock_adjusted' and new_value->>'delta' = '15'),
   '40',
   'the record says what the level was before -- the point of the whole row'
 );
 
 select is(
   (select new_value->>'stock' from audit_log
-    where action = 'stock_adjusted' order by created_at desc limit 1),
+    where action = 'stock_adjusted' and new_value->>'delta' = '15'),
   '55',
   'and what it became'
 );
 
 select is(
   (select new_value->>'delta' from audit_log
-    where action = 'stock_adjusted' order by created_at desc limit 1),
+    where action = 'stock_adjusted' and new_value->>'delta' = '15'),
   '15',
   'and by how much, so a correction is distinguishable from a recount'
 );
 
 select is(
   (select reason from audit_log
-    where action = 'stock_adjusted' order by created_at desc limit 1),
+    where action = 'stock_adjusted' and new_value->>'delta' = '15'),
   'delivery from supplier',
   'the operator''s reason is carried through'
 );
 
 select is(
   (select actor_id from audit_log
-    where action = 'stock_adjusted' order by created_at desc limit 1),
+    where action = 'stock_adjusted' and new_value->>'delta' = '15'),
   'ad000000-0000-4000-8000-00000000a001'::uuid,
   'attributed to the staff member who made it, not to the definer'
 );
@@ -119,9 +119,12 @@ select is(
   'and it is audited as well -- no unaudited path survived the change'
 );
 
+-- Selected by its delta, not by time: both rows are written inside this
+-- one transaction, so created_at is identical for both and "the latest
+-- row" is not a thing the database can order.
 select is(
   (select previous_value->>'stock' from audit_log
-    where action = 'stock_adjusted' order by created_at desc limit 1),
+    where action = 'stock_adjusted' and new_value->>'delta' = '-5'),
   '55',
   'the second record reads from the level the first one left behind'
 );
