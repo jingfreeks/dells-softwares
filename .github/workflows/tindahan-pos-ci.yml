@@ -70,9 +70,12 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.TINDAHAN_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.TINDAHAN_SUPABASE_ANON_KEY }}
 
+      # --coverage on purpose: vitest.config.ts carries coverage thresholds,
+      # and `vitest run` never evaluates them. They had all four been failing
+      # unnoticed because of that.
       - name: Unit tests
         working-directory: apps/tindahan-pos
-        run: npm run test
+        run: npm run test:coverage
         env:
           VITE_SUPABASE_URL: ${{ secrets.TINDAHAN_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.TINDAHAN_SUPABASE_ANON_KEY }}
