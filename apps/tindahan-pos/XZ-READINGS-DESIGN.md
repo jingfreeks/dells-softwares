@@ -1,6 +1,7 @@
 # X/Z readings and accumulating totals — design
 
-Status: **proposal, not built.** Written 2026-09-02 for review before any code.
+Status: **decisions taken 2026-09-02; step 1 building.** The five questions in
+§10 have been answered — see §10 for what was decided and what it changed.
 
 ---
 
@@ -99,7 +100,8 @@ create table register_readings (
 
   kind            text not null check (kind in ('X', 'Z')),
 
-  -- Z only: increments per store, never reused, never reset by a close.
+  -- Z only: increments per (store, register), never reused, never reset
+  -- by a close. The register is device_id, where null is the store's own.
   z_counter       integer,
   -- Increments when the grand total is deliberately restarted (see §7).
   reset_counter   integer not null default 0,
@@ -137,9 +139,14 @@ create table register_readings (
 Constraints that carry the meaning:
 
 ```sql
--- A Z-counter is unique per store and only Z readings have one.
-create unique index on register_readings (store_id, z_counter)
+-- A Z-counter is unique per (store, register) and only Z readings have one.
+-- device_id is coalesced so the store's own register -- the null case -- takes
+-- part in uniqueness like any paired device, rather than every browser sale
+-- colliding on a single null.
+create unique index register_readings_z_counter_uq
+  on register_readings (store_id, coalesce(device_id, '00000000-0000-0000-0000-000000000000'::uuid), z_counter)
   where kind = 'Z';
+
 alter table register_readings add constraint z_has_counter
   check ((kind = 'Z') = (z_counter is not null));
 ```
@@ -273,23 +280,43 @@ grand total that is quietly wrong.
 
 ---
 
-## 10. Open questions
+## 10. Questions — answered 2026-09-02
 
-Engineering cannot answer these; they need BIR or your decision.
+1. **Accumulation scope — per `(store, device)`.** Not per store alone.
+2. **Late entries — next open period, flagged.** As proposed in §6.
+3. **Grand total — gross.** Voids and refunds are recorded as their own
+   totals on each reading and never subtract from the accumulation.
+4. **X readings are recorded**, not merely displayed (§5 already assumed this).
+5. **Reset authority** — still open; it gates nothing in steps 1–3 and can be
+   settled before the reset path is built.
 
-1. **Accumulation scope** — per store, or strictly per machine? Decides §3.
-2. **Late entries** — must an offline sale that syncs after a close appear in
-   the period it belongs to, or in the open one? Decides §6.
-3. **Net of voids?** — does the grand total accumulate gross or net of voids
-   and refunds? Decides §7.
-4. **Is an X-Reading required to be recorded**, or only displayed?
-5. **Reset authority** — who may reset the grand total, and what evidence must
-   accompany it?
+### What answer 1 changed, and a constraint found while implementing it
 
-I would rather ask these five now than build a plausible answer and have it
-unpicked at accreditation.
+The first instinct was to require `device_id` on every sale. Tracing
+`checkout_sale()` showed what that actually means: a device is resolved as
+`devices where id = auth.uid()`, so a paired device authenticates **as itself**
+and is a bare register — restricted to `/pos`, no Settings, Staff or Inventory.
+Requiring it would have stopped a shopkeeper selling from the browser they also
+administer the shop in. That is a workflow change, not a counting change, and
+it was rejected once stated plainly.
 
----
+The chosen model is **per `(store, device)` with a default register**: a sale
+from a paired device attributes to that device; a sale from a browser
+attributes to the store's own register.
+
+Implementing the default register as a real `devices` row was then rejected
+too, on a constraint found in the schema rather than assumed: `trg_devices_limit`
+enforces the device cap on insert, so a default-register row would **consume a
+paid device slot** and would fail outright for any store already at its cap.
+Exempting it would mean special-casing the cap, which is worse than not
+creating the row.
+
+**So the store's own register is the `NULL` case.** `register_readings.device_id`
+is nullable; null means "this shop's own machine". The uniqueness constraint
+coalesces it, so the counter is genuinely per `(store, register)` with the
+default register participating like any other. No schema change to `devices`,
+no slot consumed, no cap exemption, and a later move to an explicit register
+row remains possible.
 
 ## 11. Effort
 
