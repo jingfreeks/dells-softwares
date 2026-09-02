@@ -191,13 +191,31 @@ export function Audit() {
                           <Detail label="When" value={new Date(e.createdAt).toLocaleString()} />
                           <Detail label="Reason" value={e.reason ?? "—"} />
                         </dl>
-                        {/* §28: the design shows before/after values and request
-                            metadata. platform_audit() returns neither, so they are
-                            named as unavailable rather than left silently missing. */}
+                        {/* core.platform_audit_logs has always stored these;
+                            platform_audit() simply did not project them until
+                            20260902110000. Each is rendered only when the row
+                            actually carries it -- a grant has no "before", and a
+                            row written by a trigger has no request behind it. */}
+                        {(e.oldData || e.newData) && (
+                          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                            <Snapshot label="Before" value={e.oldData} />
+                            <Snapshot label="After" value={e.newData} />
+                          </div>
+                        )}
+
+                        {(e.ipAddress || e.userAgent) && (
+                          <dl className="mt-2.5 grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
+                            {e.ipAddress && <Detail label="IP address" value={e.ipAddress} mono />}
+                            {e.userAgent && <Detail label="User agent" value={e.userAgent} />}
+                          </dl>
+                        )}
+
                         <p className="mt-2.5 text-[11.5px]" style={{ color: "var(--t9)" }}>
-                          Before/after values and request metadata are not returned by
-                          platform_audit(). Audit rows are append-only — a database trigger
-                          refuses updates and deletes, so there is nothing to edit here.
+                          {!e.oldData && !e.newData && !e.ipAddress
+                            ? "This row carries no before/after snapshot or request metadata. "
+                            : ""}
+                          Audit rows are append-only — a database trigger refuses updates and
+                          deletes, so there is nothing to edit here.
                         </p>
                       </div>
                     )}
@@ -267,6 +285,25 @@ function Detail({ label, value, mono }: { label: string; value: string; mono?: b
       <dd className={`min-w-0 break-all ${mono ? "techno" : "text-[12px]"}`} style={{ color: "var(--t3)" }}>
         {value}
       </dd>
+    </div>
+  );
+}
+
+/** A before/after snapshot. Renders "none recorded" rather than an empty box:
+ *  an action with no prior state is a fact worth showing, not a gap. */
+function Snapshot({ label, value }: { label: string; value: Record<string, unknown> | null }) {
+  return (
+    <div className="rounded-lg border p-2.5" style={{ borderColor: "var(--bd3)" }}>
+      <p className="mb-1 text-[11px] font-semibold" style={{ color: "var(--t6)", letterSpacing: ".5px" }}>
+        {label.toUpperCase()}
+      </p>
+      {value ? (
+        <pre className="techno overflow-x-auto whitespace-pre-wrap break-all" style={{ color: "var(--t3)", margin: 0 }}>
+          {JSON.stringify(value, null, 2)}
+        </pre>
+      ) : (
+        <p className="text-[11.5px]" style={{ color: "var(--t9)" }}>none recorded</p>
+      )}
     </div>
   );
 }
