@@ -41,6 +41,14 @@ const RULES = [
  *   .env.example         documents the variable precisely so nobody re-adds it
  *                        behind a VITE_ prefix by accident
  *   .github/workflows/   hands the secret to server-side steps
+ *   scripts/*.mjs        repo-root Node scripts, run by CI and by hand. They
+ *                        are outside every app's src/ and no Vite entry
+ *                        imports them, so a bundler never sees them.
+ *                        backup-database.mjs needs the key by definition: a
+ *                        backup that respected RLS would dump nothing.
+ *                        Deliberately not the whole directory -- only
+ *                        top-level .mjs, so a browser file added under
+ *                        scripts/ later is still checked.
  */
 const ALLOWED = [
   /\/supabase\/functions\//,
@@ -48,6 +56,7 @@ const ALLOWED = [
   /playwright\.config\.[cm]?ts$/,
   /\.env\.example$/,
   /^\.github\/workflows\//,
+  /^scripts\/[^/]+\.mjs$/,
   /check-no-client-secrets\.mjs$/, // this file names the patterns it bans
 ];
 
