@@ -651,6 +651,33 @@ describe("AuthProvider", () => {
     );
   });
 
+  it("surfaces a rate limit instead of claiming a link was sent", async () => {
+    // Seen live on staging: repeated resets returned 429 while the screen
+    // still said "a reset link has been sent". The account-existence silence
+    // is deliberate, but 429 says nothing about the account -- it is the mail
+    // rate limit -- so hiding it left the operator waiting for mail that was
+    // never sent.
+    mockedSupabase.auth.getSession.mockResolvedValue({ data: { session: null } });
+    mockedSupabase.auth.resetPasswordForEmail.mockResolvedValue({ error: { status: 429 } });
+    let result: unknown;
+    function Capture() {
+      const { requestPasswordReset } = useAuth();
+      return <button onClick={async () => (result = await requestPasswordReset("a@b.com"))}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <Capture />
+      </AuthProvider>
+    );
+    screen.getByText("go").click();
+    await waitFor(() =>
+      expect(result).toEqual({
+        ok: false,
+        error: "Too many reset attempts. Please wait a few minutes and try again.",
+      })
+    );
+  });
+
   it("reports success even for an unregistered email (no status or < 500)", async () => {
     mockedSupabase.auth.getSession.mockResolvedValue({ data: { session: null } });
     mockedSupabase.auth.resetPasswordForEmail.mockResolvedValue({ error: { status: 400 } });
