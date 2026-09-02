@@ -62,6 +62,16 @@ export interface Plan {
   features: string[];
 }
 
+export interface PlatformAdminRow {
+  email: string | null;
+  scope: string;
+  status: string;
+  /** Whether this administrator's second factor is currently inside the
+   *  8-hour window core.is_platform_admin() requires. Deliberately a boolean:
+   *  the console needs to know who can act, not when anyone last signed in. */
+  mfaFresh: boolean;
+}
+
 export interface PlatformAuditEntry {
   id: number;
   actorEmail: string | null;
@@ -601,5 +611,18 @@ export async function listPlatformAudit(limit = 100): Promise<PlatformAuditEntry
     newData: r.new_data ?? null,
     ipAddress: r.ip_address ?? null,
     userAgent: r.user_agent ?? null,
+  }));
+}
+
+/** The platform administrator roster. Readable by any active administrator --
+ *  changing it still requires SUPERUSER, which this console does not expose. */
+export async function listPlatformAdmins(): Promise<PlatformAdminRow[]> {
+  const { data, error } = await supabase.rpc("platform_admins");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, never>) => ({
+    email: r.email,
+    scope: r.scope,
+    status: r.status,
+    mfaFresh: !!r.mfa_fresh,
   }));
 }

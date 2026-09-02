@@ -185,7 +185,10 @@ describe("Security", () => {
     renderPage();
     await awaitScope("SUPERUSER");
 
-    expect(screen.getByText("The list of platform administrators")).toBeInTheDocument();
+    // The roster is no longer among these: platform_admins() (20260902140000)
+    // returns it, and the dashboard shows it. Listing it here would be the
+    // same fabrication in reverse -- claiming a gap that has been closed.
+    expect(screen.queryByText("The list of platform administrators")).not.toBeInTheDocument();
     expect(screen.getByText("Your other active sessions and devices")).toBeInTheDocument();
     expect(screen.getByText("Database and infrastructure posture")).toBeInTheDocument();
   });

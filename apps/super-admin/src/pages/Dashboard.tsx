@@ -4,9 +4,11 @@ import {
   listDeletionRequests,
   listOrganizations,
   listPlatformAudit,
+  listPlatformAdmins,
   type DeletionRequest,
   type Organization,
   type PlatformAuditEntry,
+  type PlatformAdminRow,
 } from "../lib/platform";
 
 /**
@@ -21,17 +23,19 @@ export function Dashboard() {
   const [orgs, setOrgs] = useState<Organization[]>([]);
   const [requests, setRequests] = useState<DeletionRequest[]>([]);
   const [events, setEvents] = useState<PlatformAuditEntry[]>([]);
+  const [admins, setAdmins] = useState<PlatformAdminRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([listOrganizations(), listDeletionRequests(), listPlatformAudit(8)])
-      .then(([o, d, a]) => {
+    Promise.all([listOrganizations(), listDeletionRequests(), listPlatformAudit(8), listPlatformAdmins()])
+      .then(([o, d, a, admin]) => {
         if (cancelled) return;
         setOrgs(o);
         setRequests(d);
         setEvents(a);
+        setAdmins(admin);
       })
       .catch((err) => !cancelled && setError(err instanceof Error ? err.message : "Unable to load the platform overview."))
       .finally(() => !cancelled && setLoading(false));
@@ -112,13 +116,34 @@ export function Dashboard() {
           <h2 className="mb-3 text-[13.5px] font-semibold" style={{ color: "var(--t2)" }}>
             Platform admins
           </h2>
-          {/* No RPC exposes the platform_admins roster, and inventing a
-              count on the console that governs it would be the worst
-              place to guess. */}
-          <p className="text-[13px]" style={{ color: "var(--t6)" }}>Not available</p>
-          <p className="mt-2 text-[11.5px]" style={{ color: "var(--t9)" }}>
-            The roster is not exposed by any platform RPC. Administrator management is not yet
-            built — see the Security page.
+          <p className="text-[26px] font-semibold tabular-nums" style={{ color: "var(--t1)" }}>
+            {admins.filter((a) => a.status === "ACTIVE").length}
+          </p>
+          <p className="text-[12px]" style={{ color: "var(--t6)" }}>
+            active
+            {admins.length > admins.filter((a) => a.status === "ACTIVE").length &&
+              ` · ${admins.length - admins.filter((a) => a.status === "ACTIVE").length} inactive`}
+          </p>
+          <ul className="mt-3 grid gap-1">
+            {admins
+              .filter((a) => a.status === "ACTIVE")
+              .map((a) => (
+                <li key={a.email ?? a.scope} className="flex items-baseline justify-between gap-2">
+                  <span className="truncate text-[12px]" style={{ color: "var(--t5)" }}>
+                    {a.email ?? "unknown"}
+                  </span>
+                  <span className="techno shrink-0" style={{ color: a.mfaFresh ? "var(--okd)" : "var(--t9)" }}>
+                    {a.scope}
+                  </span>
+                </li>
+              ))}
+          </ul>
+          {/* mfa_verified_at is deliberately not returned by platform_admins():
+              who can act right now is useful, when they last authenticated is
+              session timing the console has no need for. */}
+          <p className="mt-2.5 text-[11.5px]" style={{ color: "var(--t9)" }}>
+            A scope in green has a second factor inside the 8-hour window and can act now.
+            Granting or revoking an administrator requires SUPERUSER and is not exposed here.
           </p>
         </section>
 
