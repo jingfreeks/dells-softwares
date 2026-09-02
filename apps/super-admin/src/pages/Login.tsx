@@ -24,7 +24,7 @@ export function Login() {
     <CenteredCard title="Sign in">
       <form className="flex flex-col gap-3" onSubmit={handleSubmit} noValidate>
         <div>
-          <label htmlFor="email" className="text-xs font-medium text-slate-700">
+          <label htmlFor="email" className="text-[12px] font-medium" style={{ color: "var(--t5)" }}>
             Email address
           </label>
           <input
@@ -33,11 +33,12 @@ export function Login() {
             autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+            className="mt-1 w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-[var(--bad)]"
+            style={{ background: "var(--gl3)", borderColor: "var(--bd)", color: "var(--t1)" }}
           />
         </div>
         <div>
-          <label htmlFor="password" className="text-xs font-medium text-slate-700">
+          <label htmlFor="password" className="text-[12px] font-medium" style={{ color: "var(--t5)" }}>
             Password
           </label>
           <input
@@ -46,12 +47,14 @@ export function Login() {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+            className="mt-1 w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-[var(--bad)]"
+            style={{ background: "var(--gl3)", borderColor: "var(--bd)", color: "var(--t1)" }}
           />
         </div>
 
         {error && (
-          <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p role="alert" className="rounded-lg px-3 py-2 text-[13px]"
+            style={{ background: "rgba(248,113,113,.10)", color: "var(--bad)" }}>
             {error}
           </p>
         )}

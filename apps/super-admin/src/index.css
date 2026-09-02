@@ -1,16 +1,59 @@
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
+/* Platform Console design tokens, taken from the approved platform-*.html
+   references. Deliberately the same scale the tenant apps use (--t1..--t9
+   text ramp, panel/glass surfaces) so the two read as one product family,
+   with one difference that carries meaning: the accent here is crimson,
+   not blue. Blue is the tenant product; crimson is the control plane. */
 :root {
+  --bg-deep: #070b14;
+  --bg-mid: #0a1122;
+  --bg-hi: #101f3f;
+  --panel: #0d1526;
+
+  --gl: rgba(255, 255, 255, 0.05);
+  --gl2: rgba(255, 255, 255, 0.045);
+  --gl3: rgba(255, 255, 255, 0.04);
+  --bd: rgba(255, 255, 255, 0.1);
+  --bd2: rgba(255, 255, 255, 0.07);
+  --bd3: rgba(255, 255, 255, 0.06);
+
+  --t1: #f2f5fa;
+  --t2: #e8ecf5;
+  --t3: #dce3ef;
+  --t4: #b6c1d4;
+  --t5: #94a2b8;
+  --t6: #7c8aa5;
+  --t7: #8592a9;
+  --t8: #8592a9;
+  --t9: #5b677e;
+
+  --a1: #3b82f6;
+  --a2: #2563eb;
+  --a3: #4c8dff;
+  --a4: #8ab6ff;
+
+  --ok: #4ade80;
+  --okd: #7fcfa0;
+  --warn: #fbbf24;
+  --warnd: #b08a2e;
+  --bad: #f87171;
+  --badd: #b06b6b;
+
+  --mono: ui-monospace, "SF Mono", "DejaVu Sans Mono", monospace;
+
+  /* Kept: the crimson platform accent the console already used. */
   --color-brand: #c93b2e;
   --color-brand-dark: #9c2c22;
-  --color-brand-light: #fdf1ef;
-  --color-canvas: #f3f5fa;
 }
 
 body {
-  color: #0f172a;
-  background-color: var(--color-canvas);
+  color: var(--t2);
+  background:
+    radial-gradient(1200px 600px at 20% -10%, var(--bg-hi) 0%, transparent 60%),
+    var(--bg-deep);
+  min-height: 100vh;
   font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
@@ -19,13 +62,17 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Shared card surface — same brand-tinted shadow as tindahan-pos, so this
-   app reads as part of the same product family. */
+/* Panel surface used by every console card. */
 @utility card {
-  border-radius: 1rem;
-  border: 1px solid rgb(241 245 249);
-  background-color: #fff;
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.04),
-    0 14px 32px -18px rgba(201, 59, 46, 0.22);
+  border-radius: 0.875rem;
+  border: 1px solid var(--bd2);
+  background-color: var(--gl3);
+}
+
+/* Technical identifiers — audit action names, org ids, module codes.
+   The design sets these in mono so they read as data, not prose. */
+@utility techno {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.01em;
 }

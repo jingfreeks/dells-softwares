@@ -20,40 +20,71 @@ export function Shell({ children }: { children: ReactNode }) {
   const { admin, signOut } = usePlatform();
 
   return (
-    <div className="flex h-screen bg-[var(--color-canvas)]">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-slate-200 bg-white">
-        <div className="border-b border-slate-200 px-5 py-4">
-          <p className="text-sm font-bold tracking-tight text-slate-900">Platform Console</p>
-          <p className="text-xs text-slate-500">Dell&apos;s Software</p>
+    <div className="flex h-screen">
+      <aside
+        className="flex w-60 shrink-0 flex-col border-r px-3 py-4"
+        style={{ borderColor: "var(--bd2)", background: "var(--panel)" }}
+      >
+        <div className="mb-5 flex items-center gap-2.5 px-2">
+          <span
+            className="grid h-8 w-8 place-items-center rounded-lg text-sm font-bold text-white"
+            style={{
+              background: "linear-gradient(160deg,#F87171,#B91C1C)",
+              boxShadow: "0 0 22px rgba(248,113,113,.30)",
+            }}
+            aria-hidden
+          >
+            P
+          </span>
+          <div>
+            <p className="text-[13px] font-bold tracking-tight" style={{ color: "var(--t1)" }}>
+              Platform Console
+            </p>
+            <p className="text-[11px]" style={{ color: "var(--t6)" }}>
+              Dell&apos;s Softwares
+            </p>
+          </div>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="Main">
+        <nav className="flex flex-1 flex-col gap-0.5" aria-label="Main">
+          <ConsoleLink to="/dashboard">Dashboard</ConsoleLink>
           <ConsoleLink to="/organizations">Organizations</ConsoleLink>
           <ConsoleLink to="/deletion-requests">Deletion requests</ConsoleLink>
           <ConsoleLink to="/audit">Platform audit</ConsoleLink>
+          <ConsoleLink to="/security">Security</ConsoleLink>
         </nav>
 
-        <div className="border-t border-slate-200 p-3">
-          <div className="px-2 pb-2">
-            <p className="text-xs font-medium text-slate-700">{admin?.scope}</p>
-            <p className="text-[11px] text-slate-400">
-              MFA valid until{" "}
-              {admin?.mfaExpiresAt
-                ? new Date(admin.mfaExpiresAt).toLocaleTimeString([], {
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })
-                : "—"}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={signOut}
-            className="w-full cursor-pointer rounded-lg px-2 py-1.5 text-left text-sm text-slate-600 hover:bg-slate-100"
+        {/* The security state is part of the chrome, not a page: the
+            operator should always be able to see which identity they are
+            acting as and how long that authority lasts. */}
+        <div
+          className="mb-3 rounded-xl border px-3 py-2.5"
+          style={{ background: "rgba(248,113,113,.07)", borderColor: "rgba(248,113,113,.24)" }}
+        >
+          <p
+            className="mb-0.5 text-[11px] font-semibold"
+            style={{ color: "var(--bad)", letterSpacing: ".6px" }}
           >
-            Log out
-          </button>
+            {admin?.scope ?? "NO SCOPE"}
+          </p>
+          <p className="text-[11.5px]" style={{ color: "var(--t6)" }}>
+            {admin?.mfaExpiresAt
+              ? `MFA valid until ${new Date(admin.mfaExpiresAt).toLocaleTimeString([], {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}`
+              : "MFA not verified"}
+          </p>
         </div>
+
+        <button
+          type="button"
+          onClick={signOut}
+          className="cursor-pointer rounded-lg px-2 py-1.5 text-left text-[13px] transition-colors hover:bg-white/5"
+          style={{ color: "var(--t6)" }}
+        >
+          Log out
+        </button>
       </aside>
 
       <main className="flex-1 overflow-y-auto">{children}</main>
@@ -65,11 +96,11 @@ function ConsoleLink({ to, children }: { to: string; children: ReactNode }) {
   return (
     <NavLink
       to={to}
-      className={({ isActive }) =>
-        `rounded-lg px-3 py-2 text-sm font-medium ${
-          isActive ? "bg-[var(--color-brand-light)] text-[var(--color-brand)]" : "text-slate-600 hover:bg-slate-100"
-        }`
-      }
+      className="rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors"
+      style={({ isActive }) => ({
+        color: isActive ? "var(--t1)" : "var(--t5)",
+        background: isActive ? "var(--gl)" : "transparent",
+      })}
     >
       {children}
     </NavLink>
@@ -81,13 +112,14 @@ export function NoAccess() {
   const { signOut } = usePlatform();
   return (
     <CenteredCard title="No access">
-      <p className="text-sm text-slate-600">
+      <p className="text-[13px]" style={{ color: "var(--t5)" }}>
         This account isn&apos;t authorised for the platform console.
       </p>
       <button
         type="button"
         onClick={signOut}
-        className="mt-4 w-full cursor-pointer rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        className="mt-4 w-full cursor-pointer rounded-xl border px-4 py-2 text-[13px] font-medium hover:bg-white/5"
+        style={{ borderColor: "var(--bd)", color: "var(--t3)" }}
       >
         Sign out
       </button>
@@ -163,7 +195,7 @@ export function MfaGate() {
         <div
           role="status"
           aria-label="Loading"
-          className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-[var(--color-brand)]"
+          className="h-6 w-6 animate-spin rounded-full border-2 border-white/15 border-t-[var(--bad)]"
         />
       </CenteredCard>
     );
@@ -173,20 +205,25 @@ export function MfaGate() {
     <CenteredCard title={enrollment ? "Set up your second factor" : "Second factor required"}>
       {enrollment ? (
         <>
-          <p className="text-sm text-slate-600">
+          <p className="text-[13px]" style={{ color: "var(--t5)" }}>
             Platform administration requires a second factor. Scan this with an authenticator app
             (Google Authenticator, 1Password, Authy), then enter the 6-digit code it shows.
           </p>
-          <div className="mt-3 w-fit rounded-lg border border-slate-200 p-2">
+          {/* The QR stays on white regardless of the console's dark theme:
+              the modules are dark-on-transparent, and a scanner needs the
+              light ground behind them. */}
+          <div className="mt-3 w-fit rounded-lg bg-white p-2">
             <img src={enrollment.qrCodeDataUri} alt="Scan with your authenticator app" width={220} height={220} />
           </div>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2.5 text-[11.5px]" style={{ color: "var(--t6)" }}>
             Can&apos;t scan? Enter this code manually:{" "}
-            <code className="rounded bg-slate-100 px-1 py-0.5 text-slate-700">{enrollment.secret}</code>
+            <code className="techno rounded px-1.5 py-0.5" style={{ background: "var(--gl3)", color: "var(--t3)" }}>
+              {enrollment.secret}
+            </code>
           </p>
         </>
       ) : (
-        <p className="text-sm text-slate-600">
+        <p className="text-[13px]" style={{ color: "var(--t5)" }}>
           Enter the 6-digit code from your authenticator app for this account.
         </p>
       )}
@@ -203,12 +240,17 @@ export function MfaGate() {
           maxLength={6}
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          className="mt-4 w-full rounded-xl border border-slate-300 px-3 py-2 text-center text-lg tracking-[0.3em] focus:border-[var(--color-brand)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand)]"
+          className="mt-4 w-full rounded-xl border px-3 py-2.5 text-center text-lg tracking-[0.3em] outline-none focus:border-[var(--bad)]"
+          style={{ background: "var(--gl3)", borderColor: "var(--bd)", color: "var(--t1)" }}
           placeholder="000000"
         />
 
         {error && (
-          <p role="alert" className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p
+            role="alert"
+            className="mt-3 rounded-lg border px-3 py-2 text-[12.5px]"
+            style={{ background: "rgba(248,113,113,.07)", borderColor: "rgba(248,113,113,.24)", color: "var(--bad)" }}
+          >
             {error}
           </p>
         )}
@@ -224,7 +266,8 @@ export function MfaGate() {
       <button
         type="button"
         onClick={signOut}
-        className="mt-2 w-full cursor-pointer rounded-xl px-4 py-2 text-sm text-slate-500 hover:bg-slate-50"
+        className="mt-2 w-full cursor-pointer rounded-xl px-4 py-2 text-[12.5px] hover:bg-white/5"
+        style={{ color: "var(--t6)" }}
       >
         Sign out
       </button>
@@ -234,13 +277,21 @@ export function MfaGate() {
 
 export function CenteredCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--color-canvas)] p-6">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-brand)]">
-          Platform Console
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div
+        className="w-full max-w-sm rounded-2xl border p-6"
+        style={{ background: "var(--panel)", borderColor: "var(--bd2)" }}
+      >
+        <p
+          className="mb-1 text-[11px] font-semibold"
+          style={{ color: "var(--bad)", letterSpacing: ".7px" }}
+        >
+          PLATFORM CONSOLE
         </p>
-        <h1 className="mt-1 text-lg font-bold tracking-tight text-slate-900">{title}</h1>
-        <div className="mt-4">{children}</div>
+        <h1 className="mb-4 text-[19px] font-semibold" style={{ color: "var(--t1)" }}>
+          {title}
+        </h1>
+        {children}
       </div>
     </div>
   );

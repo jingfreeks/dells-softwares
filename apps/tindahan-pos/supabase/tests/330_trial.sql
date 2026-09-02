@@ -64,10 +64,14 @@ select is(
   'TRIALING',
   'the subscription row actually moves to TRIALING'
 );
+-- 30, not 14. 20260815138000_trial_30_days.sql moved it deliberately -- the
+-- filename says so -- and both apps tell the tenant "30-day free trial" on
+-- the register, onboarding and welcome screens. This assertion kept the old
+-- contract and had been failing in CI ever since.
 select ok(
   (select trial_ends_at from core.organization_subscriptions where organization_id = pg_temp.org())
-    between now() + interval '13 days' and now() + interval '15 days',
-  'trial_ends_at is set roughly 14 days out'
+    between now() + interval '29 days' and now() + interval '31 days',
+  'trial_ends_at is set roughly 30 days out, matching what the tenant is told'
 );
 select ok(
   exists (

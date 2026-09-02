@@ -7,6 +7,12 @@
 -- frictionless and because the records are the tenant's own. A suspension
 -- that hid data would be a worse bug than one that never fired.
 --
+-- As of 20260901160000 the register is inside that boundary: a suspended
+-- tenant cannot ring up a sale. Correcting and collecting stay open --
+-- voiding a sale and recording a credit payment both still work while
+-- suspended, and are asserted below. "Takes nothing else away" is the part
+-- that has not moved.
+--
 -- The other property, equally load-bearing: an organization with no
 -- subscription row keeps working. core.grant_default_subscription()
 -- swallows its own failures by design, so that state is reachable, and it
@@ -189,18 +195,23 @@ select isnt_empty($$ select 1 from suppliers $$,
   'never data');
 
 -- -----------------------------------------------------------------------------
--- POS is not gated by any of this. PLATFORM.md has said so since this
--- migration shipped -- "A suspended tenant can still sell... 160_grace_ladder
--- asserts the current boundary so it cannot move silently" -- but nothing
--- here actually called checkout_sale(), void_sale() or record_credit_payment()
--- against a suspended tenant. The claim was true (checked by hand while
--- writing this), but a claim nothing re-checks is exactly the shape of gap
--- that produced a false abort criterion in ROLLOUT.md two migrations ago.
+-- POS *is* gated by this, as of 20260901160000.
 --
--- This is not the POS-gating decision. It changes no enforcement. It makes an
--- existing, deliberate, documented boundary something CI verifies instead of
--- something the document merely asserts -- so if that boundary is ever adopted
--- (POS gating) or regresses by accident, this fails instead of staying quiet.
+-- This block previously asserted the opposite, and deliberately so: the
+-- boundary was that suspension withdrew administrative writes and left the
+-- register alone. The note here anticipated the change -- "if that boundary
+-- is ever adopted (POS gating) ... this fails instead of staying quiet" --
+-- and that is exactly what happened. The tripwire fired in CI when
+-- 20260901160000 added trg_sales_org_writes_allowed, and the boundary has
+-- now been moved on purpose rather than by accident.
+--
+-- What did *not* change, and is asserted below, is the rest of §08's
+-- promise. Suspension stops a tenant taking on new business. It does not
+-- stop them correcting a mistake or collecting what they are already owed:
+-- void_sale() and record_credit_payment() write to `sales` (an update) and
+-- `credit_payments`, neither of which the new BEFORE INSERT trigger touches.
+-- A suspension that blocked a refund or a debt collection would take
+-- something away from the tenant, which §08 never intends.
 -- -----------------------------------------------------------------------------
 reset role;
 insert into categories (store_id, name)
@@ -214,29 +225,11 @@ where s.name = 'Grace Test Store' and c.name = 'Grace Test Category';
 insert into customers (store_id, name)
   select id, 'Grace Test Customer' from stores where name = 'Grace Test Store';
 
+-- A sale from before the suspension, so the correction and collection
+-- assertions below have something real to act on.
+select pg_temp.set_sub('ACTIVE');
 set local role authenticated;
 select pg_temp.act_as('da000000-0000-4000-8000-000000000001');
-
-select ok(not public.current_store_writes_allowed(),
-  'still suspended going into the POS assertions');
-
-select lives_ok($$
-  select public.checkout_sale(
-    jsonb_build_array(jsonb_build_object(
-      'product_id', (select id from products
-                      where store_id = (select id from stores where name = 'Grace Test Store')
-                        and name = 'Grace Test Sardinas'),
-      'quantity', 1)),
-    '[]'::jsonb, null, 'cash')
-$$, 'a suspended tenant can still ring up a cash sale -- the documented, '
-   || 'deliberate POS-gating boundary');
-
-select isnt_empty($$
-  select 1 from sales
-   where store_id = (select id from stores where name = 'Grace Test Store')
-     and status = 'completed'
-$$, 'and the sale actually landed, not merely raised no error');
-
 select lives_ok($$
   select public.checkout_sale(
     jsonb_build_array(jsonb_build_object(
@@ -248,8 +241,46 @@ select lives_ok($$
     (select id from customers
       where store_id = (select id from stores where name = 'Grace Test Store')),
     'credit')
-$$, 'and a credit sale too -- suspension is orthogonal to entitlement, not a '
-   || 'second gate on top of it');
+$$, 'a sale rings up normally while the subscription is ACTIVE');
+
+reset role;
+select pg_temp.set_sub('SUSPENDED');
+set local role authenticated;
+select pg_temp.act_as('da000000-0000-4000-8000-000000000001');
+
+select ok(not public.current_store_writes_allowed(),
+  'still suspended going into the POS assertions');
+
+select throws_ok($$
+  select public.checkout_sale(
+    jsonb_build_array(jsonb_build_object(
+      'product_id', (select id from products
+                      where store_id = (select id from stores where name = 'Grace Test Store')
+                        and name = 'Grace Test Sardinas'),
+      'quantity', 1)),
+    '[]'::jsonb, null, 'cash')
+$$, 'P0001', 'ORG_WRITES_SUSPENDED',
+   'a suspended tenant cannot ring up a cash sale -- enforced by a trigger on '
+   || 'sales, so it holds for checkout_sale() despite SECURITY DEFINER');
+
+select is( (select count(*)::int from sales
+             where store_id = (select id from stores where name = 'Grace Test Store')),
+           1,
+           'and no row landed -- the refusal is enforcement, not just an error message');
+
+select throws_ok($$
+  select public.checkout_sale(
+    jsonb_build_array(jsonb_build_object(
+      'product_id', (select id from products
+                      where store_id = (select id from stores where name = 'Grace Test Store')
+                        and name = 'Grace Test Sardinas'),
+      'quantity', 1)),
+    '[]'::jsonb,
+    (select id from customers
+      where store_id = (select id from stores where name = 'Grace Test Store')),
+    'credit')
+$$, 'P0001', 'ORG_WRITES_SUSPENDED',
+   'nor a credit sale -- lending while suspended is new business too');
 
 select lives_ok($$
   select public.void_sale(
@@ -257,16 +288,16 @@ select lives_ok($$
       where store_id = (select id from stores where name = 'Grace Test Store')
         and status = 'completed' limit 1),
     'test: reversing while suspended')
-$$, 'voiding a sale is not blocked either -- it is a correction, not new risk, '
-   || 'same principle as 20260815116000''s credit_payments');
+$$, 'but voiding an earlier sale is still allowed -- it is a correction, not '
+   || 'new risk, same principle as 20260815116000''s credit_payments');
 
 select lives_ok($$
   select public.record_credit_payment(
     (select id from customers
       where store_id = (select id from stores where name = 'Grace Test Store')),
     10, 'test payment while suspended')
-$$, 'nor is collecting a debt -- confirmed directly rather than inferred from '
-   || 'reading the function twice');
+$$, 'nor is collecting a debt blocked -- confirmed directly rather than '
+   || 'inferred from reading the function twice');
 
 reset role;
 select pg_temp.set_sub('ACTIVE');

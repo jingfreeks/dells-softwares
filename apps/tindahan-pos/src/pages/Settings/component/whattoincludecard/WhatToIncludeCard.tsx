@@ -6,7 +6,9 @@ import {
   LABEL_INCLUDE_UTANG_BALANCE,
   LABEL_INCLUDE_QR_TO_PAY,
   TEXT_TIN_REQUIRED_HINT,
+  TEXT_TIN_WITHHELD_ALPHA_HINT,
 } from "@/lib";
+import { printGuardrails } from "@/lib/appMode";
 
 interface WhatToIncludeCardProps {
   includeLogo: boolean;
@@ -36,13 +38,19 @@ export function WhatToIncludeCard({
   includeQrToPay,
   onToggleIncludeQrToPay,
 }: WhatToIncludeCardProps) {
+  // In ALPHA the print layer withholds TIN and permit regardless of this
+  // setting, so the chip must not claim otherwise -- a control that says
+  // it is on while nothing prints is worse than one that is plainly off.
+  const guard = printGuardrails();
+  const tinWithheld = !guard.allowTaxIdentifiers;
+
   const chips: { label: string; on: boolean; onToggle: () => void; locked?: boolean }[] = [
     { label: LABEL_INCLUDE_LOGO, on: includeLogo, onToggle: onToggleIncludeLogo },
     {
       label: LABEL_INCLUDE_TIN_AND_PERMIT,
-      on: birRegistered || includeTinAndPermit,
+      on: !tinWithheld && (birRegistered || includeTinAndPermit),
       onToggle: onToggleIncludeTinAndPermit,
-      locked: birRegistered,
+      locked: tinWithheld || birRegistered,
     },
     { label: LABEL_INCLUDE_CASHIER_NAME, on: includeCashierName, onToggle: onToggleIncludeCashierName },
     { label: LABEL_INCLUDE_UTANG_BALANCE, on: includeUtangBalance, onToggle: onToggleIncludeUtangBalance },
@@ -70,11 +78,15 @@ export function WhatToIncludeCard({
           </button>
         ))}
       </div>
-      {birRegistered && (
+      {tinWithheld ? (
+        <p className="tpl-hint" style={{ marginTop: 8 }}>
+          {TEXT_TIN_WITHHELD_ALPHA_HINT}
+        </p>
+      ) : birRegistered ? (
         <p className="tpl-hint" style={{ marginTop: 8 }}>
           {TEXT_TIN_REQUIRED_HINT}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }

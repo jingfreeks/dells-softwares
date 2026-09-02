@@ -12,6 +12,7 @@ vi.mock("./lib/platform", async () => {
     PlatformProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     usePlatform: vi.fn(),
     listOrganizations: vi.fn().mockResolvedValue([]),
+    listDeletionRequests: vi.fn().mockResolvedValue([]),
     listPlatformAudit: vi.fn().mockResolvedValue([]),
   };
 });
@@ -75,7 +76,7 @@ describe("Console gate", () => {
     // Rendering the console here would show a convincing but entirely empty
     // platform, because every platform_* RPC returns nothing without MFA.
     expect(screen.queryByRole("navigation", { name: "Main" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Organizations")).not.toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Main" })).not.toBeInTheDocument();
   });
 
   it("renders the console only once an administrator has a fresh second factor", () => {
@@ -84,6 +85,28 @@ describe("Console gate", () => {
     );
     render(<App />);
     expect(screen.getByRole("navigation", { name: "Main" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Organizations" })).toBeInTheDocument();
+    // The console opens on the platform overview, which is the first item
+    // in the design's navigation order.
+    expect(screen.getByRole("heading", { name: "Platform overview" })).toBeInTheDocument();
+  });
+});
+
+describe("nav destinations", () => {
+  beforeEach(() => {
+    vi.mocked(listOrganizations).mockResolvedValue([]);
+    vi.mocked(usePlatform).mockReturnValue(
+      platformValue({ session: { user: { email: "admin@example.test" } } as never, admin })
+    );
+  });
+
+  it("renders the Security page at /security instead of redirecting away", async () => {
+    // The Security nav entry existed for a while with no matching route, so
+    // it fell through the catch-all to /dashboard -- a dead link that looked
+    // like a working one.
+    window.history.pushState({}, "", "/security");
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Security" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Platform overview" })).not.toBeInTheDocument();
   });
 });

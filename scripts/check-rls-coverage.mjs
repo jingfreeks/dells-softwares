@@ -29,8 +29,19 @@ const DIR = 'apps/tindahan-pos/supabase/migrations';
  *   feature_flags — platform reference data, not tenant-scoped. Its
  *     `using (true)` read policy is deliberate: every client needs to read
  *     flags before it knows who the user is. It has no client write policy.
+ *   demo_products, demo_sales, demo_customers — the demo store's sample
+ *     dataset (20260815139000). Identical rows for every visitor, never
+ *     store_id-keyed, select-only to `authenticated` with no insert, update
+ *     or delete policy for anyone. The migration puts it plainly: there is
+ *     no code path, buggy or not, that can join these to a real store's
+ *     rows. A tenant-scoping check on them would be scoping to nothing.
  */
-const BLANKET_READ_OK = new Set(['feature_flags']);
+const BLANKET_READ_OK = new Set([
+  'feature_flags',
+  'demo_products',
+  'demo_sales',
+  'demo_customers',
+]);
 
 /**
  * Tables that intentionally ship with RLS enabled and NO policy at all.
@@ -39,8 +50,23 @@ const BLANKET_READ_OK = new Set(['feature_flags']);
  *   device_pairing_codes — 0026 states it plainly: nothing but the pairing
  *     functions may read or write it, so exposing any client policy would
  *     widen the surface for no reason.
+ *   demo_requests — written only by the submit-demo-request Edge Function
+ *     on a service_role client. Its own table comment says no policy grants
+ *     anon or authenticated any access, which is the point: these are
+ *     inbound sales enquiries, readable by nobody through PostgREST.
+ *   credit_override_tokens — the owner-approval PIN path. Reached only
+ *     through check_credit_override_pin() and checkout_sale(), both
+ *     SECURITY DEFINER. A readable token table would defeat the lockout.
+ *   account_deletion_requests — lives in `core`, which this project
+ *     deliberately does not expose to PostgREST at all. Every access goes
+ *     through a platform_* wrapper that re-checks is_platform_admin().
  */
-const DENY_ALL_OK = new Set(['device_pairing_codes']);
+const DENY_ALL_OK = new Set([
+  'device_pairing_codes',
+  'demo_requests',
+  'credit_override_tokens',
+  'account_deletion_requests',
+]);
 
 const sql = readdirSync(DIR)
   .filter((f) => f.endsWith('.sql'))

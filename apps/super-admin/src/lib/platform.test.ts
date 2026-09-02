@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
   outranksPlan,
   blocksWrites,
+  SUBSCRIPTION_STATUSES,
   featuresLostByPlanChange,
   planPriceLabel,
   setModule,
@@ -166,6 +167,16 @@ describe("blocksWrites", () => {
   // A provisioning gap must not read as a suspension.
   it("does not treat an absent subscription as a suspension", () => {
     expect(blocksWrites(null)).toBe(false);
+  });
+
+  // Verified against core.org_writes_allowed() on staging: the organization's
+  // own status is checked first, a live subscription blocks only on SUSPENDED,
+  // a lone CANCELLED subscription blocks (the retention window), and a tenant
+  // that was never provisioned fails open. The two below are the whole set.
+  // A status added to SUBSCRIPTION_STATUSES without a decision here would
+  // silently be treated as writable.
+  it("classifies every status the console can actually set", () => {
+    expect(SUBSCRIPTION_STATUSES.filter(blocksWrites)).toEqual(["SUSPENDED", "CANCELLED"]);
   });
 });
 
