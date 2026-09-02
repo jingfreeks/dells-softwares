@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import {
@@ -225,6 +225,47 @@ describe("Pos", () => {
       null
     );
     expect(await screen.findByRole("status")).toHaveTextContent("Sale recorded");
+  });
+
+  // The unique index on sales.client_request_id does NOT cover this. That id is
+  // minted inside each checkout() call, so two clicks produce two ids and two
+  // distinct sales -- the index dedupes a REPLAY of one queued sale, which is a
+  // different problem. The disabled-while-in-flight button is therefore the only
+  // thing standing between an impatient tap and a customer charged twice, which
+  // is why it is worth a test of its own rather than being assumed.
+  it("does not start a second sale while the first is still in flight", async () => {
+    const user = userEvent.setup();
+    let settleCheckout: (sale: ReturnType<typeof makeSaleRecord>) => void = () => {};
+    const checkout = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          settleCheckout = resolve as typeof settleCheckout;
+        })
+    );
+    setup({ checkout });
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    const tendered = screen.getByLabelText("Amount tendered");
+    await user.clear(tendered);
+    await user.type(tendered, "50");
+
+    // fireEvent rather than user.click: the second press has to land while the
+    // first is still unresolved, which is the whole scenario. user.click awaits
+    // its own effects and would never reproduce it.
+    fireEvent.click(screen.getByRole("button", { name: "Complete sale" }));
+
+    const processing = await screen.findByRole("button", { name: "Processing…" });
+    expect(processing).toBeDisabled();
+
+    fireEvent.click(processing);
+    fireEvent.click(processing);
+
+    expect(checkout).toHaveBeenCalledTimes(1);
+
+    settleCheckout(makeSaleRecord());
+    expect(await screen.findByRole("status")).toHaveTextContent("Sale recorded");
+    expect(checkout).toHaveBeenCalledTimes(1);
   });
 
   it("opens the receipt modal with the completed sale's items and total after checkout", async () => {
