@@ -34,11 +34,15 @@ $$;
 
 -- Seeded as the owner, before dropping to a client role: this is the state a
 -- real store reaches through sales, and the only way to reach it now.
-insert into customers (store_id, name, phone, credit_limit, balance)
-  select pg_temp.store(), 'Aling Nena', '09170000001', 1000, 500;
+insert into customers (id, store_id, name, phone, credit_limit, balance)
+  select 'cb000000-0000-4000-8000-00000000d001', pg_temp.store(),
+         'Aling Nena', '09170000001', 1000, 500;
 
+-- Pinned rather than looked up by name: one of the assertions below renames
+-- this customer to prove name is still editable, which would leave a
+-- name-based helper returning null for everything after it.
 create or replace function pg_temp.customer() returns uuid language sql as $$
-  select id from customers where store_id = pg_temp.store() and name = 'Aling Nena'
+  select 'cb000000-0000-4000-8000-00000000d001'::uuid
 $$;
 
 set local role authenticated;
