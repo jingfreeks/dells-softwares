@@ -304,7 +304,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     // Always report success even if the email isn't registered — don't leak
-    // which emails have accounts.
+    // which emails have accounts. That silence is about the *account*, so it
+    // covers 400/422 and nothing else.
+    //
+    // 429 is not about the account: it is the mail rate limit, and it says
+    // the same thing whether or not the address exists. Swallowing it told
+    // the operator a link had been sent and left them waiting for mail that
+    // was never going to arrive — worse than an error, because there is
+    // nothing to act on.
+    if (error && error.status === 429) {
+      return {
+        ok: false,
+        error: "Too many reset attempts. Please wait a few minutes and try again.",
+      };
+    }
     if (error && error.status && error.status >= 500) {
       return { ok: false, error: "Something went wrong. Please try again." };
     }
