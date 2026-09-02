@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   listOrganizationFeatures,
+  listOrganizationStaff,
   listOrganizationLimits,
   listOrganizationModules,
   listOrganizations,
@@ -17,6 +18,7 @@ import {
   SUBSCRIPTION_STATUSES,
   type Organization,
   type OrganizationFeature,
+  type OrganizationStaff,
   type OrganizationLimit,
   type OrganizationModule,
   type Plan,
@@ -33,6 +35,7 @@ export function OrganizationDetail() {
   const [modules, setModules] = useState<OrganizationModule[]>([]);
   const [limits, setLimits] = useState<OrganizationLimit[]>([]);
   const [features, setFeatures] = useState<OrganizationFeature[]>([]);
+  const [staff, setStaff] = useState<OrganizationStaff[]>([]);
   const [busyFeature, setBusyFeature] = useState<string | null>(null);
   const [busyLimit, setBusyLimit] = useState<string | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -46,18 +49,20 @@ export function OrganizationDetail() {
   const [tab, setTab] = useState<TabKey>("overview");
 
   const load = useCallback(async () => {
-    const [orgs, mods, planList, limitList, featureList] = await Promise.all([
+    const [orgs, mods, planList, limitList, featureList, staffList] = await Promise.all([
       listOrganizations(),
       listOrganizationModules(orgId),
       listPlans(),
       listOrganizationLimits(orgId),
       listOrganizationFeatures(orgId),
+      listOrganizationStaff(orgId),
     ]);
     setOrg(orgs.find((o) => o.organizationId === orgId) ?? null);
     setModules(mods);
     setPlans(planList);
     setLimits(limitList);
     setFeatures(featureList);
+    setStaff(staffList);
   }, [orgId]);
 
   useEffect(() => {
@@ -288,13 +293,6 @@ export function OrganizationDetail() {
             </h2>
             <ul className="mt-2 grid gap-1.5">
               <li className="text-[12.5px]" style={{ color: "var(--t5)" }}>
-                <span style={{ color: "var(--t3)" }}>This tenant&apos;s staff</span>
-                <span style={{ color: "var(--t9)" }}>
-                  {" "}
-                  — no RPC returns them. platform_organizations() gives a count and nothing more.
-                </span>
-              </li>
-              <li className="text-[12.5px]" style={{ color: "var(--t5)" }}>
                 <span style={{ color: "var(--t3)" }}>This tenant&apos;s activity</span>
                 <span style={{ color: "var(--t9)" }}>
                   {" "}
@@ -303,6 +301,73 @@ export function OrganizationDetail() {
                 </span>
               </li>
             </ul>
+          </div>
+        </div>
+      )}
+
+      {tab === "users" && (
+        <div role="tabpanel" id="panel-users" aria-labelledby="tab-users" className="max-w-3xl">
+          <div className="card p-4">
+            <h2 className="text-[13.5px] font-semibold" style={{ color: "var(--t2)" }}>Staff</h2>
+            <p className="mt-0.5 text-[12px]" style={{ color: "var(--t6)" }}>
+              Two roles are shown because this app has two. The badge is the RBAC assignment,
+              which decides permissions — a SUPERVISOR holds 15 and a CASHIER none. Both are
+              <span className="techno"> cashier</span> to the coarse enum underneath, so the enum
+              alone would not tell you what someone can do.
+            </p>
+
+            {staff.length === 0 ? (
+              <p className="mt-4 text-[12.5px]" style={{ color: "var(--t6)" }}>
+                No staff records for this organization.
+              </p>
+            ) : (
+              <div className="mt-3.5 space-y-1.5">
+                {staff.map((m) => (
+                  <div
+                    key={m.staffId}
+                    className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 rounded-xl border px-3 py-2"
+                    style={{ borderColor: "var(--bd3)", opacity: m.active ? 1 : 0.6 }}
+                  >
+                    <div className="min-w-[11rem] flex-1">
+                      <p className="text-[13px]" style={{ color: "var(--t3)" }}>
+                        {m.name ?? "Unnamed"}
+                        {!m.active && (
+                          <span className="ml-2 text-[11px]" style={{ color: "var(--t9)" }}>deactivated</span>
+                        )}
+                      </p>
+                      <p className="techno" style={{ color: "var(--t9)" }}>{m.email ?? "no email"}</p>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-2">
+                      {m.pinLocked && (
+                        <span
+                          className="rounded-full border px-2 py-0.5 text-[11px] font-medium"
+                          style={{ color: "var(--warn)", borderColor: "rgba(251,191,36,.28)" }}
+                          title="PIN entry is locked out right now"
+                        >
+                          PIN locked
+                        </span>
+                      )}
+                      <span
+                        className="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
+                        style={{ background: "var(--gl3)", color: "var(--t5)" }}
+                      >
+                        {m.rbacRole ?? "no role"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* PIN failure counters are returned by nothing here on purpose:
+                whether a cashier has been fumbling their PIN is the shop's
+                business, not the platform's. Whether they are locked out
+                right now is what support gets called about. */}
+            <p className="mt-3 text-[11.5px]" style={{ color: "var(--t9)" }}>
+              Deactivated staff are listed and dimmed rather than hidden — they still hold
+              historical sales. Staff are managed by the tenant, not from this console.
+            </p>
           </div>
         </div>
       )}
@@ -658,17 +723,19 @@ export function OrganizationDetail() {
   );
 }
 
-type TabKey = "overview" | "subscription" | "modules";
+type TabKey = "overview" | "users" | "subscription" | "modules";
 
 /**
- * The design also specifies Users and Activity tabs. Neither has a backend:
- * no RPC returns a tenant's staff, and platform_audit() has no organization
- * filter. They are omitted rather than rendered empty -- an empty Users tab
- * asserts that the tenant has no staff, which is a claim, and a false one.
- * The Overview tab names both gaps instead.
+ * Users is backed by platform_organization_staff() (20260902150000).
+ *
+ * The design also specifies an Activity tab, which is still omitted: only
+ * some platform actions carry the organization id in entity_id, so a tab
+ * built on that filter would show a partial history while looking complete.
+ * The Overview tab names that gap rather than rendering a misleading tab.
  */
 const TABS: { key: TabKey; label: string }[] = [
   { key: "overview", label: "Overview" },
+  { key: "users", label: "Users" },
   { key: "subscription", label: "Subscription" },
   { key: "modules", label: "Modules" },
 ];
