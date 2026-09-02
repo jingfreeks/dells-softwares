@@ -292,10 +292,6 @@ const CAPABILITIES: { group: string; items: { label: string; scope: string | nul
 
 const UNAVAILABLE = [
   {
-    what: "The list of platform administrators",
-    why: "no RPC returns the roster; core.platform_admins is not reachable from the browser",
-  },
-  {
     what: "Your other active sessions and devices",
     why: "the client can only see the session it is holding",
   },

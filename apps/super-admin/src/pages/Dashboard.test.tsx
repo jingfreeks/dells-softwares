@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { Dashboard } from "./Dashboard";
-import { listDeletionRequests, listOrganizations, listPlatformAudit } from "../lib/platform";
+import { listDeletionRequests, listOrganizations, listPlatformAudit, listPlatformAdmins } from "../lib/platform";
 
 vi.mock("../lib/platform", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/platform")>();
@@ -11,12 +11,18 @@ vi.mock("../lib/platform", async (importOriginal) => {
     listOrganizations: vi.fn(),
     listDeletionRequests: vi.fn(),
     listPlatformAudit: vi.fn(),
+    listPlatformAdmins: vi.fn(),
   };
 });
 
 const mockedOrgs = vi.mocked(listOrganizations);
 const mockedRequests = vi.mocked(listDeletionRequests);
 const mockedAudit = vi.mocked(listPlatformAudit);
+const mockedAdmins = vi.mocked(listPlatformAdmins);
+
+function admin(over: Record<string, unknown> = {}) {
+  return { email: "eng@example.test", scope: "ENGINEER", status: "ACTIVE", mfaFresh: true, ...over } as never;
+}
 
 function org(over: Record<string, unknown> = {}) {
   return {
@@ -45,6 +51,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockedOrgs.mockResolvedValue([] as never);
   mockedRequests.mockResolvedValue([] as never);
+  mockedAdmins.mockResolvedValue([admin()] as never);
   mockedAudit.mockResolvedValue([] as never);
 });
 
@@ -79,12 +86,47 @@ describe("Dashboard", () => {
     expect(screen.getByText("Awaiting a platform decision.")).toBeInTheDocument();
   });
 
-  it("says platform admins are not available rather than inventing a count", async () => {
-    // No RPC exposes the roster. A plausible-looking number on the console
-    // that governs platform access would be the worst place to guess.
+  it("counts the active administrators from the real roster", async () => {
+    mockedAdmins.mockResolvedValue([
+      admin({ email: "a@example.test", scope: "SUPERUSER" }),
+      admin({ email: "b@example.test", scope: "ENGINEER" }),
+      admin({ email: "c@example.test", scope: "SUPPORT", status: "REVOKED" }),
+    ] as never);
     renderPage();
-    expect(await screen.findByText("Platform admins")).toBeInTheDocument();
-    expect(screen.getByText("Not available")).toBeInTheDocument();
+
+    expect(await screen.findByText("2")).toBeInTheDocument();
+    expect(screen.getByText(/1 inactive/)).toBeInTheDocument();
+  });
+
+  it("lists only the administrators who currently hold access", async () => {
+    // A revoked row is still in the table; showing it beside active peers
+    // would overstate who can act.
+    mockedAdmins.mockResolvedValue([
+      admin({ email: "active@example.test" }),
+      admin({ email: "revoked@example.test", status: "REVOKED" }),
+    ] as never);
+    renderPage();
+
+    expect(await screen.findByText("active@example.test")).toBeInTheDocument();
+    expect(screen.queryByText("revoked@example.test")).not.toBeInTheDocument();
+  });
+
+  it("distinguishes an administrator who cannot act right now", async () => {
+    // Scope colour carries mfaFresh: ACTIVE on the roster is not the same as
+    // able to act, because is_platform_admin() also requires fresh MFA.
+    mockedAdmins.mockResolvedValue([admin({ mfaFresh: false, scope: "BILLING" })] as never);
+    renderPage();
+
+    const scope = await screen.findByText("BILLING");
+    expect(scope).toBeInTheDocument();
+    expect(scope.getAttribute("style")).not.toContain("--okd");
+  });
+
+  it("says roster changes are not made here", async () => {
+    // Granting and revoking require SUPERUSER and are not exposed by any RPC
+    // this console calls -- the card should not imply otherwise.
+    renderPage();
+    expect(await screen.findByText(/requires SUPERUSER and is not exposed here/i)).toBeInTheDocument();
   });
 
   it("buckets organizations with no plan instead of dropping them", async () => {
