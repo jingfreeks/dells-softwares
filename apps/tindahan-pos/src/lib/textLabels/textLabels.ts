@@ -1300,6 +1300,8 @@ export const ERROR_INVALID_PIN = "Incorrect PIN. Please try again.";
 export const ERROR_PIN_LOCKED = "Too many wrong attempts. Please wait 15 minutes and try again.";
 export const ERROR_INACTIVE_EMPLOYEE = "This account is inactive. Please ask an admin.";
 export const TEXT_CASHIER_SESSION_EXPIRED = "Please sign in again.";
+export const TEXT_STORE_SUSPENDED =
+  "This store is suspended and cannot record new sales. Ask the owner to settle the subscription.";
 export const TEXT_LOADING_STAFF = "Loading staff…";
 export const ERROR_COULD_NOT_LOAD_STAFF = "Could not load staff.";
 export const LABEL_COUNT_STARTING_CASH = "Count your starting cash";

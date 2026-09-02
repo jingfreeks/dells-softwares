@@ -490,7 +490,13 @@ a human can supply.
   anything is sold without being withheld, unless it is named in that file with
   a reason — so a new capability cannot be added and quietly given away, and a
   stale excuse cannot outlive the enforcement that replaced it.
-- **POS gating** — deliberately not built, above.
+- ~~**POS gating**~~ — **Built** in `20260901160000`, reversing the decision
+  recorded below. A `BEFORE INSERT` trigger on `sales` refuses a sale from a
+  tenant `core.org_writes_allowed()` says no to, so it holds for
+  `checkout_sale()` despite that function being SECURITY DEFINER. Correcting
+  and collecting stay open: `void_sale()` updates a sale and
+  `record_credit_payment()` writes to `credit_payments`, and the trigger
+  touches neither.
 - ~~**Limit enforcement.**~~ **Built** in `20260815102000`. Triggers rather
   than policies, because devices are inserted by the pair-device Edge
   Function on a `service_role` client that bypasses RLS entirely — a policy
@@ -537,12 +543,18 @@ a human can supply.
     gated writes are) and `tindahan-pos`'s `BillingBanner`. The POS one is
     shown to **admins only** and never on a paired device — a cashier cannot
     pay a bill, the till faces the customer, and nothing in the POS is
-    blocked by billing state anyway. If POS gating is ever adopted, that
-    last reason disappears and the audience should be revisited.
-  - **POS is not gated by it.** A suspended tenant can still sell. Blocking
-    sales is the sharpest possible change to a live money-handling system
-    and depends on the open POS-gating decision below; `160_grace_ladder`
-    asserts the current boundary so it cannot move silently.
+    blocked by billing state anyway. **That reason has now expired** — POS
+    gating was adopted in `20260901160000`, so a cashier on a paired device
+    can be refused a sale with no banner explaining why. The audience for
+    `BillingBanner` needs revisiting; see the open issue.
+  - **POS is gated by it, as of `20260901160000`.** A suspended tenant can no
+    longer ring up a sale. This reverses what this document previously
+    recorded, and it is the sharpest change the platform makes to a live
+    money-handling system, so it is worth stating plainly: an unpaid shop
+    cannot trade. Voiding and collecting a debt remain open — suspension
+    stops new business, it does not strand a tenant with their own records.
+    `160_grace_ladder` asserts the new boundary; the tripwire it carried for
+    the old one is what caught the change in CI.
   - Nothing escalates PAST_DUE to SUSPENDED automatically. The 14-day window
     is reported to the tenant, but the transition is a person's decision.
 - ~~A latent sharp edge in `core.current_user_id()`.~~ **Fixed** in

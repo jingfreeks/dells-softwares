@@ -22,6 +22,15 @@ const KNOWN_BUSINESS_RULE_MESSAGES = [
   // completed sale in the meantime.
   "OVERRIDE_PIN_LOCKED",
   "EXPIRED_CASHIER_SESSION",
+  // Raised by guard_org_writes_allowed() (20260901160000), a BEFORE INSERT
+  // trigger on `sales`, when the tenant's organization is suspended or
+  // cancelled. Same shape as FEATURE_NOT_ENABLED above and the same trap:
+  // without it here, a refused sale falls through to "assume connectivity",
+  // is queued for replay, and is shown to the cashier as complete -- receipt
+  // printed, stock decremented locally -- while the server refuses it on
+  // every retry, forever. A suspended shop would take money for sales that
+  // do not exist.
+  "ORG_WRITES_SUSPENDED",
   // Raised by checkout_sale()'s own discount validation (>100% off, a
   // negative/zero value, or an unrecognized discount type) -- without these
   // here, a rejected discount fell through to "assume connectivity" too: the
