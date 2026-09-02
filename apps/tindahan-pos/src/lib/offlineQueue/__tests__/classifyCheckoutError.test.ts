@@ -81,3 +81,26 @@ describe("entitlement rejections are business rules, not connectivity", () => {
     expect(isConnectivityFailure(new Error("Failed to fetch"))).toBe(true);
   });
 });
+
+describe("a suspended store's refused sale is a business rule, not connectivity", () => {
+  // guard_org_writes_allowed() (20260901160000) is a BEFORE INSERT trigger on
+  // `sales`, so a refused sale comes back out of checkout_sale() the same way
+  // FEATURE_NOT_ENABLED does. It reached production without being on this
+  // whitelist, which meant the worst version of this bug: a suspended shop's
+  // cashier would see completed sales, printed receipts and decremented
+  // stock for transactions the server refuses on every retry -- money taken
+  // for sales that do not exist.
+  it("does not queue a sale the store is suspended from making", () => {
+    expect(isConnectivityFailure(new Error("ORG_WRITES_SUSPENDED"))).toBe(false);
+  });
+
+  it("recognises it inside a wrapped Postgres error message", () => {
+    expect(
+      isConnectivityFailure({
+        message: 'new row violates: ORG_WRITES_SUSPENDED',
+        code: "P0001",
+      })
+    ).toBe(false);
+  });
+});
+

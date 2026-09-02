@@ -20,6 +20,7 @@ import {
   ERROR_COULD_NOT_HOLD_SALE,
   ERROR_RESUME_BLOCKED_CART_NOT_EMPTY,
   TEXT_CASHIER_SESSION_EXPIRED,
+  TEXT_STORE_SUSPENDED,
   SERVICE_LABEL_ELOAD,
   SERVICE_LABEL_CASHIN,
   SERVICE_LABEL_CASHOUT,
@@ -501,6 +502,11 @@ export function usePosPage() {
       if (message.includes("EXPIRED_CASHIER_SESSION")) {
         reportExpiredSession();
         setCheckoutError(TEXT_CASHIER_SESSION_EXPIRED);
+      } else if (message.includes("ORG_WRITES_SUSPENDED")) {
+        // The billing banner is shown to admins only and never on a paired
+        // device, so a cashier has no other way to learn why the till stopped
+        // taking sales.
+        setCheckoutError(TEXT_STORE_SUSPENDED);
       } else {
         setCheckoutError(message);
       }
@@ -532,6 +538,13 @@ export function usePosPage() {
         reportExpiredSession();
         closeOwnerApproval();
         setCheckoutError(TEXT_CASHIER_SESSION_EXPIRED);
+        return;
+      }
+      if (message.includes("ORG_WRITES_SUSPENDED")) {
+        // Nothing to do with the PIN -- leaving it in the override dialog
+        // would read as a rejected approval rather than a closed till.
+        closeOwnerApproval();
+        setCheckoutError(TEXT_STORE_SUSPENDED);
         return;
       }
       setOverridePinError(
