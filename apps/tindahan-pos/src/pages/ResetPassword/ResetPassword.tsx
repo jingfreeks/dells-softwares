@@ -41,7 +41,10 @@ export function ResetPassword() {
             <p role="status" className="tpl-sub" style={{ marginTop: 8 }}>
               {TEXT_PASSWORD_UPDATED}
             </p>
-            <Link to="/" className="tpl-btnp" style={{ display: "block", textAlign: "center", marginTop: 8 }}>
+            {/* No display override: .tpl-btnp centres its label with flex in a
+                fixed 46px box, and `display: block` dropped the label to the
+                top of that box. Only the anchor's underline needs resetting. */}
+            <Link to="/" className="tpl-btnp" style={{ textDecoration: "none", marginTop: 18 }}>
               {LINK_CONTINUE_TO_APP}
             </Link>
           </>
