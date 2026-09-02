@@ -70,6 +70,14 @@ export interface PlatformAuditEntry {
   entityId: string | null;
   reason: string | null;
   createdAt: string;
+  /** The row's own before/after snapshots. Null where the action that wrote
+   *  the row had nothing to record -- a grant has no "before". */
+  oldData: Record<string, unknown> | null;
+  newData: Record<string, unknown> | null;
+  /** Request metadata, captured by core.write_platform_audit(). Null on rows
+   *  written by a database trigger rather than an HTTP request. */
+  ipAddress: string | null;
+  userAgent: string | null;
 }
 
 /** A sole admin's request to delete their account -- filed when
@@ -589,5 +597,9 @@ export async function listPlatformAudit(limit = 100): Promise<PlatformAuditEntry
     entityId: r.entity_id,
     reason: r.reason,
     createdAt: r.created_at,
+    oldData: r.old_data ?? null,
+    newData: r.new_data ?? null,
+    ipAddress: r.ip_address ?? null,
+    userAgent: r.user_agent ?? null,
   }));
 }

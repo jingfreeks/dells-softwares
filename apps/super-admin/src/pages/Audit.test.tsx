@@ -21,6 +21,10 @@ const ROWS = [
     entityId: "aaa",
     reason: null,
     createdAt: "2026-08-30T02:00:00.000Z",
+    oldData: null,
+    newData: { scope: "SUPERUSER" },
+    ipAddress: "203.0.113.7",
+    userAgent: "Mozilla/5.0 (Macintosh)",
   },
   {
     id: 2,
@@ -30,6 +34,10 @@ const ROWS = [
     entityId: "bbb",
     reason: "verified by phone",
     createdAt: "2026-08-10T02:00:00.000Z",
+    oldData: null,
+    newData: null,
+    ipAddress: null,
+    userAgent: null,
   },
 ] as never;
 
@@ -157,12 +165,38 @@ describe("Audit", () => {
       expect(screen.getByText(/append-only/i)).toBeInTheDocument();
     });
 
-    it("names the fields the backend does not return instead of omitting them", async () => {
+    it("shows the before/after snapshot and request metadata the row carries", async () => {
+      // core.platform_audit_logs always stored these; platform_audit() did not
+      // project them until 20260902110000, and the console said they were
+      // unavailable. They were unprojected, not unavailable.
+      const user = userEvent.setup();
+      render(<Audit />);
+      await user.click(await screen.findByRole("button", { name: /PLATFORM_ADMIN_MFA_VERIFIED/ }));
+
+      const detail = within(screen.getByRole("region", { name: "Audit event detail" }));
+      expect(detail.getByText(/SUPERUSER/)).toBeInTheDocument();
+      expect(detail.getByText("203.0.113.7")).toBeInTheDocument();
+      expect(detail.getByText(/Mozilla/)).toBeInTheDocument();
+    });
+
+    it("says an action had no prior state rather than rendering an empty box", async () => {
+      // A grant has no "before". Blank would read as missing data.
+      const user = userEvent.setup();
+      render(<Audit />);
+      await user.click(await screen.findByRole("button", { name: /PLATFORM_ADMIN_MFA_VERIFIED/ }));
+
+      const detail = within(screen.getByRole("region", { name: "Audit event detail" }));
+      expect(detail.getByText("none recorded")).toBeInTheDocument();
+    });
+
+    it("says so plainly when a row carries no snapshot or request metadata at all", async () => {
       const user = userEvent.setup();
       render(<Audit />);
       await user.click(await screen.findByRole("button", { name: /ACCOUNT_DELETION_APPROVED/ }));
 
-      expect(screen.getByText(/Before\/after values and request metadata are not returned/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/carries no before\/after snapshot or request metadata/i)
+      ).toBeInTheDocument();
     });
   });
 
