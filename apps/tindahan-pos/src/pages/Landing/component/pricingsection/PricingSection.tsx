@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { STATIC_PLANS } from "@/lib/plan/staticPlans";
+import { PESO_WHOLE as PESO } from "@/lib/money";
 import { PricingCard } from "./component/pricingcard";
 import { usePricingSection } from "./hooks";
 
-const PESO = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", minimumFractionDigits: 0 });
 // Annual price = 10 months' worth (2 months free) -- a marketing-page-only
 // display computation. No checkout flow exists yet (BUSINESS/PRO are sold
 // by a human per request_plan_upgrade.sql), so there's no real "ANNUAL"
