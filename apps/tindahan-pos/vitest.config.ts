@@ -1,7 +1,15 @@
 import { defineConfig } from 'vitest/config'
 import { fileURLToPath } from 'node:url'
+import { createRequire } from 'node:module'
+
+// Mirrors vite.config.ts. Tests render SettingsSidebar, which shows the
+// version, and this config does not inherit the app build's `define`.
+const { version } = createRequire(import.meta.url)('./package.json')
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(version),
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
