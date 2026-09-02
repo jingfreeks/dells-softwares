@@ -198,6 +198,13 @@ export function Security() {
                   <span className="text-[12px]" style={{ color: "var(--t6)" }}>
                     {e.actorEmail ?? "system"}
                   </span>
+                  {/* The source address is the point of an identity event: a
+                      grant or a verification from an unfamiliar address is
+                      exactly what this page exists to make visible. Rows
+                      written by a trigger carry none. */}
+                  {e.ipAddress && (
+                    <span className="techno" style={{ color: "var(--t6)" }}>{e.ipAddress}</span>
+                  )}
                   <span className="text-[11.5px] tabular-nums" style={{ color: "var(--t9)" }}>
                     {new Date(e.createdAt).toLocaleString()}
                   </span>
@@ -294,10 +301,6 @@ const UNAVAILABLE = [
   {
     what: "Your other active sessions and devices",
     why: "the client can only see the session it is holding",
-  },
-  {
-    what: "IP address and request metadata for audit events",
-    why: "platform_audit() does not return them",
   },
   {
     what: "Database and infrastructure posture",
