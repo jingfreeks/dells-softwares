@@ -658,3 +658,31 @@ export async function listOrganizationStaff(orgId: string): Promise<Organization
     createdAt: r.created_at,
   }));
 }
+
+/** One tenant's slice of the platform audit log.
+ *
+ *  Complete with respect to that tenant: module, feature, limit, plan and
+ *  subscription changes carry the organization id directly, and deletion
+ *  requests resolve through the request row. Platform-administrator events
+ *  are absent because they belong to no organization, not because they are
+ *  missing. ENGINEER only, same as listPlatformAudit(). */
+export async function listOrganizationAudit(orgId: string, limit = 100): Promise<PlatformAuditEntry[]> {
+  const { data, error } = await supabase.rpc("platform_organization_audit", {
+    p_org: orgId,
+    p_limit: limit,
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, never>) => ({
+    id: r.id,
+    actorEmail: r.actor_email,
+    action: r.action,
+    entityType: r.entity_type,
+    entityId: r.entity_id,
+    reason: r.reason,
+    createdAt: r.created_at,
+    oldData: r.old_data ?? null,
+    newData: r.new_data ?? null,
+    ipAddress: r.ip_address ?? null,
+    userAgent: r.user_agent ?? null,
+  }));
+}

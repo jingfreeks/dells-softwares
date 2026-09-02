@@ -9,6 +9,7 @@ import {
   listOrganizationFeatures,
   listOrganizationLimits,
   listOrganizationStaff,
+  listOrganizationAudit,
   listPlans,
   setSubscriptionStatus,
   usePlatform,
@@ -24,6 +25,7 @@ vi.mock("../lib/platform", async (importOriginal) => {
     listOrganizationFeatures: vi.fn(),
     listOrganizationLimits: vi.fn(),
     listOrganizationStaff: vi.fn(),
+    listOrganizationAudit: vi.fn(),
     listPlans: vi.fn(),
     setSubscriptionStatus: vi.fn(),
     setPlan: vi.fn(),
@@ -68,6 +70,7 @@ beforeEach(() => {
   vi.mocked(listOrganizationLimits).mockResolvedValue([] as never);
   vi.mocked(listPlans).mockResolvedValue([] as never);
   vi.mocked(listOrganizationStaff).mockResolvedValue([] as never);
+  vi.mocked(listOrganizationAudit).mockResolvedValue([] as never);
   mockedStatus.mockResolvedValue(undefined as never);
 });
 
@@ -163,17 +166,72 @@ describe("OrganizationDetail — sections", () => {
     expect(screen.queryByRole("button", { name: /^SUSPENDED$/ })).not.toBeInTheDocument();
   });
 
-  it("offers a Users tab, and still no Activity tab, saying why", async () => {
-    // Users is backed by platform_organization_staff() (20260902150000).
-    // Activity stays omitted: only some platform actions carry the
-    // organization id in entity_id, so a tab built on that filter would show
-    // a partial history while looking complete.
+  it("offers both a Users and an Activity tab", async () => {
+    // Both are backed now: platform_organization_staff() (20260902150000)
+    // and platform_organization_audit() (20260902160000).
     renderPage();
     await screen.findByText(/Aling Nena/);
 
     expect(screen.getByRole("tab", { name: "Users" })).toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "Activity" })).not.toBeInTheDocument();
-    expect(screen.getByText(/no organization filter/i)).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Activity" })).toBeInTheDocument();
+  });
+
+  it("lists the platform actions recorded against this organization", async () => {
+    const user = userEvent.setup();
+    vi.mocked(listOrganizationAudit).mockResolvedValue([
+      {
+        id: 9,
+        actorEmail: "eng@example.test",
+        action: "PLATFORM_ENABLE_MODULE",
+        entityType: "OrganizationModule",
+        entityId: "org-1",
+        reason: "paid upgrade",
+        createdAt: "2026-08-30T02:00:00.000Z",
+        oldData: null,
+        newData: null,
+        ipAddress: null,
+        userAgent: null,
+      },
+    ] as never);
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Activity" }));
+
+    expect(screen.getByText("PLATFORM_ENABLE_MODULE")).toBeInTheDocument();
+    expect(screen.getByText(/paid upgrade/)).toBeInTheDocument();
+  });
+
+  it("says why administrator events are absent rather than implying a partial log", async () => {
+    // Grants, revocations and MFA verifications belong to no organization.
+    // That is a fact about the data, not a coverage gap.
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Activity" }));
+
+    expect(screen.getByText(/belong to no organization/i)).toBeInTheDocument();
+  });
+
+  it("refuses the tenant's activity to a scope that cannot read the audit log", async () => {
+    mockedUsePlatform.mockReturnValue({ admin: { scope: "BILLING" } } as never);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Activity" }));
+
+    expect(screen.getByText(/can't read the platform audit/i)).toBeInTheDocument();
+    expect(vi.mocked(listOrganizationAudit)).not.toHaveBeenCalled();
+  });
+
+  it("distinguishes an empty history from a refused one", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Activity" }));
+
+    expect(
+      screen.getByText("No platform action has been recorded against this organization.")
+    ).toBeInTheDocument();
   });
 
   it("shows the RBAC role rather than only the coarse enum", async () => {
