@@ -25,6 +25,7 @@ function mockFlagsResponse(data: { key: string; enabled: boolean }[] | null, err
 }
 
 let capturedChangeHandler: ((payload: unknown) => void) | null = null;
+let capturedSubscribeCallback: ((status: string) => void) | null = null;
 
 function mockChannel() {
   const channelObj = {
@@ -32,7 +33,10 @@ function mockChannel() {
       capturedChangeHandler = cb;
       return channelObj;
     }),
-    subscribe: vi.fn().mockReturnThis(),
+    subscribe: vi.fn((cb?: (status: string) => void) => {
+      capturedSubscribeCallback = cb ?? null;
+      return channelObj;
+    }),
   };
   mockedSupabase.channel.mockReturnValue(channelObj);
   return channelObj;
@@ -153,3 +157,81 @@ describe("FeatureFlagsProvider", () => {
     expect(await screen.findByText("Services UI")).toBeInTheDocument();
   });
 });
+
+describe("staleness after a dropped or slept-through connection", () => {
+  // postgres_changes does not replay what was missed while the socket was
+  // down, and realtime-js rejoins silently. Without re-reading the table,
+  // a kill switch flipped while a till slept overnight would never arrive:
+  // the socket comes back healthy and the app serves yesterday's answer.
+
+  it("re-reads the flags whenever the channel (re)subscribes", async () => {
+    mockFlagsResponse([{ key: "pack_pricing", enabled: true }]);
+    mockChannel();
+    render(
+      <FeatureFlagsProvider>
+        <Probe flagKey="pack_pricing" />
+      </FeatureFlagsProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("flag")).toHaveTextContent("true"));
+
+    // The flag is turned off while this client is not listening.
+    mockFlagsResponse([{ key: "pack_pricing", enabled: false }]);
+    capturedSubscribeCallback?.("SUBSCRIBED");
+
+    await waitFor(() => expect(screen.getByTestId("flag")).toHaveTextContent("false"));
+  });
+
+  it("re-reads the flags when a backgrounded tab is brought back", async () => {
+    // The cashier wakes the till; no realtime event announces that.
+    mockFlagsResponse([{ key: "pack_pricing", enabled: true }]);
+    mockChannel();
+    render(
+      <FeatureFlagsProvider>
+        <Probe flagKey="pack_pricing" />
+      </FeatureFlagsProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("flag")).toHaveTextContent("true"));
+
+    mockFlagsResponse([{ key: "pack_pricing", enabled: false }]);
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    await waitFor(() => expect(screen.getByTestId("flag")).toHaveTextContent("false"));
+  });
+
+  it("re-reads the flags when connectivity returns", async () => {
+    mockFlagsResponse([{ key: "pack_pricing", enabled: true }]);
+    mockChannel();
+    render(
+      <FeatureFlagsProvider>
+        <Probe flagKey="pack_pricing" />
+      </FeatureFlagsProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("flag")).toHaveTextContent("true"));
+
+    mockFlagsResponse([{ key: "pack_pricing", enabled: false }]);
+    window.dispatchEvent(new Event("online"));
+
+    await waitFor(() => expect(screen.getByTestId("flag")).toHaveTextContent("false"));
+  });
+
+  it("keeps the last known flags when a re-read fails, rather than failing open mid-session", async () => {
+    // Fail-open is the right default at startup, when nothing is known. It
+    // is the wrong answer for a re-read: a flag already known to be off
+    // must not switch back on because the network blipped.
+    mockFlagsResponse([{ key: "pack_pricing", enabled: false }]);
+    mockChannel();
+    render(
+      <FeatureFlagsProvider>
+        <Probe flagKey="pack_pricing" />
+      </FeatureFlagsProvider>
+    );
+    await waitFor(() => expect(screen.getByTestId("flag")).toHaveTextContent("false"));
+
+    mockFlagsResponse(null, { message: "network down" });
+    window.dispatchEvent(new Event("online"));
+
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByTestId("flag")).toHaveTextContent("false");
+  });
+});
+
