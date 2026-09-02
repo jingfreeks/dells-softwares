@@ -1,4 +1,50 @@
 /**
+ * SQLSTATE classes that mean "the server could not finish right now", as
+ * opposed to "the server considered this and said no":
+ *
+ *   08  connection exception
+ *   53  insufficient resources
+ *   57  operator intervention -- includes 57014, a statement timeout
+ *
+ * Plus the two serialization failures, which are the canonical retry-me
+ * errors. All of these roll the transaction back, and checkout_sale is
+ * idempotent on client_request_id, so replaying them is safe and right.
+ */
+const TRANSIENT_SQLSTATE_CLASSES = ["08", "53", "57"];
+const TRANSIENT_SQLSTATES = ["40001", "40P01"];
+
+function errorCode(err: unknown): string | null {
+  if (err && typeof err === "object" && "code" in err) {
+    const code = (err as { code?: unknown }).code;
+    return typeof code === "string" ? code : null;
+  }
+  return null;
+}
+
+/**
+ * True when the error carries proof that the server received the request,
+ * considered it, and refused -- which makes it a business rule by definition,
+ * whatever the message says.
+ *
+ * This is the part that does the real work. A PostgREST response carries a
+ * SQLSTATE (every `raise exception` in checkout_sale arrives as P0001) or a
+ * PGRST* code. Reaching one of those means connectivity was never the problem,
+ * so the sale must surface to the cashier rather than be queued.
+ *
+ * A network-level code like ECONNREFUSED is not SQLSTATE-shaped and is
+ * deliberately not matched here.
+ */
+function serverConsideredAndRefused(err: unknown): boolean {
+  const code = errorCode(err);
+  if (code === null) return false;
+  if (code.startsWith("PGRST")) return true;
+  if (!/^[0-9A-Z]{5}$/.test(code)) return false;
+  if (TRANSIENT_SQLSTATES.includes(code)) return false;
+  if (TRANSIENT_SQLSTATE_CLASSES.includes(code.slice(0, 2))) return false;
+  return true;
+}
+
+/**
  * Every business-rule rejection checkout_sale() can raise (see
  * supabase/migrations/0028_checkout_sale_device_caller.sql and
  * 0030_offline_checkout_support.sql's additions). Kept as one whitelist so
@@ -74,14 +120,39 @@ function errorMessage(err: unknown): string | null {
  * queued for later replay — the latter needs to surface to the cashier
  * right now, exactly as it does today.
  *
- * Supabase doesn't give a clean, dedicated "this was a network error" type
- * from the client SDK, so this is necessarily a bit heuristic. When it's
- * genuinely ambiguous, this defaults to "connectivity failure": queuing an
- * already-successful-looking sale is recoverable (checkout_sale is
- * idempotent on client_request_id), but wrongly blocking a real offline
- * sale isn't.
+ * Supabase gives no dedicated "this was a network error" type, but it does
+ * give something better than a message: a response that reached PostgREST
+ * carries a SQLSTATE or PGRST* code. That is checked first and settles most
+ * cases outright -- a code that is not transient means the server considered
+ * the sale and refused it, so it belongs in front of the cashier, not in the
+ * queue.
+ *
+ * The message list below is now a fallback for errors that arrive with no code
+ * at all, rather than the thing correctness rests on.
+ *
+ * Where it is still genuinely ambiguous -- no code, no recognised message --
+ * this defaults to "connectivity failure": queuing an already-successful
+ * looking sale is recoverable, since checkout_sale is idempotent on
+ * client_request_id, but wrongly blocking a real offline sale is not. That
+ * asymmetry is the whole reason the default leans this way, and it is also why
+ * the code check had to come first: it removes the dangerous half of the
+ * default without touching the half that protects offline selling.
  */
 export function isConnectivityFailure(err: unknown): boolean {
+  // Checked before the message list, and the reason this function stopped
+  // depending on that list being complete. Six entries above were each added
+  // only AFTER the same trap was sprung in production: a rejection the list
+  // did not name fell through to "assume connectivity", was queued, and was
+  // shown to the cashier as a completed sale -- receipt printed, stock
+  // decremented -- while the server refused it on every retry. The list could
+  // only ever be as current as the last migration someone remembered to
+  // mirror here.
+  //
+  // A SQLSTATE is proof the server answered, so no new `raise exception` in
+  // checkout_sale can produce a phantom sale again, whether or not anyone
+  // remembers to add it below.
+  if (serverConsideredAndRefused(err)) return false;
+
   const message = errorMessage(err);
   if (message === null) return true;
   const lower = message.toLowerCase();

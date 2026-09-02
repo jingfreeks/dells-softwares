@@ -39,6 +39,49 @@ describe("isConnectivityFailure", () => {
     expect(isConnectivityFailure({ code: "P0001", message: "CREDIT_LIMIT_EXCEEDED" })).toBe(false);
   });
 
+  // The regression guard for the whole class. Six messages were added to the
+  // whitelist above only after each one had already produced phantom sales in
+  // production. This asserts a rejection nobody has ever heard of -- the exact
+  // shape of the next migration's new `raise exception` -- is refused rather
+  // than queued, without anyone having to remember to list it.
+  it("does not queue a server rejection that is on no list anywhere", () => {
+    expect(
+      isConnectivityFailure({ code: "P0001", message: "SOME_RULE_INVENTED_NEXT_QUARTER" })
+    ).toBe(false);
+  });
+
+  it("does not queue an RLS refusal", () => {
+    expect(
+      isConnectivityFailure({
+        code: "42501",
+        message: "new row violates row-level security policy for table \"sales\"",
+      })
+    ).toBe(false);
+  });
+
+  it("does not queue a PostgREST-level refusal such as an expired JWT", () => {
+    expect(isConnectivityFailure({ code: "PGRST301", message: "JWT expired" })).toBe(false);
+  });
+
+  // The other half: errors that mean "could not finish right now" must still
+  // queue, because the transaction rolled back and checkout_sale is idempotent
+  // on client_request_id, so replaying is both safe and correct.
+  it.each([
+    ["08006", "connection_failure"],
+    ["08003", "connection_does_not_exist"],
+    ["53300", "too_many_connections"],
+    ["40001", "serialization_failure"],
+    ["40P01", "deadlock_detected"],
+  ])("still queues %s (%s) for replay", (code, message) => {
+    expect(isConnectivityFailure({ code, message })).toBe(true);
+  });
+
+  it("does not mistake a network-level code for a server decision", () => {
+    expect(isConnectivityFailure({ code: "ECONNREFUSED", message: "connect ECONNREFUSED" })).toBe(
+      true
+    );
+  });
+
   it("defaults an unrecognized structured error message to connectivity", () => {
     expect(isConnectivityFailure({ code: "57014", message: "canceling statement due to statement timeout" })).toBe(
       true
