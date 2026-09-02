@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import {
   listOrganizationFeatures,
   listOrganizationStaff,
+  listOrganizationAudit,
+  usePlatform,
   listOrganizationLimits,
   listOrganizationModules,
   listOrganizations,
@@ -19,6 +21,7 @@ import {
   type Organization,
   type OrganizationFeature,
   type OrganizationStaff,
+  type PlatformAuditEntry,
   type OrganizationLimit,
   type OrganizationModule,
   type Plan,
@@ -31,11 +34,15 @@ import { StatusChip } from "../components/StatusChip";
 
 export function OrganizationDetail() {
   const { orgId = "" } = useParams();
+  const { admin } = usePlatform();
+  // Same gate as the platform audit page and the RPC behind it.
+  const mayReadAudit = admin?.scope === "ENGINEER" || admin?.scope === "SUPERUSER";
   const [org, setOrg] = useState<Organization | null>(null);
   const [modules, setModules] = useState<OrganizationModule[]>([]);
   const [limits, setLimits] = useState<OrganizationLimit[]>([]);
   const [features, setFeatures] = useState<OrganizationFeature[]>([]);
   const [staff, setStaff] = useState<OrganizationStaff[]>([]);
+  const [activity, setActivity] = useState<PlatformAuditEntry[]>([]);
   const [busyFeature, setBusyFeature] = useState<string | null>(null);
   const [busyLimit, setBusyLimit] = useState<string | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -49,13 +56,14 @@ export function OrganizationDetail() {
   const [tab, setTab] = useState<TabKey>("overview");
 
   const load = useCallback(async () => {
-    const [orgs, mods, planList, limitList, featureList, staffList] = await Promise.all([
+    const [orgs, mods, planList, limitList, featureList, staffList, activityList] = await Promise.all([
       listOrganizations(),
       listOrganizationModules(orgId),
       listPlans(),
       listOrganizationLimits(orgId),
       listOrganizationFeatures(orgId),
       listOrganizationStaff(orgId),
+      mayReadAudit ? listOrganizationAudit(orgId, 50) : Promise.resolve([]),
     ]);
     setOrg(orgs.find((o) => o.organizationId === orgId) ?? null);
     setModules(mods);
@@ -63,7 +71,8 @@ export function OrganizationDetail() {
     setLimits(limitList);
     setFeatures(featureList);
     setStaff(staffList);
-  }, [orgId]);
+    setActivity(activityList);
+  }, [orgId, mayReadAudit]);
 
   useEffect(() => {
     let cancelled = false;
@@ -293,11 +302,12 @@ export function OrganizationDetail() {
             </h2>
             <ul className="mt-2 grid gap-1.5">
               <li className="text-[12.5px]" style={{ color: "var(--t5)" }}>
-                <span style={{ color: "var(--t3)" }}>This tenant&apos;s activity</span>
+                <span style={{ color: "var(--t3)" }}>Actions this tenant took themselves</span>
                 <span style={{ color: "var(--t9)" }}>
                   {" "}
-                  — platform_audit() takes a row limit and no organization filter, so it cannot be
-                  narrowed to one tenant.
+                  — the Activity tab shows what the <em>platform</em> did to this organization.
+                  A shop&apos;s own sales, voids and settings changes are in its own audit_log,
+                  which no platform RPC reads.
                 </span>
               </li>
             </ul>
@@ -367,6 +377,61 @@ export function OrganizationDetail() {
             <p className="mt-3 text-[11.5px]" style={{ color: "var(--t9)" }}>
               Deactivated staff are listed and dimmed rather than hidden — they still hold
               historical sales. Staff are managed by the tenant, not from this console.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {tab === "activity" && (
+        <div role="tabpanel" id="panel-activity" aria-labelledby="tab-activity" className="max-w-3xl">
+          <div className="card p-4">
+            <h2 className="text-[13.5px] font-semibold" style={{ color: "var(--t2)" }}>Activity</h2>
+            <p className="mt-0.5 text-[12px]" style={{ color: "var(--t6)" }}>
+              Every platform action recorded against this organization: module, feature, limit,
+              plan and subscription changes, and its account-deletion requests.
+            </p>
+
+            {!mayReadAudit ? (
+              <p className="mt-4 text-[12.5px]" style={{ color: "var(--t5)" }}>
+                Your scope ({admin?.scope ?? "none"}) can&apos;t read the platform audit. ENGINEER
+                or SUPERUSER is required.
+              </p>
+            ) : activity.length === 0 ? (
+              <p className="mt-4 text-[12.5px]" style={{ color: "var(--t6)" }}>
+                No platform action has been recorded against this organization.
+              </p>
+            ) : (
+              <div className="mt-3.5 space-y-1.5">
+                {activity.map((e) => (
+                  <div
+                    key={e.id}
+                    className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-xl border px-3 py-2"
+                    style={{ borderColor: "var(--bd3)" }}
+                  >
+                    <div className="min-w-[12rem] flex-1">
+                      <p className="techno" style={{ color: "var(--t2)" }}>{e.action}</p>
+                      <p className="text-[11.5px]" style={{ color: "var(--t9)" }}>
+                        {e.actorEmail ?? "system"}
+                        {e.reason ? ` · ${e.reason}` : ""}
+                      </p>
+                    </div>
+                    <span className="text-[11.5px] tabular-nums" style={{ color: "var(--t6)" }}>
+                      {new Date(e.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Not a coverage gap, a fact about the data: grants, revocations,
+                bootstraps and MFA verifications are recorded against a platform
+                administrator, and belong to no tenant. Every audit-writing
+                function was enumerated before building this -- 14 of them --
+                and the other ten all resolve to an organization. */}
+            <p className="mt-3 text-[11.5px]" style={{ color: "var(--t9)" }}>
+              Platform-administrator events — grants, revocations and two-factor verifications —
+              are not listed here. They belong to no organization; the full log is on the{" "}
+              <Link to="/audit" style={{ color: "var(--a4)" }}>Platform audit</Link> page.
             </p>
           </div>
         </div>
@@ -723,7 +788,7 @@ export function OrganizationDetail() {
   );
 }
 
-type TabKey = "overview" | "users" | "subscription" | "modules";
+type TabKey = "overview" | "users" | "subscription" | "modules" | "activity";
 
 /**
  * Users is backed by platform_organization_staff() (20260902150000).
@@ -738,6 +803,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "users", label: "Users" },
   { key: "subscription", label: "Subscription" },
   { key: "modules", label: "Modules" },
+  { key: "activity", label: "Activity" },
 ];
 
 function Fact({ label, value }: { label: string; value: string }) {
