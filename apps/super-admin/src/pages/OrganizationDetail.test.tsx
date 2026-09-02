@@ -8,6 +8,7 @@ import {
   listOrganizationModules,
   listOrganizationFeatures,
   listOrganizationLimits,
+  listOrganizationStaff,
   listPlans,
   setSubscriptionStatus,
   usePlatform,
@@ -22,6 +23,7 @@ vi.mock("../lib/platform", async (importOriginal) => {
     listOrganizationModules: vi.fn(),
     listOrganizationFeatures: vi.fn(),
     listOrganizationLimits: vi.fn(),
+    listOrganizationStaff: vi.fn(),
     listPlans: vi.fn(),
     setSubscriptionStatus: vi.fn(),
     setPlan: vi.fn(),
@@ -65,6 +67,7 @@ beforeEach(() => {
   vi.mocked(listOrganizationFeatures).mockResolvedValue([] as never);
   vi.mocked(listOrganizationLimits).mockResolvedValue([] as never);
   vi.mocked(listPlans).mockResolvedValue([] as never);
+  vi.mocked(listOrganizationStaff).mockResolvedValue([] as never);
   mockedStatus.mockResolvedValue(undefined as never);
 });
 
@@ -160,17 +163,95 @@ describe("OrganizationDetail — sections", () => {
     expect(screen.queryByRole("button", { name: /^SUSPENDED$/ })).not.toBeInTheDocument();
   });
 
-  it("offers no Users or Activity tab, and says why instead of showing them empty", async () => {
-    // An empty Users tab asserts the tenant has no staff, which is a claim
-    // and a false one -- no RPC returns them. Same for Activity:
-    // platform_audit() has no organization filter.
+  it("offers a Users tab, and still no Activity tab, saying why", async () => {
+    // Users is backed by platform_organization_staff() (20260902150000).
+    // Activity stays omitted: only some platform actions carry the
+    // organization id in entity_id, so a tab built on that filter would show
+    // a partial history while looking complete.
     renderPage();
     await screen.findByText(/Aling Nena/);
 
-    expect(screen.queryByRole("tab", { name: "Users" })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Users" })).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Activity" })).not.toBeInTheDocument();
-    expect(screen.getByText(/no RPC returns them/i)).toBeInTheDocument();
     expect(screen.getByText(/no organization filter/i)).toBeInTheDocument();
+  });
+
+  it("shows the RBAC role rather than only the coarse enum", async () => {
+    // A SUPERVISOR and a CASHIER are both `cashier` to staff.role, and hold
+    // 15 permissions and none. Showing the enum alone would mislead.
+    const user = userEvent.setup();
+    vi.mocked(listOrganizationStaff).mockResolvedValue([
+      {
+        staffId: "s1",
+        name: "Nena",
+        email: "nena@example.test",
+        authRole: "cashier",
+        rbacRole: "SUPERVISOR",
+        active: true,
+        pinLocked: false,
+        createdAt: "2026-08-01T00:00:00.000Z",
+      },
+    ] as never);
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Users" }));
+
+    expect(screen.getByText("Nena")).toBeInTheDocument();
+    expect(screen.getByText("SUPERVISOR")).toBeInTheDocument();
+  });
+
+  it("lists a deactivated staff member rather than hiding them", async () => {
+    // They still hold historical sales; hiding them would make a tenant's
+    // own records look unattributed.
+    const user = userEvent.setup();
+    vi.mocked(listOrganizationStaff).mockResolvedValue([
+      {
+        staffId: "s2",
+        name: "Gone",
+        email: "gone@example.test",
+        authRole: "cashier",
+        rbacRole: "CASHIER",
+        active: false,
+        pinLocked: false,
+        createdAt: "2026-08-01T00:00:00.000Z",
+      },
+    ] as never);
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Users" }));
+
+    expect(screen.getByText("Gone")).toBeInTheDocument();
+    expect(screen.getByText("deactivated")).toBeInTheDocument();
+  });
+
+  it("flags a staff member who is locked out right now", async () => {
+    const user = userEvent.setup();
+    vi.mocked(listOrganizationStaff).mockResolvedValue([
+      {
+        staffId: "s3",
+        name: "Locked",
+        email: "locked@example.test",
+        authRole: "cashier",
+        rbacRole: "CASHIER",
+        active: true,
+        pinLocked: true,
+        createdAt: "2026-08-01T00:00:00.000Z",
+      },
+    ] as never);
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Users" }));
+
+    expect(screen.getByText("PIN locked")).toBeInTheDocument();
+  });
+
+  it("explains an organization with no staff rather than showing a blank tab", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Users" }));
+
+    expect(screen.getByText("No staff records for this organization.")).toBeInTheDocument();
   });
 });
 

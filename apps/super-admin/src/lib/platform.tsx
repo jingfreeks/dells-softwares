@@ -62,6 +62,21 @@ export interface Plan {
   features: string[];
 }
 
+export interface OrganizationStaff {
+  staffId: string;
+  name: string | null;
+  email: string | null;
+  /** The coarse enum auth_role() reads: 'admin' or 'cashier'. */
+  authRole: string;
+  /** The RBAC assignment that actually decides permissions -- OWNER,
+   *  SUPERVISOR or CASHIER. A SUPERVISOR and a CASHIER are both `cashier`
+   *  to the enum and hold 15 permissions and none respectively. */
+  rbacRole: string | null;
+  active: boolean;
+  pinLocked: boolean;
+  createdAt: string;
+}
+
 export interface PlatformAdminRow {
   email: string | null;
   scope: string;
@@ -624,5 +639,22 @@ export async function listPlatformAdmins(): Promise<PlatformAdminRow[]> {
     scope: r.scope,
     status: r.status,
     mfaFresh: !!r.mfa_fresh,
+  }));
+}
+
+/** A tenant's staff. Names, e-mail addresses and lock state are personal data
+ *  held on behalf of the shop; the platform-admin gate is what protects them. */
+export async function listOrganizationStaff(orgId: string): Promise<OrganizationStaff[]> {
+  const { data, error } = await supabase.rpc("platform_organization_staff", { p_org: orgId });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, never>) => ({
+    staffId: r.staff_id,
+    name: r.name,
+    email: r.email,
+    authRole: r.auth_role,
+    rbacRole: r.rbac_role ?? null,
+    active: !!r.active,
+    pinLocked: !!r.pin_locked,
+    createdAt: r.created_at,
   }));
 }
