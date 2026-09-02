@@ -48,3 +48,4 @@ coverage/
 # The repository is public; these name live, unfixed weaknesses.
 /apps/tindahan-pos/CODEBASE_AUDIT_REPORT.md
 /apps/tindahan-pos/AUDIT-REMEDIATION-PLAN.md
+/apps/tindahan-pos/AUDIT-RETEST.md
