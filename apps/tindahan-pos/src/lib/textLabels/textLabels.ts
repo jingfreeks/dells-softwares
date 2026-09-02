@@ -1158,6 +1158,8 @@ export const LABEL_WHAT_TO_INCLUDE = "What to include";
 export const LABEL_INCLUDE_LOGO = "Logo";
 export const LABEL_INCLUDE_TIN_AND_PERMIT = "TIN and permit";
 export const TEXT_TIN_REQUIRED_HINT = "Your store is BIR registered, so your TIN always prints — this can't be turned off.";
+export const TEXT_TIN_WITHHELD_ALPHA_HINT =
+  "TIN and permit number stay off while the app is in test mode. Order slips printed now are not official BIR receipts.";
 export const LABEL_INCLUDE_CASHIER_NAME = "Cashier name";
 export const LABEL_INCLUDE_UTANG_BALANCE = "Utang balance";
 export const LABEL_INCLUDE_QR_TO_PAY = "QR to pay";
@@ -1298,6 +1300,8 @@ export const ERROR_INVALID_PIN = "Incorrect PIN. Please try again.";
 export const ERROR_PIN_LOCKED = "Too many wrong attempts. Please wait 15 minutes and try again.";
 export const ERROR_INACTIVE_EMPLOYEE = "This account is inactive. Please ask an admin.";
 export const TEXT_CASHIER_SESSION_EXPIRED = "Please sign in again.";
+export const TEXT_STORE_SUSPENDED =
+  "This store is suspended and cannot record new sales. Ask the owner to settle the subscription.";
 export const TEXT_LOADING_STAFF = "Loading staff…";
 export const ERROR_COULD_NOT_LOAD_STAFF = "Could not load staff.";
 export const LABEL_COUNT_STARTING_CASH = "Count your starting cash";

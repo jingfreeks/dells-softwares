@@ -150,30 +150,42 @@ describe("Reports", () => {
   });
 
   it("re-queries with a wider date range when switching from Today to This month", async () => {
-    const user = userEvent.setup();
-    const fetchSalesInRange = vi.fn().mockResolvedValue([]);
-    vi.mocked(useStoreData).mockReturnValue(
-      makeStoreDataValue({ products: [], fetchSalesInRange })
-    );
+    // Pinned to mid-month. dateRangeForPreset() gives "month" a start of
+    // the 1st at 00:00 and "today" a start of start-of-day, so on the
+    // first of the month the two ranges are byte-identical and there is
+    // no widening to observe -- the page is correct, the assertion simply
+    // cannot hold. Freezing the clock keeps the test about the behaviour
+    // rather than about the day it runs.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date(2026, 8, 15, 10, 0, 0));
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const fetchSalesInRange = vi.fn().mockResolvedValue([]);
+      vi.mocked(useStoreData).mockReturnValue(
+        makeStoreDataValue({ products: [], fetchSalesInRange })
+      );
 
-    renderPage();
-    await waitFor(() => expect(fetchSalesInRange).toHaveBeenCalled());
-    const todayCall = fetchSalesInRange.mock.calls.at(-1)![0];
-    fetchSalesInRange.mockClear();
+      renderPage();
+      await waitFor(() => expect(fetchSalesInRange).toHaveBeenCalled());
+      const todayCall = fetchSalesInRange.mock.calls.at(-1)![0];
+      fetchSalesInRange.mockClear();
 
-    await user.click(screen.getByRole("button", { name: "This month" }));
+      await user.click(screen.getByRole("button", { name: "This month" }));
 
-    // The page's own ZReadingCard is an independent fetchSalesInRange
-    // consumer (its own business-date selector, default "today") — find
-    // the call with a genuinely wider range rather than assuming the last
-    // call is the main page's, since the two can interleave.
-    await waitFor(() =>
-      expect(
-        fetchSalesInRange.mock.calls.some(
-          ([call]) => new Date(call.startDate).getTime() < new Date(todayCall.startDate).getTime()
-        )
-      ).toBe(true)
-    );
+      // The page's own ZReadingCard is an independent fetchSalesInRange
+      // consumer (its own business-date selector, default "today") — find
+      // the call with a genuinely wider range rather than assuming the last
+      // call is the main page's, since the two can interleave.
+      await waitFor(() =>
+        expect(
+          fetchSalesInRange.mock.calls.some(
+            ([call]) => new Date(call.startDate).getTime() < new Date(todayCall.startDate).getTime()
+          )
+        ).toBe(true)
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("exports the filtered sales as a CSV download", async () => {

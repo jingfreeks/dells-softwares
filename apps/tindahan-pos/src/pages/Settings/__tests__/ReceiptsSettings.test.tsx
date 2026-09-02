@@ -9,6 +9,14 @@ import { ComingSoonSettingsPage } from "../ComingSoonSettingsPage";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
 
+// The TIN chip's behaviour depends on the print regime: ALPHA withholds
+// registration identifiers, PRODUCTION prints them. Both are asserted.
+let currentMode: "ALPHA" | "PRODUCTION" = "ALPHA";
+vi.mock("@/lib/appMode", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/appMode")>();
+  return { ...actual, printGuardrails: () => actual.printGuardrails(currentMode) };
+});
+
 // useReceiptsSettingsPage reads the store's live next-invoice-number from
 // document_series (server-controlled — see checkout_sale()) on mount.
 vi.mock("@/lib/supabaseClient", () => {
@@ -37,6 +45,7 @@ function renderPage() {
 describe("ReceiptsSettings", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    currentMode = "ALPHA";
   });
 
   it("shows the default toggle states and 'What to include' chips", () => {
@@ -62,6 +71,7 @@ describe("ReceiptsSettings", () => {
   // it must not turn it off, so the settings UI never implies something
   // that won't actually happen on the printed receipt.
   it("locks the TIN and permit toggle on for a BIR-registered store", async () => {
+    currentMode = "PRODUCTION";
     const user = userEvent.setup();
     vi.mocked(useAuth).mockReturnValue(
       makeAuthValue({
@@ -82,6 +92,7 @@ describe("ReceiptsSettings", () => {
   });
 
   it("leaves the TIN and permit toggle interactive for a store that isn't BIR-registered", async () => {
+    currentMode = "PRODUCTION";
     vi.mocked(useAuth).mockReturnValue(
       makeAuthValue({
         user: makeStaffAccount({ storeId: "store-9" }),
@@ -183,5 +194,21 @@ describe("ReceiptsSettings", () => {
       await user.click(screen.getByRole("link", { name: /Your profile/ }));
       expect(await screen.findByText("Coming soon")).toBeInTheDocument();
     });
+  });
+
+  it("withholds TIN and permit in ALPHA even for a BIR-registered store, and says so", async () => {
+    // The print layer withholds registration identifiers in ALPHA. A chip
+    // claiming the TIN "always prints" would be telling the operator
+    // something the document does not do.
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ role: "admin" }), store: makeStore({ birRegistered: true }) })
+    );
+    renderPage();
+
+    const chip = await screen.findByRole("button", { name: /TIN and permit/i });
+    expect(chip).toHaveAttribute("aria-pressed", "false");
+    expect(chip).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByText(/stay off while the app is in test mode/i)).toBeInTheDocument();
+    expect(screen.queryByText(/always prints/i)).not.toBeInTheDocument();
   });
 });
