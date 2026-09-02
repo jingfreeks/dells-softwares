@@ -12,6 +12,13 @@
 -- collected utang would mask P500 genuinely missing, which is the direction
 -- that costs someone their job.
 --
+-- Note on timestamps: now() is frozen for a transaction, so every row
+-- inserted here would otherwise share one instant and the session's
+-- `created_at >= v_session.created_at` window would match the *other*
+-- shift's sales too. Each fixture is given an explicit time so the two
+-- shifts are genuinely disjoint -- which is what the function's window
+-- assumes in production, where they are hours apart.
+--
 -- Run: psql -f supabase/tests/360_drawer_variance.sql
 -- =============================================================================
 begin;
@@ -43,11 +50,13 @@ insert into customers (store_id, name)
 -- A shift that only sold for cash: the original formula was already right
 -- here, and must stay right.
 -- -----------------------------------------------------------------------------
-insert into cashier_sessions (token, store_id, staff_id, created_by, opening_float, expires_at)
-  values ('drawer-token-1', pg_temp.store(), pg_temp.staff(), pg_temp.staff(), 1000, now() + interval '1 day');
+insert into cashier_sessions (token, store_id, staff_id, created_by, opening_float, expires_at, created_at)
+  values ('drawer-token-1', pg_temp.store(), pg_temp.staff(), pg_temp.staff(), 1000,
+          now() + interval '1 day', now() - interval '6 hours');
 
-insert into sales (store_id, cashier_id, total, payment_type, status, receipt_number)
-  values (pg_temp.store(), pg_temp.staff(), 250, 'cash', 'completed', 'DRW-000001');
+insert into sales (store_id, cashier_id, total, payment_type, status, receipt_number, created_at)
+  values (pg_temp.store(), pg_temp.staff(), 250, 'cash', 'completed', 'DRW-000001',
+          now() - interval '5 hours');
 
 set local role authenticated;
 select pg_temp.act_as('da000000-0000-4000-8000-00000000d001');
@@ -64,23 +73,26 @@ select is(
 -- -----------------------------------------------------------------------------
 -- A shift that also collected utang and gave a refund.
 -- -----------------------------------------------------------------------------
-insert into cashier_sessions (token, store_id, staff_id, created_by, opening_float, expires_at)
-  values ('drawer-token-2', pg_temp.store(), pg_temp.staff(), pg_temp.staff(), 1000, now() + interval '1 day');
+-- A second shift, starting after the first one's sale.
+insert into cashier_sessions (token, store_id, staff_id, created_by, opening_float, expires_at, created_at)
+  values ('drawer-token-2', pg_temp.store(), pg_temp.staff(), pg_temp.staff(), 1000,
+          now() + interval '1 day', now() - interval '3 hours');
 
-insert into sales (store_id, cashier_id, total, payment_type, status, receipt_number)
-  values (pg_temp.store(), pg_temp.staff(), 200, 'cash', 'completed', 'DRW-000002');
+insert into sales (store_id, cashier_id, total, payment_type, status, receipt_number, created_at)
+  values (pg_temp.store(), pg_temp.staff(), 200, 'cash', 'completed', 'DRW-000002',
+          now() - interval '2 hours');
 
 -- Cash in: a customer settles their utang at the counter.
-insert into credit_payments (store_id, customer_id, amount, created_by, resulting_balance)
+insert into credit_payments (store_id, customer_id, amount, created_by, resulting_balance, created_at)
   select pg_temp.store(),
          (select id from customers where store_id = pg_temp.store()),
-         500, pg_temp.staff(), 0;
+         500, pg_temp.staff(), 0, now() - interval '2 hours';
 
 -- Cash out: money handed back.
-insert into refunds (store_id, sale_id, actor_id, total_amount, reason)
+insert into refunds (store_id, sale_id, actor_id, total_amount, reason, created_at)
   select pg_temp.store(),
          (select id from sales where receipt_number = 'DRW-000002'),
-         pg_temp.staff(), 100, 'test refund';
+         pg_temp.staff(), 100, 'test refund', now() - interval '1 hour';
 
 set local role authenticated;
 select pg_temp.act_as('da000000-0000-4000-8000-00000000d001');
@@ -135,8 +147,9 @@ select is(
 -- -----------------------------------------------------------------------------
 -- Skipping the count still records nothing and computes nothing.
 -- -----------------------------------------------------------------------------
-insert into cashier_sessions (token, store_id, staff_id, created_by, opening_float, expires_at)
-  values ('drawer-token-3', pg_temp.store(), pg_temp.staff(), pg_temp.staff(), 1000, now() + interval '1 day');
+insert into cashier_sessions (token, store_id, staff_id, created_by, opening_float, expires_at, created_at)
+  values ('drawer-token-3', pg_temp.store(), pg_temp.staff(), pg_temp.staff(), 1000,
+          now() + interval '1 day', now() - interval '30 minutes');
 
 set local role authenticated;
 select pg_temp.act_as('da000000-0000-4000-8000-00000000d001');
