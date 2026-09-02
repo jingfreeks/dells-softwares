@@ -62,5 +62,10 @@ as $function$
   limit greatest(1, least(coalesce(p_limit, 100), 500));
 $function$;
 
--- Re-issued: the drop above took the grant with it (20260815097000 line 273).
+-- Both halves re-issued: dropping the function discarded its whole ACL, and a
+-- freshly created function in `public` is executable by PUBLIC under the
+-- default privileges -- which includes anon. 110_platform_admin asserts no
+-- platform_* function is reachable by anon, service_role or PUBLIC, and it
+-- caught precisely this. The revoke matters more than the grant.
+revoke all on function public.platform_audit(int) from public;
 grant execute on function public.platform_audit(int) to authenticated;
