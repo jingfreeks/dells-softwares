@@ -20,10 +20,22 @@ npm package, and these flows need a running Supabase-backed test account.
 maestro test e2e/flows/login-invalid.yaml
 
 maestro test e2e/flows/checkout.yaml \
-  -e CASHIER_EMAIL=cashier@teststore.com \
-  -e CASHIER_PASSWORD=your-test-password \
+  -e CASHIER_EMAIL="$QA_CASHIER_EMAIL" \
+  -e CASHIER_PASSWORD="$QA_CASHIER_PASSWORD" \
   -e PRODUCT_NAME="Chips"
 ```
 
 `npm run test:e2e` runs every flow in `e2e/flows/` — set the env vars above
 first, or `checkout.yaml` will fail on missing credentials.
+
+Supply the account through the environment, never inline. This file is in a
+public repository, and an earlier revision of it carried a working-looking
+e-mail and passphrase in the example above:
+
+```bash
+export QA_CASHIER_EMAIL=...
+export QA_CASHIER_PASSWORD=...
+```
+
+The same convention applies to the QA accounts documented in
+`apps/tindahan-pos/ALPHA_QA_HANDOFF.md` §6.
