@@ -498,9 +498,10 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     // failed-attempt counter. If this pre-check can't be reached at all
     // (the device is offline right now), fall through with no token: the
     // main checkout_sale attempt below will also fail on connectivity and
-    // this sale gets queued with the raw PIN, exactly as before -- the sync
-    // engine's later replay uses p_is_offline_replay's own unchanged,
-    // pre-existing raw-PIN path, not this token.
+    // this sale gets queued with the raw PIN, exactly as before. The sync
+    // engine exchanges that stored PIN for a token of its own when it
+    // replays, since checkout_sale no longer accepts a raw PIN on the replay
+    // path either (20260903100000).
     let overrideToken: string | null = null;
     const rawOverridePin = payment.type === "credit" ? payment.overridePin?.trim() || null : null;
     if (rawOverridePin) {
