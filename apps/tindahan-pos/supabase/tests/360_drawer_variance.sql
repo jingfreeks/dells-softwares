@@ -129,7 +129,7 @@ select isnt(
 select is(
   (select (new_value->>'credit_payments')::numeric from audit_log
     where action = 'cashier_session_ended'
-      and new_value->>'expected_closing' = '1600'
+      and (new_value->>'expected_closing')::numeric = 1600
     limit 1),
   500::numeric,
   'the audit row shows the utang collected, not just the result'
@@ -138,7 +138,7 @@ select is(
 select is(
   (select (new_value->>'refunds')::numeric from audit_log
     where action = 'cashier_session_ended'
-      and new_value->>'expected_closing' = '1600'
+      and (new_value->>'expected_closing')::numeric = 1600
     limit 1),
   100::numeric,
   'and the refund given'
