@@ -14,9 +14,11 @@
 # deliberately outside the npm workspace, so it installs from its own lockfile
 # and shares nothing with the web build.
 #
-# No lint step yet -- the app has no lint configuration at all. Adding one is
-# worth doing and is its own change; this workflow starts with the two checks
-# that already pass, so it is green from the first run and stays meaningful.
+# Lint uses the app's OWN oxlint. It is a devDependency here rather than being
+# borrowed from the repository root: npm resolves a script's binaries by walking
+# up to the parent node_modules, so `npm run lint` appeared to work in this app
+# while oxlint was not installed in it at all -- and would then have failed in
+# CI, which installs only this directory.
 
 name: tindahan-pos-mobile CI
 
@@ -50,6 +52,10 @@ jobs:
       - name: Install dependencies
         working-directory: apps/tindahan-pos-mobile
         run: npm ci
+
+      - name: Lint
+        working-directory: apps/tindahan-pos-mobile
+        run: npm run lint
 
       - name: Type-check
         working-directory: apps/tindahan-pos-mobile
