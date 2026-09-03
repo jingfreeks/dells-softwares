@@ -98,7 +98,7 @@ select is(
 );
 
 select ok(
-  (select new_value ->> 'reason' from audit_log
+  (select reason from audit_log
     where store_id = pg_temp.store() and action = 'stock_adjusted' limit 1) like 'Receiving%',
   'the reason says it was a receiving rather than a bare adjustment'
 );
@@ -108,10 +108,13 @@ select lives_ok(
   $$ select receive_stock('   ', current_date, pg_temp.lines(1)) $$,
   'a blank supplier name is accepted'
 );
+-- Counted rather than ordered: created_at defaults to now(), which is frozen
+-- for the whole transaction, so both receiving rows share it and "the most
+-- recent" is not a question this test can ask.
 select is(
-  (select supplier from receiving_entries
-    where store_id = pg_temp.store() order by created_at desc limit 1),
-  'Unspecified supplier',
+  (select count(*)::int from receiving_entries
+    where store_id = pg_temp.store() and supplier = 'Unspecified supplier'),
+  1,
   'and recorded as an unspecified supplier rather than blank'
 );
 
