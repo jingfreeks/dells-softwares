@@ -13,8 +13,7 @@ import {
   computeOldestDebtDays,
   isOverdueDebt,
   type Customer,
-  type CreditPayment,
-} from "@/lib";
+  type CreditPayment, describePlatformError } from "@/lib";
 import { DEFAULT_ALERTS_MOCK, loadAlertsMock } from "@/pages/Settings/alertsMock";
 import { findDuplicateCustomer } from "./lib";
 
@@ -189,7 +188,7 @@ export function useCustomersPage() {
       setShowAddForm(false);
       selectCustomer(customer);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : ERROR_COULD_NOT_ADD_CUSTOMER);
+      setFormError(describePlatformError(err, ERROR_COULD_NOT_ADD_CUSTOMER));
     } finally {
       setSubmitting(false);
     }
@@ -212,7 +211,7 @@ export function useCustomersPage() {
       const rows = await fetchCreditPayments(selected.id);
       setPayments(rows);
     } catch (err) {
-      setPaymentError(err instanceof Error ? err.message : ERROR_COULD_NOT_RECORD_PAYMENT);
+      setPaymentError(describePlatformError(err, ERROR_COULD_NOT_RECORD_PAYMENT));
     } finally {
       setRecordingPayment(false);
     }

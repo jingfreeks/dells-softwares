@@ -11,8 +11,7 @@ import {
   TEXT_SAVED_RECEIVING_PREFIX,
   ERROR_COULD_NOT_SAVE_RECEIVING_ENTRY,
   ERROR_COULD_NOT_UPDATE_PRICE,
-  type ReceivingLine,
-} from "@/lib";
+  type ReceivingLine, describePlatformError } from "@/lib";
 import { productAverageCost } from "@/pages/Inventory/lib";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -156,7 +155,7 @@ export function useReceivingPage() {
         setSupplier(found.name);
         setSupplierId(found.id);
       } catch (err) {
-        setError(err instanceof Error ? err.message : ERROR_COULD_NOT_LOOKUP_SUPPLIER_CODE);
+        setError(describePlatformError(err, ERROR_COULD_NOT_LOOKUP_SUPPLIER_CODE));
       }
       return;
     }
@@ -200,7 +199,7 @@ export function useReceivingPage() {
     try {
       await updateProduct(productId, { price: newPrice });
     } catch (err) {
-      setError(err instanceof Error ? err.message : ERROR_COULD_NOT_UPDATE_PRICE);
+      setError(describePlatformError(err, ERROR_COULD_NOT_UPDATE_PRICE));
     }
   }
 
@@ -226,7 +225,7 @@ export function useReceivingPage() {
       setDrNumber("");
       setTimeout(() => setSavedMessage(null), 4000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : ERROR_COULD_NOT_SAVE_RECEIVING_ENTRY);
+      setError(describePlatformError(err, ERROR_COULD_NOT_SAVE_RECEIVING_ENTRY));
     } finally {
       setSaving(false);
     }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase, ERROR_COULD_NOT_PAIR_DEVICE, ERROR_INVALID_OWNER_PIN, ERROR_COULD_NOT_UNPAIR_DEVICE } from "@/lib";
+import { supabase, ERROR_COULD_NOT_PAIR_DEVICE, ERROR_INVALID_OWNER_PIN, ERROR_COULD_NOT_UNPAIR_DEVICE, describePlatformError } from "@/lib";
 
 export interface DeviceRow {
   id: string;
@@ -144,7 +144,7 @@ export function useDevicesPage() {
       await fetchDevices();
       await fetchAllowance();
     } catch (err) {
-      setUnpairError(friendlyUnpairError(err instanceof Error ? err.message : ERROR_COULD_NOT_UNPAIR_DEVICE));
+      setUnpairError(friendlyUnpairError(describePlatformError(err, ERROR_COULD_NOT_UNPAIR_DEVICE)));
       setUnpairPin("");
     } finally {
       setUnpairSubmitting(false);

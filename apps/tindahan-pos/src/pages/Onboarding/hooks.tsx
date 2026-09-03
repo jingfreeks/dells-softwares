@@ -9,8 +9,7 @@ import {
   ERROR_NAME_REQUIRED,
   ERROR_STORE_NAME_REQUIRED,
   ERROR_COULD_NOT_PROCESS_IMAGE,
-  ERROR_COULD_NOT_SAVE_YOUR_PROFILE,
-} from "@/lib";
+  ERROR_COULD_NOT_SAVE_YOUR_PROFILE, describePlatformError } from "@/lib";
 import { loadOnboardingStep, saveOnboardingStep, clearOnboardingStep } from "./onboardingProgress";
 import { loadOpeningHours, saveOpeningHours, DEFAULT_OPENING_HOURS } from "./openingHoursSettings";
 import { startTrialBestEffort } from "@/lib/billing/startTrial";
@@ -122,7 +121,7 @@ export function useOnboardingWizard() {
       setAvatarBlob(blob);
       setAvatarPreview(URL.createObjectURL(blob));
     } catch (err) {
-      setAvatarError(err instanceof Error ? err.message : ERROR_COULD_NOT_PROCESS_IMAGE);
+      setAvatarError(describePlatformError(err, ERROR_COULD_NOT_PROCESS_IMAGE));
     } finally {
       setProcessingAvatar(false);
     }
@@ -139,7 +138,7 @@ export function useOnboardingWizard() {
       setStorePhotoBlob(blob);
       setStorePhotoPreview(URL.createObjectURL(blob));
     } catch (err) {
-      setStorePhotoError(err instanceof Error ? err.message : ERROR_COULD_NOT_PROCESS_IMAGE);
+      setStorePhotoError(describePlatformError(err, ERROR_COULD_NOT_PROCESS_IMAGE));
     } finally {
       setProcessingStorePhoto(false);
     }
@@ -192,7 +191,7 @@ export function useOnboardingWizard() {
 
       setStep("products");
     } catch (err) {
-      setProfileError(err instanceof Error ? err.message : ERROR_COULD_NOT_SAVE_YOUR_PROFILE);
+      setProfileError(describePlatformError(err, ERROR_COULD_NOT_SAVE_YOUR_PROFILE));
     } finally {
       setSavingProfile(false);
     }

@@ -12,8 +12,7 @@ import {
   ERROR_COULD_NOT_UPDATE_STAFF_STATUS,
   ERROR_COULD_NOT_CHANGE_ROLE,
   type Role,
-  type SaleRecord,
-} from "@/lib";
+  type SaleRecord, describePlatformError } from "@/lib";
 import { dateRangeForPreset } from "@/pages/Reports/lib";
 import {
   generatePassword,
@@ -181,7 +180,7 @@ export function useStaffPage() {
       setShowAddForm(false);
       await fetchStaff();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : ERROR_COULD_NOT_CREATE_CASHIER);
+      setFormError(describePlatformError(err, ERROR_COULD_NOT_CREATE_CASHIER));
     } finally {
       setSubmitting(false);
     }
@@ -206,7 +205,7 @@ export function useStaffPage() {
       if (error) throw error;
       await fetchStaff();
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : ERROR_COULD_NOT_REMOVE_STAFF);
+      setLoadError(describePlatformError(err, ERROR_COULD_NOT_REMOVE_STAFF));
     } finally {
       setRemovingId(null);
     }
@@ -219,7 +218,7 @@ export function useStaffPage() {
       if (error) throw error;
       await fetchStaff();
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : ERROR_COULD_NOT_UPDATE_STAFF);
+      setLoadError(describePlatformError(err, ERROR_COULD_NOT_UPDATE_STAFF));
     }
   }
 
@@ -271,7 +270,7 @@ export function useStaffPage() {
       if (error) throw error;
       await fetchStaff();
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : ERROR_COULD_NOT_UPDATE_STAFF_STATUS);
+      setLoadError(describePlatformError(err, ERROR_COULD_NOT_UPDATE_STAFF_STATUS));
     }
   }
 

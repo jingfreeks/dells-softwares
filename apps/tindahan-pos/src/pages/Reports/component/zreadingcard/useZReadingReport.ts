@@ -75,7 +75,7 @@ export function useZReadingReport() {
         () => {}
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load the Z-reading.");
+      setError(describePlatformError(err, "Could not load the Z-reading."));
     } finally {
       setLoading(false);
     }

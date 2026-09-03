@@ -1,3 +1,4 @@
+import { describePlatformError } from "@/lib";
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { BUSINESS_TYPES, LOCATION_OPTIONS, type DemoFormErrors, type DemoFormFields } from "./types";
@@ -61,7 +62,7 @@ export function useDemoForm() {
       setSucceeded(true);
     } catch (err) {
       setSubmitError(
-        err instanceof Error ? err.message : "Something went wrong sending your request. Please try again."
+        describePlatformError(err, "Something went wrong sending your request. Please try again.")
       );
     } finally {
       setSubmitting(false);
