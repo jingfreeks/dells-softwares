@@ -47,7 +47,7 @@ async function loadStore(storeId: string): Promise<Store | null> {
   const { data, error } = await supabase
     .from("stores")
     .select(
-      "id, name, address, photo_url, fee_config, contact_number, city, tin, business_permit_no, bir_registered, vat_status, vat_rate, invoice_type, cashier_can_edit_prices"
+      "id, name, address, photo_url, fee_config, contact_number, city, tin, business_permit_no, bir_registered, vat_status, vat_rate, invoice_type, cashier_can_edit_prices, void_requires_pin, cashier_cash_out_cap"
     )
     .eq("id", storeId)
     .single();
@@ -69,6 +69,8 @@ async function loadStore(storeId: string): Promise<Store | null> {
     vatRate: data.vat_rate,
     invoiceType: data.invoice_type,
     cashierCanEditPrices: data.cashier_can_edit_prices,
+    voidRequiresPin: data.void_requires_pin,
+    cashierCashOutCap: data.cashier_cash_out_cap,
   };
 }
 
@@ -369,6 +371,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     vatRate?: number;
     invoiceType?: string;
     cashierCanEditPrices?: boolean;
+    voidRequiresPin?: boolean;
+    cashierCashOutCap?: number | null;
   }): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
     const { data, error } = await supabase
@@ -387,6 +391,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...(patch.vatRate !== undefined && { vat_rate: patch.vatRate }),
         ...(patch.invoiceType !== undefined && { invoice_type: patch.invoiceType }),
         ...(patch.cashierCanEditPrices !== undefined && { cashier_can_edit_prices: patch.cashierCanEditPrices }),
+        ...(patch.voidRequiresPin !== undefined && { void_requires_pin: patch.voidRequiresPin }),
+        ...(patch.cashierCashOutCap !== undefined && { cashier_cash_out_cap: patch.cashierCashOutCap }),
       })
       .eq("id", user.storeId)
       .select("id");

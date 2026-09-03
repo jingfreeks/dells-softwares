@@ -38,6 +38,15 @@ export function useFeesLimitsPage() {
   const [savedMock, setSavedMock] = useState<FeesLimitsMock>(DEFAULT_FEES_LIMITS_MOCK);
   const [mock, setMock] = useState<FeesLimitsMock>(DEFAULT_FEES_LIMITS_MOCK);
 
+  // Real, server-enforced store columns (20260903190000/20260903200000) --
+  // not part of FeesLimitsMock. 0 in the cap field means "no cap" in the UI
+  // (matches the existing min={0} number input) and is submitted as
+  // Postgres null, same convention as customers.credit_limit.
+  const [savedVoidNeedsPin, setSavedVoidNeedsPin] = useState(store?.voidRequiresPin ?? false);
+  const [voidNeedsPin, setVoidNeedsPin] = useState(store?.voidRequiresPin ?? false);
+  const [savedCashierCashOutCap, setSavedCashierCashOutCap] = useState(store?.cashierCashOutCap ?? 0);
+  const [cashierCashOutCap, setCashierCashOutCap] = useState(store?.cashierCashOutCap ?? 0);
+
   const [formError, setFormError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -47,6 +56,16 @@ export function useFeesLimitsPage() {
     setSaved(next);
     setBrackets(next);
   }, [store?.feeConfig]);
+
+  useEffect(() => {
+    setSavedVoidNeedsPin(store?.voidRequiresPin ?? false);
+    setVoidNeedsPin(store?.voidRequiresPin ?? false);
+  }, [store?.voidRequiresPin]);
+
+  useEffect(() => {
+    setSavedCashierCashOutCap(store?.cashierCashOutCap ?? 0);
+    setCashierCashOutCap(store?.cashierCashOutCap ?? 0);
+  }, [store?.cashierCashOutCap]);
 
   useEffect(() => {
     if (!user) return;
@@ -96,9 +115,19 @@ export function useFeesLimitsPage() {
     setMock((prev) => ({ ...prev, [key]: value }));
   }
 
-  function toggleMockField(key: "blockUtangPastLimit" | "voidNeedsPin" | "warnLowEloadFloat") {
+  function toggleMockField(key: "blockUtangPastLimit" | "warnLowEloadFloat") {
     setJustSaved(false);
     setMock((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  function toggleVoidNeedsPin() {
+    setJustSaved(false);
+    setVoidNeedsPin((prev) => !prev);
+  }
+
+  function updateCashierCashOutCap(value: number) {
+    setJustSaved(false);
+    setCashierCashOutCap(value);
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -108,7 +137,11 @@ export function useFeesLimitsPage() {
     setFormError(null);
     setJustSaved(false);
     try {
-      const result = await updateStore({ feeConfig: { eload: brackets.eload, cashIn: brackets.cashIn, cashOut: brackets.cashOut } });
+      const result = await updateStore({
+        feeConfig: { eload: brackets.eload, cashIn: brackets.cashIn, cashOut: brackets.cashOut },
+        voidRequiresPin: voidNeedsPin,
+        cashierCashOutCap: cashierCashOutCap > 0 ? cashierCashOutCap : null,
+      });
       if (!result.ok) {
         setFormError(result.error);
         return;
@@ -116,6 +149,8 @@ export function useFeesLimitsPage() {
       saveFeesLimitsMock(user.storeId, mock);
       setSavedMock(mock);
       setSaved(brackets);
+      setSavedVoidNeedsPin(voidNeedsPin);
+      setSavedCashierCashOutCap(cashierCashOutCap);
       setJustSaved(true);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : ERROR_COULD_NOT_SAVE_FEES_AND_LIMITS);
@@ -127,12 +162,17 @@ export function useFeesLimitsPage() {
   function handleDiscard() {
     setBrackets(saved);
     setMock(savedMock);
+    setVoidNeedsPin(savedVoidNeedsPin);
+    setCashierCashOutCap(savedCashierCashOutCap);
     setFormError(null);
     setJustSaved(false);
   }
 
   const isDirty =
-    JSON.stringify(brackets) !== JSON.stringify(saved) || JSON.stringify(mock) !== JSON.stringify(savedMock);
+    JSON.stringify(brackets) !== JSON.stringify(saved) ||
+    JSON.stringify(mock) !== JSON.stringify(savedMock) ||
+    voidNeedsPin !== savedVoidNeedsPin ||
+    cashierCashOutCap !== savedCashierCashOutCap;
 
   return {
     eloadBrackets: brackets.eload,
@@ -145,6 +185,10 @@ export function useFeesLimitsPage() {
     mock,
     setMockField,
     toggleMockField,
+    voidNeedsPin,
+    toggleVoidNeedsPin,
+    cashierCashOutCap,
+    updateCashierCashOutCap,
     formError,
     justSaved,
     submitting,

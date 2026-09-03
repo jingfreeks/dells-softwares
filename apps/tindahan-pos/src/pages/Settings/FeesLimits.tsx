@@ -25,6 +25,10 @@ export function FeesLimits() {
     mock,
     setMockField,
     toggleMockField,
+    voidNeedsPin,
+    toggleVoidNeedsPin,
+    cashierCashOutCap,
+    updateCashierCashOutCap,
     formError,
     justSaved,
     submitting,
@@ -89,12 +93,12 @@ export function FeesLimits() {
           onKeepInDrawerChange={(value) => setMockField("keepInDrawer", value)}
           defaultCreditLimit={mock.defaultCreditLimit}
           onDefaultCreditLimitChange={(value) => setMockField("defaultCreditLimit", value)}
-          cashierCashOutCap={mock.cashierCashOutCap}
-          onCashierCashOutCapChange={(value) => setMockField("cashierCashOutCap", value)}
+          cashierCashOutCap={cashierCashOutCap}
+          onCashierCashOutCapChange={updateCashierCashOutCap}
           blockUtangPastLimit={mock.blockUtangPastLimit}
           onToggleBlockUtangPastLimit={() => toggleMockField("blockUtangPastLimit")}
-          voidNeedsPin={mock.voidNeedsPin}
-          onToggleVoidNeedsPin={() => toggleMockField("voidNeedsPin")}
+          voidNeedsPin={voidNeedsPin}
+          onToggleVoidNeedsPin={toggleVoidNeedsPin}
           warnLowEloadFloat={mock.warnLowEloadFloat}
           onToggleWarnLowEloadFloat={() => toggleMockField("warnLowEloadFloat")}
         />

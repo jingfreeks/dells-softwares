@@ -1451,3 +1451,11 @@ export const LABEL_REFERENCE_NO_PREFIX = "Reference no.";
 export const LABEL_UTANG_BALANCE_NOTE = "Charged to Utang account.";
 export const BUTTON_PRINT_RECEIPT = "Print receipt";
 export const BUTTON_NEW_SALE = "New sale";
+
+// Admin PIN gate (void_requires_pin / cashier_cash_out_cap, 20260903190000 / 20260903200000)
+export const LABEL_ADMIN_PIN_REQUIRED = "Owner PIN required";
+export const TEXT_VOID_NEEDS_PIN = "This store requires an owner's PIN to void a sale.";
+export const TEXT_CASH_OUT_CAP_EXCEEDED = "This cash-out is over the store's per-sale limit and needs an owner's PIN.";
+export const TEXT_ADMIN_PIN_RECORDED_HINT = "This PIN is verified, not stored — only that an owner approved it is recorded.";
+export const ERROR_VOID_PIN_REQUIRED = "This store requires an owner's PIN to void a sale.";
+export const ERROR_CASH_OUT_CAP_EXCEEDED = "This cash-out is over the store's limit and needs an owner's PIN.";

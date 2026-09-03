@@ -63,6 +63,8 @@ export interface Database {
           vat_rate: number;
           invoice_type: string;
           cashier_can_edit_prices: boolean;
+          void_requires_pin: boolean;
+          cashier_cash_out_cap: number | null;
         };
         Insert: {
           id?: string;
@@ -80,6 +82,8 @@ export interface Database {
           vat_rate?: number;
           invoice_type?: string;
           cashier_can_edit_prices?: boolean;
+          void_requires_pin?: boolean;
+          cashier_cash_out_cap?: number | null;
         };
         Update: {
           id?: string;
@@ -97,6 +101,8 @@ export interface Database {
           vat_rate?: number;
           invoice_type?: string;
           cashier_can_edit_prices?: boolean;
+          void_requires_pin?: boolean;
+          cashier_cash_out_cap?: number | null;
         };
         Relationships: [];
       };
@@ -1194,7 +1200,7 @@ export interface Database {
       checkout_sale: {
         Args: {
           p_items: { product_id: string; quantity: number }[];
-          p_services?: { label: string; amount: number; fee?: number }[];
+          p_services?: { label: string; amount: number; fee?: number; service_type?: "eload" | "cashin" | "cashout" | "print"; cash_handed_over?: number }[];
           p_customer_id?: string | null;
           p_payment_type?: PaymentType;
           p_reference_no?: string | null;
@@ -1221,6 +1227,7 @@ export interface Database {
         Args: {
           p_sale_id: string;
           p_reason: string;
+          p_override_token?: string | null;
         };
         Returns: undefined;
       };

@@ -1,11 +1,19 @@
-import type { PaymentType } from "@/lib/types";
+import type { PaymentType, ServiceType } from "@/lib/types";
 import { dbDelete, dbGetAll, dbPut } from "./db";
 
 export type QueuedSaleStatus = "pending" | "syncing" | "synced" | "needs_cashier_reauth" | "failed";
 
 export interface QueuedSalePayload {
   items: { product_id: string; quantity: number }[];
-  services: { label: string; amount: number; fee: number }[];
+  services: {
+    label: string;
+    amount: number;
+    fee: number;
+    // Carried through unchanged on replay so cashier_cash_out_cap
+    // (20260903200000) sees the same cash-out amount offline and online.
+    service_type?: ServiceType;
+    cash_handed_over?: number;
+  }[];
   customerId: string | null;
   paymentType: PaymentType;
   referenceNo: string | null;

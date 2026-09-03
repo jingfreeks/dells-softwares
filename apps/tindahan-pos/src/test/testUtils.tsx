@@ -49,6 +49,8 @@ export function makeStore(overrides: Partial<Store> = {}): Store {
     vatRate: 0.12,
     invoiceType: "Sales Invoice",
     cashierCanEditPrices: false,
+    voidRequiresPin: false,
+    cashierCashOutCap: null,
     ...overrides,
   };
 }
