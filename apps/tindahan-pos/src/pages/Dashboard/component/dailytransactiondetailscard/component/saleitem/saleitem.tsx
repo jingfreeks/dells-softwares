@@ -1,6 +1,6 @@
 import { PESO } from "@/lib";
 import type { SaleRecord } from "@/lib/types";
-import { formatDateTime } from "../../lib";
+import { formatDateTime } from "@/lib";
 
 const Saleperitemscreen = (props: { number: string; sale: SaleRecord }) => {
   const { number, sale } = props;

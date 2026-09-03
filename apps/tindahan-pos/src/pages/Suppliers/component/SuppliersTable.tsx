@@ -21,8 +21,7 @@ import {
   ARIA_PRODUCT_ACTIONS,
   EMPTY_STATE_NO_SUPPLIERS,
   TEXT_EMPTY_SUPPLIERS_HINT,
-  BUTTON_ADD_SUPPLIER,
-} from "@/lib";
+  BUTTON_ADD_SUPPLIER, formatDateShort } from "@/lib";
 
 const ROW_COLUMNS = "1.6fr 1.5fr 110px 96px 84px 88px 28px";
 
@@ -203,7 +202,7 @@ export function SuppliersTable({
             </div>
             <p className="tpl-ts">
               {stat?.lastDelivery
-                ? new Date(stat.lastDelivery).toLocaleDateString("en-PH", { month: "short", day: "numeric" })
+                ? formatDateShort(stat.lastDelivery)
                 : TEXT_NEVER_DELIVERED}
             </p>
             <p className="tpl-tp" style={{ textAlign: "right" }}>

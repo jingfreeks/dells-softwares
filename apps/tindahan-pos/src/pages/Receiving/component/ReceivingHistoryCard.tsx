@@ -1,5 +1,5 @@
 import type { ReceivingEntry } from "@/lib";
-import { LABEL_RECENT_RECEIVING_HISTORY, EMPTY_STATE_NO_RECEIVING_ENTRIES } from "@/lib";
+import { LABEL_RECENT_RECEIVING_HISTORY, EMPTY_STATE_NO_RECEIVING_ENTRIES, formatDate } from "@/lib";
 
 interface ReceivingHistoryCardProps {
   receivingHistory: ReceivingEntry[];
@@ -19,7 +19,7 @@ export function ReceivingHistoryCard({ receivingHistory }: ReceivingHistoryCardP
               {entry.drNumber ? ` · ${entry.drNumber}` : ""}
             </p>
             <p className="tpl-ts">
-              {new Date(entry.date).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })} ·{" "}
+              {formatDate(entry.date)} ·{" "}
               {entry.lines.length} product{entry.lines.length === 1 ? "" : "s"},{" "}
               {entry.lines.reduce((s, l) => s + l.quantity, 0)} units
             </p>
