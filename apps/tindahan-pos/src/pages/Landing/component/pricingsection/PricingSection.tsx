@@ -8,6 +8,24 @@ import { usePricingSection } from "./hooks";
 // display computation. No checkout flow exists yet (BUSINESS/PRO are sold
 // by a human per request_plan_upgrade.sql), so there's no real "ANNUAL"
 // billingInterval in STATIC_PLANS/core.subscription_plans to read instead.
+// The bullets below describe what core.plan_features ACTUALLY grants, not a
+// separate marketing story. They drifted apart once (#457): the page sold
+// utang, e-load and shifts as the Starter -> Growth upgrade while all three
+// were already granted to Starter, so the entire upgrade case was for
+// something the customer already had, and Starter's advertised product cap
+// was 200 against a real 5,000.
+//
+// supabase/tests/250_tier_split.sql pins the grants per tier and is the thing
+// to read before editing a bullet here -- "BASIC is the sari-sari store" and
+// "BUSINESS is the growing store: purchase orders, stock counts and unit
+// conversions on top of BASIC" are that suite's own words. If a claim here
+// cannot be traced to a feature code in that test, it does not belong on the
+// page.
+//
+// Two bullets were removed rather than reworded: "1 user" and "up to 5 staff".
+// There is no staff or user limit in the system -- the only limit keys are
+// branches, devices, products and warehouses -- so both were unenforceable as
+// written.
 const ANNUAL_MONTHS = 10;
 const SAVE_PERCENT = Math.round((1 - ANNUAL_MONTHS / 12) * 100);
 
@@ -57,8 +75,14 @@ export function PricingSection() {
                 </>
               )
             }
-            description="For small stores starting digital. Enough to stop using the notebook."
-            features={["Up to 200 products", "Sales and daily summary", "Basic stock alerts", "1 user"]}
+            description="For one shop running its counter on paper today. Enough to stop using the notebook."
+            features={[
+              "Utang tracking with ageing",
+              "E-load, cash-in and cash-out",
+              "Cashier PINs, shifts and drawer counts",
+              "Receiving, suppliers and pack pricing",
+              "Up to 5,000 products across 3 devices",
+            ]}
             cta={
               <Link className="tland-btn tland-btn-s" to="/register">
                 Get started
@@ -82,13 +106,13 @@ export function PricingSection() {
                 </>
               )
             }
-            description="For stores with more products, transactions and staff."
+            description="For stores that need to manage stock, not only sell it."
             features={[
-              "Unlimited products",
-              "Utang tracking with ageing",
-              "E-load, cash-in and cash-out",
-              "Up to 5 staff with PINs and shifts",
-              "Drawer counts and variance alerts",
+              `Everything in ${starter.name}`,
+              "Purchase orders",
+              "Stock counts",
+              "Unit conversions — buy by the sack, sell by the kilo",
+              "Unlimited products, devices and branches",
             ]}
             cta={
               <Link className="tland-btn tland-btn-p" to="/register?plan=BUSINESS">
@@ -99,11 +123,12 @@ export function PricingSection() {
           <PricingCard
             name={business.name}
             amount="Let's Talk"
-            description="For businesses that need customized solutions — more than one location, or unusual requirements."
+            description="For more than one location, or requirements the other tiers do not cover."
             features={[
               `Everything in ${growth.name}`,
-              "Per-branch registers and reporting",
-              "Consolidated view across stores",
+              "Multiple registers per branch",
+              "Stock transfers between branches",
+              "BIR receipting",
               "Help migrating your existing data",
             ]}
             cta={
