@@ -83,7 +83,7 @@ select ok(
 );
 
 select throws_ok(
-  $$ select public.start_trial('PRO') $$,
+  $$ select public.start_trial('ENTERPRISE') $$,
   'TRIAL_ALREADY_USED',
   'one trial ever per store -- trying again, even for a different plan, is rejected'
 );

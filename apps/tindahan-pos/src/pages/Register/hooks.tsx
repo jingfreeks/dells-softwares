@@ -12,7 +12,7 @@ import {
 import { STATIC_PLANS, type StaticPlan } from "@/lib/plan/staticPlans";
 import { startTrialBestEffort } from "@/lib/billing/startTrial";
 
-const REQUESTABLE_PLAN_CODES = new Set(["BUSINESS", "PRO"]);
+const REQUESTABLE_PLAN_CODES = new Set(["BUSINESS"]);
 
 /** The plan a landing-page CTA carried in via ?plan=CODE, or null for the plain "just BASIC, like every signup" path. Only BUSINESS/PRO start a real trial -- see start_trial(). */
 function useSelectedPlan(): StaticPlan | null {
@@ -109,7 +109,7 @@ export function useRegisterForm() {
       // Best-effort: the account was already created successfully above --
       // a failure starting the trial shouldn't undo that or block the new
       // owner from reaching their store.
-      startTrialBestEffort(selectedPlan.code as "BUSINESS" | "PRO");
+      startTrialBestEffort(selectedPlan.code as "BUSINESS");
     }
     navigate("/pos");
   }

@@ -45,7 +45,7 @@ select pg_temp.act_as('e1000000-0000-4000-8000-000000000001');
 
 select is((select count(*)::int from public.platform_plans()), 0,
   'a tenant cannot list plans');
-select throws_ok($$ select public.platform_set_plan(pg_temp.org(), 'PRO', 'self-upgrade') $$,
+select throws_ok($$ select public.platform_set_plan(pg_temp.org(), 'ENTERPRISE', 'self-upgrade') $$,
   'P0001', 'UNAUTHORIZED_ACTION', 'a tenant cannot change their own plan');
 select throws_ok($$ select public.platform_reset_module_to_plan(pg_temp.org(), 'POS') $$,
   'P0001', 'UNAUTHORIZED_ACTION', 'a tenant cannot reset a module');
@@ -57,13 +57,13 @@ select pg_temp.act_as('e2000000-0000-4000-8000-000000000002');
 
 select isnt_empty($$ select 1 from public.platform_plans() $$,
   'an administrator can list plans');
-select ok((select 'ACCOUNTING' = any(modules) from public.platform_plans() where plan_code = 'PRO'),
+select ok((select 'ACCOUNTING' = any(modules) from public.platform_plans() where plan_code = 'ENTERPRISE'),
   'and each plan reports what it includes');
 
 select ok(not core.module_enabled(pg_temp.org(), 'ACCOUNTING'),
   'the tenant starts on BASIC, without ACCOUNTING');
 
-select lives_ok($$ select public.platform_set_plan(pg_temp.org(), 'PRO', 'paid upgrade') $$,
+select lives_ok($$ select public.platform_set_plan(pg_temp.org(), 'ENTERPRISE', 'paid upgrade') $$,
   'an administrator can move them to PRO');
 select ok(core.module_enabled(pg_temp.org(), 'ACCOUNTING'),
   'which materializes ACCOUNTING on');
@@ -86,8 +86,8 @@ select is((select source from core.organization_modules
            where organization_id = pg_temp.org() and module_code = 'ACCOUNTING'),
           'MANUAL', 'and it is recorded as a manual grant');
 
-select lives_ok($$ select public.platform_set_plan(pg_temp.org(), 'FREE', 'downgrade to free') $$,
-  'the tenant is then downgraded all the way to FREE');
+select lives_ok($$ select public.platform_set_plan(pg_temp.org(), 'BASIC', 'downgrade to starter') $$,
+  'the tenant is then downgraded all the way to the entry tier');
 select ok(core.module_enabled(pg_temp.org(), 'ACCOUNTING'),
   'the comp SURVIVES the downgrade -- intended, but it is why a reset is needed');
 select ok(not core.module_enabled(pg_temp.org(), 'INVENTORY'),
@@ -101,7 +101,7 @@ select lives_ok($$ select public.platform_reset_module_to_plan(pg_temp.org(), 'A
 select ok(not core.module_enabled(pg_temp.org(), 'ACCOUNTING'),
   'after which FREE governs and ACCOUNTING is off');
 
-select lives_ok($$ select public.platform_set_plan(pg_temp.org(), 'PRO', 'upgrade again') $$,
+select lives_ok($$ select public.platform_set_plan(pg_temp.org(), 'ENTERPRISE', 'upgrade again') $$,
   'and a later upgrade now reaches that module again');
 select ok(core.module_enabled(pg_temp.org(), 'ACCOUNTING'),
   'proving the module is genuinely back under plan control');

@@ -356,7 +356,7 @@ select ok(not core.org_writes_allowed(pg_temp.org()),
 -- The regression this migration also fixes: changing a plan must not
 -- silently reinstate a suspended tenant.
 -- -----------------------------------------------------------------------------
-select lives_ok($$ select public.platform_set_plan(pg_temp.org(), 'PRO', 'upsell attempt') $$,
+select lives_ok($$ select public.platform_set_plan(pg_temp.org(), 'ENTERPRISE', 'upsell attempt') $$,
   'a suspended tenant can still have their plan changed');
 select ok(not core.org_writes_allowed(pg_temp.org()),
   'and they are STILL suspended -- a plan change is not a reinstatement');

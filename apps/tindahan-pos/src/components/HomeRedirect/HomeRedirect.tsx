@@ -5,7 +5,7 @@ import { startTrialBestEffort } from "@/lib/billing/startTrial";
 import { PageLoadingOverlay } from "@/components/PageLoadingOverlay";
 import { Landing } from "@/pages/Landing";
 
-const TRIALABLE_PLAN_CODES = new Set(["BUSINESS", "PRO"]);
+const TRIALABLE_PLAN_CODES = new Set(["BUSINESS"]);
 
 /**
  * Where a bare "/" actually lands, once we know who's signed in — a
@@ -34,7 +34,7 @@ export function HomeRedirect() {
     if (!user || !planCode || !TRIALABLE_PLAN_CODES.has(planCode)) return;
     if (billing?.trialEndsAt) return;
     startedRef.current = true;
-    startTrialBestEffort(planCode as "BUSINESS" | "PRO");
+    startTrialBestEffort(planCode as "BUSINESS");
   }, [user, planCode, billing]);
 
   if (loading) {

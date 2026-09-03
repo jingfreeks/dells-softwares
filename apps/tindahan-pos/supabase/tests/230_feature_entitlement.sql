@@ -158,7 +158,7 @@ select is((select source from public.platform_organization_features(pg_temp.org(
 -- A manual decision survives a plan change -- and can be handed back.
 -- This is the trap the module layer fell into in 20260815099000.
 -- -----------------------------------------------------------------------------
-select lives_ok($$ select public.platform_set_plan(pg_temp.org(), 'PRO', 'upgrade') $$,
+select lives_ok($$ select public.platform_set_plan(pg_temp.org(), 'ENTERPRISE', 'upgrade') $$,
   'the tenant is moved to another plan');
 select ok(not core.feature_enabled(pg_temp.org(), 'pos.eload'),
   'the removal SURVIVES the plan change -- intended, and why a reset exists');

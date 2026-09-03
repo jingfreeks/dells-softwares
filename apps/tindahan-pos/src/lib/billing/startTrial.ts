@@ -13,7 +13,7 @@ import { supabase } from "@/lib/supabaseClient";
  * deliberately ignored" explicit instead of relying on an unhandled
  * rejection.
  */
-export function startTrialBestEffort(planCode: "BUSINESS" | "PRO") {
+export function startTrialBestEffort(planCode: "BUSINESS") {
   supabase.rpc("start_trial", { p_plan_code: planCode }).then(
     () => {},
     () => {}

@@ -296,15 +296,16 @@ select set_config('request.jwt.claims',
 
 select set_eq(
   $$ select plan_code from public.platform_plans() $$,
-  array['FREE', 'BASIC', 'BUSINESS', 'PRO', 'ENTERPRISE'],
-  'the console sees every plan, including the one added after this file was '
-  || 'first written'
+  array['BASIC', 'BUSINESS', 'ENTERPRISE'],
+  'the console sees every plan it may assign -- FREE and PRO were retired in '
+  || '20260903110000, and platform_set_plan() filters on is_active, so a plan '
+  || 'listed here that could not be assigned would be the worse bug'
 );
 
 select is(
-  (select array_length(features, 1) from public.platform_plans() where plan_code = 'FREE'),
-  4,
-  'and what FREE sells, not merely that it exists'
+  (select array_length(features, 1) from public.platform_plans() where plan_code = 'BASIC'),
+  9,
+  'and what the entry tier sells, not merely that it exists'
 );
 
 select is(
@@ -317,7 +318,7 @@ select ok(
   (select 'inventory.transfers' = any(features) from public.platform_plans()
     where plan_code = 'ENTERPRISE')
   and not (select 'inventory.transfers' = any(features) from public.platform_plans()
-    where plan_code = 'PRO'),
+    where plan_code = 'BUSINESS'),
   'so the difference between two plans is legible before an operator commits to it'
 );
 
