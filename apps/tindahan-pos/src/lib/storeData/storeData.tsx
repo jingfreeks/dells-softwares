@@ -16,10 +16,18 @@ import type {
   SaleRecord,
   ServiceLine,
   Supplier,
-  SupplierPaymentTerms,
   VatStatus,
 } from "@/lib/types";
 import { StoreDataContext, type AddSupplierInput, type CheckoutPayment, type ReceivingEntry } from "./storeDataContext";
+import {
+  SUPPLIER_SELECT,
+  createSupplier,
+  deactivateSupplierRecord,
+  findSupplierByScanCode as findSupplierByScanCodeQuery,
+  mapSupplierRow,
+  markSupplierEntriesPaid,
+  updateSupplierRecord,
+} from "@/lib/suppliers";
 import { loadCachedStoreData, saveCachedStoreData } from "./storeDataCache";
 
 function mapProductRow(row: {
@@ -50,35 +58,6 @@ function mapProductRow(row: {
     packPrice: row.pack_price,
     imageUrl: row.image_url,
     cost: row.cost,
-  };
-}
-
-const SUPPLIER_SELECT =
-  "id, name, contact_person, phone, address, scan_code, payment_terms, active, usual_delivery_days, supplier_categories(category_id)";
-
-function mapSupplierRow(row: {
-  id: string;
-  name: string;
-  contact_person: string | null;
-  phone: string | null;
-  address: string | null;
-  scan_code: string;
-  payment_terms: string;
-  active: boolean;
-  usual_delivery_days: number[];
-  supplier_categories: { category_id: string }[] | null;
-}): Supplier {
-  return {
-    id: row.id,
-    name: row.name,
-    contactPerson: row.contact_person,
-    phone: row.phone,
-    address: row.address,
-    scanCode: row.scan_code,
-    paymentTerms: row.payment_terms as SupplierPaymentTerms,
-    active: row.active,
-    usualDeliveryDays: row.usual_delivery_days,
-    categoryIds: (row.supplier_categories ?? []).map((c) => c.category_id),
   };
 }
 
@@ -941,76 +920,25 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
 
   async function addSupplier(input: AddSupplierInput): Promise<Supplier> {
     if (!user) throw new Error("Not signed in.");
-    const storeId = user.storeId;
-    const { data, error: err } = await supabase
-      .from("suppliers")
-      .insert({
-        store_id: storeId,
-        name: input.name.trim(),
-        contact_person: input.contactPerson ?? null,
-        phone: input.phone ?? null,
-        address: input.address ?? null,
-        payment_terms: input.paymentTerms ?? "cash",
-        usual_delivery_days: input.usualDeliveryDays ?? [],
-      })
-      .select(SUPPLIER_SELECT)
-      .single();
-    if (err) throw err;
-    if (input.categoryIds?.length) {
-      const { error: catErr } = await supabase
-        .from("supplier_categories")
-        .insert(input.categoryIds.map((categoryId) => ({ supplier_id: data.id, category_id: categoryId })));
-      if (catErr) throw catErr;
-    }
+    const supplier = await createSupplier(user.storeId, input);
     await fetchSuppliers();
-    return mapSupplierRow({ ...data, supplier_categories: (input.categoryIds ?? []).map((category_id) => ({ category_id })) });
+    return supplier;
   }
 
   async function updateSupplier(id: string, patch: Partial<Omit<Supplier, "id" | "scanCode">>) {
-    const { error: err } = await supabase
-      .from("suppliers")
-      .update({
-        ...(patch.name !== undefined && { name: patch.name }),
-        ...(patch.contactPerson !== undefined && { contact_person: patch.contactPerson }),
-        ...(patch.phone !== undefined && { phone: patch.phone }),
-        ...(patch.address !== undefined && { address: patch.address }),
-        ...(patch.paymentTerms !== undefined && { payment_terms: patch.paymentTerms }),
-        ...(patch.active !== undefined && { active: patch.active }),
-        ...(patch.usualDeliveryDays !== undefined && { usual_delivery_days: patch.usualDeliveryDays }),
-      })
-      .eq("id", id);
-    if (err) throw err;
-    if (patch.categoryIds !== undefined) {
-      // Simplest correct diff: replace the full set rather than computing
-      // an add/remove delta — this table only ever holds a handful of rows
-      // per supplier.
-      const { error: delErr } = await supabase.from("supplier_categories").delete().eq("supplier_id", id);
-      if (delErr) throw delErr;
-      if (patch.categoryIds.length) {
-        const { error: insErr } = await supabase
-          .from("supplier_categories")
-          .insert(patch.categoryIds.map((categoryId) => ({ supplier_id: id, category_id: categoryId })));
-        if (insErr) throw insErr;
-      }
-    }
+    await updateSupplierRecord(id, patch);
     await fetchSuppliers();
   }
 
   // No hard delete — a supplier's receiving history must stay intact even
   // after the store stops buying from them.
   async function deactivateSupplier(id: string) {
-    const { error: err } = await supabase.from("suppliers").update({ active: false }).eq("id", id);
-    if (err) throw err;
+    await deactivateSupplierRecord(id);
     await fetchSuppliers();
   }
 
   async function markSupplierPaid(supplierId: string) {
-    const { error: err } = await supabase
-      .from("receiving_entries")
-      .update({ paid: true, paid_at: new Date().toISOString() })
-      .eq("supplier_id", supplierId)
-      .eq("paid", false);
-    if (err) throw err;
+    await markSupplierEntriesPaid(supplierId);
     await fetchReceivingHistory();
   }
 
@@ -1020,14 +948,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   // session, and so a not-found scan reads as "no such supplier", not a
   // stale-cache bug.
   async function findSupplierByScanCode(scanCode: string): Promise<Supplier | null> {
-    const { data, error: err } = await supabase
-      .from("suppliers")
-      .select(SUPPLIER_SELECT)
-      .eq("scan_code", scanCode)
-      .maybeSingle();
-    if (err) throw err;
-    if (!data) return null;
-    return mapSupplierRow(data);
+    return findSupplierByScanCodeQuery(scanCode);
   }
 
   return (
