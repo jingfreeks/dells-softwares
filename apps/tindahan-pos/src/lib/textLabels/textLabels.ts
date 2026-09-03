@@ -536,6 +536,21 @@ export const LABEL_RECONCILIATION_CHECK = "Reconciliation check";
 export const TEXT_RECONCILIATION_MATCH = "Matches an independent server-side total.";
 export const TEXT_RECONCILIATION_MISMATCH = "Does not match the server-side total — figures may be out of date. Refresh and check again.";
 export const TEXT_Z_READING_EMPTY = "No sales recorded for this business date.";
+export const BUTTON_TAKE_Z_READING = "Take Z-reading";
+export const BUTTON_TAKING_READING = "Taking…";
+export const LABEL_Z_COUNTER = "Z-counter";
+export const LABEL_GRAND_TOTAL = "Grand total";
+export const LABEL_LATE_ENTRIES = "Late entries";
+export const TEXT_Z_CLOSED_PREFIX = "Closed";
+export const TEXT_Z_NOT_CLOSED = "Not yet closed";
+// Said plainly, because the difference is the entire point of the feature: an
+// unclosed day is recomputed from sales every time it is opened, so a void
+// recorded tomorrow changes what it shows.
+export const TEXT_Z_PROVISIONAL =
+  "These figures are recomputed from sales each time this is opened, so they can still change. Taking the Z-reading freezes them.";
+export const TEXT_Z_FROM_RECORD =
+  "Read from the closing record taken at the time, not recomputed.";
+export const ERROR_COULD_NOT_TAKE_READING = "Could not take the reading.";
 export const LABEL_SALES_LIST = "Sales";
 export const BUTTON_EXPORT_CSV = "Export CSV";
 export const TEXT_NO_SALES_IN_RANGE = "No sales in this period.";
