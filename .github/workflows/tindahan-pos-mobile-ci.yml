@@ -1,0 +1,60 @@
+# Type-check and unit tests for the Expo app.
+#
+# Until now nothing checked apps/tindahan-pos-mobile on any push: it is absent
+# from every other workflow, and its 281 tests and type-check only ran when
+# someone remembered to run them locally.
+#
+# That is not theoretical. The web and mobile apps carry near-copies of the
+# same cart logic, and they had drifted -- the web cart capped every add at
+# available stock while mobile did not, so the same barcode scan built a
+# sellable cart on one client and a cart the server refuses on the other (#482).
+# Nothing was going to catch that, because nothing was looking.
+#
+# Its own workflow rather than a job in tindahan-pos-ci: the mobile app is
+# deliberately outside the npm workspace, so it installs from its own lockfile
+# and shares nothing with the web build.
+#
+# No lint step yet -- the app has no lint configuration at all. Adding one is
+# worth doing and is its own change; this workflow starts with the two checks
+# that already pass, so it is green from the first run and stays meaningful.
+
+name: tindahan-pos-mobile CI
+
+on:
+  push:
+    branches: [dev, main]
+    paths:
+      - "apps/tindahan-pos-mobile/**"
+      - ".github/workflows/tindahan-pos-mobile-ci.yml"
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - "apps/tindahan-pos-mobile/**"
+      - ".github/workflows/tindahan-pos-mobile-ci.yml"
+
+jobs:
+  typecheck-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/tindahan-pos-mobile/package-lock.json
+
+      # Its own lockfile, from its own directory: the root `npm ci` does not
+      # reach this app.
+      - name: Install dependencies
+        working-directory: apps/tindahan-pos-mobile
+        run: npm ci
+
+      - name: Type-check
+        working-directory: apps/tindahan-pos-mobile
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        working-directory: apps/tindahan-pos-mobile
+        run: npx jest --ci
