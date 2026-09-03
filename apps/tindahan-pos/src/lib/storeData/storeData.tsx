@@ -20,6 +20,12 @@ import type {
 } from "@/lib/types";
 import { StoreDataContext, type AddSupplierInput, type CheckoutPayment, type ReceivingEntry } from "./storeDataContext";
 import {
+  createCustomer,
+  listCreditPayments,
+  listRecentCreditPayments,
+  recordCreditPaymentFor,
+} from "@/lib/customers";
+import {
   SUPPLIER_SELECT,
   createSupplier,
   deactivateSupplierRecord,
@@ -845,77 +851,25 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     creditLimit: number | null = null
   ): Promise<Customer> {
     if (!user) throw new Error("Not signed in.");
-    const storeId = user.storeId;
-    const { data, error: err } = await supabase
-      .from("customers")
-      .insert({ store_id: storeId, name: name.trim(), phone, credit_limit: creditLimit })
-      .select("id, name, phone, credit_limit, balance")
-      .single();
-    if (err) throw err;
+    const customer = await createCustomer(user.storeId, name, phone, creditLimit);
     await fetchCustomers();
-    return {
-      id: data.id,
-      name: data.name,
-      phone: data.phone,
-      creditLimit: data.credit_limit,
-      balance: data.balance,
-    };
+    return customer;
   }
 
   async function recordCreditPayment(customerId: string, amount: number, note?: string) {
-    const { error: err } = await supabase.rpc("record_credit_payment", {
-      p_customer_id: customerId,
-      p_amount: amount,
-      p_note: note ?? null,
-    });
-    if (err) throw err;
+    await recordCreditPaymentFor(customerId, amount, note);
     await fetchCustomers();
   }
 
   async function fetchCreditPayments(customerId: string): Promise<CreditPayment[]> {
-    const { data, error: err } = await supabase
-      .from("credit_payments")
-      .select("id, customer_id, amount, note, created_at, staff:created_by(name)")
-      .eq("customer_id", customerId)
-      .order("created_at", { ascending: false });
-    if (err) throw err;
-    return (data ?? []).map((row) => {
-      const staff = row.staff as unknown as { name: string } | { name: string }[] | null;
-      const createdByName = Array.isArray(staff) ? staff[0]?.name : staff?.name;
-      return {
-        id: row.id,
-        customerId: row.customer_id,
-        amount: row.amount,
-        note: row.note,
-        createdByName: createdByName ?? "Unknown",
-        timestamp: row.created_at,
-      };
-    });
+    return listCreditPayments(customerId);
   }
 
   // Cross-customer feed for the Customers page's "Recent payments" card --
   // distinct from fetchCreditPayments() above, which is scoped to one
   // customer's own history modal.
   async function fetchRecentCreditPayments(limit = 4): Promise<RecentCreditPayment[]> {
-    const { data, error: err } = await supabase
-      .from("credit_payments")
-      .select("id, customer_id, amount, created_at, resulting_balance, customer:customer_id(name)")
-      .order("created_at", { ascending: false })
-      .limit(limit);
-    if (err) throw err;
-    return (data ?? []).map((row) => {
-      const customer = row.customer as unknown as { name: string } | { name: string }[] | null;
-      const customerName = Array.isArray(customer) ? customer[0]?.name : customer?.name;
-      return {
-        id: row.id,
-        customerId: row.customer_id,
-        customerName: customerName ?? "Unknown",
-        amount: row.amount,
-        timestamp: row.created_at,
-        status:
-          row.resulting_balance === null ? null : row.resulting_balance <= 0 ? "settled" : "partial",
-      };
-    });
+    return listRecentCreditPayments(limit);
   }
 
   async function addSupplier(input: AddSupplierInput): Promise<Supplier> {
