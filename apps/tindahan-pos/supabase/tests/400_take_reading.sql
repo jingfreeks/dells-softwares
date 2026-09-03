@@ -165,8 +165,9 @@ select is(
 reset role;
 insert into auth.users (id, email) values
   ('4e000000-0000-4000-8000-00000000f002', 'reading.cashier@test.local');
-insert into staff (id, store_id, name, role)
-  values ('4e000000-0000-4000-8000-00000000f002', pg_temp.store(), 'Cashier', 'cashier');
+insert into staff (id, store_id, name, email, role)
+  values ('4e000000-0000-4000-8000-00000000f002', pg_temp.store(), 'Cashier',
+          'reading.cashier@test.local', 'cashier');
 set local role authenticated;
 select pg_temp.act_as('4e000000-0000-4000-8000-00000000f002');
 
