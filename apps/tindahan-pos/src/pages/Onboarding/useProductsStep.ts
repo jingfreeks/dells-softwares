@@ -7,8 +7,7 @@ import {
   ERROR_COULD_NOT_IMPORT_STARTER_CATALOG,
   ERROR_CSV_EMPTY,
   ERROR_CSV_MISSING_COLUMNS,
-  ERROR_COULD_NOT_IMPORT_FILE,
-} from "@/lib";
+  ERROR_COULD_NOT_IMPORT_FILE, describePlatformError } from "@/lib";
 import type { Category } from "@/lib/types";
 import { STARTER_CATALOG } from "./starterCatalog";
 import { parseProductsCsv } from "./lib";
@@ -85,7 +84,7 @@ export function useProductsStep() {
         }
       }
     } catch (err) {
-      setStarterError(err instanceof Error ? err.message : ERROR_COULD_NOT_IMPORT_STARTER_CATALOG);
+      setStarterError(describePlatformError(err, ERROR_COULD_NOT_IMPORT_STARTER_CATALOG));
     } finally {
       setImportingStarter(false);
     }
@@ -165,7 +164,7 @@ export function useProductsStep() {
       });
       setQuickAddForm(EMPTY_QUICK_ADD_FORM);
     } catch (err) {
-      setQuickAddError(err instanceof Error ? err.message : ERROR_COULD_NOT_ADD_PRODUCT);
+      setQuickAddError(describePlatformError(err, ERROR_COULD_NOT_ADD_PRODUCT));
     } finally {
       setSavingQuickAdd(false);
     }

@@ -283,7 +283,7 @@ export function usePosPage() {
       const customer = await addCustomer(name);
       selectCustomer(customer.id);
     } catch (err) {
-      setCustomerError(err instanceof Error ? err.message : ERROR_COULD_NOT_ADD_CUSTOMER);
+      setCustomerError(describePlatformError(err, ERROR_COULD_NOT_ADD_CUSTOMER));
     } finally {
       setAddingCustomer(false);
     }

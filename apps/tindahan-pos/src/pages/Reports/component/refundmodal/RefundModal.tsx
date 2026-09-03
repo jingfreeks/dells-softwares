@@ -13,8 +13,7 @@ import {
   BUTTON_SUBMIT_REFUND,
   TEXT_NO_ITEMS_TO_REFUND,
   TEXT_NOTHING_LEFT_TO_REFUND,
-  type SaleRecord,
-} from "@/lib";
+  type SaleRecord, describePlatformError } from "@/lib";
 
 interface RefundModalProps {
   open: boolean;
@@ -88,7 +87,7 @@ export function RefundModal({ open, sale, onSubmit, onClose }: RefundModalProps)
       await onSubmit(sale, reason.trim(), selectedItems);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not refund this sale.");
+      setError(describePlatformError(err, "Could not refund this sale."));
     } finally {
       setSubmitting(false);
     }

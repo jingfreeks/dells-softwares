@@ -12,8 +12,7 @@ import {
   ERROR_PASSWORDS_DO_NOT_MATCH,
   ERROR_COULD_NOT_UPDATE_PASSWORD,
   ERROR_COULD_NOT_SIGN_OUT_EVERYWHERE,
-  ERROR_COULD_NOT_SET_PIN,
-} from "@/lib";
+  ERROR_COULD_NOT_SET_PIN, describePlatformError } from "@/lib";
 import {
   loadSettingsProfileMock,
   saveSettingsProfileMock,
@@ -107,7 +106,7 @@ export function useSettingsProfilePage() {
       setRemoveAvatar(false);
       setAvatarPreview(URL.createObjectURL(blob));
     } catch (err) {
-      setImageError(err instanceof Error ? err.message : ERROR_COULD_NOT_PROCESS_IMAGE);
+      setImageError(describePlatformError(err, ERROR_COULD_NOT_PROCESS_IMAGE));
     } finally {
       setProcessingImage(false);
     }
@@ -158,7 +157,7 @@ export function useSettingsProfilePage() {
       setRemoveAvatar(false);
       setSaved(true);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : ERROR_COULD_NOT_SAVE_PROFILE);
+      setFormError(describePlatformError(err, ERROR_COULD_NOT_SAVE_PROFILE));
     } finally {
       setSubmitting(false);
     }
@@ -194,7 +193,7 @@ export function useSettingsProfilePage() {
       }
       setShowSetPinModal(false);
     } catch (err) {
-      setSetPinError(err instanceof Error ? err.message : ERROR_COULD_NOT_SET_PIN);
+      setSetPinError(describePlatformError(err, ERROR_COULD_NOT_SET_PIN));
     } finally {
       setSetPinSubmitting(false);
     }
@@ -238,7 +237,7 @@ export function useSettingsProfilePage() {
       setNewPassword("");
       setConfirmNewPassword("");
     } catch (err) {
-      setPasswordError(err instanceof Error ? err.message : ERROR_COULD_NOT_UPDATE_PASSWORD);
+      setPasswordError(describePlatformError(err, ERROR_COULD_NOT_UPDATE_PASSWORD));
     } finally {
       setUpdatingPassword(false);
     }
@@ -256,7 +255,7 @@ export function useSettingsProfilePage() {
       // onAuthStateChange listener in AuthProvider clears `user`, and
       // ProtectedRoute redirects to /login on its own.
     } catch (err) {
-      setSignOutError(err instanceof Error ? err.message : ERROR_COULD_NOT_SIGN_OUT_EVERYWHERE);
+      setSignOutError(describePlatformError(err, ERROR_COULD_NOT_SIGN_OUT_EVERYWHERE));
     } finally {
       setSigningOutEverywhere(false);
     }

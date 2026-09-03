@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useAuth, ERROR_COULD_NOT_SAVE_ALERTS } from "@/lib";
+import { useAuth, ERROR_COULD_NOT_SAVE_ALERTS, describePlatformError } from "@/lib";
 import {
   loadStockAlertSettings,
   saveStockAlertSettings,
@@ -109,7 +109,7 @@ export function useAlertsPage() {
       setFormError(null);
       setJustSaved(true);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : ERROR_COULD_NOT_SAVE_ALERTS);
+      setFormError(describePlatformError(err, ERROR_COULD_NOT_SAVE_ALERTS));
     }
   }
 

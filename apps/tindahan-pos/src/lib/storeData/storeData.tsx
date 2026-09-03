@@ -1,3 +1,4 @@
+import { describePlatformError } from "@/lib";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth";
 import { cartTotal, lineTotal } from "@/lib/pos";
@@ -212,7 +213,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
         fetchSuppliers(),
       ]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load store data.");
+      setError(describePlatformError(err, "Failed to load store data."));
     }
   }, [fetchProducts, fetchCategories, fetchSales, fetchReceivingHistory, fetchCustomers, fetchSuppliers]);
 

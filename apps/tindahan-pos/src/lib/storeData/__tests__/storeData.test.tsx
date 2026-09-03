@@ -273,11 +273,15 @@ describe("StoreDataProvider", () => {
     expect(captured?.products[0].category).toBe("Uncategorized");
   });
 
-  it("sets a fallback error message when refresh fails with a non-Error value", async () => {
+  // A Supabase error is a plain object, not an Error instance. The provider
+  // used to test `err instanceof Error` and so threw the message away, showing
+  // a generic line for every real backend failure. It goes through
+  // describePlatformError now, which reads the message off any shape.
+  it("surfaces the backend's own message when refresh fails", async () => {
     tableResults.products.list = { data: null, error: { message: "network down" } };
     renderProvider(<Probe />);
     await waitFor(() =>
-      expect(screen.getByTestId("error")).toHaveTextContent("Failed to load store data.")
+      expect(screen.getByTestId("error")).toHaveTextContent("network down")
     );
   });
 
