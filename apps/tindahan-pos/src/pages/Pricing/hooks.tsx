@@ -5,7 +5,7 @@ import { useFeatures } from "@/lib/features/featuresContext";
 import { startTrialBestEffort } from "@/lib/billing/startTrial";
 import { type PlanPrice, priceLabel } from "@/lib/plan/plan";
 
-const TRIALABLE_CODES = new Set(["BUSINESS", "PRO"]);
+const TRIALABLE_CODES = new Set(["BUSINESS"]);
 
 export function usePricingPage() {
   const billing = useBillingState();
@@ -57,7 +57,7 @@ export function usePricingPage() {
 
   function choosePlan(planCode: string) {
     if (TRIALABLE_CODES.has(planCode) && !hasUsedTrial) {
-      startTrialBestEffort(planCode as "BUSINESS" | "PRO");
+      startTrialBestEffort(planCode as "BUSINESS");
       setStartedCode(planCode);
     }
     // A plan that's already been trialed, or isn't self-serve trialable
