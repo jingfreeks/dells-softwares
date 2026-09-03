@@ -75,6 +75,17 @@ select is((select beginning_receipt from t_z1), 'OR-0001',
 select is((select ending_receipt from t_z1), 'OR-0002', 'and the last');
 select is((select late_entry_count from t_z1), 0, 'nothing is late in a first period');
 
+select is(
+  (select (payment_breakdown -> 'cash' ->> 'count')::int from t_z1),
+  2,
+  'the payment breakdown carries a transaction count per type, not only money'
+);
+select is(
+  (select (payment_breakdown -> 'cash' ->> 'total')::numeric from t_z1),
+  250.00::numeric,
+  'and the total alongside it'
+);
+
 -- -----------------------------------------------------------------------------
 -- A second period. Its sales arrive after the first Z closed.
 -- -----------------------------------------------------------------------------
