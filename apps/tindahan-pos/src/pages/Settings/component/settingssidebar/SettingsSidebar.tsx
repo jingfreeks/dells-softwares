@@ -10,6 +10,7 @@ import {
   NAV_LABEL_DEVICES,
   NAV_LABEL_AUDIT_LOG,
   NAV_LABEL_YOUR_PLAN,
+  APP_NAME,
 } from "@/lib";
 
 const SETTINGS_NAV_ITEMS = [
@@ -43,6 +44,17 @@ export function SettingsSidebar() {
           </NavLink>
         ))}
       </nav>
+
+      {/* Version identification, per BIR expectations for accredited software:
+          a build number that only exists in package.json cannot be read off
+          the device by anyone holding it. Injected from package.json at build
+          time (see vite.config.ts), so this and the repository cannot drift. */}
+      <p
+        className="mt-5 hidden lg:block"
+        style={{ fontSize: 11, color: "var(--tpl-t9, #6b7b8a)" }}
+      >
+        {APP_NAME} <span className="tabular-nums">v{__APP_VERSION__}</span>
+      </p>
     </aside>
   );
 }

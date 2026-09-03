@@ -9,4 +9,5 @@ export * from "./voidsummarycard";
 export * from "./refundsummarycard";
 export * from "./paymentbreakdowntable";
 export * from "./zreadingcard";
+export * from "./xreadingcard";
 export * from "./refundmodal";

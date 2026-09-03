@@ -6,6 +6,9 @@ import { DetailHeader } from "../../components/detailheader";
 import { ListRow } from "../../components/listrow";
 import { ScreenContainer } from "../../components/screencontainer";
 import { colors } from "../../theme/colors";
+// app.json is what Expo builds from, so reading the version here keeps the
+// number on screen and the number in the build identical by construction.
+import appConfig from "../../../app.json";
 import { useSettingsMenuScreen } from "./hooks";
 import type { SettingsMenuScreenProps } from "./types";
 
@@ -45,6 +48,14 @@ export function SettingsMenuScreen({ onBack, onOpenSection }: SettingsMenuScreen
           </View>
         ))}
       </Card>
+
+      {/* Version identification: BIR accreditation expects the running
+          software to be identifiable, and a number that lives only in a
+          config file cannot be read off the handset by whoever is holding
+          it. */}
+      <Text className="mt-4 text-center text-[11px] text-textFaint">
+        Tindahan POS v{appConfig.expo.version}
+      </Text>
     </ScreenContainer>
   );
 }

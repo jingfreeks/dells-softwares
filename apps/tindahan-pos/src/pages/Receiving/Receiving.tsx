@@ -1,5 +1,12 @@
 import { lazy, Suspense } from "react";
-import { BUTTON_SAVING, BUTTON_SAVE_RECEIVING_ENTRY } from "@/lib";
+import { Navigate } from "react-router-dom";
+import {
+  useAuth,
+  useCan,
+  usePermissions,
+  BUTTON_SAVING,
+  BUTTON_SAVE_RECEIVING_ENTRY,
+} from "@/lib";
 import { ScannerLoadingOverlay } from "@/components";
 import {
   ReceivingPageHeader,
@@ -19,6 +26,9 @@ const BarcodeScanner = lazy(() =>
 );
 
 export function Receiving() {
+  const { user } = useAuth();
+  const { loading: permissionsLoading } = usePermissions();
+  const canReceiveStock = useCan("inventory.stock.receive");
   const {
     products,
     suppliers,
@@ -50,6 +60,15 @@ export function Receiving() {
     addAllLowStock,
     raisePriceToProduct,
   } = useReceivingPage();
+
+  // Same shape as Suppliers: wait for permissions before deciding. useCan()
+  // returns false while they are still loading, so redirecting on it alone
+  // bounces an authorised owner to /pos on any DIRECT navigation -- a deep
+  // link, a refresh, or anything that is not a client-side transition from a
+  // page where permissions had already resolved.
+  if (user && !permissionsLoading && !canReceiveStock) {
+    return <Navigate to="/pos" replace />;
+  }
 
   return (
     <div className="tpl-root p-6">

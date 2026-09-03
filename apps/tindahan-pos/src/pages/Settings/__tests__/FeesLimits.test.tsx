@@ -127,7 +127,7 @@ describe("FeesLimits", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Something broke.");
   });
 
-  it("persists print/photocopy prices and cash-and-credit limits to localStorage on save", async () => {
+  it("persists print/photocopy prices to localStorage on save", async () => {
     const user = userEvent.setup();
     const updateStore = vi.fn().mockResolvedValue({ ok: true });
     vi.mocked(useAuth).mockReturnValue(
@@ -139,16 +139,66 @@ describe("FeesLimits", () => {
     await user.clear(printBwInput);
     await user.type(printBwInput, "4");
 
-    const toggle = screen.getByRole("switch", { name: "Voiding a paid sale needs your PIN" });
-    await user.click(toggle);
-
     await user.click(screen.getByRole("button", { name: "Save changes" }));
     await screen.findByRole("status");
 
     const raw = window.localStorage.getItem("tindahan-pos:fees-limits:store-9");
     const saved = JSON.parse(raw as string);
     expect(saved.printBw).toBe(4);
-    expect(saved.voidNeedsPin).toBe(true);
+  });
+
+  // Void-needs-PIN and the cash-out cap are real, server-enforced store
+  // columns (20260903190000/20260903200000), not part of the localStorage
+  // mock -- they go through updateStore() like feeConfig does, and read
+  // their starting value from `store`, not a default.
+  it("saves void-needs-PIN and the cashier cash-out cap through updateStore, sourced from the store", async () => {
+    const user = userEvent.setup();
+    const updateStore = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        user: makeStaffAccount({ storeId: "store-9" }),
+        store: makeStore({ id: "store-9", voidRequiresPin: false, cashierCashOutCap: null }),
+        updateStore,
+      })
+    );
+    renderPage();
+
+    const toggle = screen.getByRole("switch", { name: "Voiding a paid sale needs your PIN" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    await user.click(toggle);
+
+    const capInput = screen.getByLabelText("Cashier cash-out cap") as HTMLInputElement;
+    await user.clear(capInput);
+    await user.type(capInput, "1500");
+
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await screen.findByRole("status");
+
+    expect(updateStore).toHaveBeenCalledWith(
+      expect.objectContaining({ voidRequiresPin: true, cashierCashOutCap: 1500 })
+    );
+  });
+
+  it("submits a 0 cash-out cap as null -- 0 means unlimited, not a P0 cap", async () => {
+    const user = userEvent.setup();
+    const updateStore = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        user: makeStaffAccount({ storeId: "store-9" }),
+        store: makeStore({ id: "store-9", cashierCashOutCap: 1000 }),
+        updateStore,
+      })
+    );
+    renderPage();
+
+    const capInput = screen.getByLabelText("Cashier cash-out cap") as HTMLInputElement;
+    await user.clear(capInput);
+    await user.type(capInput, "0");
+
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await screen.findByRole("status");
+
+    expect(updateStore).toHaveBeenCalledWith(expect.objectContaining({ cashierCashOutCap: null }));
   });
 
   it("discards unsaved edits", async () => {

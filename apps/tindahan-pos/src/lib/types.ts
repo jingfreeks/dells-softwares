@@ -59,6 +59,10 @@ export interface Store {
   invoiceType: string;
   /** Admin-editable: whether a cashier may edit a product's price in Inventory. Enforced server-side (guard_cashier_product_update trigger), not just a UI gate. */
   cashierCanEditPrices: boolean;
+  /** Admin-editable: whether a Supervisor voiding a sale needs an Owner's PIN. Enforced server-side inside void_sale() (20260903190000), not just a UI gate. Owners are always exempt. */
+  voidRequiresPin: boolean;
+  /** Admin-editable: the largest cash-out a Supervisor/Cashier may hand over without an Owner's PIN. null = no cap. Enforced server-side inside checkout_sale() (20260903200000). */
+  cashierCashOutCap: number | null;
 }
 
 export interface Category {
@@ -157,11 +161,17 @@ export interface RefundRecord {
   createdAt: string;
 }
 
+export type ServiceType = "eload" | "cashin" | "cashout" | "print";
+
 export interface ServiceLine {
   id: string;
   label: string;
   amount: number;
   fee: number;
+  /** Which POS service this line came from. Only "cashout" is read server-side (checkout_sale sums cashHandedOver across these lines against stores.cashierCashOutCap) -- every other value is informational. Absent on an old client's cached line, which checkout_sale treats the same as "not a cash-out". */
+  serviceType?: ServiceType;
+  /** Cash-out only: the amount physically handed to the customer, separate from `amount` (the store's fee revenue -- see CashOutServicePanel.tsx). Sent to checkout_sale() purely so the cash-out cap has something to compare against; never added to the sale total itself. */
+  cashHandedOver?: number;
 }
 
 export interface Customer {

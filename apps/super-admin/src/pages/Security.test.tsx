@@ -162,6 +162,10 @@ describe("Security", () => {
           entityId: "a",
           reason: null,
           createdAt: "2026-08-30T02:00:00.000Z",
+          oldData: null,
+          newData: null,
+          ipAddress: "203.0.113.7",
+          userAgent: "Mozilla/5.0",
         },
         {
           id: 2,
@@ -171,6 +175,10 @@ describe("Security", () => {
           entityId: "b",
           reason: null,
           createdAt: "2026-08-29T02:00:00.000Z",
+          oldData: null,
+          newData: null,
+          ipAddress: null,
+          userAgent: null,
         },
       ] as never);
       renderPage();
@@ -178,6 +186,9 @@ describe("Security", () => {
       expect(await screen.findByText("PLATFORM_ADMIN_MFA_VERIFIED")).toBeInTheDocument();
       expect(screen.queryByText("ACCOUNT_DELETION_APPROVED")).not.toBeInTheDocument();
       expect(screen.getByRole("link", { name: "Full audit" })).toHaveAttribute("href", "/audit");
+      // The source address is now projected by platform_audit() and is the
+      // point of an identity event on a security page.
+      expect(screen.getByText("203.0.113.7")).toBeInTheDocument();
     });
   });
 
@@ -185,9 +196,15 @@ describe("Security", () => {
     renderPage();
     await awaitScope("SUPERUSER");
 
-    expect(screen.getByText("The list of platform administrators")).toBeInTheDocument();
+    // The roster is no longer among these: platform_admins() (20260902140000)
+    // returns it, and the dashboard shows it. Listing it here would be the
+    // same fabrication in reverse -- claiming a gap that has been closed.
+    expect(screen.queryByText("The list of platform administrators")).not.toBeInTheDocument();
     expect(screen.getByText("Your other active sessions and devices")).toBeInTheDocument();
     expect(screen.getByText("Database and infrastructure posture")).toBeInTheDocument();
+    // No longer among them: 20260902110000 projects ip_address and
+    // user_agent, so claiming they are unavailable would be a stale gap.
+    expect(screen.queryByText(/IP address and request metadata/i)).not.toBeInTheDocument();
   });
 
   it("asserts no infrastructure posture it cannot observe", async () => {

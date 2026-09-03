@@ -1,7 +1,8 @@
 import { PESO } from "@/lib";
+import type { SaleRecord } from "@/lib/types";
 import { formatDateTime } from "../../lib";
 
-const Saleperitemscreen = (props: { number: string; sale: any }) => {
+const Saleperitemscreen = (props: { number: string; sale: SaleRecord }) => {
   const { number, sale } = props;
   return (
     <div className="tpl-sp" style={{ alignItems: "start" }}>

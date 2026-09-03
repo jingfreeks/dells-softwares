@@ -17,6 +17,7 @@ import {
   ERROR_INVALID_DISCOUNT_VALUE,
   ERROR_INVALID_OVERRIDE_PIN,
   ERROR_OVERRIDE_PIN_LOCKED,
+  ERROR_CASH_OUT_CAP_EXCEEDED,
   ERROR_COULD_NOT_HOLD_SALE,
   ERROR_RESUME_BLOCKED_CART_NOT_EMPTY,
   TEXT_CASHIER_SESSION_EXPIRED,
@@ -108,6 +109,16 @@ export function usePosPage() {
   const [overridePin, setOverridePin] = useState("");
   const [overridePinError, setOverridePinError] = useState<string | null>(null);
   const [overrideSubmitting, setOverrideSubmitting] = useState(false);
+  // A separate PIN gate from the credit-limit one above: this one opens
+  // only after checkout_sale() itself rejects with CASH_OUT_CAP_EXCEEDED
+  // (20260903200000) -- there's no reliable client-side pre-check the way
+  // wouldExceedCreditLimit() is for credit, since the cap is compared
+  // against cash_handed_over summed across this sale's cash-out lines,
+  // which only the server (not this component) sums authoritatively.
+  const [cashOutApprovalOpen, setCashOutApprovalOpen] = useState(false);
+  const [cashOutOverridePin, setCashOutOverridePin] = useState("");
+  const [cashOutOverridePinError, setCashOutOverridePinError] = useState<string | null>(null);
+  const [cashOutOverrideSubmitting, setCashOutOverrideSubmitting] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [activeTab, setActiveTab] = useState<PosTab>("products");
   const [activeCategory, setActiveCategory] = useState<string>("All");
@@ -386,7 +397,21 @@ export function usePosPage() {
   // sale revenue, so that's what the line is worth for reporting. The
   // actual cash handed over comes out of the drawer separately.
   function addCashOutService(label: string, feeRevenue: number, cashHandedOver: number) {
-    setServiceLines((prev) => [...prev, { id: `svc-${Date.now()}`, label, amount: feeRevenue, fee: 0 }]);
+    setServiceLines((prev) => [
+      ...prev,
+      {
+        id: `svc-${Date.now()}`,
+        label,
+        amount: feeRevenue,
+        fee: 0,
+        // Tags this line for checkout_sale()'s cashier_cash_out_cap check
+        // (20260903200000) -- the server sums cashHandedOver across
+        // serviceType "cashout" lines, since amount/fee only ever carry the
+        // (uncapped) fee revenue, never the cash actually handed over.
+        serviceType: "cashout",
+        cashHandedOver,
+      },
+    ]);
     deductFromDrawer(cashHandedOver);
   }
 
@@ -507,11 +532,59 @@ export function usePosPage() {
         // device, so a cashier has no other way to learn why the till stopped
         // taking sales.
         setCheckoutError(TEXT_STORE_SUSPENDED);
+      } else if (message.includes("CASH_OUT_CAP_EXCEEDED")) {
+        // Discovered only from the server's rejection -- see the state
+        // declaration above for why there's no client-side pre-check here.
+        setCashOutOverridePinError(null);
+        setCashOutOverridePin("");
+        setCashOutApprovalOpen(true);
       } else {
         setCheckoutError(message);
       }
     } finally {
       setCheckingOut(false);
+    }
+  }
+
+  function closeCashOutApproval() {
+    setCashOutApprovalOpen(false);
+    setCashOutOverridePin("");
+    setCashOutOverridePinError(null);
+  }
+
+  async function submitCashOutApproval(pin: string) {
+    setCashOutOverrideSubmitting(true);
+    setCashOutOverridePinError(null);
+    try {
+      await runCheckout(pin);
+      closeCashOutApproval();
+    } catch (err) {
+      const message = describePlatformError(err, ERROR_COULD_NOT_COMPLETE_SALE);
+      if (message.includes("EXPIRED_CASHIER_SESSION")) {
+        reportExpiredSession();
+        closeCashOutApproval();
+        setCheckoutError(TEXT_CASHIER_SESSION_EXPIRED);
+        return;
+      }
+      if (message.includes("ORG_WRITES_SUSPENDED")) {
+        closeCashOutApproval();
+        setCheckoutError(TEXT_STORE_SUSPENDED);
+        return;
+      }
+      // A still-over-cap retry (e.g. the owner mis-typed) surfaces the same
+      // way it did the first time, in-dialog, rather than closing it.
+      setCashOutOverridePinError(
+        message.includes("OVERRIDE_PIN_LOCKED")
+          ? ERROR_OVERRIDE_PIN_LOCKED
+          : message.includes("INVALID_OVERRIDE_PIN")
+            ? ERROR_INVALID_OVERRIDE_PIN
+            : message.includes("CASH_OUT_CAP_EXCEEDED")
+              ? ERROR_CASH_OUT_CAP_EXCEEDED
+              : message
+      );
+      setCashOutOverridePin("");
+    } finally {
+      setCashOutOverrideSubmitting(false);
     }
   }
 
@@ -731,6 +804,13 @@ export function usePosPage() {
     closeOwnerApproval,
     payCashInstead,
     submitOwnerApproval,
+    cashOutApprovalOpen,
+    cashOutOverridePin,
+    setCashOutOverridePin,
+    cashOutOverridePinError,
+    cashOutOverrideSubmitting,
+    closeCashOutApproval,
+    submitCashOutApproval,
     effectiveTab,
     focusProductInput,
     packPricingEnabled,

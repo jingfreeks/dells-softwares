@@ -1,12 +1,23 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { useStoreData } from "@/lib";
-import { makeProduct, makeStoreDataValue, makeSupplier } from "../../test/testUtils";
+import { useAuth, useCan, useStoreData } from "@/lib";
+import {
+  makeAuthValue,
+  makeProduct,
+  makeStaffAccount,
+  makeStoreDataValue,
+  makeSupplier,
+} from "../../test/testUtils";
 import { Receiving } from "./Receiving";
 
 vi.mock("@/lib/storeData", () => ({ useStoreData: vi.fn() }));
+vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
+vi.mock("@/lib/permissions", () => ({
+  useCan: vi.fn(),
+  usePermissions: () => ({ permissions: new Set(), loading: false }),
+}));
 
 vi.mock("@/components/BarcodeScanner", () => ({
   BarcodeScanner: ({ onDetected, onClose }: { onDetected: (c: string) => void; onClose: () => void }) => (
@@ -45,6 +56,29 @@ function renderPageWithState(state: unknown) {
 }
 
 describe("Receiving", () => {
+  beforeEach(() => {
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ role: "admin" }) }));
+    vi.mocked(useCan).mockReturnValue(true);
+  });
+
+  it("redirects a cashier away from the receiving page", () => {
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ role: "cashier" }) })
+    );
+    vi.mocked(useCan).mockReturnValue(false);
+    vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ products, suppliers }));
+    render(
+      <MemoryRouter initialEntries={["/inventory/receiving"]}>
+        <Routes>
+          <Route path="/inventory/receiving" element={<Receiving />} />
+          <Route path="/pos" element={<p>POS page</p>} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(screen.getByText("POS page")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save receiving entry" })).not.toBeInTheDocument();
+  });
+
   it("adds a product via search and saves the entry", async () => {
     const user = userEvent.setup();
     const receiveStock = vi.fn().mockResolvedValue(undefined);

@@ -298,7 +298,9 @@ select set_eq(
   $$ select plan_code from public.platform_plans() $$,
   array['FREE', 'BASIC', 'BUSINESS', 'PRO', 'ENTERPRISE'],
   'the console sees every plan, including the one added after this file was '
-  || 'first written'
+  || 'first written, and including FREE and PRO after 20260903110000 retired '
+  || 'them -- platform_plans() reports is_active rather than filtering on it, '
+  || 'because an operator needs to see that a retired plan exists'
 );
 
 select is(

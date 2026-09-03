@@ -1,6 +1,6 @@
 import { priceLabel } from "./plan";
 
-export type StaticPlanCode = "BASIC" | "BUSINESS" | "PRO" | "ENTERPRISE";
+export type StaticPlanCode = "BASIC" | "BUSINESS" | "ENTERPRISE";
 
 export interface StaticPlan {
   code: StaticPlanCode;
@@ -20,11 +20,17 @@ export interface StaticPlan {
  * table. `name` is the landing page's marketing label (Starter/Growth/
  * Business), independent of `code` -- renaming a display label here never
  * needs a matching change in the database, RPCs, or the ?plan=CODE URLs.
+ *
+ * PRO is absent deliberately (#457, 20260903110000). It is retired --
+ * is_active = false -- so platform_set_plan(), platform_plans() and
+ * plan_prices() all refuse it. start_trial() does NOT filter on is_active,
+ * though, so leaving PRO here would have left /register?plan=PRO able to open
+ * a trial on a plan nobody may buy. Removing it from this list is what
+ * actually closes that, not the migration.
  */
 export const STATIC_PLANS: StaticPlan[] = [
   { code: "BASIC", name: "Starter", pricePhp: 299, billingInterval: "MONTHLY" },
   { code: "BUSINESS", name: "Growth", pricePhp: 599, billingInterval: "MONTHLY" },
-  { code: "PRO", name: "Pro", pricePhp: 999, billingInterval: "MONTHLY" },
   { code: "ENTERPRISE", name: "Business", pricePhp: null, billingInterval: "MONTHLY" },
 ];
 

@@ -5,6 +5,39 @@
 
 import type { PaymentType, StoreFeeConfig, VatStatus } from "./types";
 
+/** One persisted X or Z reading. Mirrors Tables["register_readings"]["Row"]. */
+export interface RegisterReadingRow {
+  id: string;
+  store_id: string;
+  kind: "X" | "Z";
+  z_counter: number | null;
+  reset_counter: number;
+  business_date: string;
+  opened_at: string;
+  closed_at: string;
+  grand_total: number;
+  gross_sales: number;
+  net_sales: number;
+  total_discounts: number;
+  vatable_sales: number;
+  vat_amount: number;
+  vat_exempt: number;
+  zero_rated: number;
+  transaction_count: number;
+  voided_count: number;
+  voided_total: number;
+  refund_count: number;
+  refund_total: number;
+  beginning_receipt: string | null;
+  ending_receipt: string | null;
+  payment_breakdown: Json;
+  late_entry_count: number;
+  late_entry_total: number;
+  device_id: string | null;
+  taken_by: string;
+  created_at: string;
+}
+
 export type StaffRole = "admin" | "cashier";
 export type SaleItemType = "product" | "service";
 export type StoreFeeConfigRow = StoreFeeConfig;
@@ -30,6 +63,8 @@ export interface Database {
           vat_rate: number;
           invoice_type: string;
           cashier_can_edit_prices: boolean;
+          void_requires_pin: boolean;
+          cashier_cash_out_cap: number | null;
         };
         Insert: {
           id?: string;
@@ -47,6 +82,8 @@ export interface Database {
           vat_rate?: number;
           invoice_type?: string;
           cashier_can_edit_prices?: boolean;
+          void_requires_pin?: boolean;
+          cashier_cash_out_cap?: number | null;
         };
         Update: {
           id?: string;
@@ -64,6 +101,8 @@ export interface Database {
           vat_rate?: number;
           invoice_type?: string;
           cashier_can_edit_prices?: boolean;
+          void_requires_pin?: boolean;
+          cashier_cash_out_cap?: number | null;
         };
         Relationships: [];
       };
@@ -311,6 +350,93 @@ export interface Database {
           },
           {
             foreignKeyName: "sales_device_id_fkey";
+            columns: ["device_id"];
+            referencedRelation: "devices";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      register_readings: {
+        Row: {
+          id: string;
+          store_id: string;
+          kind: "X" | "Z";
+          z_counter: number | null;
+          reset_counter: number;
+          business_date: string;
+          opened_at: string;
+          closed_at: string;
+          grand_total: number;
+          gross_sales: number;
+          net_sales: number;
+          total_discounts: number;
+          vatable_sales: number;
+          vat_amount: number;
+          vat_exempt: number;
+          zero_rated: number;
+          transaction_count: number;
+          voided_count: number;
+          voided_total: number;
+          refund_count: number;
+          refund_total: number;
+          beginning_receipt: string | null;
+          ending_receipt: string | null;
+          payment_breakdown: Json;
+          late_entry_count: number;
+          late_entry_total: number;
+          device_id: string | null;
+          taken_by: string;
+          created_at: string;
+        };
+        // No client writes this table: RLS grants no INSERT, and
+        // reject_register_reading_mutation() refuses updates and deletes. Both
+        // shapes are written out anyway so the Database map stays well-formed
+        // -- `never` here makes the whole Tables type unresolvable, which
+        // surfaces as unrelated tables inferring `never` elsewhere.
+        Insert: {
+          id?: string;
+          store_id: string;
+          kind: "X" | "Z";
+          z_counter?: number | null;
+          reset_counter?: number;
+          business_date: string;
+          opened_at: string;
+          closed_at?: string;
+          grand_total: number;
+          gross_sales: number;
+          net_sales: number;
+          total_discounts: number;
+          vatable_sales: number;
+          vat_amount: number;
+          vat_exempt: number;
+          zero_rated: number;
+          transaction_count: number;
+          voided_count: number;
+          voided_total: number;
+          refund_count: number;
+          refund_total: number;
+          beginning_receipt?: string | null;
+          ending_receipt?: string | null;
+          payment_breakdown?: Json;
+          late_entry_count?: number;
+          late_entry_total?: number;
+          device_id?: string | null;
+          taken_by: string;
+          created_at?: string;
+        };
+        Update: {
+          beginning_receipt?: string | null;
+          ending_receipt?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "register_readings_store_id_fkey";
+            columns: ["store_id"];
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "register_readings_device_id_fkey";
             columns: ["device_id"];
             referencedRelation: "devices";
             referencedColumns: ["id"];
@@ -1074,7 +1200,7 @@ export interface Database {
       checkout_sale: {
         Args: {
           p_items: { product_id: string; quantity: number }[];
-          p_services?: { label: string; amount: number; fee?: number }[];
+          p_services?: { label: string; amount: number; fee?: number; service_type?: "eload" | "cashin" | "cashout" | "print"; cash_handed_over?: number }[];
           p_customer_id?: string | null;
           p_payment_type?: PaymentType;
           p_reference_no?: string | null;
@@ -1101,6 +1227,7 @@ export interface Database {
         Args: {
           p_sale_id: string;
           p_reason: string;
+          p_override_token?: string | null;
         };
         Returns: undefined;
       };
@@ -1115,6 +1242,28 @@ export interface Database {
           p_action: string;
         };
         Returns: undefined;
+      };
+      take_reading: {
+        Args: {
+          p_kind: "X" | "Z";
+          p_business_date?: string | null;
+        };
+        // Written out rather than referencing
+        // Database["public"]["Tables"]["register_readings"]["Row"]: that is a
+        // self-reference inside the Database type itself, and TypeScript
+        // resolves the whole map to never rather than reporting a cycle --
+        // which shows up as unrelated tables losing their row types.
+        Returns: RegisterReadingRow;
+      };
+      receive_stock: {
+        Args: {
+          p_supplier: string;
+          p_received_on: string;
+          p_lines: Json;
+          p_supplier_id?: string | null;
+          p_dr_number?: string | null;
+        };
+        Returns: string;
       };
       report_reconciliation: {
         Args: {
