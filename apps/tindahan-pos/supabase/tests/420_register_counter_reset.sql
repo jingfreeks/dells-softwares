@@ -36,8 +36,17 @@ insert into auth.users (id, email, raw_user_meta_data) values
 insert into auth.users (id, email) values
   ('6e000000-0000-4000-8000-00000000b002', 'reset.engineer@test.local');
 
+-- Captured into a temp table while still postgres, and read from there.
+-- Looking it up in `stores` would work for the shop's own admin and return
+-- NULL for the platform engineer, who is not staff of this store and cannot
+-- see the row -- which is the whole point of the RLS on it. The first version
+-- of this suite did that and passed NULL into the reset, which the function
+-- correctly refused as "no such store".
+create temporary table t_store as
+  select id from stores where name = 'Reset Store';
+
 create or replace function pg_temp.store() returns uuid language sql as $$
-  select id from stores where name = 'Reset Store'
+  select id from t_store
 $$;
 
 insert into categories (store_id, name) select pg_temp.store(), 'Canned';
