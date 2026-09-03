@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useStoreData, supabase, ERROR_COULD_NOT_TAKE_READING, type SaleRecord } from "@/lib";
+import {
+  useStoreData,
+  supabase,
+  describePlatformError,
+  ERROR_COULD_NOT_TAKE_READING,
+  type SaleRecord,
+} from "@/lib";
 import type { RegisterReadingRow } from "@/lib/database.types";
 import { buildRangeReport, receiptNumberRange, totalDiscounts } from "@/lib/reports";
 import { dateRangeForPreset, toDateInputValue } from "../../lib";
@@ -86,7 +92,7 @@ export function useZReadingReport() {
       if (rpcError) throw rpcError;
       setPersisted((data as RegisterReadingRow | null) ?? null);
     } catch (err) {
-      setTakeError(err instanceof Error ? err.message : ERROR_COULD_NOT_TAKE_READING);
+      setTakeError(describePlatformError(err, ERROR_COULD_NOT_TAKE_READING));
     } finally {
       setTaking(false);
     }

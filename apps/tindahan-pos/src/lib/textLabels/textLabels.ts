@@ -551,6 +551,13 @@ export const TEXT_Z_PROVISIONAL =
 export const TEXT_Z_FROM_RECORD =
   "Read from the closing record taken at the time, not recomputed.";
 export const ERROR_COULD_NOT_TAKE_READING = "Could not take the reading.";
+export const LABEL_X_READING = "Mid-shift (X-reading)";
+export const TEXT_X_READING_DESCRIPTION =
+  "A snapshot of the register right now. It does not close the day, does not take a Z-counter, and can be taken as often as you like.";
+export const BUTTON_TAKE_X_READING = "Take X-reading";
+export const TEXT_X_READING_EMPTY = "No X-readings taken for this business date.";
+export const COLUMN_TAKEN_AT = "Taken";
+export const COLUMN_NET_SALES = "Net sales";
 export const LABEL_SALES_LIST = "Sales";
 export const BUTTON_EXPORT_CSV = "Export CSV";
 export const TEXT_NO_SALES_IN_RANGE = "No sales in this period.";

@@ -24,6 +24,7 @@ import {
   RefundSummaryCard,
   PaymentBreakdownTable,
   ZReadingCard,
+  XReadingCard,
 } from "./component";
 import { useReportsPage } from "./hooks";
 import "../authTheme.css";
@@ -145,6 +146,7 @@ export function Reports() {
             onReprintSale={onReprintSale}
             onRefundSale={canRefundSale ? onRefundSale : undefined}
           />
+          <XReadingCard staff={cashiers} />
           <ZReadingCard
             storeName={store?.name ?? ""}
             storeAddress={store?.address ?? null}
