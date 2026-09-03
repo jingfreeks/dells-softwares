@@ -152,5 +152,59 @@ select ok(
   'nor service_role -- no Edge Function in this app calls it'
 );
 
+-- -----------------------------------------------------------------------------
+-- A trial is only ever for a plan we sell (20260903170000)
+--
+-- start_trial() used to hardcode ('BUSINESS', 'PRO') and look the plan up
+-- without checking is_active, so a store admin could take thirty free days of
+-- PRO after it was retired -- and PRO carries bir_receipts, multi_register and
+-- transfers, none of which BUSINESS has. The retired tier was the most generous
+-- thing on offer.
+-- -----------------------------------------------------------------------------
+reset role;
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('7e000000-0000-4000-8000-00000000c001', 'trial.gate@test.local',
+   '{"store_name":"Trial Gate Store","owner_name":"Gate Owner"}');
+
+create temporary table t_gate as
+  select id from stores where name = 'Trial Gate Store';
+grant select on t_gate to authenticated;
+
+set local role authenticated;
+select set_config('request.jwt.claims',
+  json_build_object('sub', '7e000000-0000-4000-8000-00000000c001',
+                    'role', 'authenticated')::text, true);
+
+select throws_ok(
+  $$ select public.start_trial('PRO') $$,
+  'P0001', 'INVALID_TRIAL_PLAN',
+  'a retired plan cannot be trialled, however generous it is'
+);
+
+select throws_ok(
+  $$ select public.start_trial('ENTERPRISE') $$,
+  'P0001', 'INVALID_TRIAL_PLAN',
+  'nor a plan with no price -- ENTERPRISE is contact-us, not self-serve'
+);
+
+select throws_ok(
+  $$ select public.start_trial('BASIC') $$,
+  'P0001', 'INVALID_TRIAL_PLAN',
+  'nor the tier the store is already on -- a trial is an upgrade'
+);
+
+select lives_ok(
+  $$ select public.start_trial('BUSINESS') $$,
+  'and the one trial the product actually offers still works'
+);
+
+select is(
+  (select p.code from core.organization_subscriptions s
+     join core.subscription_plans p on p.id = s.plan_id
+    where s.organization_id = (select id from t_gate)),
+  'BUSINESS',
+  'the store is on the trialled plan'
+);
+
 select * from finish();
 rollback;
