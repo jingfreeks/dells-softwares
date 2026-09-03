@@ -1,0 +1,1 @@
+export { XReadingCard } from "./XReadingCard";
