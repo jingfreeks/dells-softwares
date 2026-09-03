@@ -83,7 +83,11 @@ select ok(
 );
 
 select throws_ok(
-  $$ select public.start_trial('ENTERPRISE') $$,
+  -- Still PRO, retired though it is: start_trial() does not filter on
+  -- is_active (see 20260903110000), so the call reaches the already-used
+  -- check, which is the thing under test. ENTERPRISE fails earlier for its
+  -- own reasons and would assert something else by accident.
+  $$ select public.start_trial('PRO') $$,
   'TRIAL_ALREADY_USED',
   'one trial ever per store -- trying again, even for a different plan, is rejected'
 );
