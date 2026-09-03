@@ -45,6 +45,10 @@ insert into auth.users (id, email) values
 create temporary table t_store as
   select id from stores where name = 'Reset Store';
 
+-- The temp table belongs to postgres, and the assertions below run as
+-- `authenticated`, which otherwise cannot read it.
+grant select on t_store to authenticated;
+
 create or replace function pg_temp.store() returns uuid language sql as $$
   select id from t_store
 $$;
