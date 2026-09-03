@@ -399,6 +399,65 @@ export async function setPlan(orgId: string, planCode: string, reason: string): 
   if (error) throw new Error(error.message);
 }
 
+/** One recorded reset of a register's accumulating totals. */
+export interface RegisterReset {
+  id: string;
+  deviceId: string | null;
+  resetCounter: number;
+  reason: string;
+  authorityReference: string | null;
+  createdAt: string;
+}
+
+export async function listRegisterResets(orgId: string): Promise<RegisterReset[]> {
+  const { data, error } = await supabase
+    .from("register_resets")
+    .select("id, device_id, reset_counter, reason, authority_reference, created_at")
+    .eq("store_id", orgId)
+    .order("reset_counter", { ascending: false });
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as unknown as {
+    id: string;
+    device_id: string | null;
+    reset_counter: number;
+    reason: string;
+    authority_reference: string | null;
+    created_at: string;
+  }[];
+  return rows.map((r) => ({
+    id: r.id,
+    deviceId: r.device_id,
+    resetCounter: Number(r.reset_counter),
+    reason: r.reason,
+    authorityReference: r.authority_reference,
+    createdAt: r.created_at,
+  }));
+}
+
+/**
+ * Restarts a register's accumulating totals. ENGINEER scope, MFA-verified, and
+ * a reason is mandatory -- the reset counter is what an examiner uses to detect
+ * a register that quietly began counting again from zero, so an unexplained
+ * reset is the thing it exists to expose.
+ *
+ * There is no undo. register_resets is append-only; a mistaken reset is
+ * corrected by recording another, not by deleting this one.
+ */
+export async function resetRegisterCounter(
+  orgId: string,
+  reason: string,
+  authorityReference: string | null,
+  deviceId: string | null = null
+): Promise<void> {
+  const { error } = await supabase.rpc("platform_reset_register_counter", {
+    p_store_id: orgId,
+    p_device_id: deviceId,
+    p_reason: reason,
+    p_authority_reference: authorityReference || null,
+  });
+  if (error) throw new Error(error.message);
+}
+
 export async function listOrganizationLimits(orgId: string): Promise<OrganizationLimit[]> {
   const { data, error } = await supabase.rpc("platform_organization_limits", { p_org: orgId });
   if (error) throw new Error(error.message);

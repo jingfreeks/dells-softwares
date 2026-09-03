@@ -10,6 +10,8 @@ import {
   listOrganizationLimits,
   listOrganizationStaff,
   listOrganizationAudit,
+  listRegisterResets,
+  resetRegisterCounter,
   listPlans,
   setSubscriptionStatus,
   usePlatform,
@@ -26,6 +28,8 @@ vi.mock("../lib/platform", async (importOriginal) => {
     listOrganizationLimits: vi.fn(),
     listOrganizationStaff: vi.fn(),
     listOrganizationAudit: vi.fn(),
+    listRegisterResets: vi.fn(),
+    resetRegisterCounter: vi.fn(),
     listPlans: vi.fn(),
     setSubscriptionStatus: vi.fn(),
     setPlan: vi.fn(),
@@ -71,6 +75,8 @@ beforeEach(() => {
   vi.mocked(listPlans).mockResolvedValue([] as never);
   vi.mocked(listOrganizationStaff).mockResolvedValue([] as never);
   vi.mocked(listOrganizationAudit).mockResolvedValue([] as never);
+  vi.mocked(listRegisterResets).mockResolvedValue([]);
+  vi.mocked(resetRegisterCounter).mockResolvedValue(undefined);
   mockedStatus.mockResolvedValue(undefined as never);
 });
 
@@ -311,5 +317,61 @@ describe("OrganizationDetail — sections", () => {
 
     expect(screen.getByText("No staff records for this organization.")).toBeInTheDocument();
   });
-});
 
+  // The reset counter is what an examiner uses to detect a register that
+  // quietly started counting again from zero, so reaching it is deliberately
+  // narrow: ENGINEER scope, a reason, and a confirmation step.
+  describe("resetting a register's accumulating totals", () => {
+    it("is not offered to a scope that cannot use it", async () => {
+      mockedUsePlatform.mockReturnValue({ admin: { scope: "SUPPORT" } } as never);
+      renderPage();
+      await screen.findByText(/Aling Nena/);
+
+      expect(screen.queryByText("Register accumulating totals")).not.toBeInTheDocument();
+      expect(vi.mocked(listRegisterResets)).not.toHaveBeenCalled();
+    });
+
+    it("will not submit without a reason", async () => {
+      mockedUsePlatform.mockReturnValue({ admin: { scope: "ENGINEER" } } as never);
+      renderPage();
+      await screen.findByText("Register accumulating totals");
+
+      expect(screen.getByRole("button", { name: "Reset accumulating totals" })).toBeDisabled();
+    });
+
+    it("asks for confirmation before resetting, and sends the reason", async () => {
+      const user = userEvent.setup();
+      mockedUsePlatform.mockReturnValue({ admin: { scope: "ENGINEER" } } as never);
+      renderPage();
+      await screen.findByText("Register accumulating totals");
+
+      await user.type(screen.getByPlaceholderText("Why this register is being reset"), "tablet replaced");
+      await user.click(screen.getByRole("button", { name: "Reset accumulating totals" }));
+
+      // Nothing has happened yet -- the first press only asks.
+      expect(vi.mocked(resetRegisterCounter)).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole("button", { name: "Yes, reset" }));
+
+      expect(vi.mocked(resetRegisterCounter)).toHaveBeenCalledWith(
+        "org-1",
+        "tablet replaced",
+        null
+      );
+    });
+
+    it("surfaces a refusal rather than appearing to succeed", async () => {
+      const user = userEvent.setup();
+      mockedUsePlatform.mockReturnValue({ admin: { scope: "ENGINEER" } } as never);
+      vi.mocked(resetRegisterCounter).mockRejectedValue(new Error("UNAUTHORIZED_ACTION"));
+      renderPage();
+      await screen.findByText("Register accumulating totals");
+
+      await user.type(screen.getByPlaceholderText("Why this register is being reset"), "no mfa");
+      await user.click(screen.getByRole("button", { name: "Reset accumulating totals" }));
+      await user.click(screen.getByRole("button", { name: "Yes, reset" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("UNAUTHORIZED_ACTION");
+    });
+  });
+});
