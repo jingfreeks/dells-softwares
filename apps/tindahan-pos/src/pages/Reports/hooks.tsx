@@ -15,6 +15,8 @@ import {
   buildDebtAgingSummary,
   ERROR_COULD_NOT_VOID_SALE,
   ERROR_COULD_NOT_REFUND_SALE,
+  ERROR_INVALID_OVERRIDE_PIN,
+  ERROR_OVERRIDE_PIN_LOCKED,
   type SaleRecord,
   type RefundRecord,
 } from "@/lib";
@@ -67,6 +69,14 @@ export function useReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [voidError, setVoidError] = useState<string | null>(null);
+  // Opened when void_sale() rejects with VOID_PIN_REQUIRED
+  // (20260903190000, stores.void_requires_pin) -- the reason has already
+  // been collected by SalesTable's ConfirmDialog by the time this fires,
+  // so it's held here rather than re-asked for.
+  const [voidPinApproval, setVoidPinApproval] = useState<{ sale: SaleRecord; reason: string } | null>(null);
+  const [voidOverridePin, setVoidOverridePin] = useState("");
+  const [voidOverridePinError, setVoidOverridePinError] = useState<string | null>(null);
+  const [voidOverrideSubmitting, setVoidOverrideSubmitting] = useState(false);
   const [reprintingSale, setReprintingSale] = useState<SaleRecord | null>(null);
   const receiptSettings = useMemo(
     () => (store ? loadReceiptSettingsMock(store.id) : DEFAULT_RECEIPT_SETTINGS_MOCK),
@@ -201,8 +211,55 @@ export function useReportsPage() {
         )
       );
     } catch (err) {
-      setVoidError(describePlatformError(err, ERROR_COULD_NOT_VOID_SALE));
+      const message = describePlatformError(err, ERROR_COULD_NOT_VOID_SALE);
+      if (message.includes("VOID_PIN_REQUIRED")) {
+        // Not a failure the admin needs to see as an error -- SalesTable's
+        // reason dialog closes normally (this resolves, it doesn't throw)
+        // and the PIN dialog below takes over with the reason already in
+        // hand.
+        setVoidOverridePin("");
+        setVoidOverridePinError(null);
+        setVoidPinApproval({ sale, reason });
+        return;
+      }
+      setVoidError(message);
       throw err;
+    }
+  }
+
+  function closeVoidPinApproval() {
+    setVoidPinApproval(null);
+    setVoidOverridePin("");
+    setVoidOverridePinError(null);
+  }
+
+  async function submitVoidPinApproval(pin: string) {
+    if (!voidPinApproval) return;
+    const { sale, reason } = voidPinApproval;
+    setVoidOverrideSubmitting(true);
+    setVoidOverridePinError(null);
+    try {
+      await voidSale(sale, reason, pin);
+      setSales((prev) =>
+        prev.map((s) =>
+          s.id === sale.id
+            ? { ...s, status: "voided", voidedAt: new Date().toISOString(), voidReason: reason }
+            : s
+        )
+      );
+      closeVoidPinApproval();
+    } catch (err) {
+      const message = describePlatformError(err, ERROR_COULD_NOT_VOID_SALE);
+      setVoidOverridePinError(
+        message.includes("OVERRIDE_PIN_LOCKED")
+          ? ERROR_OVERRIDE_PIN_LOCKED
+          : message.includes("INVALID_OVERRIDE_PIN")
+            ? ERROR_INVALID_OVERRIDE_PIN
+            : message
+      );
+      setVoidOverridePin("");
+    } finally {
+      setVoidOverrideSubmitting(false);
     }
   }
 
@@ -265,6 +322,13 @@ export function useReportsPage() {
     thresholdDays,
     onVoidSale: handleVoidSale,
     voidError,
+    voidPinApproval,
+    voidOverridePin,
+    setVoidOverridePin,
+    voidOverridePinError,
+    voidOverrideSubmitting,
+    closeVoidPinApproval,
+    submitVoidPinApproval,
     store,
     receiptSettings,
     reprintingSale,

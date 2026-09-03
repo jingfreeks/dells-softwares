@@ -8,6 +8,10 @@ import {
   setModule,
   listDeletionRequests,
   denyDeletionRequest,
+  listPlatformAdmins,
+  listOrganizationStaff,
+  listOrganizationAudit,
+  listPlatformAudit,
   type OrganizationFeature,
   type Plan,
 } from "./platform";
@@ -269,5 +273,188 @@ describe("planPriceLabel", () => {
 
   it("does not crash on a billing interval it has not seen", () => {
     expect(planPriceLabel(plan({ pricePhp: 100, billingInterval: "WEEKLY" }))).toBe("₱100/month");
+  });
+});
+
+// -----------------------------------------------------------------------------
+// Mapping for the RPCs added while closing the four Console designs.
+//
+// These exist because a mapping mistake is invisible: the field simply reads
+// undefined and the UI renders a blank. The DeletionRequests fixture carried
+// `requestedByEmail` against a `requestedEmail` field for weeks without a
+// single test failing, because nothing asserted the mapped shape.
+// -----------------------------------------------------------------------------
+
+describe("listPlatformAdmins", () => {
+  beforeEach(() => rpc.mockReset());
+
+  it("maps the roster row and coerces mfa_fresh to a boolean", async () => {
+    rpc.mockResolvedValue({
+      data: [{ email: "eng@example.test", scope: "ENGINEER", status: "ACTIVE", mfa_fresh: true }],
+      error: null,
+    });
+
+    const rows = await listPlatformAdmins();
+
+    expect(rpc).toHaveBeenCalledWith("platform_admins", undefined);
+    expect(rows).toEqual([
+      { email: "eng@example.test", scope: "ENGINEER", status: "ACTIVE", mfaFresh: true },
+    ]);
+  });
+
+  it("reads a null mfa_fresh as not fresh rather than leaking null into the UI", async () => {
+    // The column is `mfa_verified_at > now() - interval '8 hours'`, which is
+    // null when the admin has never verified. Null is not "fresh".
+    rpc.mockResolvedValue({
+      data: [{ email: "n@example.test", scope: "SUPPORT", status: "ACTIVE", mfa_fresh: null }],
+      error: null,
+    });
+
+    expect((await listPlatformAdmins())[0].mfaFresh).toBe(false);
+  });
+
+  it("throws when the RPC reports an error", async () => {
+    rpc.mockResolvedValue({ data: null, error: { message: "UNAUTHORIZED_ACTION" } });
+    await expect(listPlatformAdmins()).rejects.toThrow("UNAUTHORIZED_ACTION");
+  });
+});
+
+describe("listOrganizationStaff", () => {
+  beforeEach(() => rpc.mockReset());
+
+  it("maps both roles, which are different things", async () => {
+    // auth_role is the coarse enum; rbac_role decides permissions. Swapping
+    // them in the mapping would be invisible and badly misleading.
+    rpc.mockResolvedValue({
+      data: [
+        {
+          staff_id: "s1",
+          name: "Nena",
+          email: "nena@example.test",
+          auth_role: "cashier",
+          rbac_role: "SUPERVISOR",
+          active: true,
+          pin_locked: false,
+          created_at: "2026-08-01T00:00:00Z",
+        },
+      ],
+      error: null,
+    });
+
+    const rows = await listOrganizationStaff("org-1");
+
+    expect(rpc).toHaveBeenCalledWith("platform_organization_staff", { p_org: "org-1" });
+    expect(rows[0].authRole).toBe("cashier");
+    expect(rows[0].rbacRole).toBe("SUPERVISOR");
+    expect(rows[0].pinLocked).toBe(false);
+  });
+
+  it("carries a staff member with no RBAC assignment as null, not as a role", async () => {
+    rpc.mockResolvedValue({
+      data: [
+        {
+          staff_id: "s2",
+          name: "Unassigned",
+          email: null,
+          auth_role: "cashier",
+          rbac_role: null,
+          active: true,
+          pin_locked: false,
+          created_at: "2026-08-01T00:00:00Z",
+        },
+      ],
+      error: null,
+    });
+
+    expect((await listOrganizationStaff("org-1"))[0].rbacRole).toBeNull();
+  });
+});
+
+describe("listOrganizationAudit", () => {
+  beforeEach(() => rpc.mockReset());
+
+  it("passes the organization and limit through, and maps the detail columns", async () => {
+    rpc.mockResolvedValue({
+      data: [
+        {
+          id: 7,
+          actor_email: "eng@example.test",
+          action: "PLATFORM_ENABLE_MODULE",
+          entity_type: "OrganizationModule",
+          entity_id: "org-1",
+          reason: "paid upgrade",
+          created_at: "2026-08-30T02:00:00Z",
+          old_data: { enabled: false },
+          new_data: { enabled: true },
+          ip_address: "203.0.113.7",
+          user_agent: "Mozilla/5.0",
+        },
+      ],
+      error: null,
+    });
+
+    const rows = await listOrganizationAudit("org-1", 50);
+
+    expect(rpc).toHaveBeenCalledWith("platform_organization_audit", { p_org: "org-1", p_limit: 50 });
+    expect(rows[0].oldData).toEqual({ enabled: false });
+    expect(rows[0].newData).toEqual({ enabled: true });
+    expect(rows[0].ipAddress).toBe("203.0.113.7");
+    expect(rows[0].userAgent).toBe("Mozilla/5.0");
+  });
+
+  it("maps absent detail columns to null rather than undefined", async () => {
+    // The panel branches on truthiness; undefined would work by accident and
+    // break the moment anything compares against null.
+    rpc.mockResolvedValue({
+      data: [
+        {
+          id: 8,
+          actor_email: null,
+          action: "PLATFORM_SET_PLAN",
+          entity_type: "OrganizationSubscription",
+          entity_id: "org-1",
+          reason: null,
+          created_at: "2026-08-30T02:00:00Z",
+        },
+      ],
+      error: null,
+    });
+
+    const row = (await listOrganizationAudit("org-1"))[0];
+    expect(row.oldData).toBeNull();
+    expect(row.newData).toBeNull();
+    expect(row.ipAddress).toBeNull();
+    expect(row.userAgent).toBeNull();
+  });
+});
+
+describe("listPlatformAudit", () => {
+  beforeEach(() => rpc.mockReset());
+
+  it("maps the detail columns 20260902110000 added", async () => {
+    rpc.mockResolvedValue({
+      data: [
+        {
+          id: 1,
+          actor_email: "a@example.test",
+          action: "PLATFORM_ADMIN_GRANTED",
+          entity_type: "PlatformAdmin",
+          entity_id: null,
+          reason: null,
+          created_at: "2026-08-30T02:00:00Z",
+          old_data: null,
+          new_data: { scope: "ENGINEER" },
+          ip_address: "198.51.100.4",
+          user_agent: "curl/8",
+        },
+      ],
+      error: null,
+    });
+
+    const row = (await listPlatformAudit(10))[0];
+
+    expect(rpc).toHaveBeenCalledWith("platform_audit", { p_limit: 10 });
+    expect(row.newData).toEqual({ scope: "ENGINEER" });
+    expect(row.ipAddress).toBe("198.51.100.4");
   });
 });

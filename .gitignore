@@ -43,3 +43,9 @@ coverage/
 # public, and the documents carry business identifiers, contacts and
 # screenshots of real data.
 /docs/
+
+# Security review documents — kept private while findings are open.
+# The repository is public; these name live, unfixed weaknesses.
+/apps/tindahan-pos/CODEBASE_AUDIT_REPORT.md
+/apps/tindahan-pos/AUDIT-REMEDIATION-PLAN.md
+/apps/tindahan-pos/AUDIT-RETEST.md

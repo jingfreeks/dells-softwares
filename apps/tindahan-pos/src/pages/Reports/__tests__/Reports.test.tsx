@@ -22,18 +22,30 @@ const order = vi.fn().mockResolvedValue({
 // RefundModal's own "how much of this sale has already been refunded?"
 // query uses .select().eq() instead of .order() — same chain object
 // supports both so one shared mock covers staff/devices and refund_items.
-const eq = vi.fn().mockResolvedValue({ data: [], error: null });
-// useReportsPage's own refunds-in-range fetch chains .select().gte().lte(),
-// optionally followed by .eq() when a cashier filter is set — an awaitable
-// object that also exposes .eq() covers both shapes.
-function makeAwaitableQuery(): Promise<{ data: unknown[]; error: null }> & { eq: typeof eq } {
-  const result = Promise.resolve({ data: [], error: null }) as unknown as Promise<{
-    data: unknown[];
-    error: null;
-  }> & { eq: typeof eq };
-  result.eq = eq;
+// Every builder step returns the same awaitable object, so any chain shape
+// resolves: useReportsPage chains .select().gte().lte() with an optional
+// .eq(), and the Z card's closing-record lookup chains
+// .select().eq().eq().order().limit(). A mock that only supports the chains
+// that existed when it was written turns a new query into an unhandled
+// rejection rather than a test failure, which is how this one hid.
+type QueryResult = { data: unknown[]; error: null };
+interface Chainable extends Promise<QueryResult> {
+  eq: () => Chainable;
+  order: () => Chainable;
+  limit: () => Chainable;
+  gte: () => Chainable;
+  lte: () => Chainable;
+}
+function makeAwaitableQuery(): Chainable {
+  const result = Promise.resolve({ data: [], error: null }) as unknown as Chainable;
+  result.eq = () => result;
+  result.order = () => result;
+  result.limit = () => result;
+  result.gte = () => result;
+  result.lte = () => result;
   return result;
 }
+const eq = vi.fn(() => makeAwaitableQuery());
 const lte = vi.fn(() => makeAwaitableQuery());
 const gte = vi.fn(() => ({ lte }));
 const select = vi.fn(() => ({ order, eq, gte }));
@@ -64,7 +76,7 @@ describe("Reports", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue());
     vi.mocked(useCan).mockReturnValue(true);
     order.mockClear();
-    eq.mockReset().mockResolvedValue({ data: [], error: null });
+    eq.mockReset().mockImplementation(() => makeAwaitableQuery());
     rpc.mockClear();
     rpc.mockResolvedValue({ data: null, error: null });
     order.mockResolvedValue({
@@ -284,6 +296,31 @@ describe("Reports", () => {
       await waitFor(() => expect(voidSale).toHaveBeenCalledWith(sale, "Wrong quantity entered"));
       expect(await screen.findByText("Voided")).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: "Void" })).not.toBeInTheDocument();
+    });
+
+    // void_requires_pin (20260903190000) is enforced inside void_sale(), so the
+    // client learns about it by being refused. The reason has already been
+    // collected by then, so the PIN dialog takes over holding it rather than
+    // asking again -- and the refusal must NOT surface as an error, or the
+    // admin sees a failure for something that is about to succeed.
+    it("opens the owner-PIN dialog when the void is refused for want of a PIN", async () => {
+      const user = userEvent.setup();
+      const sale = makeSaleRecord({ id: "s1" });
+      const fetchSalesInRange = vi.fn().mockResolvedValue([sale]);
+      const voidSale = vi.fn().mockRejectedValue(new Error("VOID_PIN_REQUIRED"));
+      vi.mocked(useStoreData).mockReturnValue(
+        makeStoreDataValue({ products: [], fetchSalesInRange, voidSale })
+      );
+
+      renderPage();
+      await waitFor(() => expect(fetchSalesInRange).toHaveBeenCalled());
+
+      await user.click(await screen.findByRole("button", { name: "Void" }));
+      await user.type(screen.getByLabelText("Reason for voiding"), "Wrong quantity entered");
+      await user.click(screen.getAllByRole("button", { name: "Void" }).at(-1)!);
+
+      expect(await screen.findByRole("dialog")).toBeInTheDocument();
+      expect(screen.queryByText("VOID_PIN_REQUIRED")).not.toBeInTheDocument();
     });
 
     it("disables the confirm button until a reason is typed", async () => {

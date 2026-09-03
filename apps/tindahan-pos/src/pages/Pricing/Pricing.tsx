@@ -2,7 +2,7 @@ import { usePricingPage } from "./hooks";
 import { PlanCard } from "./component/PlanCard";
 import "@/pages/authTheme.css";
 
-const TRIALABLE_CODES = new Set(["BUSINESS", "PRO"]);
+const TRIALABLE_CODES = new Set(["BUSINESS"]);
 
 /** Upgrade/Pricing (approved design screen 52). */
 export function Pricing() {

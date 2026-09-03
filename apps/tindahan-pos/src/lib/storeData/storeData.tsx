@@ -16,10 +16,36 @@ import type {
   SaleRecord,
   ServiceLine,
   Supplier,
-  SupplierPaymentTerms,
-  VatStatus,
 } from "@/lib/types";
 import { StoreDataContext, type AddSupplierInput, type CheckoutPayment, type ReceivingEntry } from "./storeDataContext";
+import { listRecentSales, listSalesInRange } from "@/lib/sales";
+import {
+  createCategory,
+  deleteCategory,
+  mergeCategories,
+  renameCategory as renameCategoryRecord,
+} from "@/lib/categories";
+import {
+  RECEIVING_ENTRY_SELECT,
+  listReceivingHistory,
+  mapReceivingEntryRow,
+  submitReceiving,
+} from "@/lib/inventory";
+import {
+  createCustomer,
+  listCreditPayments,
+  listRecentCreditPayments,
+  recordCreditPaymentFor,
+} from "@/lib/customers";
+import {
+  SUPPLIER_SELECT,
+  createSupplier,
+  deactivateSupplierRecord,
+  findSupplierByScanCode as findSupplierByScanCodeQuery,
+  mapSupplierRow,
+  markSupplierEntriesPaid,
+  updateSupplierRecord,
+} from "@/lib/suppliers";
 import { loadCachedStoreData, saveCachedStoreData } from "./storeDataCache";
 
 function mapProductRow(row: {
@@ -53,67 +79,6 @@ function mapProductRow(row: {
   };
 }
 
-const SUPPLIER_SELECT =
-  "id, name, contact_person, phone, address, scan_code, payment_terms, active, usual_delivery_days, supplier_categories(category_id)";
-
-function mapSupplierRow(row: {
-  id: string;
-  name: string;
-  contact_person: string | null;
-  phone: string | null;
-  address: string | null;
-  scan_code: string;
-  payment_terms: string;
-  active: boolean;
-  usual_delivery_days: number[];
-  supplier_categories: { category_id: string }[] | null;
-}): Supplier {
-  return {
-    id: row.id,
-    name: row.name,
-    contactPerson: row.contact_person,
-    phone: row.phone,
-    address: row.address,
-    scanCode: row.scan_code,
-    paymentTerms: row.payment_terms as SupplierPaymentTerms,
-    active: row.active,
-    usualDeliveryDays: row.usual_delivery_days,
-    categoryIds: (row.supplier_categories ?? []).map((c) => c.category_id),
-  };
-}
-
-const RECEIVING_ENTRY_SELECT =
-  "id, supplier, supplier_id, dr_number, paid, paid_at, received_on, receiving_lines(product_id, product_name, quantity, cost_each)";
-
-function mapReceivingEntryRow(row: {
-  id: string;
-  supplier: string;
-  supplier_id: string | null;
-  dr_number: string | null;
-  paid: boolean;
-  paid_at: string | null;
-  received_on: string;
-  receiving_lines:
-    | { product_id: string | null; product_name: string; quantity: number; cost_each: number }[]
-    | null;
-}): ReceivingEntry {
-  return {
-    id: row.id,
-    date: row.received_on,
-    supplier: row.supplier,
-    supplierId: row.supplier_id,
-    drNumber: row.dr_number,
-    paid: row.paid,
-    paidAt: row.paid_at,
-    lines: (row.receiving_lines ?? []).map((line) => ({
-      productId: line.product_id ?? "",
-      productName: line.product_name,
-      quantity: line.quantity,
-      costEach: line.cost_each,
-    })),
-  };
-}
-
 function friendlyProductError(err: { code?: string; message: string }): Error {
   if (err.code === "23505") {
     return new Error("That barcode is already used by another product.");
@@ -125,90 +90,6 @@ function friendlyProductError(err: { code?: string; message: string }): Error {
     return new Error("You can only change the price for this product.");
   }
   return new Error(err.message);
-}
-
-const SALE_SELECT =
-  "id, created_at, occurred_at, total, customer_id, payment_type, reference_no, receipt_number, status, voided_at, void_reason, vat_status, vat_rate, vatable_sales, vat_amount, vat_exempt_sales, zero_rated_sales, device_id, discount_type, discount_value, discount_amount, staff:cashier_id(id, name), voided_by_staff:voided_by(id, name), device:device_id(id, name), sale_items(id, product_id, name, quantity, price, item_type, fee, line_total)";
-
-function mapSaleRow(row: {
-  id: string;
-  created_at: string;
-  occurred_at: string | null;
-  total: number;
-  customer_id: string | null;
-  payment_type: SaleRecord["paymentType"];
-  reference_no: string | null;
-  receipt_number: string | null;
-  status: SaleRecord["status"];
-  voided_at: string | null;
-  void_reason: string | null;
-  vat_status: VatStatus | null;
-  vat_rate: number | null;
-  vatable_sales: number;
-  vat_amount: number;
-  vat_exempt_sales: number;
-  zero_rated_sales: number;
-  discount_type: SaleRecord["discountType"];
-  discount_value: number | null;
-  discount_amount: number;
-  staff: { id: string; name: string } | { id: string; name: string }[] | null;
-  voided_by_staff: { id: string; name: string } | { id: string; name: string }[] | null;
-  device: { id: string; name: string } | { id: string; name: string }[] | null;
-  sale_items:
-    | {
-        id: string;
-        product_id: string | null;
-        name: string;
-        quantity: number;
-        price: number;
-        item_type: "product" | "service";
-        fee: number;
-        line_total: number;
-      }[]
-    | null;
-}): SaleRecord {
-  const staff = Array.isArray(row.staff) ? row.staff[0] : row.staff;
-  const voidedByStaff = Array.isArray(row.voided_by_staff) ? row.voided_by_staff[0] : row.voided_by_staff;
-  const device = Array.isArray(row.device) ? row.device[0] : row.device;
-  return {
-    id: row.id,
-    // occurred_at (set only for a sale that was queued offline and synced
-    // later) reflects when the sale actually happened, not when it landed
-    // in Postgres — falls back to created_at for a normal live sale.
-    timestamp: row.occurred_at ?? row.created_at,
-    total: row.total,
-    cashierName: staff?.name ?? "Unknown",
-    cashierId: staff?.id ?? null,
-    paymentType: row.payment_type,
-    customerId: row.customer_id,
-    referenceNo: row.reference_no,
-    receiptNumber: row.receipt_number,
-    status: row.status,
-    voidedAt: row.voided_at,
-    voidedByName: voidedByStaff?.name ?? null,
-    voidReason: row.void_reason,
-    vatStatus: row.vat_status,
-    vatRate: row.vat_rate,
-    vatableSales: row.vatable_sales,
-    vatAmount: row.vat_amount,
-    vatExemptSales: row.vat_exempt_sales,
-    zeroRatedSales: row.zero_rated_sales,
-    deviceId: device?.id ?? null,
-    deviceName: device?.name ?? null,
-    discountType: row.discount_type,
-    discountValue: row.discount_value,
-    discountAmount: row.discount_amount,
-    items: (row.sale_items ?? []).map((item) => ({
-      id: item.id,
-      productId: item.product_id ?? "",
-      name: item.name,
-      quantity: item.quantity,
-      price: item.price,
-      itemType: item.item_type,
-      fee: item.fee,
-      lineTotal: item.line_total,
-    })),
-  };
 }
 
 export function StoreDataProvider({ children }: { children: ReactNode }) {
@@ -243,43 +124,23 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   // Sales history is admin-only at the RLS level — a cashier's query below
   // simply returns no rows rather than erroring.
   const fetchSales = useCallback(async () => {
-    const { data, error: err } = await supabase
-      .from("sales")
-      .select(SALE_SELECT)
-      .order("created_at", { ascending: false })
-      .limit(100);
-    if (err) throw err;
-    setSales((data ?? []).map(mapSaleRow));
+    setSales(await listRecentSales());
   }, []);
 
   // Server-side date-range + optional cashier filter for the Reports page —
   // deliberately independent of `sales`/fetchSales (which stays capped at
   // 100 rows for the Dashboard) so a report over a full month isn't silently
   // truncated.
+  // Kept as a passthrough rather than exposing the service directly: consumers
+  // take this from the context, and the 1,000-row cap is a decision about what
+  // the Reports page should ask for, not a property of the query.
   const fetchSalesInRange = useCallback(
     async (params: {
       startDate: string;
       endDate: string;
       cashierId?: string | null;
       deviceId?: string | null;
-    }) => {
-      let query = supabase
-        .from("sales")
-        .select(SALE_SELECT)
-        .gte("created_at", params.startDate)
-        .lte("created_at", params.endDate)
-        .order("created_at", { ascending: false })
-        .limit(1000);
-      if (params.cashierId) {
-        query = query.eq("cashier_id", params.cashierId);
-      }
-      if (params.deviceId) {
-        query = query.eq("device_id", params.deviceId);
-      }
-      const { data, error: err } = await query;
-      if (err) throw err;
-      return (data ?? []).map(mapSaleRow);
-    },
+    }) => listSalesInRange(params),
     []
   );
 
@@ -317,13 +178,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   // Receiving history is admin-only at the RLS level for insert, but any
   // staff can read it (mirrors products' view policy).
   const fetchReceivingHistory = useCallback(async () => {
-    const { data, error: err } = await supabase
-      .from("receiving_entries")
-      .select(RECEIVING_ENTRY_SELECT)
-      .order("received_on", { ascending: false })
-      .limit(50);
-    if (err) throw err;
-    setReceivingHistory((data ?? []).map(mapReceivingEntryRow));
+    setReceivingHistory(await listReceivingHistory());
   }, []);
 
   // Unlimited, date-ranged fetch for supplier metrics (spend this month,
@@ -498,11 +353,16 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     // failed-attempt counter. If this pre-check can't be reached at all
     // (the device is offline right now), fall through with no token: the
     // main checkout_sale attempt below will also fail on connectivity and
-    // this sale gets queued with the raw PIN, exactly as before -- the sync
-    // engine's later replay uses p_is_offline_replay's own unchanged,
-    // pre-existing raw-PIN path, not this token.
+    // this sale gets queued with the raw PIN, exactly as before. The sync
+    // engine exchanges that stored PIN for a token of its own when it
+    // replays, since checkout_sale no longer accepts a raw PIN on the replay
+    // path either (20260903100000).
     let overrideToken: string | null = null;
-    const rawOverridePin = payment.type === "credit" ? payment.overridePin?.trim() || null : null;
+    // Not credit-only any more: the same override PIN also clears
+    // checkout_sale()'s cashier_cash_out_cap check (20260903200000), which
+    // can apply to a cash or QR sale carrying a cash-out service line just
+    // as easily as a credit sale over its limit.
+    const rawOverridePin = payment.overridePin?.trim() || null;
     if (rawOverridePin) {
       try {
         const { data: checkData, error: checkErr } = await supabase.rpc("check_credit_override_pin", {
@@ -521,7 +381,17 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
 
     const rpcParams = {
       p_items: cart.map((line) => ({ product_id: line.product.id, quantity: line.quantity })),
-      p_services: services.map((line) => ({ label: line.label, amount: line.amount, fee: line.fee })),
+      p_services: services.map((line) => ({
+        label: line.label,
+        amount: line.amount,
+        fee: line.fee,
+        // Present only for a cash-out line (Pos/hooks.tsx addCashOutService)
+        // -- lets checkout_sale() sum the actual cash handed over against
+        // stores.cashier_cash_out_cap (20260903200000). A line with neither
+        // key set is invisible to that check, same as before this change.
+        ...(line.serviceType ? { service_type: line.serviceType } : {}),
+        ...(line.cashHandedOver != null ? { cash_handed_over: line.cashHandedOver } : {}),
+      })),
       p_customer_id: payment.type === "credit" ? payment.customerId : null,
       p_payment_type: payment.type,
       p_reference_no: payment.type === "qr" ? payment.referenceNo!.trim() : null,
@@ -700,8 +570,32 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   // local state instead of refetching, same rationale as checkout()
   // above: the RPC is already the source of truth, this just keeps the
   // already-loaded products/customers/sales in sync with it.
-  async function voidSale(sale: SaleRecord, reason: string) {
-    const { error: err } = await supabase.rpc("void_sale", { p_sale_id: sale.id, p_reason: reason });
+  async function voidSale(sale: SaleRecord, reason: string, overridePin?: string) {
+    // Mirrors checkout()'s override-PIN exchange above: void_sale() only
+    // accepts a validated, single-use token from check_credit_override_pin()
+    // when stores.void_requires_pin is on and the caller isn't an admin
+    // (20260903190000) -- never a raw PIN, for the same rate-limiting reason.
+    // A store with the toggle off, or an Owner voiding their own sale, never
+    // reaches here with a pin at all, so there's nothing to exchange.
+    let overrideToken: string | null = null;
+    const rawOverridePin = overridePin?.trim() || null;
+    if (rawOverridePin) {
+      const { data: checkData, error: checkErr } = await supabase.rpc("check_credit_override_pin", {
+        p_pin: rawOverridePin,
+        p_cashier_token: null,
+      });
+      if (checkErr) throw checkErr;
+      const result = checkData?.[0];
+      if (!result) throw new Error("Could not verify the override PIN.");
+      if (!result.ok) throw new Error(result.error_code ?? "INVALID_OVERRIDE_PIN");
+      overrideToken = result.override_token;
+    }
+
+    const { error: err } = await supabase.rpc("void_sale", {
+      p_sale_id: sale.id,
+      p_reason: reason,
+      p_override_token: overrideToken,
+    });
     if (err) throw err;
 
     setProducts((prev) =>
@@ -771,58 +665,25 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
 
   async function addCategory(name: string): Promise<Category> {
     if (!user) throw new Error("Not signed in.");
-    const storeId = user.storeId;
-    const { data, error: err } = await supabase
-      .from("categories")
-      .insert({ store_id: storeId, name: name.trim() })
-      .select("id, name")
-      .single();
-    if (err) {
-      if (err.code === "23505") throw new Error(`"${name.trim()}" already exists.`);
-      throw err;
-    }
+    const category = await createCategory(user.storeId, name);
     await fetchCategories();
-    return data;
+    return category;
   }
 
   async function renameCategory(id: string, name: string) {
-    const { error: err } = await supabase
-      .from("categories")
-      .update({ name: name.trim() })
-      .eq("id", id);
-    if (err) {
-      if (err.code === "23505") throw new Error(`"${name.trim()}" already exists.`);
-      throw err;
-    }
+    await renameCategoryRecord(id, name);
+    // Both lists: a renamed category changes what every product displays.
     await Promise.all([fetchCategories(), fetchProducts()]);
   }
 
   async function removeCategory(id: string) {
-    const { error: err } = await supabase.from("categories").delete().eq("id", id);
-    if (err) {
-      // Postgres foreign-key violation — the database is the source of
-      // truth for "is this category still in use", never a client-side
-      // count that could go stale.
-      if (err.code === "23503") {
-        throw new Error("This category is still assigned to one or more products.");
-      }
-      throw err;
-    }
+    await deleteCategory(id);
     await fetchCategories();
   }
 
   async function mergeCategory(fromId: string, toId: string) {
-    const { error: reassignErr } = await supabase
-      .from("products")
-      .update({ category_id: toId })
-      .eq("category_id", fromId);
-    if (reassignErr) throw reassignErr;
-    // fromId is guaranteed empty now, so the FK-violation guard in
-    // removeCategory can't fire — but still route through it rather than
-    // duplicating the delete call, in case a policy rejects it for another
-    // reason.
-    await removeCategory(fromId);
-    await fetchProducts();
+    await mergeCategories(fromId, toId);
+    await Promise.all([fetchCategories(), fetchProducts()]);
   }
 
   async function receiveStock(
@@ -833,59 +694,8 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     drNumber: string | null = null
   ) {
     if (!user) throw new Error("Not signed in.");
-    const storeId = user.storeId;
-
-    for (const line of lines) {
-      await restock(line.productId, line.quantity);
-    }
-
-    // receiving_entries.warehouse_id is not-null (0017_inventory_management.sql)
-    // — tindahan-pos only ever writes to the store's single default
-    // warehouse (products.stock is the source of truth it reads/writes;
-    // see 0017's note), so resolve that warehouse's id rather than asking
-    // the admin to pick one they don't otherwise interact with.
-    const { data: warehouse, error: warehouseErr } = await supabase
-      .from("warehouses")
-      .select("id")
-      .eq("store_id", storeId)
-      .eq("is_default", true)
-      .single();
-    if (warehouseErr) throw warehouseErr;
-
-    // Cash (or an ad-hoc supplier with no saved record) is paid on
-    // delivery by definition; a term-based supplier starts unpaid until
-    // explicitly marked paid.
-    const resolvedSupplier = supplierId ? suppliers.find((s) => s.id === supplierId) : null;
-    const paidOnDelivery = !resolvedSupplier || resolvedSupplier.paymentTerms === "cash";
-
-    const { data: entry, error: entryErr } = await supabase
-      .from("receiving_entries")
-      .insert({
-        store_id: storeId,
-        supplier: supplier.trim() || "Unspecified supplier",
-        supplier_id: supplierId,
-        warehouse_id: warehouse.id,
-        dr_number: drNumber?.trim() || null,
-        paid: paidOnDelivery,
-        paid_at: paidOnDelivery ? new Date().toISOString() : null,
-        received_on: date,
-        created_by: user.id,
-      })
-      .select("id")
-      .single();
-    if (entryErr) throw entryErr;
-
-    const { error: linesErr } = await supabase.from("receiving_lines").insert(
-      lines.map((line) => ({
-        receiving_entry_id: entry.id,
-        product_id: line.productId,
-        product_name: line.productName,
-        quantity: line.quantity,
-        cost_each: line.costEach,
-      }))
-    );
-    if (linesErr) throw linesErr;
-
+    await submitReceiving(supplier, date, lines, supplierId, drNumber);
+    await fetchProducts();
     await fetchReceivingHistory();
   }
 
@@ -895,151 +705,48 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     creditLimit: number | null = null
   ): Promise<Customer> {
     if (!user) throw new Error("Not signed in.");
-    const storeId = user.storeId;
-    const { data, error: err } = await supabase
-      .from("customers")
-      .insert({ store_id: storeId, name: name.trim(), phone, credit_limit: creditLimit })
-      .select("id, name, phone, credit_limit, balance")
-      .single();
-    if (err) throw err;
+    const customer = await createCustomer(user.storeId, name, phone, creditLimit);
     await fetchCustomers();
-    return {
-      id: data.id,
-      name: data.name,
-      phone: data.phone,
-      creditLimit: data.credit_limit,
-      balance: data.balance,
-    };
+    return customer;
   }
 
   async function recordCreditPayment(customerId: string, amount: number, note?: string) {
-    const { error: err } = await supabase.rpc("record_credit_payment", {
-      p_customer_id: customerId,
-      p_amount: amount,
-      p_note: note ?? null,
-    });
-    if (err) throw err;
+    await recordCreditPaymentFor(customerId, amount, note);
     await fetchCustomers();
   }
 
   async function fetchCreditPayments(customerId: string): Promise<CreditPayment[]> {
-    const { data, error: err } = await supabase
-      .from("credit_payments")
-      .select("id, customer_id, amount, note, created_at, staff:created_by(name)")
-      .eq("customer_id", customerId)
-      .order("created_at", { ascending: false });
-    if (err) throw err;
-    return (data ?? []).map((row) => {
-      const staff = row.staff as unknown as { name: string } | { name: string }[] | null;
-      const createdByName = Array.isArray(staff) ? staff[0]?.name : staff?.name;
-      return {
-        id: row.id,
-        customerId: row.customer_id,
-        amount: row.amount,
-        note: row.note,
-        createdByName: createdByName ?? "Unknown",
-        timestamp: row.created_at,
-      };
-    });
+    return listCreditPayments(customerId);
   }
 
   // Cross-customer feed for the Customers page's "Recent payments" card --
   // distinct from fetchCreditPayments() above, which is scoped to one
   // customer's own history modal.
   async function fetchRecentCreditPayments(limit = 4): Promise<RecentCreditPayment[]> {
-    const { data, error: err } = await supabase
-      .from("credit_payments")
-      .select("id, customer_id, amount, created_at, resulting_balance, customer:customer_id(name)")
-      .order("created_at", { ascending: false })
-      .limit(limit);
-    if (err) throw err;
-    return (data ?? []).map((row) => {
-      const customer = row.customer as unknown as { name: string } | { name: string }[] | null;
-      const customerName = Array.isArray(customer) ? customer[0]?.name : customer?.name;
-      return {
-        id: row.id,
-        customerId: row.customer_id,
-        customerName: customerName ?? "Unknown",
-        amount: row.amount,
-        timestamp: row.created_at,
-        status:
-          row.resulting_balance === null ? null : row.resulting_balance <= 0 ? "settled" : "partial",
-      };
-    });
+    return listRecentCreditPayments(limit);
   }
 
   async function addSupplier(input: AddSupplierInput): Promise<Supplier> {
     if (!user) throw new Error("Not signed in.");
-    const storeId = user.storeId;
-    const { data, error: err } = await supabase
-      .from("suppliers")
-      .insert({
-        store_id: storeId,
-        name: input.name.trim(),
-        contact_person: input.contactPerson ?? null,
-        phone: input.phone ?? null,
-        address: input.address ?? null,
-        payment_terms: input.paymentTerms ?? "cash",
-        usual_delivery_days: input.usualDeliveryDays ?? [],
-      })
-      .select(SUPPLIER_SELECT)
-      .single();
-    if (err) throw err;
-    if (input.categoryIds?.length) {
-      const { error: catErr } = await supabase
-        .from("supplier_categories")
-        .insert(input.categoryIds.map((categoryId) => ({ supplier_id: data.id, category_id: categoryId })));
-      if (catErr) throw catErr;
-    }
+    const supplier = await createSupplier(user.storeId, input);
     await fetchSuppliers();
-    return mapSupplierRow({ ...data, supplier_categories: (input.categoryIds ?? []).map((category_id) => ({ category_id })) });
+    return supplier;
   }
 
   async function updateSupplier(id: string, patch: Partial<Omit<Supplier, "id" | "scanCode">>) {
-    const { error: err } = await supabase
-      .from("suppliers")
-      .update({
-        ...(patch.name !== undefined && { name: patch.name }),
-        ...(patch.contactPerson !== undefined && { contact_person: patch.contactPerson }),
-        ...(patch.phone !== undefined && { phone: patch.phone }),
-        ...(patch.address !== undefined && { address: patch.address }),
-        ...(patch.paymentTerms !== undefined && { payment_terms: patch.paymentTerms }),
-        ...(patch.active !== undefined && { active: patch.active }),
-        ...(patch.usualDeliveryDays !== undefined && { usual_delivery_days: patch.usualDeliveryDays }),
-      })
-      .eq("id", id);
-    if (err) throw err;
-    if (patch.categoryIds !== undefined) {
-      // Simplest correct diff: replace the full set rather than computing
-      // an add/remove delta — this table only ever holds a handful of rows
-      // per supplier.
-      const { error: delErr } = await supabase.from("supplier_categories").delete().eq("supplier_id", id);
-      if (delErr) throw delErr;
-      if (patch.categoryIds.length) {
-        const { error: insErr } = await supabase
-          .from("supplier_categories")
-          .insert(patch.categoryIds.map((categoryId) => ({ supplier_id: id, category_id: categoryId })));
-        if (insErr) throw insErr;
-      }
-    }
+    await updateSupplierRecord(id, patch);
     await fetchSuppliers();
   }
 
   // No hard delete — a supplier's receiving history must stay intact even
   // after the store stops buying from them.
   async function deactivateSupplier(id: string) {
-    const { error: err } = await supabase.from("suppliers").update({ active: false }).eq("id", id);
-    if (err) throw err;
+    await deactivateSupplierRecord(id);
     await fetchSuppliers();
   }
 
   async function markSupplierPaid(supplierId: string) {
-    const { error: err } = await supabase
-      .from("receiving_entries")
-      .update({ paid: true, paid_at: new Date().toISOString() })
-      .eq("supplier_id", supplierId)
-      .eq("paid", false);
-    if (err) throw err;
+    await markSupplierEntriesPaid(supplierId);
     await fetchReceivingHistory();
   }
 
@@ -1049,14 +756,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   // session, and so a not-found scan reads as "no such supplier", not a
   // stale-cache bug.
   async function findSupplierByScanCode(scanCode: string): Promise<Supplier | null> {
-    const { data, error: err } = await supabase
-      .from("suppliers")
-      .select(SUPPLIER_SELECT)
-      .eq("scan_code", scanCode)
-      .maybeSingle();
-    if (err) throw err;
-    if (!data) return null;
-    return mapSupplierRow(data);
+    return findSupplierByScanCodeQuery(scanCode);
   }
 
   return (

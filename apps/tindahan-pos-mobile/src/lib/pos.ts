@@ -1,16 +1,24 @@
 import { roundMoney } from "./money";
 import type { CartLine, Product } from "./types";
 
+// Caps at the product's available stock (negative stock reads as zero) so a
+// barcode scan or search-submit cannot silently build a cart the sale will be
+// rejected for at checkout -- the cashier finds out immediately instead. The
+// web app has capped here since it was written; mobile did not, so the same
+// scan produced a sellable cart on one client and a refusal on the other.
 export function addToCart(cart: CartLine[], product: Product, quantity = 1): CartLine[] {
+  const available = Math.max(0, product.stock);
   const existing = cart.find((line) => line.product.id === product.id);
   if (existing) {
+    const nextQuantity = Math.min(existing.quantity + quantity, available);
+    if (nextQuantity <= existing.quantity) return cart;
     return cart.map((line) =>
-      line.product.id === product.id
-        ? { ...line, quantity: line.quantity + quantity }
-        : line
+      line.product.id === product.id ? { ...line, quantity: nextQuantity } : line
     );
   }
-  return [...cart, { product, quantity }];
+  const cappedQuantity = Math.min(quantity, available);
+  if (cappedQuantity <= 0) return cart;
+  return [...cart, { product, quantity: cappedQuantity }];
 }
 
 export function removeFromCart(cart: CartLine[], productId: string): CartLine[] {
@@ -19,9 +27,11 @@ export function removeFromCart(cart: CartLine[], productId: string): CartLine[] 
 
 export function setQuantity(cart: CartLine[], productId: string, quantity: number): CartLine[] {
   if (quantity <= 0) return removeFromCart(cart, productId);
-  return cart.map((line) =>
-    line.product.id === productId ? { ...line, quantity } : line
-  );
+  const line = cart.find((l) => l.product.id === productId);
+  if (!line) return cart;
+  const cappedQuantity = Math.min(quantity, Math.max(0, line.product.stock));
+  if (cappedQuantity <= 0) return removeFromCart(cart, productId);
+  return cart.map((l) => (l.product.id === productId ? { ...l, quantity: cappedQuantity } : l));
 }
 
 /**

@@ -1,4 +1,6 @@
-const Listitem = (props:any) => {
+import type { BestSeller } from "@/lib";
+
+const Listitem = (props: { item: BestSeller; maxQuantity: number }) => {
   const { item, maxQuantity } = props;
   return (
     <div key={item.name} style={{ marginBottom: 11 }}>

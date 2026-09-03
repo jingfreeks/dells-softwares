@@ -151,10 +151,14 @@ export interface CashierPermission {
  * a hardcoded copy. "Change prices" is derived from the real, admin-editable
  * `store.cashierCanEditPrices` flag instead (enforced server-side by the
  * guard_cashier_product_update trigger — see 0043_cashier_price_edit_permission.sql),
- * not from route access. Void and reports are now real, server-enforced
- * permission checks (0045_rbac_enforce_checkpoints.sql) rather than the old
- * "needs-pin" placeholder — a plain cashier holds neither. Cash-out has no
- * enforcement mechanism at all yet, so it still describes an intended rule.
+ * not from route access. Void and reports are real, server-enforced
+ * permission checks (0045_rbac_enforce_checkpoints.sql) rather than a
+ * "needs-pin" placeholder — a plain cashier holds neither. Cash-out is
+ * derived from the real, admin-editable `store.cashierCashOutCap`
+ * (enforced server-side inside checkout_sale() — see
+ * 20260903180000_cashier_cash_out_cap.sql): no cap set means a cashier can
+ * cash out any amount unsupervised ("allowed"); a cap set means anything
+ * over it needs an owner's PIN ("needs-pin"), same as the toggle above.
  */
 export function cashierPermissions(store: Store): CashierPermission[] {
   const cashierRoutes = new Set(navItemsForRole("cashier", CASHIER_ROLE_PERMISSIONS).map((item) => item.to));
@@ -163,7 +167,10 @@ export function cashierPermissions(store: Store): CashierPermission[] {
     { label: LABEL_PERMISSION_RING_UP_SALES, state: cashierRoutes.has("/pos") ? "allowed" : "blocked" },
     { label: LABEL_PERMISSION_SELL_ON_UTANG, state: cashierRoutes.has("/customers") ? "allowed" : "blocked" },
     { label: LABEL_PERMISSION_ELOAD_CASHIN, state: cashierRoutes.has("/pos") ? "allowed" : "blocked" },
-    { label: LABEL_PERMISSION_CASH_OUT, state: "needs-pin" },
+    {
+      label: LABEL_PERMISSION_CASH_OUT,
+      state: store.cashierCashOutCap != null ? "needs-pin" : "allowed",
+    },
     {
       label: LABEL_PERMISSION_VOID_SALE,
       state: CASHIER_ROLE_PERMISSIONS.has("pos.sale.void") ? "allowed" : "blocked",

@@ -1,5 +1,6 @@
 import type { StoreFeature } from "@/lib/features/featuresContext";
 import { TEXT_PLAN_CONTACT_US } from "@/lib/textLabels/textLabels";
+import { PESO_WHOLE as PESO } from "@/lib/money";
 
 /** One plan from plan_prices() -- what upgrading to it costs and includes. */
 export interface PlanPrice {
@@ -20,12 +21,6 @@ export interface LockedByPlan {
   priceLabel: string;
   features: StoreFeature[];
 }
-
-const PESO = new Intl.NumberFormat("en-PH", {
-  style: "currency",
-  currency: "PHP",
-  minimumFractionDigits: 0,
-});
 
 /**
  * "₱999/month" or "Contact us". Shared by the plan page, the dashboard

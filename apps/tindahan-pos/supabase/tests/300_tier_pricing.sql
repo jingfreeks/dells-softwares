@@ -73,13 +73,14 @@ select set_config('request.jwt.claims',
 
 select set_eq(
   $$ select plan_code from public.plan_prices() $$,
-  array['FREE', 'BASIC', 'BUSINESS', 'PRO', 'ENTERPRISE'],
-  'a signed-in tenant sees every active plan'
+  array['BASIC', 'BUSINESS', 'ENTERPRISE'],
+  'a signed-in tenant sees every active plan -- FREE and PRO were retired in '
+  || '20260903110000 and must not reappear here'
 );
 
 select is(
-  (select price_php from public.plan_prices() where plan_code = 'PRO'),
-  999.00::numeric,
+  (select price_php from public.plan_prices() where plan_code = 'BUSINESS'),
+  599.00::numeric,
   'and the real price for each -- not the console-only platform_plans(), a '
   'tenant-facing read'
 );
@@ -95,7 +96,7 @@ select ok(
   (select 'inventory.transfers' = any(features) from public.plan_prices()
     where plan_code = 'ENTERPRISE')
   and not (select 'inventory.transfers' = any(features) from public.plan_prices()
-    where plan_code = 'PRO'),
+    where plan_code = 'BUSINESS'),
   'features travel with the price, so the client can say what a given plan '
   || 'actually buys'
 );

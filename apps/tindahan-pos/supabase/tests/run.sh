@@ -28,7 +28,11 @@ for file in "$here"/[0-9]*.sql; do
 
   if grep -qE '^ *not ok|ERROR:' <<<"$output"; then
     echo "✖ $name"
-    grep -E '^ *not ok|ERROR:' <<<"$output" | sed 's/^/    /'
+    # Include pgTAP's own '#' diagnostics, not just the "not ok" line. Those
+    # carry the actual failure -- the expected/got values, and the error text
+    # behind a lives_ok -- without which a red CI run says a thing failed and
+    # not one word about why.
+    grep -E '^ *not ok|ERROR:|^ *#' <<<"$output" | sed 's/^/    /'
     failed=1
   else
     echo "✓ $name — $passed assertions"

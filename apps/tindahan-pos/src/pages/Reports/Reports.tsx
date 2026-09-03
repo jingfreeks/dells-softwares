@@ -9,8 +9,9 @@ import {
   useCan,
   useAuth,
   usePermissions,
+  TEXT_VOID_NEEDS_PIN,
 } from "@/lib";
-import { DebtAgeCard } from "@/components";
+import { DebtAgeCard, AdminPinModal } from "@/components";
 import { ReceiptModal } from "@/pages/Pos/component/receiptmodal";
 import {
   DateRangeFilter,
@@ -24,6 +25,7 @@ import {
   RefundSummaryCard,
   PaymentBreakdownTable,
   ZReadingCard,
+  XReadingCard,
 } from "./component";
 import { useReportsPage } from "./hooks";
 import "../authTheme.css";
@@ -56,6 +58,13 @@ export function Reports() {
     thresholdDays,
     onVoidSale,
     voidError,
+    voidPinApproval,
+    voidOverridePin,
+    setVoidOverridePin,
+    voidOverridePinError,
+    voidOverrideSubmitting,
+    closeVoidPinApproval,
+    submitVoidPinApproval,
     store,
     receiptSettings,
     reprintingSale,
@@ -145,6 +154,18 @@ export function Reports() {
             onReprintSale={onReprintSale}
             onRefundSale={canRefundSale ? onRefundSale : undefined}
           />
+
+          <AdminPinModal
+            open={!!voidPinApproval}
+            message={TEXT_VOID_NEEDS_PIN}
+            pin={voidOverridePin}
+            onPinChange={setVoidOverridePin}
+            onSubmit={submitVoidPinApproval}
+            pinError={voidOverridePinError}
+            submitting={voidOverrideSubmitting}
+            onCancel={closeVoidPinApproval}
+          />
+          <XReadingCard staff={cashiers} />
           <ZReadingCard
             storeName={store?.name ?? ""}
             storeAddress={store?.address ?? null}

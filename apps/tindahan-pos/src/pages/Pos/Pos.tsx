@@ -1,6 +1,12 @@
 import { lazy, Suspense } from "react";
-import { PAGE_HEADING_POS, TEXT_POS_DESCRIPTION, BUTTON_SWITCH_CASHIER, LABEL_HELD_SALES } from "@/lib";
-import { ScannerLoadingOverlay } from "@/components";
+import {
+  PAGE_HEADING_POS,
+  TEXT_POS_DESCRIPTION,
+  BUTTON_SWITCH_CASHIER,
+  LABEL_HELD_SALES,
+  TEXT_CASH_OUT_CAP_EXCEEDED,
+} from "@/lib";
+import { ScannerLoadingOverlay, AdminPinModal } from "@/components";
 import {
   PosTabs,
   ProductBrowsePanel,
@@ -108,6 +114,13 @@ export function Pos() {
     closeOwnerApproval,
     payCashInstead,
     submitOwnerApproval,
+    cashOutApprovalOpen,
+    cashOutOverridePin,
+    setCashOutOverridePin,
+    cashOutOverridePinError,
+    cashOutOverrideSubmitting,
+    closeCashOutApproval,
+    submitCashOutApproval,
     effectiveTab,
     packPricingEnabled,
     posServicesEnabled,
@@ -258,6 +271,17 @@ export function Pos() {
         submitting={overrideSubmitting}
         onCancel={closeOwnerApproval}
         onPayCashInstead={payCashInstead}
+      />
+
+      <AdminPinModal
+        open={cashOutApprovalOpen}
+        message={TEXT_CASH_OUT_CAP_EXCEEDED}
+        pin={cashOutOverridePin}
+        onPinChange={setCashOutOverridePin}
+        onSubmit={submitCashOutApproval}
+        pinError={cashOutOverridePinError}
+        submitting={cashOutOverrideSubmitting}
+        onCancel={closeCashOutApproval}
       />
 
       <HeldSalesModal

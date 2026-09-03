@@ -536,6 +536,28 @@ export const LABEL_RECONCILIATION_CHECK = "Reconciliation check";
 export const TEXT_RECONCILIATION_MATCH = "Matches an independent server-side total.";
 export const TEXT_RECONCILIATION_MISMATCH = "Does not match the server-side total — figures may be out of date. Refresh and check again.";
 export const TEXT_Z_READING_EMPTY = "No sales recorded for this business date.";
+export const BUTTON_TAKE_Z_READING = "Take Z-reading";
+export const BUTTON_TAKING_READING = "Taking…";
+export const LABEL_Z_COUNTER = "Z-counter";
+export const LABEL_GRAND_TOTAL = "Grand total";
+export const LABEL_LATE_ENTRIES = "Late entries";
+export const TEXT_Z_CLOSED_PREFIX = "Closed";
+export const TEXT_Z_NOT_CLOSED = "Not yet closed";
+// Said plainly, because the difference is the entire point of the feature: an
+// unclosed day is recomputed from sales every time it is opened, so a void
+// recorded tomorrow changes what it shows.
+export const TEXT_Z_PROVISIONAL =
+  "These figures are recomputed from sales each time this is opened, so they can still change. Taking the Z-reading freezes them.";
+export const TEXT_Z_FROM_RECORD =
+  "Read from the closing record taken at the time, not recomputed.";
+export const ERROR_COULD_NOT_TAKE_READING = "Could not take the reading.";
+export const LABEL_X_READING = "Mid-shift (X-reading)";
+export const TEXT_X_READING_DESCRIPTION =
+  "A snapshot of the register right now. It does not close the day, does not take a Z-counter, and can be taken as often as you like.";
+export const BUTTON_TAKE_X_READING = "Take X-reading";
+export const TEXT_X_READING_EMPTY = "No X-readings taken for this business date.";
+export const COLUMN_TAKEN_AT = "Taken";
+export const COLUMN_NET_SALES = "Net sales";
 export const LABEL_SALES_LIST = "Sales";
 export const BUTTON_EXPORT_CSV = "Export CSV";
 export const TEXT_NO_SALES_IN_RANGE = "No sales in this period.";
@@ -1429,3 +1451,11 @@ export const LABEL_REFERENCE_NO_PREFIX = "Reference no.";
 export const LABEL_UTANG_BALANCE_NOTE = "Charged to Utang account.";
 export const BUTTON_PRINT_RECEIPT = "Print receipt";
 export const BUTTON_NEW_SALE = "New sale";
+
+// Admin PIN gate (void_requires_pin / cashier_cash_out_cap, 20260903190000 / 20260903200000)
+export const LABEL_ADMIN_PIN_REQUIRED = "Owner PIN required";
+export const TEXT_VOID_NEEDS_PIN = "This store requires an owner's PIN to void a sale.";
+export const TEXT_CASH_OUT_CAP_EXCEEDED = "This cash-out is over the store's per-sale limit and needs an owner's PIN.";
+export const TEXT_ADMIN_PIN_RECORDED_HINT = "This PIN is verified, not stored — only that an owner approved it is recorded.";
+export const ERROR_VOID_PIN_REQUIRED = "This store requires an owner's PIN to void a sale.";
+export const ERROR_CASH_OUT_CAP_EXCEEDED = "This cash-out is over the store's limit and needs an owner's PIN.";

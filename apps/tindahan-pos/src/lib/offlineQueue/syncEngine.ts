@@ -19,6 +19,42 @@ type SyncOutcome =
   | { kind: "failed"; message: string };
 
 async function syncOne(sale: QueuedSale): Promise<SyncOutcome> {
+  // A replay only ever runs once the device is back online, so the PIN the
+  // approver typed while it was offline can be exchanged for a token through
+  // the rate-limited check_credit_override_pin() -- checkout_sale no longer
+  // reads a raw PIN on the replay path (20260903100000). Nobody is
+  // re-prompted: the stored PIN is what gets exchanged.
+  //
+  // p_override_pin is still sent below so that a client which reaches a server
+  // that has not had that migration applied yet replays exactly as it always
+  // did. It can be dropped once the migration is deployed everywhere.
+  let overrideToken: string | null = null;
+  if (sale.payload.overridePin) {
+    try {
+      const { data, error: checkErr } = await supabase.rpc("check_credit_override_pin", {
+        p_pin: sale.payload.overridePin,
+        p_cashier_token: sale.payload.cashierToken,
+      });
+      if (checkErr) throw checkErr;
+      const result = data?.[0];
+      if (!result) return { kind: "failed", message: "Could not verify the override PIN." };
+      if (!result.ok) {
+        const code = result.error_code ?? "INVALID_OVERRIDE_PIN";
+        // The cashier session expiring is recoverable by signing in again,
+        // and is already how the checkout call itself reports it.
+        if (code === "EXPIRED_CASHIER_SESSION") return { kind: "needs_reauth" };
+        return { kind: "failed", message: code };
+      }
+      overrideToken = result.override_token;
+    } catch (thrown) {
+      if (isConnectivityFailure(thrown)) return { kind: "connectivity" };
+      return {
+        kind: "failed",
+        message: errorMessage(thrown) || "Could not verify the override PIN.",
+      };
+    }
+  }
+
   let error: unknown = null;
   try {
     const response = await supabase.rpc("checkout_sale", {
@@ -28,6 +64,7 @@ async function syncOne(sale: QueuedSale): Promise<SyncOutcome> {
       p_payment_type: sale.payload.paymentType,
       p_reference_no: sale.payload.referenceNo,
       p_override_pin: sale.payload.overridePin,
+      p_override_token: overrideToken,
       p_cashier_token: sale.payload.cashierToken,
       p_client_request_id: sale.id,
       p_occurred_at: sale.occurredAt,

@@ -62,6 +62,31 @@ export interface Plan {
   features: string[];
 }
 
+export interface OrganizationStaff {
+  staffId: string;
+  name: string | null;
+  email: string | null;
+  /** The coarse enum auth_role() reads: 'admin' or 'cashier'. */
+  authRole: string;
+  /** The RBAC assignment that actually decides permissions -- OWNER,
+   *  SUPERVISOR or CASHIER. A SUPERVISOR and a CASHIER are both `cashier`
+   *  to the enum and hold 15 permissions and none respectively. */
+  rbacRole: string | null;
+  active: boolean;
+  pinLocked: boolean;
+  createdAt: string;
+}
+
+export interface PlatformAdminRow {
+  email: string | null;
+  scope: string;
+  status: string;
+  /** Whether this administrator's second factor is currently inside the
+   *  8-hour window core.is_platform_admin() requires. Deliberately a boolean:
+   *  the console needs to know who can act, not when anyone last signed in. */
+  mfaFresh: boolean;
+}
+
 export interface PlatformAuditEntry {
   id: number;
   actorEmail: string | null;
@@ -374,6 +399,65 @@ export async function setPlan(orgId: string, planCode: string, reason: string): 
   if (error) throw new Error(error.message);
 }
 
+/** One recorded reset of a register's accumulating totals. */
+export interface RegisterReset {
+  id: string;
+  deviceId: string | null;
+  resetCounter: number;
+  reason: string;
+  authorityReference: string | null;
+  createdAt: string;
+}
+
+export async function listRegisterResets(orgId: string): Promise<RegisterReset[]> {
+  const { data, error } = await supabase
+    .from("register_resets")
+    .select("id, device_id, reset_counter, reason, authority_reference, created_at")
+    .eq("store_id", orgId)
+    .order("reset_counter", { ascending: false });
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as unknown as {
+    id: string;
+    device_id: string | null;
+    reset_counter: number;
+    reason: string;
+    authority_reference: string | null;
+    created_at: string;
+  }[];
+  return rows.map((r) => ({
+    id: r.id,
+    deviceId: r.device_id,
+    resetCounter: Number(r.reset_counter),
+    reason: r.reason,
+    authorityReference: r.authority_reference,
+    createdAt: r.created_at,
+  }));
+}
+
+/**
+ * Restarts a register's accumulating totals. ENGINEER scope, MFA-verified, and
+ * a reason is mandatory -- the reset counter is what an examiner uses to detect
+ * a register that quietly began counting again from zero, so an unexplained
+ * reset is the thing it exists to expose.
+ *
+ * There is no undo. register_resets is append-only; a mistaken reset is
+ * corrected by recording another, not by deleting this one.
+ */
+export async function resetRegisterCounter(
+  orgId: string,
+  reason: string,
+  authorityReference: string | null,
+  deviceId: string | null = null
+): Promise<void> {
+  const { error } = await supabase.rpc("platform_reset_register_counter", {
+    p_store_id: orgId,
+    p_device_id: deviceId,
+    p_reason: reason,
+    p_authority_reference: authorityReference || null,
+  });
+  if (error) throw new Error(error.message);
+}
+
 export async function listOrganizationLimits(orgId: string): Promise<OrganizationLimit[]> {
   const { data, error } = await supabase.rpc("platform_organization_limits", { p_org: orgId });
   if (error) throw new Error(error.message);
@@ -588,6 +672,64 @@ export async function approveDeletionRequest(requestId: string, note: string): P
 
 export async function listPlatformAudit(limit = 100): Promise<PlatformAuditEntry[]> {
   const { data, error } = await supabase.rpc("platform_audit", { p_limit: limit });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, never>) => ({
+    id: r.id,
+    actorEmail: r.actor_email,
+    action: r.action,
+    entityType: r.entity_type,
+    entityId: r.entity_id,
+    reason: r.reason,
+    createdAt: r.created_at,
+    oldData: r.old_data ?? null,
+    newData: r.new_data ?? null,
+    ipAddress: r.ip_address ?? null,
+    userAgent: r.user_agent ?? null,
+  }));
+}
+
+/** The platform administrator roster. Readable by any active administrator --
+ *  changing it still requires SUPERUSER, which this console does not expose. */
+export async function listPlatformAdmins(): Promise<PlatformAdminRow[]> {
+  const { data, error } = await supabase.rpc("platform_admins");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, never>) => ({
+    email: r.email,
+    scope: r.scope,
+    status: r.status,
+    mfaFresh: !!r.mfa_fresh,
+  }));
+}
+
+/** A tenant's staff. Names, e-mail addresses and lock state are personal data
+ *  held on behalf of the shop; the platform-admin gate is what protects them. */
+export async function listOrganizationStaff(orgId: string): Promise<OrganizationStaff[]> {
+  const { data, error } = await supabase.rpc("platform_organization_staff", { p_org: orgId });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r: Record<string, never>) => ({
+    staffId: r.staff_id,
+    name: r.name,
+    email: r.email,
+    authRole: r.auth_role,
+    rbacRole: r.rbac_role ?? null,
+    active: !!r.active,
+    pinLocked: !!r.pin_locked,
+    createdAt: r.created_at,
+  }));
+}
+
+/** One tenant's slice of the platform audit log.
+ *
+ *  Complete with respect to that tenant: module, feature, limit, plan and
+ *  subscription changes carry the organization id directly, and deletion
+ *  requests resolve through the request row. Platform-administrator events
+ *  are absent because they belong to no organization, not because they are
+ *  missing. ENGINEER only, same as listPlatformAudit(). */
+export async function listOrganizationAudit(orgId: string, limit = 100): Promise<PlatformAuditEntry[]> {
+  const { data, error } = await supabase.rpc("platform_organization_audit", {
+    p_org: orgId,
+    p_limit: limit,
+  });
   if (error) throw new Error(error.message);
   return (data ?? []).map((r: Record<string, never>) => ({
     id: r.id,

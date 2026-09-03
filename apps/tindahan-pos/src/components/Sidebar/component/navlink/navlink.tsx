@@ -1,6 +1,9 @@
 import { NavLink } from "react-router-dom";
+import type { StaffAccount } from "@/lib/types";
 
-const Navlinkscreen = (props: { user: any }) => {
+// Nullable because useAuth() has no user before the session resolves, which is
+// what every `user?.` below is already guarding against.
+const Navlinkscreen = (props: { user: StaffAccount | null }) => {
     const { user } = props
   return (
     <NavLink to="/settings/profile" className="tpl-ub">

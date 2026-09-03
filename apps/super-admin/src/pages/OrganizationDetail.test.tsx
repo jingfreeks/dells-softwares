@@ -8,6 +8,10 @@ import {
   listOrganizationModules,
   listOrganizationFeatures,
   listOrganizationLimits,
+  listOrganizationStaff,
+  listOrganizationAudit,
+  listRegisterResets,
+  resetRegisterCounter,
   listPlans,
   setSubscriptionStatus,
   usePlatform,
@@ -22,6 +26,10 @@ vi.mock("../lib/platform", async (importOriginal) => {
     listOrganizationModules: vi.fn(),
     listOrganizationFeatures: vi.fn(),
     listOrganizationLimits: vi.fn(),
+    listOrganizationStaff: vi.fn(),
+    listOrganizationAudit: vi.fn(),
+    listRegisterResets: vi.fn(),
+    resetRegisterCounter: vi.fn(),
     listPlans: vi.fn(),
     setSubscriptionStatus: vi.fn(),
     setPlan: vi.fn(),
@@ -65,6 +73,10 @@ beforeEach(() => {
   vi.mocked(listOrganizationFeatures).mockResolvedValue([] as never);
   vi.mocked(listOrganizationLimits).mockResolvedValue([] as never);
   vi.mocked(listPlans).mockResolvedValue([] as never);
+  vi.mocked(listOrganizationStaff).mockResolvedValue([] as never);
+  vi.mocked(listOrganizationAudit).mockResolvedValue([] as never);
+  vi.mocked(listRegisterResets).mockResolvedValue([]);
+  vi.mocked(resetRegisterCounter).mockResolvedValue(undefined);
   mockedStatus.mockResolvedValue(undefined as never);
 });
 
@@ -160,17 +172,206 @@ describe("OrganizationDetail — sections", () => {
     expect(screen.queryByRole("button", { name: /^SUSPENDED$/ })).not.toBeInTheDocument();
   });
 
-  it("offers no Users or Activity tab, and says why instead of showing them empty", async () => {
-    // An empty Users tab asserts the tenant has no staff, which is a claim
-    // and a false one -- no RPC returns them. Same for Activity:
-    // platform_audit() has no organization filter.
+  it("offers both a Users and an Activity tab", async () => {
+    // Both are backed now: platform_organization_staff() (20260902150000)
+    // and platform_organization_audit() (20260902160000).
     renderPage();
     await screen.findByText(/Aling Nena/);
 
-    expect(screen.queryByRole("tab", { name: "Users" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "Activity" })).not.toBeInTheDocument();
-    expect(screen.getByText(/no RPC returns them/i)).toBeInTheDocument();
-    expect(screen.getByText(/no organization filter/i)).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Users" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Activity" })).toBeInTheDocument();
+  });
+
+  it("lists the platform actions recorded against this organization", async () => {
+    const user = userEvent.setup();
+    vi.mocked(listOrganizationAudit).mockResolvedValue([
+      {
+        id: 9,
+        actorEmail: "eng@example.test",
+        action: "PLATFORM_ENABLE_MODULE",
+        entityType: "OrganizationModule",
+        entityId: "org-1",
+        reason: "paid upgrade",
+        createdAt: "2026-08-30T02:00:00.000Z",
+        oldData: null,
+        newData: null,
+        ipAddress: null,
+        userAgent: null,
+      },
+    ] as never);
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Activity" }));
+
+    expect(screen.getByText("PLATFORM_ENABLE_MODULE")).toBeInTheDocument();
+    expect(screen.getByText(/paid upgrade/)).toBeInTheDocument();
+  });
+
+  it("says why administrator events are absent rather than implying a partial log", async () => {
+    // Grants, revocations and MFA verifications belong to no organization.
+    // That is a fact about the data, not a coverage gap.
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Activity" }));
+
+    expect(screen.getByText(/belong to no organization/i)).toBeInTheDocument();
+  });
+
+  it("refuses the tenant's activity to a scope that cannot read the audit log", async () => {
+    mockedUsePlatform.mockReturnValue({ admin: { scope: "BILLING" } } as never);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Activity" }));
+
+    expect(screen.getByText(/can't read the platform audit/i)).toBeInTheDocument();
+    expect(vi.mocked(listOrganizationAudit)).not.toHaveBeenCalled();
+  });
+
+  it("distinguishes an empty history from a refused one", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Activity" }));
+
+    expect(
+      screen.getByText("No platform action has been recorded against this organization.")
+    ).toBeInTheDocument();
+  });
+
+  it("shows the RBAC role rather than only the coarse enum", async () => {
+    // A SUPERVISOR and a CASHIER are both `cashier` to staff.role, and hold
+    // 15 permissions and none. Showing the enum alone would mislead.
+    const user = userEvent.setup();
+    vi.mocked(listOrganizationStaff).mockResolvedValue([
+      {
+        staffId: "s1",
+        name: "Nena",
+        email: "nena@example.test",
+        authRole: "cashier",
+        rbacRole: "SUPERVISOR",
+        active: true,
+        pinLocked: false,
+        createdAt: "2026-08-01T00:00:00.000Z",
+      },
+    ] as never);
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Users" }));
+
+    expect(screen.getByText("Nena")).toBeInTheDocument();
+    expect(screen.getByText("SUPERVISOR")).toBeInTheDocument();
+  });
+
+  it("lists a deactivated staff member rather than hiding them", async () => {
+    // They still hold historical sales; hiding them would make a tenant's
+    // own records look unattributed.
+    const user = userEvent.setup();
+    vi.mocked(listOrganizationStaff).mockResolvedValue([
+      {
+        staffId: "s2",
+        name: "Gone",
+        email: "gone@example.test",
+        authRole: "cashier",
+        rbacRole: "CASHIER",
+        active: false,
+        pinLocked: false,
+        createdAt: "2026-08-01T00:00:00.000Z",
+      },
+    ] as never);
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Users" }));
+
+    expect(screen.getByText("Gone")).toBeInTheDocument();
+    expect(screen.getByText("deactivated")).toBeInTheDocument();
+  });
+
+  it("flags a staff member who is locked out right now", async () => {
+    const user = userEvent.setup();
+    vi.mocked(listOrganizationStaff).mockResolvedValue([
+      {
+        staffId: "s3",
+        name: "Locked",
+        email: "locked@example.test",
+        authRole: "cashier",
+        rbacRole: "CASHIER",
+        active: true,
+        pinLocked: true,
+        createdAt: "2026-08-01T00:00:00.000Z",
+      },
+    ] as never);
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Users" }));
+
+    expect(screen.getByText("PIN locked")).toBeInTheDocument();
+  });
+
+  it("explains an organization with no staff rather than showing a blank tab", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText(/Aling Nena/);
+    await user.click(screen.getByRole("tab", { name: "Users" }));
+
+    expect(screen.getByText("No staff records for this organization.")).toBeInTheDocument();
+  });
+
+  // The reset counter is what an examiner uses to detect a register that
+  // quietly started counting again from zero, so reaching it is deliberately
+  // narrow: ENGINEER scope, a reason, and a confirmation step.
+  describe("resetting a register's accumulating totals", () => {
+    it("is not offered to a scope that cannot use it", async () => {
+      mockedUsePlatform.mockReturnValue({ admin: { scope: "SUPPORT" } } as never);
+      renderPage();
+      await screen.findByText(/Aling Nena/);
+
+      expect(screen.queryByText("Register accumulating totals")).not.toBeInTheDocument();
+      expect(vi.mocked(listRegisterResets)).not.toHaveBeenCalled();
+    });
+
+    it("will not submit without a reason", async () => {
+      mockedUsePlatform.mockReturnValue({ admin: { scope: "ENGINEER" } } as never);
+      renderPage();
+      await screen.findByText("Register accumulating totals");
+
+      expect(screen.getByRole("button", { name: "Reset accumulating totals" })).toBeDisabled();
+    });
+
+    it("asks for confirmation before resetting, and sends the reason", async () => {
+      const user = userEvent.setup();
+      mockedUsePlatform.mockReturnValue({ admin: { scope: "ENGINEER" } } as never);
+      renderPage();
+      await screen.findByText("Register accumulating totals");
+
+      await user.type(screen.getByPlaceholderText("Why this register is being reset"), "tablet replaced");
+      await user.click(screen.getByRole("button", { name: "Reset accumulating totals" }));
+
+      // Nothing has happened yet -- the first press only asks.
+      expect(vi.mocked(resetRegisterCounter)).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole("button", { name: "Yes, reset" }));
+
+      expect(vi.mocked(resetRegisterCounter)).toHaveBeenCalledWith(
+        "org-1",
+        "tablet replaced",
+        null
+      );
+    });
+
+    it("surfaces a refusal rather than appearing to succeed", async () => {
+      const user = userEvent.setup();
+      mockedUsePlatform.mockReturnValue({ admin: { scope: "ENGINEER" } } as never);
+      vi.mocked(resetRegisterCounter).mockRejectedValue(new Error("UNAUTHORIZED_ACTION"));
+      renderPage();
+      await screen.findByText("Register accumulating totals");
+
+      await user.type(screen.getByPlaceholderText("Why this register is being reset"), "no mfa");
+      await user.click(screen.getByRole("button", { name: "Reset accumulating totals" }));
+      await user.click(screen.getByRole("button", { name: "Yes, reset" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("UNAUTHORIZED_ACTION");
+    });
   });
 });
-
