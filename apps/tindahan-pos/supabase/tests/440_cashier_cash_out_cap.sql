@@ -163,9 +163,12 @@ $$, 'a service line without service_type is not treated as a cash-out, cap or no
 -- A negative cash_handed_over can't be used to net a large one out
 -- -----------------------------------------------------------------------------
 select pg_temp.act_as('0f000000-0000-4000-8000-00000000a002');
+-- The second line carries a real fee (5, not 0) on purpose: checkout_sale
+-- refuses any service line with amount <= 0 as "Invalid service amount", so a
+-- zero-fee line never reaches the cap arithmetic this is meant to exercise.
 select throws_ok($$
   select checkout_sale('[]'::jsonb,
-    (select pg_temp.cashout(15, 5000) || pg_temp.cashout(0, -4500)))
+    (select pg_temp.cashout(15, 5000) || pg_temp.cashout(5, -4500)))
 $$, 'P0001', 'CASH_OUT_CAP_EXCEEDED',
    'a fabricated negative cash_handed_over on a second line does not offset the first and slip under the cap');
 
