@@ -324,6 +324,73 @@ export async function addProduct(
  * inside that function — reproducing it here would encode an implementation
  * detail of how PINs are stored into the test suite.
  */
+/**
+ * A cashier in an existing store.
+ *
+ * Signing up always creates a store -- handle_new_user() has no "join an
+ * existing one" path, and falls back to 'My Store' when no name is given -- so
+ * this creates the account, moves its staff row into the target store as a
+ * cashier, and removes the throwaway store made on the way. Without this,
+ * nothing in the e2e suite can exercise a staff ROLE boundary at all: every
+ * account it can create is the admin of its own store.
+ */
+export async function createTestCashier(
+  request: APIRequestContext,
+  storeName: string,
+  cashierName = 'Test Cashier'
+): Promise<{ email: string; password: string }> {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error(
+      'createTestCashier requires VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to be set.'
+    )
+  }
+  const email = uniqueEmail('e2e-cashier')
+  const throwaway = `Throwaway ${email}`
+
+  const res = await request.post(`${SUPABASE_URL}/auth/v1/admin/users`, {
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    data: {
+      email,
+      password: TEST_PASSWORD,
+      email_confirm: true,
+      user_metadata: { store_name: throwaway, owner_name: cashierName },
+    },
+  })
+  if (!res.ok()) throw new Error(`createTestCashier failed: ${res.status()} ${await res.text()}`)
+
+  await sql(
+    `update staff
+        set store_id = (select id from stores where name = '${storeName}'),
+            role = 'cashier',
+            name = '${cashierName}'
+      where email = '${email}';
+     delete from stores where name = '${throwaway}';`
+  )
+
+  return { email, password: TEST_PASSWORD }
+}
+
+/** A signed-in access token for an account, for asserting what the SERVER does. */
+export async function accessTokenFor(
+  request: APIRequestContext,
+  email: string,
+  password = TEST_PASSWORD
+): Promise<string> {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error('accessTokenFor requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
+  }
+  const auth = await request.post(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    headers: { apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+    data: { email, password },
+  })
+  if (!auth.ok()) throw new Error(`sign-in failed for ${email}: ${await auth.text()}`)
+  return ((await auth.json()) as { access_token: string }).access_token
+}
+
 export async function primeCashierPin(request: APIRequestContext, email: string) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error('primeCashierPin requires VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
