@@ -74,6 +74,23 @@ describe("addToCart", () => {
     const cart = addToCart(addToCart([], chips), soda);
     expect(cart).toHaveLength(2);
   });
+
+  // Mobile did not cap at stock while the web app always has, so the same scan
+  // built a sellable cart on one client and a cart the server refuses on the
+  // other -- and the mobile cashier only found out at checkout.
+  it("caps quantity at available stock instead of overselling (soda has 4 in stock)", () => {
+    expect(addToCart([], soda, 9)[0].quantity).toBe(4);
+  });
+
+  it("caps a repeated scan once the line is already at the limit", () => {
+    const full = addToCart([], soda, 4);
+    expect(addToCart(full, soda)).toEqual(full);
+  });
+
+  it("does not add a line for a product with zero or negative stock", () => {
+    expect(addToCart([], { ...soda, stock: 0 })).toEqual([]);
+    expect(addToCart([], { ...soda, stock: -2 })).toEqual([]);
+  });
 });
 
 describe("removeFromCart / setQuantity (story A7)", () => {
@@ -122,6 +139,23 @@ describe("cartTotal / cartItemCount", () => {
   it("sums pack-priced lines using lineTotal, not qty * price", () => {
     const cart: CartLine[] = [{ product: candy, quantity: 3 }];
     expect(cartTotal(cart)).toBe(5);
+  });
+});
+
+describe("setQuantity respects stock", () => {
+  it("caps an edited quantity at what is actually in stock", () => {
+    const cart = addToCart([], soda, 2);
+    expect(setQuantity(cart, soda.id, 99)[0].quantity).toBe(4);
+  });
+
+  it("drops the line when the product has no stock left", () => {
+    const cart = [{ product: { ...soda, stock: 0 }, quantity: 2 }];
+    expect(setQuantity(cart, soda.id, 3)).toEqual([]);
+  });
+
+  it("leaves the cart alone for a product that is not in it", () => {
+    const cart = addToCart([], soda, 2);
+    expect(setQuantity(cart, "not-in-cart", 5)).toEqual(cart);
   });
 });
 
