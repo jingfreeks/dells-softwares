@@ -488,7 +488,11 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     // replays, since checkout_sale no longer accepts a raw PIN on the replay
     // path either (20260903100000).
     let overrideToken: string | null = null;
-    const rawOverridePin = payment.type === "credit" ? payment.overridePin?.trim() || null : null;
+    // Not credit-only any more: the same override PIN also clears
+    // checkout_sale()'s cashier_cash_out_cap check (20260903200000), which
+    // can apply to a cash or QR sale carrying a cash-out service line just
+    // as easily as a credit sale over its limit.
+    const rawOverridePin = payment.overridePin?.trim() || null;
     if (rawOverridePin) {
       try {
         const { data: checkData, error: checkErr } = await supabase.rpc("check_credit_override_pin", {
@@ -507,7 +511,17 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
 
     const rpcParams = {
       p_items: cart.map((line) => ({ product_id: line.product.id, quantity: line.quantity })),
-      p_services: services.map((line) => ({ label: line.label, amount: line.amount, fee: line.fee })),
+      p_services: services.map((line) => ({
+        label: line.label,
+        amount: line.amount,
+        fee: line.fee,
+        // Present only for a cash-out line (Pos/hooks.tsx addCashOutService)
+        // -- lets checkout_sale() sum the actual cash handed over against
+        // stores.cashier_cash_out_cap (20260903200000). A line with neither
+        // key set is invisible to that check, same as before this change.
+        ...(line.serviceType ? { service_type: line.serviceType } : {}),
+        ...(line.cashHandedOver != null ? { cash_handed_over: line.cashHandedOver } : {}),
+      })),
       p_customer_id: payment.type === "credit" ? payment.customerId : null,
       p_payment_type: payment.type,
       p_reference_no: payment.type === "qr" ? payment.referenceNo!.trim() : null,
@@ -686,8 +700,32 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   // local state instead of refetching, same rationale as checkout()
   // above: the RPC is already the source of truth, this just keeps the
   // already-loaded products/customers/sales in sync with it.
-  async function voidSale(sale: SaleRecord, reason: string) {
-    const { error: err } = await supabase.rpc("void_sale", { p_sale_id: sale.id, p_reason: reason });
+  async function voidSale(sale: SaleRecord, reason: string, overridePin?: string) {
+    // Mirrors checkout()'s override-PIN exchange above: void_sale() only
+    // accepts a validated, single-use token from check_credit_override_pin()
+    // when stores.void_requires_pin is on and the caller isn't an admin
+    // (20260903190000) -- never a raw PIN, for the same rate-limiting reason.
+    // A store with the toggle off, or an Owner voiding their own sale, never
+    // reaches here with a pin at all, so there's nothing to exchange.
+    let overrideToken: string | null = null;
+    const rawOverridePin = overridePin?.trim() || null;
+    if (rawOverridePin) {
+      const { data: checkData, error: checkErr } = await supabase.rpc("check_credit_override_pin", {
+        p_pin: rawOverridePin,
+        p_cashier_token: null,
+      });
+      if (checkErr) throw checkErr;
+      const result = checkData?.[0];
+      if (!result) throw new Error("Could not verify the override PIN.");
+      if (!result.ok) throw new Error(result.error_code ?? "INVALID_OVERRIDE_PIN");
+      overrideToken = result.override_token;
+    }
+
+    const { error: err } = await supabase.rpc("void_sale", {
+      p_sale_id: sale.id,
+      p_reason: reason,
+      p_override_token: overrideToken,
+    });
     if (err) throw err;
 
     setProducts((prev) =>

@@ -5,6 +5,7 @@ export * from "./navIcons";
 // the main bundle. Re-exporting it here would make every "@/components"
 // consumer statically pull it in, undoing the code-split. Import it
 // directly from "@/components/BarcodeScanner" instead.
+export * from "./AdminPinModal";
 export * from "./BottomNav";
 export * from "./CategoryManager";
 export * from "./ChipMultiSelect";

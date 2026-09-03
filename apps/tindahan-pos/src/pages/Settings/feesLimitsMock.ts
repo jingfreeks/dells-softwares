@@ -5,9 +5,7 @@ export interface FeesLimitsMock {
   bulkFromPages: number;
   keepInDrawer: number;
   defaultCreditLimit: number;
-  cashierCashOutCap: number;
   blockUtangPastLimit: boolean;
-  voidNeedsPin: boolean;
   warnLowEloadFloat: boolean;
 }
 
@@ -18,19 +16,24 @@ export const DEFAULT_FEES_LIMITS_MOCK: FeesLimitsMock = {
   bulkFromPages: 10,
   keepInDrawer: 2000,
   defaultCreditLimit: 500,
-  cashierCashOutCap: 1000,
   blockUtangPastLimit: false,
-  voidNeedsPin: false,
   warnLowEloadFloat: false,
 };
 
 const STORAGE_KEY_PREFIX = "tindahan-pos:fees-limits:";
 
 /**
- * Print/photocopy pricing, cash-and-credit limits, and their toggles
- * have no per-store column or enforcement path yet — this is a UI-only
- * redesign, so they persist client-side for now.
+ * Print/photocopy pricing, the default credit limit, and the two remaining
+ * toggles here have no per-store column or enforcement path yet -- this is
+ * a UI-only redesign, so they persist client-side for now.
  * TODO: move to real store columns/enforcement once they exist.
+ *
+ * "Void needs PIN" and "Cashier cash-out cap" used to live here too. They
+ * are real, server-enforced store columns now (stores.void_requires_pin,
+ * stores.cashier_cash_out_cap -- see 20260903190000/20260903200000 and
+ * useFeesLimitsPage.ts), so they read and save through useAuth()'s
+ * store/updateStore like every other real setting on this page, not through
+ * this mock.
  */
 export function loadFeesLimitsMock(storeId: string): FeesLimitsMock {
   try {

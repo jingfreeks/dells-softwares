@@ -298,6 +298,31 @@ describe("Reports", () => {
       expect(screen.queryByRole("button", { name: "Void" })).not.toBeInTheDocument();
     });
 
+    // void_requires_pin (20260903190000) is enforced inside void_sale(), so the
+    // client learns about it by being refused. The reason has already been
+    // collected by then, so the PIN dialog takes over holding it rather than
+    // asking again -- and the refusal must NOT surface as an error, or the
+    // admin sees a failure for something that is about to succeed.
+    it("opens the owner-PIN dialog when the void is refused for want of a PIN", async () => {
+      const user = userEvent.setup();
+      const sale = makeSaleRecord({ id: "s1" });
+      const fetchSalesInRange = vi.fn().mockResolvedValue([sale]);
+      const voidSale = vi.fn().mockRejectedValue(new Error("VOID_PIN_REQUIRED"));
+      vi.mocked(useStoreData).mockReturnValue(
+        makeStoreDataValue({ products: [], fetchSalesInRange, voidSale })
+      );
+
+      renderPage();
+      await waitFor(() => expect(fetchSalesInRange).toHaveBeenCalled());
+
+      await user.click(await screen.findByRole("button", { name: "Void" }));
+      await user.type(screen.getByLabelText("Reason for voiding"), "Wrong quantity entered");
+      await user.click(screen.getAllByRole("button", { name: "Void" }).at(-1)!);
+
+      expect(await screen.findByRole("dialog")).toBeInTheDocument();
+      expect(screen.queryByText("VOID_PIN_REQUIRED")).not.toBeInTheDocument();
+    });
+
     it("disables the confirm button until a reason is typed", async () => {
       const user = userEvent.setup();
       const fetchSalesInRange = vi.fn().mockResolvedValue([makeSaleRecord({ id: "s1" })]);
