@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useStoreData, type RecentCreditPayment } from "@/lib";
+import { useStoreData, type RecentCreditPayment, formatDateTimeShort } from "@/lib";
 
 export function useRecentPaymentsCard() {
   const { fetchRecentCreditPayments } = useStoreData();
@@ -22,12 +22,7 @@ export function useRecentPaymentsCard() {
   }, [fetchRecentCreditPayments]);
 
   function formatPaymentDate(timestamp: string) {
-    return new Date(timestamp).toLocaleString("en-PH", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
+    return formatDateTimeShort(timestamp);
   }
 
   return { payments, loading, formatPaymentDate };

@@ -4,8 +4,7 @@ import {
   useStoreData,
   TEXT_GREETING_MORNING,
   TEXT_GREETING_AFTERNOON,
-  TEXT_GREETING_EVENING,
-} from "@/lib";
+  TEXT_GREETING_EVENING, formatDayLong } from "@/lib";
 import { toDateInputValue } from "@/pages/Reports/lib";
 import {
   DashboardError,
@@ -59,11 +58,7 @@ export function Dashboard() {
 
   const now = new Date();
   const selectedDateObj = new Date(`${selectedDate}T12:00:00`);
-  const dateLabel = selectedDateObj.toLocaleDateString("en-PH", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+  const dateLabel = formatDayLong(selectedDateObj);
   const firstName = user?.name?.split(" ")[0] ?? "";
   const customersOwing = customers.filter((c) => c.balance > 0).length;
   const averageBasket =

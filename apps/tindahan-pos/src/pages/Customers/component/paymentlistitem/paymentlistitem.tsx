@@ -1,8 +1,7 @@
 import type { CreditPayment } from "@/lib";
 import {
   PESO,
-  TEXT_RECORDED_BY_PREFIX,
-} from "@/lib";
+  TEXT_RECORDED_BY_PREFIX, formatDate } from "@/lib";
 
 const Paymentlistitem = (props: { payment: CreditPayment }) => {
     const { payment } = props;
@@ -14,11 +13,7 @@ const Paymentlistitem = (props: { payment: CreditPayment }) => {
             {PESO.format(payment.amount)}
           </span>
           <span className="tpl-ts">
-            {new Date(payment.timestamp).toLocaleDateString("en-PH", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
+            {formatDate(payment.timestamp)}
           </span>
         </div>
         <p className="tpl-ts">

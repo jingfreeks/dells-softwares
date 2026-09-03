@@ -5,8 +5,7 @@ import {
   LABEL_DRAWER_VARIANCE,
   LABEL_VOIDS_THIS_WEEK,
   TEXT_THIS_WEEK_SUFFIX,
-  TEXT_NO_ONE_ON_SHIFT,
-} from "@/lib";
+  TEXT_NO_ONE_ON_SHIFT, formatTime } from "@/lib";
 import type { StaffAccountCounts, VoidsThisWeek, DrawerVarianceThisWeek } from "../../lib";
 import type { OpenShift } from "../../hooksShifts";
 
@@ -44,7 +43,7 @@ export function StaffMetrics({
           {openShifts.length === 0
             ? TEXT_NO_ONE_ON_SHIFT
             : openShifts.length === 1
-              ? `${firstShift.staffName} · since ${new Date(firstShift.createdAt).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" })}`
+              ? `${firstShift.staffName} · since ${formatTime(firstShift.createdAt)}`
               : `${openShifts.length} staff on shift`}
         </p>
       </button>

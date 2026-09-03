@@ -1,3 +1,4 @@
+import { formatDateTime } from "@/lib";
 import { printGuardrails } from "../appMode";
 
 export interface PrintColumn {
@@ -88,13 +89,7 @@ export function printReport(options: PrintReportOptions): void {
   subtitleEl.textContent = options.subtitle;
   const printedEl = doc.createElement("p");
   printedEl.style.cssText = `font-size:10px;color:${PAPER_FAINT};margin-top:4px`;
-  const printedAt = new Date().toLocaleString("en-PH", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const printedAt = formatDateTime(new Date());
   printedEl.textContent = `Printed ${printedAt} by ${options.printedByName}`;
   reportBlock.append(titleEl, subtitleEl, printedEl);
 
