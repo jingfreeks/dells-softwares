@@ -118,6 +118,48 @@ describe("syncEngine", () => {
     expect(all[0].status).toBe("needs_cashier_reauth");
   });
 
+  // cashier_cash_out_cap (20260903200000) is enforced by checkout_sale summing
+  // cash_handed_over across the sale's cash-out lines. A replay that dropped
+  // service_type would leave the cap silently unenforced offline while working
+  // online -- the same shape of divergence as the mobile cart.
+  it("replays a cash-out line with the fields the cap is read from", async () => {
+    await enqueueSale(STORE_ID, {
+      ...makeSale("s1"),
+      payload: {
+        ...makeSale("s1").payload,
+        services: [
+          { label: "Cash out", amount: 500, fee: 10, service_type: "cashout", cash_handed_over: 500 },
+        ],
+      },
+    });
+    mockedRpc.mockResolvedValue({ data: [{ sale_id: "real-1", total: 510 }], error: null });
+
+    await drainQueue(STORE_ID);
+
+    expect(mockedRpc).toHaveBeenCalledWith(
+      "checkout_sale",
+      expect.objectContaining({
+        p_services: [
+          { label: "Cash out", amount: 500, fee: 10, service_type: "cashout", cash_handed_over: 500 },
+        ],
+      })
+    );
+  });
+
+  // PostgREST usually rejects with an object carrying `message`, but a thrown
+  // string reaches the same path -- and a sale whose failure reason came back
+  // blank would be filed as "Sync failed." with nothing to act on.
+  it("keeps a string rejection's text as the failure reason", async () => {
+    await enqueueSale(STORE_ID, makeSale("s1"));
+    mockedRpc.mockResolvedValue({ data: null, error: "CREDIT_LIMIT_EXCEEDED" });
+
+    await drainQueue(STORE_ID);
+
+    const all = await listQueuedSales(STORE_ID);
+    expect(all[0].status).toBe("failed");
+    expect(all[0].lastError).toBe("CREDIT_LIMIT_EXCEEDED");
+  });
+
   it("drains multiple items in order, one at a time", async () => {
     await enqueueSale(STORE_ID, makeSale("a"));
     await new Promise((r) => setTimeout(r, 5));

@@ -268,6 +268,26 @@ describe("Pos", () => {
     expect(checkout).toHaveBeenCalledTimes(1);
   });
 
+  // cashier_cash_out_cap (20260903200000) is compared against cash_handed_over
+  // summed across the sale's cash-out lines, which only the server sums
+  // authoritatively -- so unlike the credit-limit override there is no
+  // client-side pre-check, and the till learns about it by being refused.
+  it("opens the owner-PIN dialog when the cash-out cap refuses the sale", async () => {
+    const user = userEvent.setup();
+    const checkout = vi.fn().mockRejectedValue(new Error("CASH_OUT_CAP_EXCEEDED"));
+    setup({ checkout });
+    renderPage();
+
+    await user.type(screen.getByLabelText(QUERY_FIELD_LABEL), "111{Enter}");
+    const tendered = screen.getByLabelText("Amount tendered");
+    await user.clear(tendered);
+    await user.type(tendered, "50");
+
+    await user.click(screen.getByRole("button", { name: "Complete sale" }));
+
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  });
+
   it("opens the receipt modal with the completed sale's items and total after checkout", async () => {
     const user = userEvent.setup();
     const checkout = vi.fn().mockResolvedValue(

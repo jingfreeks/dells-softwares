@@ -151,3 +151,12 @@ $$;
 -- an old client hitting any other new server-side check.
 revoke all on function void_sale(uuid, text, text) from public, anon, service_role;
 grant execute on function void_sale(uuid, text, text) to authenticated;
+
+-- The two-argument form has to go, or both exist and every existing call --
+-- void_sale(id, reason) -- becomes ambiguous: "function void_sale(uuid,
+-- unknown) is not unique". p_override_token defaults to null, so the new
+-- signature covers those callers exactly as before.
+--
+-- Dropped AFTER the grant above rather than before, so there is no window in
+-- which no callable void_sale exists.
+drop function if exists void_sale(uuid, text);
