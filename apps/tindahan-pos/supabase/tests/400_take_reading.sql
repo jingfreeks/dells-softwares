@@ -10,10 +10,13 @@
 --   a sale that arrives after its period closed lands in the OPEN period and
 --   is flagged, leaving the closed Z exactly as it was taken.
 --
--- Timestamps are explicit throughout. now() is frozen for the whole
--- transaction, so every reading here shares a closed_at, and a period boundary
--- of "since the last Z" only means anything if the sales carry timestamps that
--- straddle it deliberately.
+-- Timestamps use clock_timestamp(), not now(). now() is fixed for the whole
+-- transaction, so seeding with it would put every sale and every reading at the
+-- same instant, and "since the last Z" would separate nothing -- each sale would
+-- fall into every later period and be counted again. That is exactly how the
+-- first version of this suite failed. clock_timestamp() advances, so the
+-- timeline is genuinely sequential. The one exception is the late entry, whose
+-- occurred_at is deliberately in the past while its arrival is not.
 --
 -- Run: psql -f supabase/tests/400_take_reading.sql
 -- =============================================================================
@@ -51,8 +54,8 @@ create or replace function pg_temp.sale(
 $$;
 
 -- Two sales that belong to the register's first, never-closed period.
-select pg_temp.sale(100, now() - interval '2 hours', now() - interval '2 hours', 'OR-0001');
-select pg_temp.sale(150, now() - interval '1 hour',  now() - interval '1 hour',  'OR-0002');
+select pg_temp.sale(100, clock_timestamp(), clock_timestamp(), 'OR-0001');
+select pg_temp.sale(150, clock_timestamp(), clock_timestamp(), 'OR-0002');
 
 set local role authenticated;
 select pg_temp.act_as('4e000000-0000-4000-8000-00000000f001');
@@ -76,7 +79,7 @@ select is((select late_entry_count from t_z1), 0, 'nothing is late in a first pe
 -- A second period. Its sales arrive after the first Z closed.
 -- -----------------------------------------------------------------------------
 reset role;
-select pg_temp.sale(60, now() + interval '1 minute', now() + interval '1 minute', 'OR-0003');
+select pg_temp.sale(60, clock_timestamp(), clock_timestamp(), 'OR-0003');
 set local role authenticated;
 select pg_temp.act_as('4e000000-0000-4000-8000-00000000f001');
 
@@ -107,7 +110,7 @@ select is(
 -- A late entry: it happened before the last Z, and arrived after it
 -- -----------------------------------------------------------------------------
 reset role;
-select pg_temp.sale(40, now() + interval '2 minutes', now() - interval '90 minutes', 'OR-0004');
+select pg_temp.sale(40, clock_timestamp(), now() - interval '90 minutes', 'OR-0004');
 set local role authenticated;
 select pg_temp.act_as('4e000000-0000-4000-8000-00000000f001');
 
@@ -125,7 +128,7 @@ select is((select grand_total from t_z3), 350.00::numeric,
 -- A void does not reach back, and cannot pull the accumulation down
 -- -----------------------------------------------------------------------------
 reset role;
-update sales set status = 'voided', voided_at = now() + interval '3 minutes',
+update sales set status = 'voided', voided_at = clock_timestamp(),
                  voided_by = '4e000000-0000-4000-8000-00000000f001'
  where store_id = pg_temp.store() and receipt_number = 'OR-0001';
 set local role authenticated;

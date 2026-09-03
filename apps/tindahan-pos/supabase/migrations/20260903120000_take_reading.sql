@@ -76,7 +76,12 @@ declare
   v_business_date date;
   v_period_start  timestamptz;
   v_baseline      numeric(14,2);
-  v_now           timestamptz := now();
+  -- clock_timestamp(), not now(). now() is fixed for the whole transaction, so
+  -- two readings taken in one transaction would share a closed_at -- and since
+  -- closed_at is the next period's opening boundary, the second period would
+  -- start where the first did and count the same sales again. The moment a
+  -- reading was actually taken is also the more honest value to record.
+  v_now           timestamptz := clock_timestamp();
   v_row           register_readings;
   v_gross         numeric(14,2);
   v_net           numeric(14,2);
