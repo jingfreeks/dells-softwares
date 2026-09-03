@@ -834,59 +834,29 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     drNumber: string | null = null
   ) {
     if (!user) throw new Error("Not signed in.");
-    const storeId = user.storeId;
 
-    for (const line of lines) {
-      await restock(line.productId, line.quantity);
-    }
-
-    // receiving_entries.warehouse_id is not-null (0017_inventory_management.sql)
-    // — tindahan-pos only ever writes to the store's single default
-    // warehouse (products.stock is the source of truth it reads/writes;
-    // see 0017's note), so resolve that warehouse's id rather than asking
-    // the admin to pick one they don't otherwise interact with.
-    const { data: warehouse, error: warehouseErr } = await supabase
-      .from("warehouses")
-      .select("id")
-      .eq("store_id", storeId)
-      .eq("is_default", true)
-      .single();
-    if (warehouseErr) throw warehouseErr;
-
-    // Cash (or an ad-hoc supplier with no saved record) is paid on
-    // delivery by definition; a term-based supplier starts unpaid until
-    // explicitly marked paid.
-    const resolvedSupplier = supplierId ? suppliers.find((s) => s.id === supplierId) : null;
-    const paidOnDelivery = !resolvedSupplier || resolvedSupplier.paymentTerms === "cash";
-
-    const { data: entry, error: entryErr } = await supabase
-      .from("receiving_entries")
-      .insert({
-        store_id: storeId,
-        supplier: supplier.trim() || "Unspecified supplier",
-        supplier_id: supplierId,
-        warehouse_id: warehouse.id,
-        dr_number: drNumber?.trim() || null,
-        paid: paidOnDelivery,
-        paid_at: paidOnDelivery ? new Date().toISOString() : null,
-        received_on: date,
-        created_by: user.id,
-      })
-      .select("id")
-      .single();
-    if (entryErr) throw entryErr;
-
-    const { error: linesErr } = await supabase.from("receiving_lines").insert(
-      lines.map((line) => ({
-        receiving_entry_id: entry.id,
+    // One RPC, one transaction. This used to raise stock line by line and then
+    // write the receiving record, which are guarded by different conditions --
+    // so a store whose receiving feature was revoked, whose INVENTORY module
+    // was off, or whose subscription was suspended would inflate its stock and
+    // then be told the save failed, with no record to explain the movement and
+    // a retry that added it again (#462). Everything now commits together, and
+    // stock moves only after the entitlement checks have passed.
+    const { error: err } = await supabase.rpc("receive_stock", {
+      p_supplier: supplier,
+      p_received_on: date,
+      p_lines: lines.map((line) => ({
         product_id: line.productId,
         product_name: line.productName,
         quantity: line.quantity,
         cost_each: line.costEach,
-      }))
-    );
-    if (linesErr) throw linesErr;
+      })),
+      p_supplier_id: supplierId,
+      p_dr_number: drNumber,
+    });
+    if (err) throw err;
 
+    await fetchProducts();
     await fetchReceivingHistory();
   }
 

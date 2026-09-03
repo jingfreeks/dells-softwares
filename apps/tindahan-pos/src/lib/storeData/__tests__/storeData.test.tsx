@@ -977,41 +977,40 @@ describe("StoreDataProvider", () => {
     await expect(captured!.receiveStock("Mega", "2026-07-20", [])).rejects.toThrow("Not signed in.");
   });
 
-  it("receives stock: restocks each line and records the entry", async () => {
-    mockedSupabase.rpc.mockResolvedValue({ data: [{ stock: 25 }], error: null });
-    tableResults.receiving_entries.single = { data: { id: "r1" }, error: null };
-    const entriesChain = makeChain("receiving_entries");
-    entriesChain.insert = vi.fn(() => ({
-      select: vi.fn(() => ({ single: vi.fn().mockResolvedValue({ data: { id: "r1" }, error: null }) })),
-    }));
-    const linesChain = makeChain("receiving_lines");
-    linesChain.insert = vi.fn().mockResolvedValue({ error: null });
-    mockedSupabase.from.mockImplementation((table: string) => {
-      if (table === "receiving_entries") return entriesChain;
-      if (table === "receiving_lines") return linesChain;
-      return makeChain(table);
-    });
+  // Receiving is one RPC now (#462). It used to raise stock line by line and
+  // then write the receiving record, guarded by different conditions -- so a
+  // refused save left the stock already moved with nothing to explain it.
+  // These assert the client hands the whole thing over in one call; that it
+  // commits or fails together is the database's job and is asserted in
+  // supabase/tests/410_receive_stock_atomic.sql.
+  it("receives stock through a single transactional RPC", async () => {
+    mockedSupabase.rpc.mockResolvedValue({ data: "r1", error: null });
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
 
-    await captured!.receiveStock("Mega Distribution", "2026-07-20", [
-      { productId: "p1", productName: "Sardines", quantity: 5, costEach: 10 },
-    ], "s1");
-    expect(entriesChain.insert).toHaveBeenCalled();
-    expect(linesChain.insert).toHaveBeenCalled();
+    await captured!.receiveStock(
+      "Mega Distribution",
+      "2026-07-20",
+      [{ productId: "p1", productName: "Sardines", quantity: 5, costEach: 10 }],
+      "s1",
+      "DR-42"
+    );
+
+    expect(mockedSupabase.rpc).toHaveBeenCalledWith("receive_stock", {
+      p_supplier: "Mega Distribution",
+      p_received_on: "2026-07-20",
+      p_lines: [{ product_id: "p1", product_name: "Sardines", quantity: 5, cost_each: 10 }],
+      p_supplier_id: "s1",
+      p_dr_number: "DR-42",
+    });
   });
 
-  it("defaults to 'Unspecified supplier' for a blank supplier name", async () => {
-    mockedSupabase.rpc.mockResolvedValue({ data: [{ stock: 25 }], error: null });
+  it("does not write anything itself -- no direct table inserts remain", async () => {
+    mockedSupabase.rpc.mockResolvedValue({ data: "r1", error: null });
     const entriesChain = makeChain("receiving_entries");
-    entriesChain.insert = vi.fn((row: { supplier: string }) => {
-      expect(row.supplier).toBe("Unspecified supplier");
-      return {
-        select: vi.fn(() => ({ single: vi.fn().mockResolvedValue({ data: { id: "r1" }, error: null }) })),
-      };
-    });
+    entriesChain.insert = vi.fn();
     const linesChain = makeChain("receiving_lines");
-    linesChain.insert = vi.fn().mockResolvedValue({ error: null });
+    linesChain.insert = vi.fn();
     mockedSupabase.from.mockImplementation((table: string) => {
       if (table === "receiving_entries") return entriesChain;
       if (table === "receiving_lines") return linesChain;
@@ -1020,48 +1019,27 @@ describe("StoreDataProvider", () => {
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
 
-    await captured!.receiveStock("   ", "2026-07-20", [
+    await captured!.receiveStock("Mega", "2026-07-20", [
       { productId: "p1", productName: "Sardines", quantity: 5, costEach: 10 },
     ]);
-    expect(entriesChain.insert).toHaveBeenCalled();
+
+    expect(entriesChain.insert).not.toHaveBeenCalled();
+    expect(linesChain.insert).not.toHaveBeenCalled();
   });
 
-  it("propagates an error creating the receiving entry", async () => {
-    mockedSupabase.rpc.mockResolvedValue({ data: [{ stock: 25 }], error: null });
-    const entriesChain = makeChain("receiving_entries");
-    entriesChain.insert = vi.fn(() => ({
-      select: vi.fn(() => ({
-        single: vi.fn().mockResolvedValue({ data: null, error: { message: "entry failed" } }),
-      })),
-    }));
-    mockedSupabase.from.mockImplementation((table: string) =>
-      table === "receiving_entries" ? entriesChain : makeChain(table)
-    );
-    renderProvider(<Capture />);
-    await waitFor(() => expect(captured?.loading).toBe(false));
-    await expect(
-      captured!.receiveStock("Mega", "2026-07-20", [{ productId: "p1", productName: "Sardines", quantity: 5, costEach: 10 }])
-    ).rejects.toThrow("entry failed");
-  });
-
-  it("propagates an error inserting receiving lines", async () => {
-    mockedSupabase.rpc.mockResolvedValue({ data: [{ stock: 25 }], error: null });
-    const entriesChain = makeChain("receiving_entries");
-    entriesChain.insert = vi.fn(() => ({
-      select: vi.fn(() => ({ single: vi.fn().mockResolvedValue({ data: { id: "r1" }, error: null }) })),
-    }));
-    const linesChain = makeChain("receiving_lines");
-    linesChain.insert = vi.fn().mockResolvedValue({ error: { message: "lines failed" } });
-    mockedSupabase.from.mockImplementation((table: string) => {
-      if (table === "receiving_entries") return entriesChain;
-      if (table === "receiving_lines") return linesChain;
-      return makeChain(table);
+  it("propagates a refusal from the receiving RPC", async () => {
+    mockedSupabase.rpc.mockResolvedValue({
+      data: null,
+      error: { message: "FEATURE_NOT_ENABLED: inventory.receiving" },
     });
     renderProvider(<Capture />);
     await waitFor(() => expect(captured?.loading).toBe(false));
+
     await expect(
-      captured!.receiveStock("Mega", "2026-07-20", [{ productId: "p1", productName: "Sardines", quantity: 5, costEach: 10 }])
-    ).rejects.toThrow("lines failed");
+      captured!.receiveStock("Mega", "2026-07-20", [
+        { productId: "p1", productName: "Sardines", quantity: 5, costEach: 10 },
+      ])
+    ).rejects.toThrow("FEATURE_NOT_ENABLED: inventory.receiving");
   });
 
   it("adds a customer", async () => {
