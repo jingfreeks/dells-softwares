@@ -14,6 +14,8 @@ import {
   setPlan,
   setFeature,
   setLimit,
+  listRegisterResets,
+  resetRegisterCounter,
   resetFeatureToPlan,
   setSubscriptionStatus,
   blocksWrites,
@@ -23,6 +25,7 @@ import {
   type OrganizationStaff,
   type PlatformAuditEntry,
   type OrganizationLimit,
+  type RegisterReset,
   type OrganizationModule,
   type Plan,
   type SubscriptionStatus,
@@ -37,9 +40,18 @@ export function OrganizationDetail() {
   const { admin } = usePlatform();
   // Same gate as the platform audit page and the RPC behind it.
   const mayReadAudit = admin?.scope === "ENGINEER" || admin?.scope === "SUPERUSER";
+  // Same scope the RPC enforces. The server is the boundary -- this only keeps
+  // a control nobody may use off the screen.
+  const mayResetRegister = mayReadAudit;
   const [org, setOrg] = useState<Organization | null>(null);
   const [modules, setModules] = useState<OrganizationModule[]>([]);
   const [limits, setLimits] = useState<OrganizationLimit[]>([]);
+  const [resets, setResets] = useState<RegisterReset[]>([]);
+  const [resetReason, setResetReason] = useState("");
+  const [resetReference, setResetReference] = useState("");
+  const [resetConfirming, setResetConfirming] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
   const [features, setFeatures] = useState<OrganizationFeature[]>([]);
   const [staff, setStaff] = useState<OrganizationStaff[]>([]);
   const [activity, setActivity] = useState<PlatformAuditEntry[]>([]);
@@ -56,7 +68,7 @@ export function OrganizationDetail() {
   const [tab, setTab] = useState<TabKey>("overview");
 
   const load = useCallback(async () => {
-    const [orgs, mods, planList, limitList, featureList, staffList, activityList] = await Promise.all([
+    const [orgs, mods, planList, limitList, featureList, staffList, activityList, resetList] = await Promise.all([
       listOrganizations(),
       listOrganizationModules(orgId),
       listPlans(),
@@ -64,6 +76,7 @@ export function OrganizationDetail() {
       listOrganizationFeatures(orgId),
       listOrganizationStaff(orgId),
       mayReadAudit ? listOrganizationAudit(orgId, 50) : Promise.resolve([]),
+      mayResetRegister ? listRegisterResets(orgId) : Promise.resolve([]),
     ]);
     setOrg(orgs.find((o) => o.organizationId === orgId) ?? null);
     setModules(mods);
@@ -72,7 +85,24 @@ export function OrganizationDetail() {
     setFeatures(featureList);
     setStaff(staffList);
     setActivity(activityList);
-  }, [orgId, mayReadAudit]);
+    setResets(resetList);
+  }, [orgId, mayReadAudit, mayResetRegister]);
+
+  async function handleResetRegister() {
+    setResetBusy(true);
+    setResetError(null);
+    try {
+      await resetRegisterCounter(orgId, resetReason.trim(), resetReference.trim() || null);
+      setResetReason("");
+      setResetReference("");
+      setResetConfirming(false);
+      setResets(await listRegisterResets(orgId));
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : "Could not reset the register.");
+    } finally {
+      setResetBusy(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -292,6 +322,98 @@ export function OrganizationDetail() {
               <Fact label="Staff" value={String(org?.staffCount ?? 0)} />
             </dl>
           </div>
+
+          {mayResetRegister && (
+            <div className="card mt-4 p-4">
+              <h2 className="mb-1 text-[13.5px] font-semibold" style={{ color: "var(--t2)" }}>
+                Register accumulating totals
+              </h2>
+              <p className="text-[12.5px]" style={{ color: "var(--t9)" }}>
+                A reset restarts this store&apos;s grand total from zero and raises its reset
+                counter. Every reading taken afterwards carries that counter, which is how an
+                examiner tells one accumulation from another. Readings already taken are not
+                changed — they were true when taken.
+              </p>
+              <p className="mt-1.5 text-[12.5px]" style={{ color: "var(--t9)" }}>
+                There is no undo. A mistaken reset is corrected by recording another one.
+              </p>
+
+              {resets.length > 0 && (
+                <ul className="mt-3 grid gap-1.5">
+                  {resets.map((r) => (
+                    <li key={r.id} className="text-[12.5px]" style={{ color: "var(--t5)" }}>
+                      <span style={{ color: "var(--t3)" }}>Reset {r.resetCounter}</span>
+                      <span style={{ color: "var(--t9)" }}>
+                        {" — "}
+                        {new Date(r.createdAt).toLocaleString()} · {r.reason}
+                        {r.authorityReference ? ` · ${r.authorityReference}` : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {resetError && (
+                <p role="alert" className="mt-3 text-[12.5px]" style={{ color: "var(--bad)" }}>
+                  {resetError}
+                </p>
+              )}
+
+              <div className="mt-3 grid gap-2 sm:max-w-md">
+                <label className="text-[12.5px]" style={{ color: "var(--t3)" }}>
+                  Reason
+                  <input
+                    className="input mt-1 w-full"
+                    value={resetReason}
+                    onChange={(e) => {
+                      setResetReason(e.target.value);
+                      setResetConfirming(false);
+                    }}
+                    placeholder="Why this register is being reset"
+                  />
+                </label>
+                <label className="text-[12.5px]" style={{ color: "var(--t3)" }}>
+                  BIR authority reference <span style={{ color: "var(--t9)" }}>(optional)</span>
+                  <input
+                    className="input mt-1 w-full"
+                    value={resetReference}
+                    onChange={(e) => setResetReference(e.target.value)}
+                    placeholder="Permit or directive number, if the reset was directed"
+                  />
+                </label>
+
+                {resetConfirming ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[12.5px]" style={{ color: "var(--t3)" }}>
+                      Reset this register permanently?
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      disabled={resetBusy}
+                      onClick={handleResetRegister}
+                    >
+                      {resetBusy ? "Resetting…" : "Yes, reset"}
+                    </button>
+                    <button type="button" className="btn" onClick={() => setResetConfirming(false)}>
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={resetReason.trim().length === 0}
+                      onClick={() => setResetConfirming(true)}
+                    >
+                      Reset accumulating totals
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Two of the designed tabs have no backend behind them. An empty
               tab would read as "this tenant has no staff and no history",
