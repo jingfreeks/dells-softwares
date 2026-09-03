@@ -22,18 +22,30 @@ const order = vi.fn().mockResolvedValue({
 // RefundModal's own "how much of this sale has already been refunded?"
 // query uses .select().eq() instead of .order() — same chain object
 // supports both so one shared mock covers staff/devices and refund_items.
-const eq = vi.fn().mockResolvedValue({ data: [], error: null });
-// useReportsPage's own refunds-in-range fetch chains .select().gte().lte(),
-// optionally followed by .eq() when a cashier filter is set — an awaitable
-// object that also exposes .eq() covers both shapes.
-function makeAwaitableQuery(): Promise<{ data: unknown[]; error: null }> & { eq: typeof eq } {
-  const result = Promise.resolve({ data: [], error: null }) as unknown as Promise<{
-    data: unknown[];
-    error: null;
-  }> & { eq: typeof eq };
-  result.eq = eq;
+// Every builder step returns the same awaitable object, so any chain shape
+// resolves: useReportsPage chains .select().gte().lte() with an optional
+// .eq(), and the Z card's closing-record lookup chains
+// .select().eq().eq().order().limit(). A mock that only supports the chains
+// that existed when it was written turns a new query into an unhandled
+// rejection rather than a test failure, which is how this one hid.
+type QueryResult = { data: unknown[]; error: null };
+interface Chainable extends Promise<QueryResult> {
+  eq: () => Chainable;
+  order: () => Chainable;
+  limit: () => Chainable;
+  gte: () => Chainable;
+  lte: () => Chainable;
+}
+function makeAwaitableQuery(): Chainable {
+  const result = Promise.resolve({ data: [], error: null }) as unknown as Chainable;
+  result.eq = () => result;
+  result.order = () => result;
+  result.limit = () => result;
+  result.gte = () => result;
+  result.lte = () => result;
   return result;
 }
+const eq = vi.fn(() => makeAwaitableQuery());
 const lte = vi.fn(() => makeAwaitableQuery());
 const gte = vi.fn(() => ({ lte }));
 const select = vi.fn(() => ({ order, eq, gte }));
@@ -64,7 +76,7 @@ describe("Reports", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue());
     vi.mocked(useCan).mockReturnValue(true);
     order.mockClear();
-    eq.mockReset().mockResolvedValue({ data: [], error: null });
+    eq.mockReset().mockImplementation(() => makeAwaitableQuery());
     rpc.mockClear();
     rpc.mockResolvedValue({ data: null, error: null });
     order.mockResolvedValue({
