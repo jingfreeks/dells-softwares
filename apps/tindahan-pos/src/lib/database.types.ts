@@ -1248,6 +1248,16 @@ export interface Database {
         // which shows up as unrelated tables losing their row types.
         Returns: RegisterReadingRow;
       };
+      receive_stock: {
+        Args: {
+          p_supplier: string;
+          p_received_on: string;
+          p_lines: Json;
+          p_supplier_id?: string | null;
+          p_dr_number?: string | null;
+        };
+        Returns: string;
+      };
       report_reconciliation: {
         Args: {
           p_start: string;
