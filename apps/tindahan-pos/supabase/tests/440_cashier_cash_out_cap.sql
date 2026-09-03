@@ -33,12 +33,25 @@ insert into auth.users (id, email, raw_user_meta_data) values
   ('0f000000-0000-4000-8000-00000000a001', 'cashout.owner@test.local',
    '{"store_name":"Cash Out Cap Store","owner_name":"Cap Owner"}');
 
+create temporary table t_store as
+  select id from stores where name = 'Cash Out Cap Store';
+grant select on t_store to authenticated;
+
 create or replace function pg_temp.store() returns uuid language sql as $$
-  select id from stores where name = 'Cash Out Cap Store'
+  select id from t_store
 $$;
 
+-- Captured into a temp table while still postgres, and read from there.
+-- Reading `staff` inside the helper breaks the moment the suite drops to
+-- `authenticated`: RLS scopes that table to the caller's own store, and the
+-- helper is called to SET the caller -- so it returns null and every later
+-- assertion fails with "Not a registered staff member of any store".
+create temporary table t_owner as
+  select id from staff where store_id = pg_temp.store() and role = 'admin';
+grant select on t_owner to authenticated;
+
 create or replace function pg_temp.owner() returns uuid language sql as $$
-  select id from staff where store_id = pg_temp.store() and role = 'admin'
+  select id from t_owner
 $$;
 
 update staff set pin_hash = crypt('4321', gen_salt('bf')) where id = pg_temp.owner();
