@@ -90,8 +90,16 @@ select lives_ok($$ select public.platform_set_plan(pg_temp.org(), 'BASIC', 'down
   'the tenant is then downgraded all the way to the entry tier');
 select ok(core.module_enabled(pg_temp.org(), 'ACCOUNTING'),
   'the comp SURVIVES the downgrade -- intended, but it is why a reset is needed');
-select ok(not core.module_enabled(pg_temp.org(), 'INVENTORY'),
-  'while plan-sourced modules are revoked normally');
+-- Asserted on a plan-sourced FEATURE rather than a module. This read
+-- `not module_enabled(..., 'INVENTORY')` while the downgrade target was FREE,
+-- which carried POS alone. FREE was retired in 20260903110000, and every plan
+-- still assignable carries INVENTORY -- ENTERPRISE and BASIC differ by the
+-- ACCOUNTING module only, which is precisely the comped one. So there is no
+-- module left that this could observe being revoked, and purchase orders make
+-- the same point: granted by ENTERPRISE, not by BASIC, and gone once BASIC
+-- governs.
+select ok(not core.feature_enabled(pg_temp.org(), 'inventory.purchase_orders'),
+  'while plan-sourced grants are revoked normally');
 
 -- -----------------------------------------------------------------------------
 -- ...and the escape hatch that makes it survivable
@@ -99,7 +107,7 @@ select ok(not core.module_enabled(pg_temp.org(), 'INVENTORY'),
 select lives_ok($$ select public.platform_reset_module_to_plan(pg_temp.org(), 'ACCOUNTING', 'comp ended') $$,
   'the override can be handed back to the plan');
 select ok(not core.module_enabled(pg_temp.org(), 'ACCOUNTING'),
-  'after which FREE governs and ACCOUNTING is off');
+  'after which the tenant''s own plan governs and ACCOUNTING is off');
 
 select lives_ok($$ select public.platform_set_plan(pg_temp.org(), 'ENTERPRISE', 'upgrade again') $$,
   'and a later upgrade now reaches that module again');
