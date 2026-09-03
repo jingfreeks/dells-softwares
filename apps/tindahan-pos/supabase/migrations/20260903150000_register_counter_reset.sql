@@ -57,7 +57,12 @@ create table register_resets (
   authority_reference text,
 
   authorised_by       uuid not null,
-  created_at          timestamptz not null default now()
+  -- clock_timestamp(), matching register_readings.closed_at. now() is fixed for
+  -- the whole transaction, so a reset recorded after a reading in the same
+  -- transaction would carry an earlier timestamp than the reading it follows,
+  -- and take_reading() decides whether to zero the baseline by comparing the
+  -- two. The moment the reset was actually recorded is the honest value anyway.
+  created_at          timestamptz not null default clock_timestamp()
 );
 
 create unique index register_resets_counter_uq

@@ -143,12 +143,29 @@ select is(
   'the reset appears in the platform audit trail'
 );
 
--- Append-only: correcting a reset means recording another one.
+-- Append-only, and there are two layers to it. RLS grants no UPDATE at all, so
+-- a client's edit matches no rows and raises nothing -- which is why this has
+-- to be asserted as a row count rather than an exception.
+select lives_ok(
+  format($$ update register_resets set reason = 'changed my mind' where store_id = %L $$, pg_temp.store()),
+  'a client UPDATE raises nothing...'
+);
+select is(
+  (select reason from register_resets where store_id = pg_temp.store()),
+  'tablet replaced',
+  '...because RLS let it match no rows at all -- the reason is untouched'
+);
+
+-- The trigger is the second layer, and only reachable by something RLS does not
+-- filter. Without it, anything running as the table owner could rewrite history.
+reset role;
 select throws_ok(
   format($$ update register_resets set reason = 'changed my mind' where store_id = %L $$, pg_temp.store()),
   'REGISTER_RESETS_APPEND_ONLY',
-  'a recorded reset cannot be edited afterwards'
+  'and the trigger refuses the edit even for a caller RLS does not stop'
 );
+set local role authenticated;
+select pg_temp.act_as('6e000000-0000-4000-8000-00000000b002');
 
 -- -----------------------------------------------------------------------------
 -- What the next readings say
