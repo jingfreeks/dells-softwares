@@ -20,6 +20,18 @@ import type {
 } from "@/lib/types";
 import { StoreDataContext, type AddSupplierInput, type CheckoutPayment, type ReceivingEntry } from "./storeDataContext";
 import {
+  createCategory,
+  deleteCategory,
+  mergeCategories,
+  renameCategory as renameCategoryRecord,
+} from "@/lib/categories";
+import {
+  RECEIVING_ENTRY_SELECT,
+  listReceivingHistory,
+  mapReceivingEntryRow,
+  submitReceiving,
+} from "@/lib/inventory";
+import {
   createCustomer,
   listCreditPayments,
   listRecentCreditPayments,
@@ -64,38 +76,6 @@ function mapProductRow(row: {
     packPrice: row.pack_price,
     imageUrl: row.image_url,
     cost: row.cost,
-  };
-}
-
-const RECEIVING_ENTRY_SELECT =
-  "id, supplier, supplier_id, dr_number, paid, paid_at, received_on, receiving_lines(product_id, product_name, quantity, cost_each)";
-
-function mapReceivingEntryRow(row: {
-  id: string;
-  supplier: string;
-  supplier_id: string | null;
-  dr_number: string | null;
-  paid: boolean;
-  paid_at: string | null;
-  received_on: string;
-  receiving_lines:
-    | { product_id: string | null; product_name: string; quantity: number; cost_each: number }[]
-    | null;
-}): ReceivingEntry {
-  return {
-    id: row.id,
-    date: row.received_on,
-    supplier: row.supplier,
-    supplierId: row.supplier_id,
-    drNumber: row.dr_number,
-    paid: row.paid,
-    paidAt: row.paid_at,
-    lines: (row.receiving_lines ?? []).map((line) => ({
-      productId: line.product_id ?? "",
-      productName: line.product_name,
-      quantity: line.quantity,
-      costEach: line.cost_each,
-    })),
   };
 }
 
@@ -302,13 +282,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
   // Receiving history is admin-only at the RLS level for insert, but any
   // staff can read it (mirrors products' view policy).
   const fetchReceivingHistory = useCallback(async () => {
-    const { data, error: err } = await supabase
-      .from("receiving_entries")
-      .select(RECEIVING_ENTRY_SELECT)
-      .order("received_on", { ascending: false })
-      .limit(50);
-    if (err) throw err;
-    setReceivingHistory((data ?? []).map(mapReceivingEntryRow));
+    setReceivingHistory(await listReceivingHistory());
   }, []);
 
   // Unlimited, date-ranged fetch for supplier metrics (spend this month,
@@ -795,58 +769,25 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
 
   async function addCategory(name: string): Promise<Category> {
     if (!user) throw new Error("Not signed in.");
-    const storeId = user.storeId;
-    const { data, error: err } = await supabase
-      .from("categories")
-      .insert({ store_id: storeId, name: name.trim() })
-      .select("id, name")
-      .single();
-    if (err) {
-      if (err.code === "23505") throw new Error(`"${name.trim()}" already exists.`);
-      throw err;
-    }
+    const category = await createCategory(user.storeId, name);
     await fetchCategories();
-    return data;
+    return category;
   }
 
   async function renameCategory(id: string, name: string) {
-    const { error: err } = await supabase
-      .from("categories")
-      .update({ name: name.trim() })
-      .eq("id", id);
-    if (err) {
-      if (err.code === "23505") throw new Error(`"${name.trim()}" already exists.`);
-      throw err;
-    }
+    await renameCategoryRecord(id, name);
+    // Both lists: a renamed category changes what every product displays.
     await Promise.all([fetchCategories(), fetchProducts()]);
   }
 
   async function removeCategory(id: string) {
-    const { error: err } = await supabase.from("categories").delete().eq("id", id);
-    if (err) {
-      // Postgres foreign-key violation — the database is the source of
-      // truth for "is this category still in use", never a client-side
-      // count that could go stale.
-      if (err.code === "23503") {
-        throw new Error("This category is still assigned to one or more products.");
-      }
-      throw err;
-    }
+    await deleteCategory(id);
     await fetchCategories();
   }
 
   async function mergeCategory(fromId: string, toId: string) {
-    const { error: reassignErr } = await supabase
-      .from("products")
-      .update({ category_id: toId })
-      .eq("category_id", fromId);
-    if (reassignErr) throw reassignErr;
-    // fromId is guaranteed empty now, so the FK-violation guard in
-    // removeCategory can't fire — but still route through it rather than
-    // duplicating the delete call, in case a policy rejects it for another
-    // reason.
-    await removeCategory(fromId);
-    await fetchProducts();
+    await mergeCategories(fromId, toId);
+    await Promise.all([fetchCategories(), fetchProducts()]);
   }
 
   async function receiveStock(
@@ -857,28 +798,7 @@ export function StoreDataProvider({ children }: { children: ReactNode }) {
     drNumber: string | null = null
   ) {
     if (!user) throw new Error("Not signed in.");
-
-    // One RPC, one transaction. This used to raise stock line by line and then
-    // write the receiving record, which are guarded by different conditions --
-    // so a store whose receiving feature was revoked, whose INVENTORY module
-    // was off, or whose subscription was suspended would inflate its stock and
-    // then be told the save failed, with no record to explain the movement and
-    // a retry that added it again (#462). Everything now commits together, and
-    // stock moves only after the entitlement checks have passed.
-    const { error: err } = await supabase.rpc("receive_stock", {
-      p_supplier: supplier,
-      p_received_on: date,
-      p_lines: lines.map((line) => ({
-        product_id: line.productId,
-        product_name: line.productName,
-        quantity: line.quantity,
-        cost_each: line.costEach,
-      })),
-      p_supplier_id: supplierId,
-      p_dr_number: drNumber,
-    });
-    if (err) throw err;
-
+    await submitReceiving(supplier, date, lines, supplierId, drNumber);
     await fetchProducts();
     await fetchReceivingHistory();
   }
