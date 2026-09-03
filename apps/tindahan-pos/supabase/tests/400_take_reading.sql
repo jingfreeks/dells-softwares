@@ -162,14 +162,14 @@ select is(
   'their counters run 1..4 with no repeat and no gap'
 );
 
+-- Demoting the existing staff row rather than adding one: inserting into
+-- auth.users auto-provisions its own staff (and store), so a second user is
+-- both a collision and a second tenant. 210_permission_unification changes a
+-- role the same way.
 reset role;
-insert into auth.users (id, email) values
-  ('4e000000-0000-4000-8000-00000000f002', 'reading.cashier@test.local');
-insert into staff (id, store_id, name, email, role)
-  values ('4e000000-0000-4000-8000-00000000f002', pg_temp.store(), 'Cashier',
-          'reading.cashier@test.local', 'cashier');
+update staff set role = 'cashier' where id = '4e000000-0000-4000-8000-00000000f001';
 set local role authenticated;
-select pg_temp.act_as('4e000000-0000-4000-8000-00000000f002');
+select pg_temp.act_as('4e000000-0000-4000-8000-00000000f001');
 
 select throws_ok(
   $$ select take_reading('Z') $$,
