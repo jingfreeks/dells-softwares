@@ -287,8 +287,20 @@ grand total that is quietly wrong.
 3. **Grand total — gross.** Voids and refunds are recorded as their own
    totals on each reading and never subtract from the accumulation.
 4. **X readings are recorded**, not merely displayed (§5 already assumed this).
-5. **Reset authority** — still open; it gates nothing in steps 1–3 and can be
-   settled before the reset path is built.
+5. **Reset authority — answered 2026-09-03: platform only.**
+   `core.is_platform_admin('ENGINEER')` gates it, so a reset needs an ACTIVE
+   roster row and MFA verified within the last 8 hours. A reason is mandatory;
+   a BIR authority reference is optional, because a tablet replaced at 9pm is a
+   legitimate reset nobody has a reference number for. **A store owner cannot
+   reset their own register** — §7 says making the counter easy to reach
+   defeats it, and the shop is the party it exists to check.
+
+   Recorded as its own append-only event (`register_resets`) rather than by
+   editing readings, which were true when taken. A reset zeroes the
+   accumulation baseline and raises the counter every later reading carries; it
+   deliberately does **not** move the period boundary, so sales made between the
+   last Z and the reset are still counted rather than falling into no reading at
+   all.
 
 ### What answer 1 changed, and a constraint found while implementing it
 
