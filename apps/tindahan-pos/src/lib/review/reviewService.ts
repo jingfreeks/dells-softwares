@@ -30,6 +30,7 @@ interface ReviewSummaryRow {
   customers_with_balance: number;
   overdue_customer_count: number;
   oldest_overdue_days: number;
+  overdue_days: number;
   best_sellers: { id: string; name: string; revenue: number; quantity: number }[];
 }
 
@@ -51,6 +52,7 @@ function mapSummary(row: ReviewSummaryRow): ReviewSummary {
     customersWithBalance: row.customers_with_balance,
     overdueCustomerCount: row.overdue_customer_count,
     oldestOverdueDays: row.oldest_overdue_days,
+    overdueDays: row.overdue_days,
     bestSellers: (row.best_sellers ?? []).map(
       (b): ReviewBestSeller => ({
         id: b.id,
@@ -77,12 +79,19 @@ export type FetchReviewResult =
 export async function fetchReviewSummary(
   from: string,
   to: string,
-  overdueDays: number
+  /**
+   * Omit to use the store's own `utang_overdue_days`. Pass a number only to
+   * ask a different question ("who is 60 days late") without changing the
+   * store's setting -- the client no longer carries a default of its own,
+   * because a client-side default is precisely what let Review and the
+   * Customers page disagree.
+   */
+  overdueDays?: number
 ): Promise<FetchReviewResult> {
   const { data, error } = await supabase.rpc("review_summary", {
     p_from: from,
     p_to: to,
-    p_overdue_days: overdueDays,
+    ...(overdueDays !== undefined && { p_overdue_days: overdueDays }),
   });
 
   if (error) {

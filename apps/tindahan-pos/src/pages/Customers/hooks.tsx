@@ -14,7 +14,6 @@ import {
   isOverdueDebt,
   type Customer,
   type CreditPayment, describePlatformError } from "@/lib";
-import { DEFAULT_ALERTS_MOCK, loadAlertsMock } from "@/pages/Settings/alertsMock";
 import { findDuplicateCustomer } from "./lib";
 
 export type PaymentSchedule = "biweekly" | "weekly" | "none";
@@ -33,10 +32,10 @@ const emptyPaymentForm = { amount: "0", note: "" };
 export function useCustomersPage() {
   const { customers, sales, addCustomer, recordCreditPayment, fetchCreditPayments } = useStoreData();
   const { store } = useAuth();
-  const thresholdDays = useMemo(
-    () => (store ? loadAlertsMock(store.id).utangAgingThresholdDays : DEFAULT_ALERTS_MOCK.utangAgingThresholdDays),
-    [store]
-  );
+  // The store's own setting, not a per-device copy. This used to read
+  // localStorage, which is how this page and Review came to age the same
+  // customers by different rules -- see 20260905100000.
+  const thresholdDays = store?.utangOverdueDays ?? 30;
   const location = useLocation();
   const [query, setQuery] = useState(
     () => (location.state as { initialQuery?: string } | null)?.initialQuery ?? ""

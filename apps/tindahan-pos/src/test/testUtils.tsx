@@ -51,6 +51,8 @@ export function makeStore(overrides: Partial<Store> = {}): Store {
     cashierCanEditPrices: false,
     voidRequiresPin: false,
     cashierCashOutCap: null,
+    utangOverdueDays: 30,
+    drawerVarianceThreshold: 20,
     ...overrides,
   };
 }
