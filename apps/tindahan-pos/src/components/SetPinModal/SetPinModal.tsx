@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { PinKeypad } from "@/components/PinKeypad";
 import {
   LABEL_YOUR_OVERRIDE_PIN,
@@ -6,9 +6,8 @@ import {
   LABEL_YOUR_OVERRIDE_PIN_CONFIRM,
   ERROR_PINS_DO_NOT_MATCH,
   BUTTON_CANCEL,
-  useEscapeToClose,
-  useFocusTrap,
 } from "@/lib";
+import { Modal } from "../Modal";
 
 interface SetPinModalProps {
   open: boolean;
@@ -37,12 +36,6 @@ export function SetPinModal({ open, submitting, error, onCancel, onSubmit, headi
     onCancel();
   }
 
-  const dialogRef = useRef<HTMLDivElement>(null);
-  useEscapeToClose(open, handleCancel);
-  useFocusTrap(open, dialogRef);
-
-  if (!open) return null;
-
   function handleFirstEntry(pin: string) {
     setFirstPin(pin);
     setDraft("");
@@ -59,16 +52,13 @@ export function SetPinModal({ open, submitting, error, onCancel, onSubmit, headi
   }
 
   return (
-    <div className="tpl-modal-overlay" onClick={handleCancel}>
-      <div
-        ref={dialogRef}
-        className="tpl-modal-panel tpl-card"
-        style={{ maxWidth: 360, textAlign: "center" }}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="setPinHeading"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal
+      open={open}
+      onClose={handleCancel}
+      labelledBy="setPinHeading"
+      maxWidth={360}
+      style={{ textAlign: "center" }}
+    >
         <p id="setPinHeading" className="tpl-h3" style={{ marginBottom: 16 }}>
           {heading ?? LABEL_YOUR_OVERRIDE_PIN}
         </p>
@@ -101,7 +91,6 @@ export function SetPinModal({ open, submitting, error, onCancel, onSubmit, headi
         >
           {BUTTON_CANCEL}
         </button>
-      </div>
-    </div>
+    </Modal>
   );
 }
