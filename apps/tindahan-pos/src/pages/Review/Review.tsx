@@ -9,19 +9,39 @@ import {
   TEXT_REVIEW_OVERDUE_SUFFIX,
   TEXT_REVIEW_LOW_STOCK_SUFFIX,
   TEXT_REVIEW_TRANSACTIONS_SUFFIX,
+  TEXT_REVIEW_PROFIT_BASIS,
   TEXT_REVIEW_PROFIT_PARTIAL_PREFIX,
   TEXT_REVIEW_PROFIT_PARTIAL_SUFFIX,
+  TEXT_REVIEW_PROFIT_NO_COST,
+  TEXT_REVIEW_VALUE_UNAVAILABLE,
   TEXT_REVIEW_ERROR_HEADING,
   TEXT_REVIEW_ERROR_BODY,
   BUTTON_TRY_AGAIN,
   PESO,
 } from "@/lib";
+import type { ReviewSummary } from "@/lib";
 import { ReviewLockedState, ReviewMetricCard } from "./component";
 import { useReviewPage } from "./hooks";
 
 /** "82%" from 0.82, for the profit-coverage caveat. */
 function asPercent(share: number): string {
   return `${Math.round(share * 100)}%`;
+}
+
+/**
+ * The line under Estimated Profit. Never empty -- see the comment at the call
+ * site for why every state has to name what the figure rests on.
+ */
+function profitBasis(summary: ReviewSummary): string {
+  if (summary.profitBasisShare <= 0) return TEXT_REVIEW_PROFIT_NO_COST;
+  if (summary.profitBasisShare < 1) {
+    return `${TEXT_REVIEW_PROFIT_PARTIAL_PREFIX} ${asPercent(summary.profitBasisShare)} ${TEXT_REVIEW_PROFIT_PARTIAL_SUFFIX}`;
+  }
+  // Full coverage still gets the basis line; the margin rides alongside it
+  // rather than replacing it.
+  return summary.salesTotal > 0
+    ? `${asPercent(summary.estimatedProfit / summary.salesTotal)} ${TEXT_REVIEW_MARGIN_SUFFIX} · ${TEXT_REVIEW_PROFIT_BASIS.toLowerCase()}`
+    : TEXT_REVIEW_PROFIT_BASIS;
 }
 
 export function Review() {
@@ -87,18 +107,29 @@ export function Review() {
             value={PESO.format(summary.salesTotal)}
             detail={`${summary.transactionCount} ${TEXT_REVIEW_TRANSACTIONS_SUFFIX}`}
           />
+          {/*
+            Three states, and every one of them names its basis.
+
+            Product Decisions §2: profit "MUST be labelled as estimated" and
+            must not be silently presented as exact historical profit. That
+            applies at FULL coverage too -- sale_items never captured a cost
+            snapshot, so even a complete figure is computed from today's costs
+            rather than the ones that applied when the sale happened. A bare
+            margin would read as exact, so there is no state without a basis
+            line.
+
+            At zero coverage the figure itself is withheld: review_summary()
+            returns 0 when nothing has a cost, and rendering that as ₱0.00
+            profit is the misleading zero the same decision rules out.
+          */}
           <ReviewMetricCard
             label={LABEL_REVIEW_METRIC_PROFIT}
-            value={PESO.format(summary.estimatedProfit)}
-            // The caveat wins over the margin when the basis is incomplete:
-            // a margin computed from 40% of sales is not a margin.
-            detail={
-              summary.profitBasisShare < 1
-                ? `${TEXT_REVIEW_PROFIT_PARTIAL_PREFIX} ${asPercent(summary.profitBasisShare)} ${TEXT_REVIEW_PROFIT_PARTIAL_SUFFIX}`
-                : summary.salesTotal > 0
-                  ? `${asPercent(summary.estimatedProfit / summary.salesTotal)} ${TEXT_REVIEW_MARGIN_SUFFIX}`
-                  : undefined
+            value={
+              summary.profitBasisShare > 0
+                ? PESO.format(summary.estimatedProfit)
+                : TEXT_REVIEW_VALUE_UNAVAILABLE
             }
+            detail={profitBasis(summary)}
             detailIsCaveat={summary.profitBasisShare < 1}
           />
           <ReviewMetricCard

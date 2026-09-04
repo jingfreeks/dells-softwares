@@ -115,9 +115,9 @@ describe("Review", () => {
     expect(screen.queryByText("EXPENSES")).not.toBeInTheDocument();
   });
 
-  // sale_items never captured a cost snapshot, so profit is partial whenever a
-  // sold product has no cost. The card says so instead of printing a margin
-  // computed from part of the sales.
+  // Product Decisions §2. sale_items never captured a cost snapshot, so profit
+  // is partial whenever a sold product has no cost. The card says so instead of
+  // printing a margin computed from part of the sales.
   it("discloses the coverage behind estimated profit instead of showing a margin", async () => {
     mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
     mockFetch.mockResolvedValue({
@@ -126,8 +126,41 @@ describe("Review", () => {
     });
     renderPage();
 
-    expect(await screen.findByText("Based on 40% of sales with a known cost")).toBeInTheDocument();
-    expect(screen.queryByText(/margin$/)).not.toBeInTheDocument();
+    expect(
+      await screen.findByText("Estimated from current costs · 40% of sales have one")
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/^\d+% margin$/)).not.toBeInTheDocument();
+  });
+
+  // The half that is easy to get wrong: at FULL coverage the figure is still
+  // estimated, because products.cost is today's cost and not the one that
+  // applied when the sale happened. §2 forbids presenting it as exact, so a
+  // bare margin is not allowed either.
+  it("still says the figure is estimated when cost coverage is complete", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({ ok: true, summary: { ...SUMMARY, profitBasisShare: 1 } });
+    renderPage();
+
+    await screen.findByText("ESTIMATED PROFIT");
+    expect(
+      screen.getByText(/estimated from current product costs$/i)
+    ).toBeInTheDocument();
+  });
+
+  // A misleading zero, which §2 rules out: review_summary() returns 0 profit
+  // when nothing has a cost, and rendering that as PHP 0.00 would read as
+  // "you made no profit" rather than "we cannot tell".
+  it("withholds the figure entirely when no product has a cost", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({
+      ok: true,
+      summary: { ...SUMMARY, estimatedProfit: 0, profitBasisShare: 0 },
+    });
+    renderPage();
+
+    expect(await screen.findByText("No product costs recorded yet")).toBeInTheDocument();
+    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.queryByText("₱0.00")).not.toBeInTheDocument();
   });
 
   it("shows a plain error with a working retry, and no server wording", async () => {
