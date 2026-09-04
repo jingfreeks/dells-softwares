@@ -4,36 +4,22 @@ import { useBillingState } from "../../lib/billing";
 import { startTrialBestEffort } from "../../lib/startTrial";
 import { useStoreData } from "../../lib/storeData";
 import {
-  DEFAULT_LOW_STOCK_THRESHOLD,
-  STARTER_CATALOG,
   computeAverageSaleValue,
-  computeStartingFloat,
-  computeStockAlertPreview,
-  type DenominationCounts,
   type OnboardingStep,
 } from "../../lib/onboarding";
 import {
   DEFAULT_OPENING_HOURS,
-  DEFAULT_STOCK_ALERT_SETTINGS,
   clearOnboardingStep,
-  loadDenominationCounts,
   loadOnboardingStep,
   loadOpeningHours,
-  loadStockAlertSettings,
-  saveDenominationCounts,
   saveOnboardingStep,
   saveOpeningHours,
-  saveStockAlertSettings,
 } from "../../lib/onboardingSettings";
 import { pickAndOptimizeImage, uploadImage, type OptimizedImage } from "../../lib/imageUpload";
-import { pickCsvFileText } from "../../lib/documentPicker";
-import { parseProductsCsv } from "../../lib/csv";
-import type { Category } from "../../lib/types";
-import { EMPTY_QUICK_ADD_FORM, type QuickAddForm } from "../onboarding/quickaddproductmodal";
 import { useStockAlertsStep } from "./useStockAlertsStep";
 import { useOpenRegisterStep } from "./useOpenRegisterStep";
+import { useProductsStep } from "./useProductsStep";
 
-const UNCATEGORIZED = "Uncategorized";
 // Same caps as the web app's Onboarding/hooks.tsx (AVATAR_MAX_DIMENSION/STORE_PHOTO_MAX_DIMENSION).
 const AVATAR_MAX_DIMENSION = 512;
 const STORE_PHOTO_MAX_DIMENSION = 1024;
@@ -42,7 +28,7 @@ const STORE_PHOTO_MAX_DIMENSION = 1024;
 export function useOnboardingScreen() {
   const { user, store, updateProfile, updateStore, completeOnboarding } = useAuth();
   const billing = useBillingState();
-  const { products, categories, sales, addProduct, addCategory } = useStoreData();
+  const { products, sales } = useStoreData();
 
   const [step, setStepRaw] = useState<OnboardingStep>("welcome");
   const [trialStarted, setTrialStarted] = useState(false);
@@ -80,17 +66,6 @@ export function useOnboardingScreen() {
   const [savingProfile, setSavingProfile] = useState(false);
 
   // Products step
-  const [enabledCategoryKeys, setEnabledCategoryKeys] = useState<Set<string>>(
-    () => new Set(STARTER_CATALOG.map((c) => c.key))
-  );
-  const [importingStarter, setImportingStarter] = useState(false);
-  const [starterError, setStarterError] = useState<string | null>(null);
-  const [importingCsv, setImportingCsv] = useState(false);
-  const [csvError, setCsvError] = useState<string | null>(null);
-  const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [quickAddForm, setQuickAddForm] = useState<QuickAddForm>(EMPTY_QUICK_ADD_FORM);
-  const [quickAddError, setQuickAddError] = useState<string | null>(null);
-  const [savingQuickAdd, setSavingQuickAdd] = useState(false);
 
   // Stock alerts step
 
@@ -102,6 +77,7 @@ export function useOnboardingScreen() {
   // store-details and products steps.
   const stockAlerts = useStockAlertsStep();
   const openRegister = useOpenRegisterStep();
+  const productsStep = useProductsStep();
 
   const [finishing, setFinishing] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
@@ -111,8 +87,6 @@ export function useOnboardingScreen() {
   // backend column for them yet). Guarded by refs so the initial load
   // doesn't immediately re-save the just-loaded value as a "change".
   const hoursLoadedRef = useRef(false);
-  const stockAlertsLoadedRef = useRef(false);
-  const denominationsLoadedRef = useRef(false);
   const stepResumedRef = useRef(false);
 
   // Resumes mid-flow on reload instead of always restarting at "welcome" --
@@ -146,19 +120,9 @@ export function useOnboardingScreen() {
     saveOpeningHours(user.storeId, { openTime, closeTime });
   }, [user, openTime, closeTime]);
 
-  const starterItemsToAdd = useMemo(
-    () => STARTER_CATALOG.filter((c) => enabledCategoryKeys.has(c.key)).flatMap((c) => c.items),
-    [enabledCategoryKeys]
-  );
 
   const averageSaleValue = useMemo(() => computeAverageSaleValue(sales), [sales]);
 
-  async function resolveCategoryId(categoryName: string): Promise<string> {
-    const existing = categories.find((c) => c.name.toLowerCase() === categoryName.toLowerCase());
-    if (existing) return existing.id;
-    const created: Category = await addCategory(categoryName);
-    return created.id;
-  }
 
   async function handlePickAvatar() {
     setAvatarError(null);
@@ -235,109 +199,9 @@ export function useOnboardingScreen() {
     }
   }
 
-  async function handleImportStarterCatalog() {
-    setImportingStarter(true);
-    setStarterError(null);
-    try {
-      const categoriesToImport = STARTER_CATALOG.filter((c) => enabledCategoryKeys.has(c.key));
-      for (const category of categoriesToImport) {
-        const categoryId = await resolveCategoryId(category.label);
-        for (const item of category.items) {
-          await addProduct({
-            barcode: null,
-            name: item.name,
-            price: item.price,
-            stock: 0,
-            lowStockThreshold: DEFAULT_LOW_STOCK_THRESHOLD,
-            categoryId,
-            packQuantity: null,
-            packPrice: null,
-            imageUrl: null,
-          });
-        }
-      }
-    } catch (err) {
-      setStarterError(err instanceof Error ? err.message : "Could not import the starter list.");
-    } finally {
-      setImportingStarter(false);
-    }
-  }
 
-  async function handleImportCsv() {
-    setImportingCsv(true);
-    setCsvError(null);
-    try {
-      const text = await pickCsvFileText();
-      if (text === null) return; // user cancelled
-      const { rows, error } = parseProductsCsv(text);
-      if (error === "empty") {
-        setCsvError("That file doesn't have any product rows.");
-        return;
-      }
-      if (error === "missing-columns") {
-        setCsvError("The file needs at least a name and price column.");
-        return;
-      }
-      for (const row of rows) {
-        const categoryId = await resolveCategoryId(row.category ?? UNCATEGORIZED);
-        await addProduct({
-          barcode: row.barcode,
-          name: row.name,
-          price: row.price,
-          stock: 0,
-          lowStockThreshold: DEFAULT_LOW_STOCK_THRESHOLD,
-          categoryId,
-          packQuantity: null,
-          packPrice: null,
-          imageUrl: null,
-        });
-      }
-    } catch (err) {
-      setCsvError(err instanceof Error ? err.message : "Could not import that file.");
-    } finally {
-      setImportingCsv(false);
-    }
-  }
 
-  function handleScannedBarcode(code: string) {
-    setShowQuickAdd(true);
-    setQuickAddForm({ ...EMPTY_QUICK_ADD_FORM, barcode: code });
-  }
 
-  async function handleQuickAddSubmit() {
-    const trimmedName = quickAddForm.name.trim();
-    const price = Number(quickAddForm.price);
-    if (!trimmedName) {
-      setQuickAddError("Name is required.");
-      return;
-    }
-    if (Number.isNaN(price) || price < 0) {
-      setQuickAddError("Enter a valid price.");
-      return;
-    }
-    setSavingQuickAdd(true);
-    setQuickAddError(null);
-    try {
-      const categoryId = await resolveCategoryId(UNCATEGORIZED);
-      await addProduct({
-        barcode: quickAddForm.barcode.trim() || null,
-        name: trimmedName,
-        price,
-        stock: 0,
-        lowStockThreshold: DEFAULT_LOW_STOCK_THRESHOLD,
-        categoryId,
-        packQuantity: null,
-        packPrice: null,
-        imageUrl: null,
-      });
-      setQuickAddForm(EMPTY_QUICK_ADD_FORM);
-      setShowQuickAdd(false);
-    } catch (err) {
-      setQuickAddError(err instanceof Error ? err.message : "Could not add product.");
-    } finally {
-      setSavingQuickAdd(false);
-    }
-  }
 
   async function handleFinish() {
     setFinishing(true);
@@ -385,23 +249,7 @@ export function useOnboardingScreen() {
     profileError,
     savingProfile,
     handleProfileContinue,
-    enabledCategoryKeys,
-    setEnabledCategoryKeys,
-    starterItemsToAdd,
-    importingStarter,
-    starterError,
-    handleImportStarterCatalog,
-    importingCsv,
-    csvError,
-    handleImportCsv,
-    showQuickAdd,
-    setShowQuickAdd,
-    quickAddForm,
-    setQuickAddForm,
-    quickAddError,
-    savingQuickAdd,
-    handleQuickAddSubmit,
-    handleScannedBarcode,
+    ...productsStep,
     // Spread rather than re-listed: the screen's props are unchanged by the
     // split, so nothing downstream had to move.
     ...stockAlerts,
