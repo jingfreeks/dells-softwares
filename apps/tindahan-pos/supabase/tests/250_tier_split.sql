@@ -103,9 +103,12 @@ select set_eq(
         'pos.utang', 'pos.eload', 'pos.held_sales',
         'inventory.suppliers', 'inventory.receiving',
         'inventory.purchase_orders', 'inventory.stock_count',
-        'inventory.conversions'],
-  'BUSINESS is the growing store: purchase orders, stock counts and unit '
-  || 'conversions on top of BASIC'
+        'inventory.conversions',
+        -- 20260904110000: Review is where Growth stops being a bigger Starter
+        -- and starts being a management tool. Rank 2 and up.
+        'pos.review'],
+  'BUSINESS is the growing store: purchase orders, stock counts, unit '
+  || 'conversions and Review on top of BASIC'
 );
 
 select set_eq(
@@ -116,10 +119,11 @@ select set_eq(
         'inventory.suppliers', 'inventory.receiving',
         'pos.multi_register', 'pos.bir_receipts',
         'inventory.purchase_orders', 'inventory.stock_count',
-        'inventory.conversions'],
-  'PRO is the convenience store: everything but stock transfers -- the SAME '
-  || 'fourteen codes as before BUSINESS existed, since BUSINESS was carved '
-  || 'out of what PRO already sold rather than PRO losing anything'
+        'inventory.conversions', 'pos.review'],
+  'PRO is the convenience store: everything but stock transfers -- the same '
+  || 'set as before BUSINESS existed, since BUSINESS was carved out of what '
+  || 'PRO already sold rather than PRO losing anything, plus Review, which '
+  || 'is granted by rank so no dearer tier is missing what BUSINESS holds'
 );
 
 select is(
