@@ -284,8 +284,25 @@ grand total that is quietly wrong.
 
 1. **Accumulation scope — per `(store, device)`.** Not per store alone.
 2. **Late entries — next open period, flagged.** As proposed in §6.
-3. **Grand total — gross.** Voids and refunds are recorded as their own
-   totals on each reading and never subtract from the accumulation.
+3. **Grand total — gross. Confirmed against BIR's own sample 2026-09-04.**
+   Voids and refunds are recorded as their own totals on each reading and
+   never subtract from the accumulation.
+
+   This was decided here on 2026-09-02 and carried in the technical
+   documentation as still needing BIR validation. RMO 24-2023 Annex D-2, the
+   sample End-of-Day reading BIR publishes, settles it: on that reading
+   "Sales for the Day" — Present less Previous Accumulated Sales — equals
+   "Gross Amount" exactly, with discount, return and void appearing below it
+   as disclosures. Gross it is.
+
+   **The implementation did not match this decision.** `take_reading()`
+   accumulated `sum(total)` over completed sales, which is after discount and
+   silently drops any sale voided before its own period's Z. So the
+   accumulation was net of discounts, net of same-period voids, and gross of
+   later-period voids — three bases at once, and the third made the figure
+   depend on which side of a Z boundary a void happened to land.
+   `20260904100000` accumulates `sum(total + discount_amount)` over every sale
+   that arrived in the period, whatever became of it afterwards.
 4. **X readings are recorded**, not merely displayed (§5 already assumed this).
 5. **Reset authority — answered 2026-09-03: platform only.**
    `core.is_platform_admin('ENGINEER')` gates it, so a reset needs an ACTIVE
