@@ -75,9 +75,17 @@ attention. Everything else is the evidence trail underneath it.
 **Retest, re-runnable:**
 ```bash
 git log --all --oneline -- 'apps/tindahan-pos/supabase/backups'
-git log --all --oneline -S'franzdii@gmail.com'
+git log --all --oneline -S'<the address the leaked dump cited>'   # redacted here deliberately — see note below
 git log --all --name-only --oneline -- '*backup*.sql' | sort -u
 ```
+*(An earlier revision of this document quoted the actual address inline in this
+command. That published a third party's real email address to this repository's
+public history — a separate problem from the one this section is about, and one
+this document itself caused. Redacting it here does **not** undo that: the
+earlier blob remains reachable from history, so this is disclosure, not
+remediation. Scope, so it is neither dismissed nor inflated: one address, in
+one commit. No backup dump was ever committed — the conclusion below is
+unaffected. Tracked separately for a decision on repository visibility.)*
 **Expected:** the first two print nothing; the third shows exactly one file, `20260815135000_backups_bucket.sql` — a migration creating a storage *bucket*, not a data dump.
 
 **Conclusion:** the 16 dump files on disk are correctly gitignored and were never committed. No key rotation, no DPA notification required.
