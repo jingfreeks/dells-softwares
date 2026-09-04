@@ -15,8 +15,6 @@ import {
   ERROR_COULD_NOT_ADD_CUSTOMER,
   ERROR_COULD_NOT_COMPLETE_SALE,
   ERROR_INVALID_DISCOUNT_VALUE,
-  ERROR_INVALID_OVERRIDE_PIN,
-  ERROR_OVERRIDE_PIN_LOCKED,
   ERROR_CASH_OUT_CAP_EXCEEDED,
   ERROR_COULD_NOT_HOLD_SALE,
   ERROR_RESUME_BLOCKED_CART_NOT_EMPTY,
@@ -56,6 +54,7 @@ import {
   loadReceiptSettingsMock,
   DEFAULT_RECEIPT_SETTINGS_MOCK,
 } from "@/pages/Settings/receiptSettingsMock";
+import { useOverrideApproval } from "./useOverrideApproval";
 
 export const SERVICE_TYPES = [
   { key: "eload", label: SERVICE_LABEL_ELOAD, badge: "L", badgeClass: "bg-violet-100 text-violet-700" },
@@ -105,20 +104,12 @@ export function usePosPage() {
   const [lastSaleChange, setLastSaleChange] = useState(0);
   const [checkingOut, setCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [ownerApprovalOpen, setOwnerApprovalOpen] = useState(false);
-  const [overridePin, setOverridePin] = useState("");
-  const [overridePinError, setOverridePinError] = useState<string | null>(null);
-  const [overrideSubmitting, setOverrideSubmitting] = useState(false);
   // A separate PIN gate from the credit-limit one above: this one opens
   // only after checkout_sale() itself rejects with CASH_OUT_CAP_EXCEEDED
   // (20260903200000) -- there's no reliable client-side pre-check the way
   // wouldExceedCreditLimit() is for credit, since the cap is compared
   // against cash_handed_over summed across this sale's cash-out lines,
   // which only the server (not this component) sums authoritatively.
-  const [cashOutApprovalOpen, setCashOutApprovalOpen] = useState(false);
-  const [cashOutOverridePin, setCashOutOverridePin] = useState("");
-  const [cashOutOverridePinError, setCashOutOverridePinError] = useState<string | null>(null);
-  const [cashOutOverrideSubmitting, setCashOutOverrideSubmitting] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [activeTab, setActiveTab] = useState<PosTab>("products");
   const [activeCategory, setActiveCategory] = useState<string>("All");
@@ -513,9 +504,7 @@ export function usePosPage() {
     // instant UX, and re-verified server-side inside checkout_sale() itself
     // (the source of truth, since this client-side check could be stale).
     if (paymentType === "credit" && selectedCustomer && wouldExceedCreditLimit(selectedCustomer, total)) {
-      setOverridePinError(null);
-      setOverridePin("");
-      setOwnerApprovalOpen(true);
+      ownerApproval.openDialog();
       return;
     }
     setCheckingOut(true);
@@ -535,9 +524,7 @@ export function usePosPage() {
       } else if (message.includes("CASH_OUT_CAP_EXCEEDED")) {
         // Discovered only from the server's rejection -- see the state
         // declaration above for why there's no client-side pre-check here.
-        setCashOutOverridePinError(null);
-        setCashOutOverridePin("");
-        setCashOutApprovalOpen(true);
+        cashOutApproval.openDialog();
       } else {
         setCheckoutError(message);
       }
@@ -546,91 +533,33 @@ export function usePosPage() {
     }
   }
 
-  function closeCashOutApproval() {
-    setCashOutApprovalOpen(false);
-    setCashOutOverridePin("");
-    setCashOutOverridePinError(null);
-  }
+  // Two dialogs, one flow. See useOverrideApproval for why they are not two
+  // near-identical copies any more.
+  const ownerApproval = useOverrideApproval({
+    onApprove: (pin) => runCheckout(pin),
+    onSessionExpired: () => {
+      reportExpiredSession();
+      setCheckoutError(TEXT_CASHIER_SESSION_EXPIRED);
+    },
+    onStoreSuspended: () => setCheckoutError(TEXT_STORE_SUSPENDED),
+  });
 
-  async function submitCashOutApproval(pin: string) {
-    setCashOutOverrideSubmitting(true);
-    setCashOutOverridePinError(null);
-    try {
-      await runCheckout(pin);
-      closeCashOutApproval();
-    } catch (err) {
-      const message = describePlatformError(err, ERROR_COULD_NOT_COMPLETE_SALE);
-      if (message.includes("EXPIRED_CASHIER_SESSION")) {
-        reportExpiredSession();
-        closeCashOutApproval();
-        setCheckoutError(TEXT_CASHIER_SESSION_EXPIRED);
-        return;
-      }
-      if (message.includes("ORG_WRITES_SUSPENDED")) {
-        closeCashOutApproval();
-        setCheckoutError(TEXT_STORE_SUSPENDED);
-        return;
-      }
-      // A still-over-cap retry (e.g. the owner mis-typed) surfaces the same
-      // way it did the first time, in-dialog, rather than closing it.
-      setCashOutOverridePinError(
-        message.includes("OVERRIDE_PIN_LOCKED")
-          ? ERROR_OVERRIDE_PIN_LOCKED
-          : message.includes("INVALID_OVERRIDE_PIN")
-            ? ERROR_INVALID_OVERRIDE_PIN
-            : message.includes("CASH_OUT_CAP_EXCEEDED")
-              ? ERROR_CASH_OUT_CAP_EXCEEDED
-              : message
-      );
-      setCashOutOverridePin("");
-    } finally {
-      setCashOutOverrideSubmitting(false);
-    }
-  }
-
-  function closeOwnerApproval() {
-    setOwnerApprovalOpen(false);
-    setOverridePin("");
-    setOverridePinError(null);
-  }
+  const cashOutApproval = useOverrideApproval({
+    onApprove: (pin) => runCheckout(pin),
+    // A still-over-cap retry (the owner mis-typed, say) belongs in the dialog
+    // rather than closing it.
+    describeRefusal: (message) =>
+      message.includes("CASH_OUT_CAP_EXCEEDED") ? ERROR_CASH_OUT_CAP_EXCEEDED : null,
+    onSessionExpired: () => {
+      reportExpiredSession();
+      setCheckoutError(TEXT_CASHIER_SESSION_EXPIRED);
+    },
+    onStoreSuspended: () => setCheckoutError(TEXT_STORE_SUSPENDED),
+  });
 
   function payCashInstead() {
     setPaymentType("cash");
-    closeOwnerApproval();
-  }
-
-  async function submitOwnerApproval(pin: string) {
-    setOverrideSubmitting(true);
-    setOverridePinError(null);
-    try {
-      await runCheckout(pin);
-      closeOwnerApproval();
-    } catch (err) {
-      const message = describePlatformError(err, ERROR_COULD_NOT_COMPLETE_SALE);
-      if (message.includes("EXPIRED_CASHIER_SESSION")) {
-        reportExpiredSession();
-        closeOwnerApproval();
-        setCheckoutError(TEXT_CASHIER_SESSION_EXPIRED);
-        return;
-      }
-      if (message.includes("ORG_WRITES_SUSPENDED")) {
-        // Nothing to do with the PIN -- leaving it in the override dialog
-        // would read as a rejected approval rather than a closed till.
-        closeOwnerApproval();
-        setCheckoutError(TEXT_STORE_SUSPENDED);
-        return;
-      }
-      setOverridePinError(
-        message.includes("OVERRIDE_PIN_LOCKED")
-          ? ERROR_OVERRIDE_PIN_LOCKED
-          : message.includes("INVALID_OVERRIDE_PIN")
-            ? ERROR_INVALID_OVERRIDE_PIN
-            : message
-      );
-      setOverridePin("");
-    } finally {
-      setOverrideSubmitting(false);
-    }
+    ownerApproval.close();
   }
 
   function handleCancelSale() {
@@ -796,21 +725,23 @@ export function usePosPage() {
     resumeError,
     discardHeldSale,
     heldSaleHasIrreversibleService,
-    ownerApprovalOpen,
-    overridePin,
-    setOverridePin,
-    overridePinError,
-    overrideSubmitting,
-    closeOwnerApproval,
+    // Mapped rather than spread: the page's prop names are unchanged, so no
+    // component moved for this refactor.
+    ownerApprovalOpen: ownerApproval.open,
+    overridePin: ownerApproval.pin,
+    setOverridePin: ownerApproval.setPin,
+    overridePinError: ownerApproval.error,
+    overrideSubmitting: ownerApproval.submitting,
+    closeOwnerApproval: ownerApproval.close,
     payCashInstead,
-    submitOwnerApproval,
-    cashOutApprovalOpen,
-    cashOutOverridePin,
-    setCashOutOverridePin,
-    cashOutOverridePinError,
-    cashOutOverrideSubmitting,
-    closeCashOutApproval,
-    submitCashOutApproval,
+    submitOwnerApproval: ownerApproval.submit,
+    cashOutApprovalOpen: cashOutApproval.open,
+    cashOutOverridePin: cashOutApproval.pin,
+    setCashOutOverridePin: cashOutApproval.setPin,
+    cashOutOverridePinError: cashOutApproval.error,
+    cashOutOverrideSubmitting: cashOutApproval.submitting,
+    closeCashOutApproval: cashOutApproval.close,
+    submitCashOutApproval: cashOutApproval.submit,
     effectiveTab,
     focusProductInput,
     packPricingEnabled,
