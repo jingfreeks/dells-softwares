@@ -28,6 +28,16 @@ const STORAGE_KEY_PREFIX = "tindahan-pos:fees-limits:";
  * a UI-only redesign, so they persist client-side for now.
  * TODO: move to real store columns/enforcement once they exist.
  *
+ * Every field still in this file is marked "Not enforced yet" on screen
+ * (NotEnforcedChip / NotEnforcedNote) -- see issue #470. The documented gap
+ * was never the problem; presenting these as working controls was. If a field
+ * graduates to a real store column, drop it from here AND drop its marking.
+ *
+ * Worth knowing for whoever does the print pricing: the till does not read
+ * these values at all. PRINT_JOB_TYPES in src/lib/pos/cashService.ts carries
+ * its own prices, and they already disagree with the defaults here -- B&W is
+ * 5 there against printBw: 3 below.
+ *
  * "Void needs PIN" and "Cashier cash-out cap" used to live here too. They
  * are real, server-enforced store columns now (stores.void_requires_pin,
  * stores.cashier_cash_out_cap -- see 20260903190000/20260903200000 and

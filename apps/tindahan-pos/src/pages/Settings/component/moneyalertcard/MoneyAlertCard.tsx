@@ -4,8 +4,10 @@ import {
   LABEL_UTANG_OLDER_THAN,
   TEXT_DAYS_SUFFIX,
   LABEL_WARN_LOW_ELOAD_FLOAT,
+  LABEL_NOT_ENFORCED_YET,
   LABEL_ANY_VOID_AFTER_PAYMENT,
 } from "@/lib";
+import { NotEnforcedChip } from "../notenforcednote";
 
 interface MoneyAlertCardProps {
   drawerVarianceThreshold: number;
@@ -66,12 +68,15 @@ export function MoneyAlertCard({
       </div>
 
       <div className="tpl-sp" style={{ padding: "4px 0" }}>
-        <span style={{ color: "var(--tpl-t4)", fontSize: 13 }}>{LABEL_WARN_LOW_ELOAD_FLOAT}</span>
+        <span style={{ color: "var(--tpl-t4)", fontSize: 13 }}>
+          {LABEL_WARN_LOW_ELOAD_FLOAT}
+          <NotEnforcedChip />
+        </span>
         <button
           type="button"
           role="switch"
           aria-checked={warnLowEloadFloat}
-          aria-label={LABEL_WARN_LOW_ELOAD_FLOAT}
+          aria-label={`${LABEL_WARN_LOW_ELOAD_FLOAT} (${LABEL_NOT_ENFORCED_YET})`}
           onClick={onToggleWarnLowEloadFloat}
           className={`tpl-tog${warnLowEloadFloat ? " tpl-on" : ""}`}
         >

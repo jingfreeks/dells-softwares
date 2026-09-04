@@ -1,4 +1,12 @@
-import { LABEL_PRINT_AND_PHOTOCOPY, LABEL_PRINT_BW, LABEL_PRINT_COLOUR, LABEL_PHOTOCOPY, LABEL_BULK_FROM } from "@/lib";
+import {
+  LABEL_PRINT_AND_PHOTOCOPY,
+  LABEL_PRINT_BW,
+  LABEL_PRINT_COLOUR,
+  LABEL_PHOTOCOPY,
+  LABEL_BULK_FROM,
+  TEXT_PRINT_PRICES_NOT_ENFORCED,
+} from "@/lib";
+import { NotEnforcedNote } from "../notenforcednote";
 
 interface PrintPhotocopyCardProps {
   printBw: number;
@@ -87,6 +95,7 @@ export function PrintPhotocopyCard({
           </div>
         </div>
       </div>
+      <NotEnforcedNote>{TEXT_PRINT_PRICES_NOT_ENFORCED}</NotEnforcedNote>
     </div>
   );
 }
