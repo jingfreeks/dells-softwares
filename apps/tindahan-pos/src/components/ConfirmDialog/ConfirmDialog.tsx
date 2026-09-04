@@ -1,5 +1,6 @@
-import { useRef, type ReactNode } from "react";
-import { ARIA_CLOSE_MODAL, BUTTON_CANCEL, useEscapeToClose, useFocusTrap } from "@/lib";
+import { type ReactNode } from "react";
+import { ARIA_CLOSE_MODAL, BUTTON_CANCEL } from "@/lib";
+import { Modal } from "../Modal";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -24,22 +25,8 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  useEscapeToClose(open, onCancel);
-  useFocusTrap(open, dialogRef);
-
-  if (!open) return null;
-
   return (
-    <div className="tpl-modal-overlay" onClick={onCancel}>
-      <div
-        ref={dialogRef}
-        className="tpl-modal-panel tpl-card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirmDialogHeading"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal open={open} onClose={onCancel} labelledBy="confirmDialogHeading">
         <div className="tpl-sp" style={{ marginBottom: 12, alignItems: "flex-start" }}>
           <p id="confirmDialogHeading" className="tpl-h3">
             {title}
@@ -76,7 +63,6 @@ export function ConfirmDialog({
             {confirmLabel}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
