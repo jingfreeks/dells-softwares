@@ -40,6 +40,39 @@ describe("FeesLimits", () => {
     expect(screen.getAllByRole("spinbutton").length).toBeGreaterThan(0);
   });
 
+  it("marks the unenforced controls, and leaves the server-enforced ones unmarked", () => {
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }), store: makeStore({ id: "store-9" }) })
+    );
+    renderPage();
+
+    // Issue #470: these four save to localStorage and nothing reads them.
+    expect(screen.getByLabelText(/^Keep in drawer/)).toBeInTheDocument();
+    expect(screen.getByText("Keep in drawer").parentElement).toHaveTextContent("Not enforced yet");
+    expect(screen.getByText("Default credit limit").parentElement).toHaveTextContent("Not enforced yet");
+    expect(
+      screen.getByRole("switch", { name: "Block utang past the customer's limit (Not enforced yet)" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("switch", { name: "Warn when e-load float drops below ₱500 (Not enforced yet)" })
+    ).toBeInTheDocument();
+
+    // These two are real store columns, enforced server-side. They must not
+    // pick up the marking, or it stops meaning anything.
+    expect(screen.getByRole("switch", { name: "Voiding a paid sale needs your PIN" })).toBeInTheDocument();
+    expect(screen.getByText("Cashier cash-out cap").parentElement).not.toHaveTextContent("Not enforced yet");
+  });
+
+  it("says on the print card that the till does not use these prices", () => {
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }), store: makeStore({ id: "store-9" }) })
+    );
+    renderPage();
+
+    expect(screen.getAllByText("Saved, but not applied yet").length).toBeGreaterThan(0);
+    expect(screen.getByText(/still charges its own built-in prices/)).toBeInTheDocument();
+  });
+
   it("edits a fee bracket amount and saves it via updateStore", async () => {
     const user = userEvent.setup();
     const updateStore = vi.fn().mockResolvedValue({ ok: true });

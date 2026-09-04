@@ -1223,6 +1223,12 @@ export const LABEL_CASHIER_CASH_OUT_CAP = "Cashier cash-out cap";
 export const LABEL_BLOCK_UTANG_PAST_LIMIT = "Block utang past the customer's limit";
 export const LABEL_VOID_NEEDS_PIN = "Voiding a paid sale needs your PIN";
 export const LABEL_WARN_LOW_ELOAD_FLOAT = "Warn when e-load float drops below ₱500";
+export const LABEL_NOT_ENFORCED_YET = "Not enforced yet";
+export const TEXT_NOT_ENFORCED_YET_TITLE = "Saved, but not applied yet";
+export const TEXT_PRINT_PRICES_NOT_ENFORCED =
+  "These prices are kept on this device only. The Print and photocopy panel at the till still charges its own built-in prices, so changing them here does not change what a customer pays.";
+export const TEXT_CASH_LIMITS_NOT_ENFORCED =
+  "Marked settings are kept on this device only. Nothing checks them yet, and they are not shared with your other devices.";
 export const ERROR_COULD_NOT_SAVE_FEES_AND_LIMITS = "Could not save fees and limits.";
 export const TEXT_FEES_AND_LIMITS_UPDATED = "Fees and limits updated.";
 

@@ -6,7 +6,10 @@ import {
   LABEL_BLOCK_UTANG_PAST_LIMIT,
   LABEL_VOID_NEEDS_PIN,
   LABEL_WARN_LOW_ELOAD_FLOAT,
+  LABEL_NOT_ENFORCED_YET,
+  TEXT_CASH_LIMITS_NOT_ENFORCED,
 } from "@/lib";
+import { NotEnforcedNote, NotEnforcedChip } from "../notenforcednote";
 
 interface CashAndCreditLimitsCardProps {
   keepInDrawer: number;
@@ -47,6 +50,7 @@ export function CashAndCreditLimitsCard({
         <div>
           <label htmlFor="feesKeepInDrawer" className="tpl-lbl">
             {LABEL_KEEP_IN_DRAWER}
+            <NotEnforcedChip />
           </label>
           <div className="tpl-fld tpl-mono">
             <input
@@ -61,6 +65,7 @@ export function CashAndCreditLimitsCard({
         <div>
           <label htmlFor="feesDefaultCreditLimit" className="tpl-lbl">
             {LABEL_DEFAULT_CREDIT_LIMIT}
+            <NotEnforcedChip />
           </label>
           <div className="tpl-fld tpl-mono">
             <input
@@ -89,12 +94,15 @@ export function CashAndCreditLimitsCard({
       </div>
 
       <div className="tpl-sp" style={{ padding: "6px 0", borderBottom: "0.5px solid var(--tpl-bd3)" }}>
-        <span style={{ color: "var(--tpl-t4)", fontSize: 13 }}>{LABEL_BLOCK_UTANG_PAST_LIMIT}</span>
+        <span style={{ color: "var(--tpl-t4)", fontSize: 13 }}>
+          {LABEL_BLOCK_UTANG_PAST_LIMIT}
+          <NotEnforcedChip />
+        </span>
         <button
           type="button"
           role="switch"
           aria-checked={blockUtangPastLimit}
-          aria-label={LABEL_BLOCK_UTANG_PAST_LIMIT}
+          aria-label={`${LABEL_BLOCK_UTANG_PAST_LIMIT} (${LABEL_NOT_ENFORCED_YET})`}
           onClick={onToggleBlockUtangPastLimit}
           className={`tpl-tog${blockUtangPastLimit ? " tpl-on" : ""}`}
         >
@@ -115,18 +123,23 @@ export function CashAndCreditLimitsCard({
         </button>
       </div>
       <div className="tpl-sp" style={{ padding: "6px 0" }}>
-        <span style={{ color: "var(--tpl-t4)", fontSize: 13 }}>{LABEL_WARN_LOW_ELOAD_FLOAT}</span>
+        <span style={{ color: "var(--tpl-t4)", fontSize: 13 }}>
+          {LABEL_WARN_LOW_ELOAD_FLOAT}
+          <NotEnforcedChip />
+        </span>
         <button
           type="button"
           role="switch"
           aria-checked={warnLowEloadFloat}
-          aria-label={LABEL_WARN_LOW_ELOAD_FLOAT}
+          aria-label={`${LABEL_WARN_LOW_ELOAD_FLOAT} (${LABEL_NOT_ENFORCED_YET})`}
           onClick={onToggleWarnLowEloadFloat}
           className={`tpl-tog${warnLowEloadFloat ? " tpl-on" : ""}`}
         >
           <span />
         </button>
       </div>
+
+      <NotEnforcedNote>{TEXT_CASH_LIMITS_NOT_ENFORCED}</NotEnforcedNote>
     </div>
   );
 }
