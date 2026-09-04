@@ -6,6 +6,26 @@
 import type { PaymentType, StoreFeeConfig, VatStatus } from "./types";
 
 /** One persisted X or Z reading. Mirrors Tables["register_readings"]["Row"]. */
+export interface ReviewSummaryRow {
+  period: { from: string; to: string };
+  sales_total: number;
+  transaction_count: number;
+  estimated_profit: number;
+  profit_basis_share: number;
+  inventory_value: number;
+  inventory_basis_share: number;
+  product_count: number;
+  low_stock_count: number;
+  out_of_stock_count: number;
+  slow_moving_count: number;
+  utang_outstanding: number;
+  utang_overdue: number;
+  customers_with_balance: number;
+  overdue_customer_count: number;
+  oldest_overdue_days: number;
+  best_sellers: { id: string; name: string; revenue: number; quantity: number }[];
+}
+
 export interface RegisterReadingRow {
   id: string;
   store_id: string;
@@ -1242,6 +1262,22 @@ export interface Database {
           p_action: string;
         };
         Returns: undefined;
+      };
+      review_summary: {
+        Args: {
+          p_from: string;
+          p_to: string;
+          p_overdue_days?: number;
+        };
+        // Written out rather than referenced, for the same reason take_reading
+        // is below: a self-reference inside the Database type resolves the
+        // whole map to never, and it surfaces as unrelated tables losing their
+        // row types rather than as an error here.
+        //
+        // No `expenses` key, deliberately -- there is no expenses table and
+        // review_summary() does not return one. Declaring it optional would
+        // let a card render `undefined` as PHP 0.
+        Returns: ReviewSummaryRow;
       };
       take_reading: {
         Args: {

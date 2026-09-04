@@ -14,6 +14,7 @@ export * from "./Privacy";
 export * from "./Receiving";
 export * from "./Register";
 export * from "./Reports";
+export * from "./Review";
 export * from "./Settings";
 export * from "./Staff";
 export * from "./Suppliers";

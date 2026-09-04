@@ -13,6 +13,7 @@ export const NAV_LABEL_CUSTOMERS = "Customers";
 export const NAV_LABEL_ADMIN = "Admin";
 export const NAV_LABEL_STAFF = "Staff";
 export const NAV_LABEL_REPORTS = "Reports";
+export const NAV_LABEL_REVIEW = "Review";
 
 export const PAGE_HEADING_POS = "POS Checkout";
 export const PAGE_HEADING_ADMIN_DASHBOARD = "Admin dashboard";
@@ -1201,6 +1202,39 @@ export const TEXT_PREVIEW_CASHIER_LABEL = "Cashier:";
 export const TEXT_PREVIEW_TOTAL = "TOTAL";
 export const TEXT_PREVIEW_CASH = "Cash";
 export const TEXT_PREVIEW_CHANGE = "Change";
+
+// Review — the Growth-plan feature
+//
+// Copy taken from the approved designs (review-dashboard.html,
+// review-locked.html) rather than rewritten. The locked state's wording is
+// deliberately plain about what Growth adds; §15 of the design brief asks that
+// a Starter user not be made to feel the product is broken.
+export const PAGE_HEADING_REVIEW = "Review";
+export const TEXT_REVIEW_DESCRIPTION = "See how your store is doing and what needs your attention.";
+export const TEXT_REVIEW_LOCKED_SUBHEADING = "Get a clearer picture of your store's performance.";
+export const TEXT_REVIEW_LOCKED_TITLE = "Review is available with Growth";
+export const TEXT_REVIEW_LOCKED_BENEFIT_SALES = "Understand your sales";
+export const TEXT_REVIEW_LOCKED_BENEFIT_STOCK = "Spot low-stock products";
+export const TEXT_REVIEW_LOCKED_BENEFIT_UTANG = "Review outstanding utang";
+export const TEXT_REVIEW_LOCKED_BENEFIT_ATTENTION = "Find products that need attention";
+export const TEXT_REVIEW_LOCKED_BENEFIT_PERFORMANCE = "Track business performance";
+export const BUTTON_UPGRADE_TO_GROWTH = "Upgrade to Growth";
+export const LABEL_REVIEW_METRIC_SALES = "SALES";
+export const LABEL_REVIEW_METRIC_PROFIT = "ESTIMATED PROFIT";
+export const LABEL_REVIEW_METRIC_UTANG = "UTANG";
+export const LABEL_REVIEW_METRIC_INVENTORY = "INVENTORY";
+export const TEXT_REVIEW_MARGIN_SUFFIX = "margin";
+export const TEXT_REVIEW_OVERDUE_SUFFIX = "overdue";
+export const TEXT_REVIEW_LOW_STOCK_SUFFIX = "low stock";
+export const TEXT_REVIEW_TRANSACTIONS_SUFFIX = "sales";
+// Said on the card, not buried in a tooltip: sale_items never captured a cost
+// snapshot, so profit is recomputed at today's cost and only for products that
+// have one. A peso figure with no coverage note overstates what is known.
+export const TEXT_REVIEW_PROFIT_PARTIAL_PREFIX = "Based on";
+export const TEXT_REVIEW_PROFIT_PARTIAL_SUFFIX = "of sales with a known cost";
+export const TEXT_REVIEW_ERROR_HEADING = "We couldn't load your review";
+export const TEXT_REVIEW_ERROR_BODY = "Please try again.";
+export const ARIA_REVIEW_LOCKED_BENEFITS = "What Review includes on Growth";
 
 // Settings — Fees and Limits
 export const PAGE_HEADING_FEES_AND_LIMITS = "Fees and limits";
