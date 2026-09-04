@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   ARIA_CLOSE_MODAL,
@@ -7,10 +6,9 @@ import {
   TEXT_PLAN_LOCKED_HINT,
   BUTTON_COMPARE_PLANS,
   BUTTON_MAYBE_LATER,
-  useEscapeToClose,
-  useFocusTrap,
   type LockedByPlan,
 } from "@/lib";
+import { Modal } from "../Modal";
 
 interface UpgradeModalProps {
   /** null closes the modal -- same "no group, nothing to show" shape as usePlanPage's own lockedByPlan entries. */
@@ -30,24 +28,12 @@ interface UpgradeModalProps {
  * button that would submit nothing.
  */
 export function UpgradeModal({ group, onClose }: UpgradeModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  useEscapeToClose(!!group, onClose);
-  useFocusTrap(!!group, dialogRef);
-
   if (!group) return null;
 
   const headingId = "upgradeModalHeading";
 
   return (
-    <div className="tpl-modal-overlay" onClick={onClose}>
-      <div
-        ref={dialogRef}
-        className="tpl-modal-panel tpl-card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={headingId}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal open onClose={onClose} labelledBy={headingId}>
         <div className="tpl-sp" style={{ marginBottom: 14, alignItems: "flex-start" }}>
           <div>
             <p id={headingId} className="tpl-h3" style={{ marginBottom: 4 }}>
@@ -95,7 +81,6 @@ export function UpgradeModal({ group, onClose }: UpgradeModalProps) {
             {BUTTON_COMPARE_PLANS}
           </Link>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

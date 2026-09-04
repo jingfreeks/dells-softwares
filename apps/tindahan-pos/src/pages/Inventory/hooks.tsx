@@ -20,8 +20,7 @@ import {
   ERROR_COULD_NOT_SAVE_PRODUCT,
   ERROR_COULD_NOT_RESTOCK_PRODUCT,
   ERROR_COULD_NOT_REMOVE_PRODUCT,
-  type Product,
-} from "@/lib";
+  type Product, describePlatformError } from "@/lib";
 import { buildBarcodeIndex, findDuplicateBarcodeFast, lowStockProducts, packUnitPrice, stockStatus } from "@/lib/inventory";
 import { averageMarginPercent, computeDailySalesRates, lastStockInLabel, stockValueAtCost } from "./lib";
 
@@ -226,7 +225,7 @@ export function useInventoryPage() {
       setRemoveImage(false);
       setImagePreview(URL.createObjectURL(blob));
     } catch (err) {
-      setImageError(err instanceof Error ? err.message : ERROR_COULD_NOT_PROCESS_IMAGE);
+      setImageError(describePlatformError(err, ERROR_COULD_NOT_PROCESS_IMAGE));
     } finally {
       setProcessingImage(false);
     }
@@ -255,7 +254,7 @@ export function useInventoryPage() {
       setForm((f) => ({ ...f, categoryId: category.id }));
       setAddingCategory(false);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : ERROR_COULD_NOT_ADD_CATEGORY);
+      setFormError(describePlatformError(err, ERROR_COULD_NOT_ADD_CATEGORY));
     }
   }
 
@@ -347,7 +346,7 @@ export function useInventoryPage() {
 
       setShowForm(false);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : ERROR_COULD_NOT_SAVE_PRODUCT);
+      setFormError(describePlatformError(err, ERROR_COULD_NOT_SAVE_PRODUCT));
     } finally {
       setSubmitting(false);
     }
@@ -358,7 +357,7 @@ export function useInventoryPage() {
     try {
       await restock(id, 10);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : ERROR_COULD_NOT_RESTOCK_PRODUCT);
+      setActionError(describePlatformError(err, ERROR_COULD_NOT_RESTOCK_PRODUCT));
     }
   }
 
@@ -367,7 +366,7 @@ export function useInventoryPage() {
     try {
       await removeProduct(id);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : ERROR_COULD_NOT_REMOVE_PRODUCT);
+      setActionError(describePlatformError(err, ERROR_COULD_NOT_REMOVE_PRODUCT));
     }
   }
 

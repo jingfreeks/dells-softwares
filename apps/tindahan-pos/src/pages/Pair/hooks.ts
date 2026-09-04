@@ -46,7 +46,7 @@ export function usePairPage() {
 
       navigate("/pos", { replace: true });
     } catch (err) {
-      setError(friendlyPairError(err instanceof Error ? err.message : ERROR_COULD_NOT_PAIR_DEVICE));
+      setError(friendlyPairError(describePlatformError(err, ERROR_COULD_NOT_PAIR_DEVICE)));
     } finally {
       setSubmitting(false);
     }

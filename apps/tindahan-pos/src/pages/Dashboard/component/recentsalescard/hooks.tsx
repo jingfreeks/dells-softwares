@@ -1,3 +1,4 @@
+import { formatDateTimeShort } from "@/lib";
 import type { PaymentType, SaleRecord } from "@/lib";
 
 export const useRecentsalescard = () => {
@@ -5,12 +6,7 @@ export const useRecentsalescard = () => {
 const PAYMENT_LABEL: Record<PaymentType, string> = { cash: "Cash", qr: "GCash", credit: "Utang" };
 
   function formatSaleDate(timestamp: string) {
-    return new Date(timestamp).toLocaleString("en-PH", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
+    return formatDateTimeShort(timestamp);
   }
 
   function formatItems(sale: SaleRecord): string {

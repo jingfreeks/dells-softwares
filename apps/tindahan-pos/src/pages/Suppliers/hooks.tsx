@@ -184,7 +184,7 @@ export function useSuppliersPage() {
       });
       setMonthHistory(updated);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : ERROR_COULD_NOT_MARK_PAID);
+      setActionError(describePlatformError(err, ERROR_COULD_NOT_MARK_PAID));
     }
   }
 
@@ -193,7 +193,7 @@ export function useSuppliersPage() {
     try {
       await deactivateSupplier(supplierId);
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : ERROR_COULD_NOT_DEACTIVATE_SUPPLIER);
+      setActionError(describePlatformError(err, ERROR_COULD_NOT_DEACTIVATE_SUPPLIER));
     }
   }
 

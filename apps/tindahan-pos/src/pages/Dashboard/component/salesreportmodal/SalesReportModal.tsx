@@ -22,7 +22,8 @@ import {
 } from "@/lib";
 import type { Customer, SaleRecord } from "@/lib";
 import { Salesperitem, Salesperitems, Totalsalescreen } from "../dailytransactiondetailscard/component";
-import { transactionNumber, formatDateTime, PAYMENT_LABEL } from "../dailytransactiondetailscard/lib";
+import { formatDateTime } from "@/lib";
+import { transactionNumber, PAYMENT_LABEL } from "../dailytransactiondetailscard/lib";
 import type { DashboardReportKind } from "../../hooks";
 
 const TITLE_BY_KIND: Record<"todaysSales" | "transactionsToday" | "recentSales", string> = {

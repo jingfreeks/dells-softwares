@@ -75,7 +75,7 @@ describe("Pair", () => {
     expect(mockedSupabase.auth.signInWithPassword).not.toHaveBeenCalled();
   });
 
-  it("shows a generic error when the edge function call itself fails", async () => {
+  it("shows what the failure said when the edge function call fails", async () => {
     const user = userEvent.setup();
     mockedSupabase.functions.invoke.mockResolvedValue({
       data: null,
@@ -85,7 +85,7 @@ describe("Pair", () => {
 
     await fillAndSubmit(user);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Could not pair this device. Please try again.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("network down");
   });
 
   it("links back to sign in", async () => {

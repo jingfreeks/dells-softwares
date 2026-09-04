@@ -113,7 +113,7 @@ describe("DemoForm", () => {
     expect(mockedInvoke).toHaveBeenCalledTimes(1);
   });
 
-  it("shows a generic message when the invoke call rejects with something other than an Error", async () => {
+  it("shows what the failure said when the invoke call rejects", async () => {
     const user = userEvent.setup();
     mockedInvoke.mockRejectedValue("network is down");
     renderDemoForm();
@@ -122,7 +122,7 @@ describe("DemoForm", () => {
     await user.click(screen.getByRole("button", { name: "Request a demo" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Something went wrong sending your request. Please try again."
+      "network is down"
     );
   });
 

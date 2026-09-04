@@ -5,8 +5,7 @@ import {
   DEFAULT_CASH_IN_FEE_BRACKETS,
   DEFAULT_CASH_OUT_FEE_BRACKETS,
   type FeeBracket,
-  ERROR_COULD_NOT_SAVE_FEES_AND_LIMITS,
-} from "@/lib";
+  ERROR_COULD_NOT_SAVE_FEES_AND_LIMITS, describePlatformError } from "@/lib";
 import { loadFeesLimitsMock, saveFeesLimitsMock, DEFAULT_FEES_LIMITS_MOCK, type FeesLimitsMock } from "./feesLimitsMock";
 
 type BracketKind = "eload" | "cashIn" | "cashOut";
@@ -153,7 +152,7 @@ export function useFeesLimitsPage() {
       setSavedCashierCashOutCap(cashierCashOutCap);
       setJustSaved(true);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : ERROR_COULD_NOT_SAVE_FEES_AND_LIMITS);
+      setFormError(describePlatformError(err, ERROR_COULD_NOT_SAVE_FEES_AND_LIMITS));
     } finally {
       setSubmitting(false);
     }

@@ -27,10 +27,20 @@ const sardines: Product = {
   imageUrl: null,
 };
 
+/**
+ * Anchored to today at noon, not to Date.now().
+ *
+ * "N hours ago" lands on YESTERDAY when the suite runs shortly after midnight,
+ * so every "today's sales" assertion here failed for a two-hour window each
+ * night -- invisibly, until #489 gave this app CI and something finally ran it
+ * at 00:44 UTC. Noon minus a few hours is always the same calendar day.
+ */
 function saleAt(hoursAgo: number, overrides: Partial<SaleRecord> = {}): SaleRecord {
+  const noonToday = new Date();
+  noonToday.setHours(12, 0, 0, 0);
   return {
     id: `s-${hoursAgo}-${Math.random()}`,
-    timestamp: new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString(),
+    timestamp: new Date(noonToday.getTime() - hoursAgo * 60 * 60 * 1000).toISOString(),
     total: 60,
     cashierName: "Maricel",
     paymentType: "cash",
