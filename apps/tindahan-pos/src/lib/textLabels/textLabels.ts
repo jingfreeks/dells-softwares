@@ -1227,11 +1227,21 @@ export const TEXT_REVIEW_MARGIN_SUFFIX = "margin";
 export const TEXT_REVIEW_OVERDUE_SUFFIX = "overdue";
 export const TEXT_REVIEW_LOW_STOCK_SUFFIX = "low stock";
 export const TEXT_REVIEW_TRANSACTIONS_SUFFIX = "sales";
-// Said on the card, not buried in a tooltip: sale_items never captured a cost
-// snapshot, so profit is recomputed at today's cost and only for products that
-// have one. A peso figure with no coverage note overstates what is known.
-export const TEXT_REVIEW_PROFIT_PARTIAL_PREFIX = "Based on";
-export const TEXT_REVIEW_PROFIT_PARTIAL_SUFFIX = "of sales with a known cost";
+// Said on the card, not buried in a tooltip, and said ALWAYS -- not only when
+// cost coverage is partial.
+//
+// Product Decisions §2: "Do not silently present estimated profit as exact
+// historical profit." Even at full coverage this figure is estimated, because
+// sale_items never captured a cost snapshot and products.cost is TODAY's cost.
+// A bare margin with no basis line reads as exact, which is the thing that
+// decision forbids -- so every state of this card names its basis.
+export const TEXT_REVIEW_PROFIT_BASIS = "Estimated from current product costs";
+export const TEXT_REVIEW_PROFIT_PARTIAL_PREFIX = "Estimated from current costs ·";
+export const TEXT_REVIEW_PROFIT_PARTIAL_SUFFIX = "of sales have one";
+// Zero coverage: showing PHP 0.00 profit would be a misleading zero, which the
+// same decision rules out. The card shows no figure and says what is missing.
+export const TEXT_REVIEW_PROFIT_NO_COST = "No product costs recorded yet";
+export const TEXT_REVIEW_VALUE_UNAVAILABLE = "—";
 export const TEXT_REVIEW_ERROR_HEADING = "We couldn't load your review";
 export const TEXT_REVIEW_ERROR_BODY = "Please try again.";
 export const ARIA_REVIEW_LOCKED_BENEFITS = "What Review includes on Growth";
