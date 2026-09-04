@@ -25,3 +25,4 @@ export * from "./ScannerLoadingOverlay";
 export * from "./SetPinModal";
 export * from "./UpgradeModal";
 export * from "./Sidebar";
+export * from "./Modal";
