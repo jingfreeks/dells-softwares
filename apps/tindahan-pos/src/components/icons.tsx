@@ -37,6 +37,15 @@ export function ReportsIcon({ className }: IconProps) {
   );
 }
 
+/** Crown — the design marks Review as the Growth-plan feature with one. */
+export function ReviewIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden>
+      <path d="M12 6l4 6l5 -4l-2 10h-14l-2 -10l5 4z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function LogoutIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className} aria-hidden>

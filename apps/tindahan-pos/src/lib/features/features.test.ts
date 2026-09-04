@@ -28,6 +28,21 @@ describe("navItemsForRole — features vs permissions", () => {
     expect(items.map((i) => i.to)).not.toContain("/customers");
   });
 
+  // Review is the exception to the rule above, on purpose. It carries no
+  // `feature` key, so it stays visible to a store that has NOT bought it --
+  // the approved locked design puts Review in a Starter store's sidebar, and
+  // an item that silently vanishes cannot sell anything. The page renders the
+  // upgrade state and requests no data; review_summary() is the real boundary.
+  it("keeps Review visible to a store without the entitlement, because the locked state is the upsell", () => {
+    const items = navItemsForRole("admin", ALL_PERMISSIONS, new Set());
+    expect(items.map((i) => i.to)).toContain("/review");
+  });
+
+  it("still gates Review on the reporting permission — a cashier does not review the books", () => {
+    const items = navItemsForRole("cashier", new Set(), new Set(["pos.review"]));
+    expect(items.map((i) => i.to)).not.toContain("/review");
+  });
+
   it("still applies permissions independently of features", () => {
     // A cashier holding no permissions sees neither Staff nor Reports even
     // when the store holds every feature.

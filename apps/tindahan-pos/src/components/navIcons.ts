@@ -1,4 +1,12 @@
-import { PosIcon, InventoryIcon, AdminIcon, StaffIcon, CustomersIcon, ReportsIcon } from "./icons";
+import {
+  PosIcon,
+  InventoryIcon,
+  AdminIcon,
+  StaffIcon,
+  CustomersIcon,
+  ReportsIcon,
+  ReviewIcon,
+} from "./icons";
 
 export const NAV_ICONS = {
   pos: PosIcon,
@@ -7,4 +15,5 @@ export const NAV_ICONS = {
   staff: StaffIcon,
   customers: CustomersIcon,
   reports: ReportsIcon,
+  review: ReviewIcon,
 };
