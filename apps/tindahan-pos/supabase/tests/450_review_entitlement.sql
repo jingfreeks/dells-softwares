@@ -177,5 +177,58 @@ select throws_ok(
   'an inverted period is refused rather than silently returning nothing'
 );
 
+-- -----------------------------------------------------------------------------
+-- The overdue threshold comes from the STORE, not from a client default
+--
+-- Two screens aged the same customers by different rules before
+-- 20260905100000: the Customers page read the owner's setting out of
+-- localStorage, review_summary() was handed a hardcoded 30. These assert the
+-- server now answers with the store's own number when nobody asks for another.
+-- -----------------------------------------------------------------------------
+reset role;
+update stores set utang_overdue_days = 14 where id = pg_temp.growth_org();
+set local role authenticated;
+select pg_temp.act_as('4e900000-0000-4000-8000-00000000a002');
+
+select is(
+  ((select review_summary(current_date - 30, current_date)) ->> 'overdue_days')::int,
+  14,
+  'with no argument the store''s own threshold is used, not a client default'
+);
+
+select is(
+  ((select review_summary(current_date - 30, current_date, 60)) ->> 'overdue_days')::int,
+  60,
+  'and an explicit argument still wins -- asking "who is 60 days late" does not change the setting'
+);
+
+reset role;
+select is(
+  (select utang_overdue_days from stores where id = pg_temp.growth_org()),
+  14,
+  'asking a different question left the store''s setting alone'
+);
+set local role authenticated;
+select pg_temp.act_as('4e900000-0000-4000-8000-00000000a002');
+
+-- Defaults match what alertsMock.ts defaulted to, so nobody's numbers moved
+-- on the day this shipped.
+--
+-- Read with the role RESET, not as the Growth owner: `stores` is RLS-scoped to
+-- the caller's own store, so reading another tenant's row as a signed-in user
+-- returns no rows -- and a scalar subquery over no rows is NULL, which fails
+-- this assertion for the wrong reason entirely.
+reset role;
+select is(
+  (select utang_overdue_days from stores where id = pg_temp.starter_org()),
+  30,
+  'a store that never touched the setting keeps the old default of 30'
+);
+select is(
+  (select drawer_variance_threshold from stores where id = pg_temp.starter_org()),
+  20.00::numeric,
+  'and the drawer variance default of 20'
+);
+
 select * from finish();
 rollback;

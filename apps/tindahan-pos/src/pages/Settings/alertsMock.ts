@@ -1,7 +1,5 @@
 export interface AlertsMock {
   warnOutOfStockImmediately: boolean;
-  drawerVarianceThreshold: number;
-  utangAgingThresholdDays: number;
   alertOnVoidAfterPayment: boolean;
   pushEnabled: boolean;
   smsEnabled: boolean;
@@ -13,8 +11,6 @@ export interface AlertsMock {
 
 export const DEFAULT_ALERTS_MOCK: AlertsMock = {
   warnOutOfStockImmediately: true,
-  drawerVarianceThreshold: 20,
-  utangAgingThresholdDays: 30,
   alertOnVoidAfterPayment: true,
   pushEnabled: true,
   smsEnabled: true,
@@ -27,11 +23,17 @@ export const DEFAULT_ALERTS_MOCK: AlertsMock = {
 const STORAGE_KEY_PREFIX = "tindahan-pos:alerts:";
 
 /**
- * Out-of-stock/drawer/utang-aging/void thresholds, notification
- * channels, and quiet hours have no backend column or delivery
- * mechanism yet (no push/SMS/email integration exists) — this is a
- * UI-only redesign, so they persist client-side for now.
+ * The out-of-stock and void-alert toggles, notification channels, and quiet
+ * hours have no backend column or delivery mechanism yet (no push/SMS/email
+ * integration exists) — this is a UI-only redesign, so they persist
+ * client-side for now.
  * TODO: move to real store columns/notification service once they exist.
+ *
+ * The drawer-variance and utang-ageing thresholds USED to live here. They are
+ * real store columns now (stores.drawer_variance_threshold,
+ * stores.utang_overdue_days -- see 20260905100000), because Review and the
+ * Customers ageing view both read them from the server and a per-device copy
+ * is what let those two screens disagree about the same customers.
  */
 export function loadAlertsMock(storeId: string): AlertsMock {
   try {

@@ -23,8 +23,6 @@ function thisMonth(): { from: string; to: string } {
   return { from: `${year}-${pad(month)}-01`, to: `${year}-${pad(month)}-${pad(last)}` };
 }
 
-const OVERDUE_DAYS_DEFAULT = 30;
-
 export function useReviewPage() {
   const { features, loading: featuresLoading } = useFeatures();
   const [summary, setSummary] = useState<ReviewSummary | null>(null);
@@ -43,7 +41,10 @@ export function useReviewPage() {
   const load = useCallback(async () => {
     if (entitled !== true) return;
     setState("loading");
-    const result = await fetchReviewSummary(period.from, period.to, OVERDUE_DAYS_DEFAULT);
+    // No third argument on purpose: the server reads the store's own
+              // utang_overdue_days. Passing a client default here is what made
+              // Review disagree with the Customers page.
+    const result = await fetchReviewSummary(period.from, period.to);
     if (result.ok) {
       setSummary(result.summary);
       setState("ready");

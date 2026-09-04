@@ -11,7 +11,7 @@ import { loadFeesLimitsMock, saveFeesLimitsMock, DEFAULT_FEES_LIMITS_MOCK, type 
 import { loadAlertsMock, saveAlertsMock, DEFAULT_ALERTS_MOCK, type AlertsMock } from "./alertsMock";
 
 export function useAlertsPage() {
-  const { user } = useAuth();
+  const { user, store, updateStore } = useAuth();
 
   const [savedStock, setSavedStock] = useState<StockAlertSettings>(DEFAULT_STOCK_ALERT_SETTINGS);
   const [stock, setStock] = useState<StockAlertSettings>(DEFAULT_STOCK_ALERT_SETTINGS);
@@ -21,6 +21,15 @@ export function useAlertsPage() {
 
   const [savedAlerts, setSavedAlerts] = useState<AlertsMock>(DEFAULT_ALERTS_MOCK);
   const [alerts, setAlerts] = useState<AlertsMock>(DEFAULT_ALERTS_MOCK);
+
+  // These two are REAL store columns, not mock state. They sit here rather than
+  // in alertsMock because Review and the Customers ageing view both read them
+  // from the server -- a per-device copy is what let those two screens
+  // disagree about the same customers.
+  const [savedOverdueDays, setSavedOverdueDays] = useState(store?.utangOverdueDays ?? 30);
+  const [overdueDays, setOverdueDays] = useState(store?.utangOverdueDays ?? 30);
+  const [savedVariance, setSavedVariance] = useState(store?.drawerVarianceThreshold ?? 20);
+  const [variance, setVariance] = useState(store?.drawerVarianceThreshold ?? 20);
 
   const [justSaved, setJustSaved] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -41,6 +50,16 @@ export function useAlertsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.storeId]);
 
+  useEffect(() => {
+    setSavedOverdueDays(store?.utangOverdueDays ?? 30);
+    setOverdueDays(store?.utangOverdueDays ?? 30);
+  }, [store?.utangOverdueDays]);
+
+  useEffect(() => {
+    setSavedVariance(store?.drawerVarianceThreshold ?? 20);
+    setVariance(store?.drawerVarianceThreshold ?? 20);
+  }, [store?.drawerVarianceThreshold]);
+
   function setThresholdDays(value: number) {
     setJustSaved(false);
     setStock((prev) => ({ ...prev, thresholdDays: value }));
@@ -58,12 +77,12 @@ export function useAlertsPage() {
 
   function setDrawerVarianceThreshold(value: number) {
     setJustSaved(false);
-    setAlerts((prev) => ({ ...prev, drawerVarianceThreshold: value }));
+    setVariance(value);
   }
 
   function setUtangAgingThresholdDays(value: number) {
     setJustSaved(false);
-    setAlerts((prev) => ({ ...prev, utangAgingThresholdDays: value }));
+    setOverdueDays(value);
   }
 
   function toggleWarnLowEloadFloat() {
@@ -96,16 +115,32 @@ export function useAlertsPage() {
     setAlerts((prev) => ({ ...prev, quietHoursEnd: value }));
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!user) return;
+    setJustSaved(false);
     try {
+      // The server write goes FIRST. If it is refused -- RLS, a lost session,
+      // a store the staff member no longer belongs to -- the local settings
+      // must not be saved either, or the screen would report success while the
+      // two halves of it disagreed.
+      const result = await updateStore({
+        utangOverdueDays: overdueDays,
+        drawerVarianceThreshold: variance,
+      });
+      if (!result.ok) {
+        setFormError(result.error ?? ERROR_COULD_NOT_SAVE_ALERTS);
+        return;
+      }
+
       saveStockAlertSettings(user.storeId, stock);
       saveFeesLimitsMock(user.storeId, fees);
       saveAlertsMock(user.storeId, alerts);
       setSavedStock(stock);
       setSavedFees(fees);
       setSavedAlerts(alerts);
+      setSavedOverdueDays(overdueDays);
+      setSavedVariance(variance);
       setFormError(null);
       setJustSaved(true);
     } catch (err) {
@@ -117,6 +152,8 @@ export function useAlertsPage() {
     setStock(savedStock);
     setFees(savedFees);
     setAlerts(savedAlerts);
+    setOverdueDays(savedOverdueDays);
+    setVariance(savedVariance);
     setFormError(null);
     setJustSaved(false);
   }
@@ -124,7 +161,9 @@ export function useAlertsPage() {
   const isDirty =
     JSON.stringify(stock) !== JSON.stringify(savedStock) ||
     JSON.stringify(fees) !== JSON.stringify(savedFees) ||
-    JSON.stringify(alerts) !== JSON.stringify(savedAlerts);
+    JSON.stringify(alerts) !== JSON.stringify(savedAlerts) ||
+    overdueDays !== savedOverdueDays ||
+    variance !== savedVariance;
 
   return {
     thresholdDays: stock.thresholdDays,
@@ -136,9 +175,9 @@ export function useAlertsPage() {
     warnOutOfStockImmediately: alerts.warnOutOfStockImmediately,
     toggleWarnOutOfStockImmediately,
 
-    drawerVarianceThreshold: alerts.drawerVarianceThreshold,
+    drawerVarianceThreshold: variance,
     setDrawerVarianceThreshold,
-    utangAgingThresholdDays: alerts.utangAgingThresholdDays,
+    utangAgingThresholdDays: overdueDays,
     setUtangAgingThresholdDays,
     warnLowEloadFloat: fees.warnLowEloadFloat,
     toggleWarnLowEloadFloat,

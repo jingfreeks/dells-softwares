@@ -48,6 +48,12 @@ export interface ReviewSummary {
   customersWithBalance: number;
   overdueCustomerCount: number;
   oldestOverdueDays: number;
+  /**
+   * The threshold these overdue figures were computed against — the store's
+   * own setting unless the caller asked for another. Returned so the UI can
+   * label the number with the rule behind it rather than assuming 30.
+   */
+  overdueDays: number;
 
   bestSellers: ReviewBestSeller[];
 }

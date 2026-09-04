@@ -39,6 +39,7 @@ const SUMMARY: ReviewSummary = {
   customersWithBalance: 14,
   overdueCustomerCount: 3,
   oldestOverdueDays: 21,
+  overdueDays: 30,
   bestSellers: [],
 };
 

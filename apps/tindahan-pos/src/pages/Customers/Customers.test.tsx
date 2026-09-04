@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { useAuth, useStoreData } from "@/lib";
-import { makeAuthValue, makeCreditPayment, makeCustomer, makeSaleRecord, makeStoreDataValue } from "../../test/testUtils";
+import { makeAuthValue, makeCreditPayment, makeCustomer, makeSaleRecord, makeStore, makeStoreDataValue } from "../../test/testUtils";
 import { Customers } from "./Customers";
 
 vi.mock("@/lib/auth", () => ({ useAuth: vi.fn() }));
@@ -221,10 +221,13 @@ describe("Customers", () => {
     expect(await screen.findByText(/Credit limit: ₱500\.00/)).toBeInTheDocument();
   });
 
-  it("uses the utang aging threshold from Settings → Alerts instead of a hardcoded 30 days", async () => {
-    window.localStorage.setItem(
-      "tindahan-pos:alerts:store-1",
-      JSON.stringify({ utangAgingThresholdDays: 14 })
+  // The threshold is a real store column now (20260905100000), not a per-device
+  // localStorage value. That is the whole point of the change: this page and
+  // Review read the same number, so they cannot age the same customer
+  // differently depending on which device the owner happens to be holding.
+  it("uses the store's utang overdue threshold instead of a hardcoded 30 days", async () => {
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ store: makeStore({ id: "store-1", utangOverdueDays: 14 }) })
     );
     const twentyDaysAgo = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString();
     const debtCustomers = [makeCustomer({ id: "c1", name: "Mang Jose", balance: 300 })];

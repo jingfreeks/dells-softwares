@@ -63,6 +63,10 @@ export interface Store {
   voidRequiresPin: boolean;
   /** Admin-editable: the largest cash-out a Supervisor/Cashier may hand over without an Owner's PIN. null = no cap. Enforced server-side inside checkout_sale() (20260903200000). */
   cashierCashOutCap: number | null;
+  /** Days after which unpaid utang counts as overdue. A reporting preference, shared by the Customers ageing view and Review so the two cannot disagree. */
+  utangOverdueDays: number;
+  /** Peso variance beyond which a closed shift is worth flagging. */
+  drawerVarianceThreshold: number;
 }
 
 export interface Category {

@@ -5,7 +5,7 @@
 
 import type { PaymentType, StoreFeeConfig, VatStatus } from "./types";
 
-/** One persisted X or Z reading. Mirrors Tables["register_readings"]["Row"]. */
+/** review_summary()'s payload. No `expenses` key, deliberately -- see the RPC. */
 export interface ReviewSummaryRow {
   period: { from: string; to: string };
   sales_total: number;
@@ -23,9 +23,11 @@ export interface ReviewSummaryRow {
   customers_with_balance: number;
   overdue_customer_count: number;
   oldest_overdue_days: number;
+  overdue_days: number;
   best_sellers: { id: string; name: string; revenue: number; quantity: number }[];
 }
 
+/** One persisted X or Z reading. Mirrors Tables["register_readings"]["Row"]. */
 export interface RegisterReadingRow {
   id: string;
   store_id: string;
@@ -85,6 +87,8 @@ export interface Database {
           cashier_can_edit_prices: boolean;
           void_requires_pin: boolean;
           cashier_cash_out_cap: number | null;
+          utang_overdue_days: number;
+          drawer_variance_threshold: number;
         };
         Insert: {
           id?: string;
@@ -104,6 +108,8 @@ export interface Database {
           cashier_can_edit_prices?: boolean;
           void_requires_pin?: boolean;
           cashier_cash_out_cap?: number | null;
+          utang_overdue_days?: number;
+          drawer_variance_threshold?: number;
         };
         Update: {
           id?: string;
@@ -123,6 +129,8 @@ export interface Database {
           cashier_can_edit_prices?: boolean;
           void_requires_pin?: boolean;
           cashier_cash_out_cap?: number | null;
+          utang_overdue_days?: number;
+          drawer_variance_threshold?: number;
         };
         Relationships: [];
       };
@@ -1267,7 +1275,7 @@ export interface Database {
         Args: {
           p_from: string;
           p_to: string;
-          p_overdue_days?: number;
+          p_overdue_days?: number | null;
         };
         // Written out rather than referenced, for the same reason take_reading
         // is below: a self-reference inside the Database type resolves the
