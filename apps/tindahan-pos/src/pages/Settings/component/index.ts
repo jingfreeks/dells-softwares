@@ -29,3 +29,4 @@ export * from "./restorenote";
 export * from "./devicelistcard";
 export * from "./unpairdevicemodal";
 export * from "./auditlogcard";
+export * from "./notenforcednote";

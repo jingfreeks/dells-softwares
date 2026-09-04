@@ -173,6 +173,55 @@ select is(
   'their counters run 1..4 with no repeat and no gap'
 );
 
+-- -----------------------------------------------------------------------------
+-- The accumulation is GROSS -- RMO 24-2023 Annex D-2
+--
+-- On BIR's sample reading, "Sales for the Day" (Present less Previous
+-- Accumulated Sales) equals "Gross Amount" exactly, and the void and discount
+-- lines sit below it as disclosures. So neither a discount nor a void may
+-- reduce what the accumulation advances by.
+--
+-- The void here is the case the old completed-only basis got wrong: the sale
+-- is voided BEFORE the Z that closes its own period, where previously it would
+-- have vanished from the accumulation entirely -- while the identical sale
+-- voided a minute after that Z stayed in it forever.
+-- -----------------------------------------------------------------------------
+reset role;
+
+-- gross 250: 200 taken, 50 given away as a discount
+insert into sales (store_id, cashier_id, total, payment_type, status,
+                   receipt_number, created_at, occurred_at, vatable_sales,
+                   vat_amount, discount_amount)
+values (pg_temp.store(), '4e000000-0000-4000-8000-00000000f001', 200, 'cash',
+        'completed', 'OR-0010', clock_timestamp(), clock_timestamp(),
+        178.57, 21.43, 50);
+
+-- gross 80, voided inside its own period
+insert into sales (store_id, cashier_id, total, payment_type, status,
+                   receipt_number, created_at, occurred_at, vatable_sales,
+                   vat_amount, discount_amount, voided_at, voided_by)
+values (pg_temp.store(), '4e000000-0000-4000-8000-00000000f001', 80, 'cash',
+        'voided', 'OR-0011', clock_timestamp(), clock_timestamp(),
+        71.43, 8.57, 0, clock_timestamp(),
+        '4e000000-0000-4000-8000-00000000f001');
+
+set local role authenticated;
+select pg_temp.act_as('4e000000-0000-4000-8000-00000000f001');
+
+create temporary table t_z5 as select * from take_reading('Z');
+
+select is(
+  (select grand_total from t_z5) - (select grand_total from t_z4),
+  330.00::numeric,
+  'the accumulation advances by gross: 250 before discount plus the 80 voided in period'
+);
+select is((select net_sales from t_z5), 200.00::numeric,
+  'while net sales stays what the shop actually took, after the discount');
+select is((select total_discounts from t_z5), 50.00::numeric,
+  'and the discount is disclosed on its own line rather than lost');
+select is((select voided_total from t_z5), 80.00::numeric,
+  'as is the void, which is deducted at the payments line and not from the accumulation');
+
 -- Demoting the existing staff row rather than adding one: inserting into
 -- auth.users auto-provisions its own staff (and store), so a second user is
 -- both a collision and a second tenant. 210_permission_unification changes a

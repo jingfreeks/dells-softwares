@@ -60,7 +60,7 @@ describe("AlertsSettings", () => {
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }) }));
     renderPage();
 
-    const toggle = screen.getByRole("switch", { name: "Warn when e-load float drops below ₱500" });
+    const toggle = screen.getByRole("switch", { name: "Warn when e-load float drops below ₱500 (Not enforced yet)" });
     expect(toggle).toHaveAttribute("aria-checked", "false");
     await user.click(toggle);
     await user.click(screen.getByRole("button", { name: "Save changes" }));
