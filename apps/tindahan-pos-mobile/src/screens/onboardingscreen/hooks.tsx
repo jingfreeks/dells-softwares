@@ -30,6 +30,8 @@ import { pickCsvFileText } from "../../lib/documentPicker";
 import { parseProductsCsv } from "../../lib/csv";
 import type { Category } from "../../lib/types";
 import { EMPTY_QUICK_ADD_FORM, type QuickAddForm } from "../onboarding/quickaddproductmodal";
+import { useStockAlertsStep } from "./useStockAlertsStep";
+import { useOpenRegisterStep } from "./useOpenRegisterStep";
 
 const UNCATEGORIZED = "Uncategorized";
 // Same caps as the web app's Onboarding/hooks.tsx (AVATAR_MAX_DIMENSION/STORE_PHOTO_MAX_DIMENSION).
@@ -91,14 +93,16 @@ export function useOnboardingScreen() {
   const [savingQuickAdd, setSavingQuickAdd] = useState(false);
 
   // Stock alerts step
-  const [thresholdDays, setThresholdDays] = useState(DEFAULT_STOCK_ALERT_SETTINGS.thresholdDays);
-  const [fastMoverBoost, setFastMoverBoost] = useState(DEFAULT_STOCK_ALERT_SETTINGS.fastMoverBoost);
-  const [dailySummary, setDailySummary] = useState(DEFAULT_STOCK_ALERT_SETTINGS.dailySummary);
 
   // Open register step
-  const [denominationCounts, setDenominationCounts] = useState<DenominationCounts>({});
 
   // Done step
+  // Two steps own their own state now, mirroring the web app's split of the
+  // same wizard. What is left here is the wizard itself plus the profile,
+  // store-details and products steps.
+  const stockAlerts = useStockAlertsStep();
+  const openRegister = useOpenRegisterStep();
+
   const [finishing, setFinishing] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
 
@@ -134,16 +138,6 @@ export function useOnboardingScreen() {
       setCloseTime(saved.closeTime);
       hoursLoadedRef.current = true;
     });
-    loadStockAlertSettings(user.storeId).then((saved) => {
-      setThresholdDays(saved.thresholdDays);
-      setFastMoverBoost(saved.fastMoverBoost);
-      setDailySummary(saved.dailySummary);
-      stockAlertsLoadedRef.current = true;
-    });
-    loadDenominationCounts(user.storeId).then((saved) => {
-      setDenominationCounts(saved);
-      denominationsLoadedRef.current = true;
-    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.storeId]);
 
@@ -152,28 +146,12 @@ export function useOnboardingScreen() {
     saveOpeningHours(user.storeId, { openTime, closeTime });
   }, [user, openTime, closeTime]);
 
-  useEffect(() => {
-    if (!user || !stockAlertsLoadedRef.current) return;
-    saveStockAlertSettings(user.storeId, { thresholdDays, fastMoverBoost, dailySummary });
-  }, [user, thresholdDays, fastMoverBoost, dailySummary]);
-
-  useEffect(() => {
-    if (!user || !denominationsLoadedRef.current) return;
-    saveDenominationCounts(user.storeId, denominationCounts);
-  }, [user, denominationCounts]);
-
   const starterItemsToAdd = useMemo(
     () => STARTER_CATALOG.filter((c) => enabledCategoryKeys.has(c.key)).flatMap((c) => c.items),
     [enabledCategoryKeys]
   );
 
-  const stockAlertPreview = useMemo(
-    () => computeStockAlertPreview(products, sales, thresholdDays, fastMoverBoost),
-    [products, sales, thresholdDays, fastMoverBoost]
-  );
-
   const averageSaleValue = useMemo(() => computeAverageSaleValue(sales), [sales]);
-  const startingFloat = useMemo(() => computeStartingFloat(denominationCounts), [denominationCounts]);
 
   async function resolveCategoryId(categoryName: string): Promise<string> {
     const existing = categories.find((c) => c.name.toLowerCase() === categoryName.toLowerCase());
@@ -424,17 +402,11 @@ export function useOnboardingScreen() {
     savingQuickAdd,
     handleQuickAddSubmit,
     handleScannedBarcode,
-    thresholdDays,
-    setThresholdDays,
-    fastMoverBoost,
-    setFastMoverBoost,
-    dailySummary,
-    setDailySummary,
-    stockAlertPreview,
-    denominationCounts,
-    setDenominationCounts,
+    // Spread rather than re-listed: the screen's props are unchanged by the
+    // split, so nothing downstream had to move.
+    ...stockAlerts,
+    ...openRegister,
     averageSaleValue,
-    startingFloat,
     finishing,
     finishError,
     handleFinish,
