@@ -1,3 +1,4 @@
+import { formatDate, formatTime } from "@/lib";
 import { printGuardrails } from "@/lib/appMode";
 import { PESO } from "@/lib/money";
 import type { SaleRecord, Store } from "@/lib/types";
@@ -114,8 +115,8 @@ export function Receipt({
         {sale.receiptNumber ?? TEXT_RECEIPT_NUMBER_PENDING}
       </p>
       <p className="tpl-receipt-line">
-        {timestamp.toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })}{" "}
-        {timestamp.toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" })}
+        {formatDate(timestamp)}{" "}
+        {formatTime(timestamp)}
       </p>
       {settings.includeCashierName && (
         <p className="tpl-receipt-line">

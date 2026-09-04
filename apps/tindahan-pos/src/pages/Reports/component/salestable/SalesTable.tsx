@@ -25,8 +25,7 @@ import {
   LABEL_PAYMENT_QR,
   LABEL_PAYMENT_UTANG,
   type SaleRecord,
-  type PaymentType,
-} from "@/lib";
+  type PaymentType, formatDateTimeShort } from "@/lib";
 
 const COLUMNS = "130px 1fr 1fr 90px 100px 110px";
 
@@ -37,12 +36,7 @@ const PAYMENT_LABEL: Record<PaymentType, string> = {
 };
 
 function formatSaleDate(timestamp: string): string {
-  return new Date(timestamp).toLocaleString("en-PH", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatDateTimeShort(timestamp);
 }
 
 function formatItems(sale: SaleRecord): string {

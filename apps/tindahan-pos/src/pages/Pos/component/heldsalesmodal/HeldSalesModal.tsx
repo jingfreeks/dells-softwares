@@ -13,8 +13,7 @@ import {
   useEscapeToClose,
   useFocusTrap,
   type HeldSale,
-  type Product,
-} from "@/lib";
+  type Product, formatTime } from "@/lib";
 
 interface HeldSalesModalProps {
   open: boolean;
@@ -91,7 +90,7 @@ export function HeldSalesModal({ open, heldSales, products, resumeError, onResum
                   </div>
                   <p style={{ color: "var(--tpl-t6)", fontSize: 12, marginTop: 4 }}>
                     {TEXT_HELD_BY} {held.heldByName} ·{" "}
-                    {new Date(held.createdAt).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" })}
+                    {formatTime(held.createdAt)}
                   </p>
 
                   {isConfirmingDiscard && (

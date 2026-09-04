@@ -160,17 +160,17 @@ describe("CategoryManager", () => {
     expect(renameCategory).not.toHaveBeenCalled();
   });
 
-  it("falls back to a generic message when adding fails with a non-Error rejection", async () => {
+  it("shows what the failure said when adding a category fails", async () => {
     const user = userEvent.setup();
     const addCategory = vi.fn().mockRejectedValue("nope");
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ categories: [], addCategory }));
     render(<CategoryManager onClose={vi.fn()} />);
 
     await user.type(screen.getByPlaceholderText("New category name"), "Drinks{Enter}");
-    expect(await screen.findByRole("alert")).toHaveTextContent("Could not add category.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("nope");
   });
 
-  it("falls back to a generic message when renaming fails with a non-Error rejection", async () => {
+  it("shows what the failure said when renaming fails", async () => {
     const user = userEvent.setup();
     const renameCategory = vi.fn().mockRejectedValue("nope");
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ categories, renameCategory }));
@@ -178,10 +178,10 @@ describe("CategoryManager", () => {
 
     await user.click(screen.getAllByRole("button", { name: "Rename" })[0]);
     await user.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Could not rename category.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("nope");
   });
 
-  it("falls back to a generic message when deleting fails with a non-Error rejection", async () => {
+  it("shows what the failure said when deleting fails", async () => {
     const user = userEvent.setup();
     const removeCategory = vi.fn().mockRejectedValue("nope");
     vi.mocked(useStoreData).mockReturnValue(makeStoreDataValue({ categories, removeCategory }));
@@ -189,7 +189,7 @@ describe("CategoryManager", () => {
 
     await user.click(screen.getAllByRole("button", { name: "Delete" })[0]);
     await user.click(within(screen.getByRole("dialog", { name: "Delete category?" })).getByRole("button", { name: "Delete" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Could not delete category.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("nope");
   });
 
   it("renames a category via Enter key", async () => {

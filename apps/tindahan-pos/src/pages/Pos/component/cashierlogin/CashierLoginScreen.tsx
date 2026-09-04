@@ -17,8 +17,7 @@ import {
   BUTTON_TRY_AGAIN,
   LABEL_COUNT_STARTING_CASH,
   LABEL_OPENING_FLOAT,
-  BUTTON_CONTINUE,
-} from "@/lib";
+  BUTTON_CONTINUE, formatDayLong, formatTime } from "@/lib";
 import "@/pages/authTheme.css";
 import { useCashierLoginScreen } from "./hooks";
 
@@ -54,8 +53,8 @@ export function CashierLoginScreen() {
   } = useCashierLoginScreen();
 
   const now = new Date();
-  const dateLabel = now.toLocaleDateString("en-PH", { weekday: "long", day: "numeric", month: "long" });
-  const timeLabel = now.toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" });
+  const dateLabel = formatDayLong(now);
+  const timeLabel = formatTime(now);
 
   return (
     <div

@@ -7,8 +7,7 @@ import {
   ERROR_STORE_NAME_REQUIRED,
   ERROR_COULD_NOT_PROCESS_IMAGE,
   ERROR_COULD_NOT_SAVE_STORE_DETAILS,
-  type VatStatus,
-} from "@/lib";
+  type VatStatus, describePlatformError } from "@/lib";
 import { loadOpeningHours, saveOpeningHours, DEFAULT_OPENING_HOURS } from "../Onboarding/openingHoursSettings";
 
 const STORE_PHOTO_MAX_DIMENSION = 1024;
@@ -107,7 +106,7 @@ export function useStoreDetailsPage() {
       setPhotoBlob(blob);
       setPhotoPreview(URL.createObjectURL(blob));
     } catch (err) {
-      setPhotoError(err instanceof Error ? err.message : ERROR_COULD_NOT_PROCESS_IMAGE);
+      setPhotoError(describePlatformError(err, ERROR_COULD_NOT_PROCESS_IMAGE));
     } finally {
       setProcessingPhoto(false);
     }
@@ -150,7 +149,7 @@ export function useStoreDetailsPage() {
       setPhotoPreview(null);
       setSaved(true);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : ERROR_COULD_NOT_SAVE_STORE_DETAILS);
+      setFormError(describePlatformError(err, ERROR_COULD_NOT_SAVE_STORE_DETAILS));
     } finally {
       setSubmitting(false);
     }

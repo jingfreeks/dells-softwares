@@ -141,7 +141,7 @@ export function useReportsPage() {
         }))
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load the report.");
+      setError(describePlatformError(err, "Could not load the report."));
     } finally {
       setLoading(false);
     }

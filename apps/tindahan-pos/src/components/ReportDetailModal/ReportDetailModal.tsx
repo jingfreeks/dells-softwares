@@ -1,5 +1,6 @@
-import { useRef, type ReactNode } from "react";
-import { ARIA_CLOSE_MODAL, BUTTON_CLOSE, BUTTON_PRINT, useEscapeToClose, useFocusTrap } from "@/lib";
+import { type ReactNode } from "react";
+import { ARIA_CLOSE_MODAL, BUTTON_CLOSE, BUTTON_PRINT } from "@/lib";
+import { Modal } from "../Modal";
 
 export interface ReportSummaryTile {
   label: string;
@@ -25,21 +26,13 @@ interface ReportDetailModalProps {
  * pattern as ConfirmDialog/AddSupplierModal.
  */
 export function ReportDetailModal({ title, subtitle, summaryTiles, onClose, onPrint, children }: ReportDetailModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  useEscapeToClose(true, onClose);
-  useFocusTrap(true, dialogRef);
-
   return (
-    <div className="tpl-modal-overlay" onClick={onClose}>
-      <div
-        ref={dialogRef}
-        className="tpl-modal-panel tpl-card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="reportDetailHeading"
-        style={{ width: "min(960px, 100%)", maxHeight: "88vh", display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal
+      open
+      onClose={onClose}
+      labelledBy="reportDetailHeading"
+      style={{ width: "min(960px, 100%)", maxHeight: "88vh", display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}
+    >
         <div
           className="tpl-sp"
           style={{ padding: "18px 22px", borderBottom: "0.5px solid var(--tpl-bd)", alignItems: "flex-start", flexShrink: 0 }}
@@ -111,7 +104,6 @@ export function ReportDetailModal({ title, subtitle, summaryTiles, onClose, onPr
             {BUTTON_PRINT}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

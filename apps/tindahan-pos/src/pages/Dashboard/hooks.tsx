@@ -8,8 +8,7 @@ import {
   buildDashboardWorkbook,
   downloadWorkbook,
   STORE_NAME,
-  ERROR_COULD_NOT_GENERATE_REPORT,
-} from "@/lib";
+  ERROR_COULD_NOT_GENERATE_REPORT, describePlatformError } from "@/lib";
 import type { Product, SaleRecord, Supplier } from "@/lib";
 import type { RestockSuggestion } from "@/lib/inventory";
 import type { RestockExportRow } from "@/lib/excelExport";
@@ -128,7 +127,7 @@ export function useDashboardReport() {
       setDaySales(completedSales(day));
       setPreviousDaySales(completedSales(previous));
     } catch (err) {
-      setRangeError(err instanceof Error ? err.message : ERROR_COULD_NOT_GENERATE_REPORT);
+      setRangeError(describePlatformError(err, ERROR_COULD_NOT_GENERATE_REPORT));
     } finally {
       setRangeLoading(false);
     }
@@ -180,7 +179,7 @@ export function useDashboardReport() {
       });
       await downloadWorkbook(workbook, `${slugify(storeName)}-dashboard-${selectedDate}.xlsx`);
     } catch (err) {
-      setExportError(err instanceof Error ? err.message : ERROR_COULD_NOT_GENERATE_REPORT);
+      setExportError(describePlatformError(err, ERROR_COULD_NOT_GENERATE_REPORT));
     } finally {
       setExporting(false);
     }

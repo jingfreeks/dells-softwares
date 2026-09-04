@@ -85,7 +85,10 @@ describe("RefundModal", () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
-  it("keeps the dialog open and shows an error when the refund fails", async () => {
+  // The raw code used to reach the cashier verbatim. describePlatformError
+  // turns it into the sentence that says what to do instead, which is the
+  // app's standing rule that nobody is shown the database's own words.
+  it("keeps the dialog open and explains the refusal in words", async () => {
     const sale = makeSaleRecord({
       items: [{ id: "si-1", productId: "p1", name: "Sardines", quantity: 3, price: 25, itemType: "product", fee: 0, lineTotal: 75 }],
     });
@@ -100,7 +103,7 @@ describe("RefundModal", () => {
     await user.type(screen.getByLabelText("Reason for the refund"), "test");
     await user.click(screen.getByRole("button", { name: "Refund" }));
 
-    expect(await screen.findByText("REFUND_EXCEEDS_SOLD_QUANTITY: Sardines")).toBeInTheDocument();
+    expect(await screen.findByText(/refund more Sardines than was actually sold/i)).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
   });
 });

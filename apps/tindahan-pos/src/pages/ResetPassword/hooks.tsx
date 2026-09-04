@@ -3,8 +3,7 @@ import {
   supabase,
   ERROR_PASSWORD_TOO_SHORT,
   ERROR_PASSWORDS_DO_NOT_MATCH,
-  ERROR_COULD_NOT_UPDATE_PASSWORD,
-} from "@/lib";
+  ERROR_COULD_NOT_UPDATE_PASSWORD, describePlatformError } from "@/lib";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -39,7 +38,7 @@ export function useResetPasswordForm() {
       }
       setSaved(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : ERROR_COULD_NOT_UPDATE_PASSWORD);
+      setError(describePlatformError(err, ERROR_COULD_NOT_UPDATE_PASSWORD));
     } finally {
       setSubmitting(false);
     }

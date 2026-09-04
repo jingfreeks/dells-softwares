@@ -5,8 +5,7 @@ import {
   ERROR_COULD_NOT_RENAME_CATEGORY,
   ERROR_COULD_NOT_DELETE_CATEGORY,
   ERROR_COULD_NOT_MERGE_CATEGORY,
-  type Category,
-} from "@/lib";
+  type Category, describePlatformError } from "@/lib";
 
 export const useCategoryManager = () => {
   const { categories, products, addCategory, renameCategory, removeCategory, mergeCategory } =
@@ -33,7 +32,7 @@ export const useCategoryManager = () => {
       setNewName("");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : ERROR_COULD_NOT_ADD_CATEGORY,
+        describePlatformError(err, ERROR_COULD_NOT_ADD_CATEGORY),
       );
     } finally {
       setAdding(false);
@@ -55,7 +54,7 @@ export const useCategoryManager = () => {
       setEditingId(null);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : ERROR_COULD_NOT_RENAME_CATEGORY,
+        describePlatformError(err, ERROR_COULD_NOT_RENAME_CATEGORY),
       );
     } finally {
       setBusyId(null);
@@ -91,11 +90,10 @@ export const useCategoryManager = () => {
       setMergeIntoId("");
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : count > 0
-            ? ERROR_COULD_NOT_MERGE_CATEGORY
-            : ERROR_COULD_NOT_DELETE_CATEGORY,
+        describePlatformError(
+          err,
+          count > 0 ? ERROR_COULD_NOT_MERGE_CATEGORY : ERROR_COULD_NOT_DELETE_CATEGORY
+        ),
       );
     } finally {
       setBusyId(null);
