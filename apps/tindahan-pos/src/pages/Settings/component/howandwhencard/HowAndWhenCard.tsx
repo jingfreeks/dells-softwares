@@ -11,7 +11,10 @@ import {
   TEXT_DAILY_SUMMARY_AT_DESC,
   LABEL_QUIET_HOURS,
   TEXT_QUIET_HOURS_DESC,
+  TEXT_ALERTS_NO_DELIVERY,
+  TEXT_ALERTS_NO_DELIVERY_TITLE,
 } from "@/lib";
+import { NotEnforcedNote } from "../notenforcednote";
 
 interface HowAndWhenCardProps {
   pushEnabled: boolean;
@@ -126,6 +129,14 @@ export function HowAndWhenCard({
           </div>
         </div>
       </div>
+      {/*
+        Stronger than the "Not enforced yet" chip used elsewhere, and
+        deliberately so. Those mark a setting nothing reads. These configure a
+        DELIVERY MECHANISM THAT DOES NOT EXIST -- there is no push, SMS or
+        email in this product -- so "not enforced yet" would imply the pipe is
+        built and the switch is merely off.
+      */}
+      <NotEnforcedNote title={TEXT_ALERTS_NO_DELIVERY_TITLE}>{TEXT_ALERTS_NO_DELIVERY}</NotEnforcedNote>
     </div>
   );
 }

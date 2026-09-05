@@ -84,12 +84,15 @@ export function MoneyAlertCard({
         </button>
       </div>
       <div className="tpl-sp" style={{ padding: "4px 0" }}>
-        <span style={{ color: "var(--tpl-t4)", fontSize: 13 }}>{LABEL_ANY_VOID_AFTER_PAYMENT}</span>
+        <span style={{ color: "var(--tpl-t4)", fontSize: 13 }}>
+          {LABEL_ANY_VOID_AFTER_PAYMENT}
+          <NotEnforcedChip />
+        </span>
         <button
           type="button"
           role="switch"
           aria-checked={alertOnVoidAfterPayment}
-          aria-label={LABEL_ANY_VOID_AFTER_PAYMENT}
+          aria-label={`${LABEL_ANY_VOID_AFTER_PAYMENT} (${LABEL_NOT_ENFORCED_YET})`}
           onClick={onToggleAlertOnVoidAfterPayment}
           className={`tpl-tog${alertOnVoidAfterPayment ? " tpl-on" : ""}`}
         >

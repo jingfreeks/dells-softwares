@@ -370,4 +370,13 @@ describe("ProfileSettings", () => {
       expect(await screen.findByText("Coming soon")).toBeInTheDocument();
     });
   });
+  // The notification preferences on this page have zero consumers — no push,
+  // SMS or email delivery exists in this product. Same honesty pass as #503 on
+  // Fees & limits, and #514's siblings on Alerts.
+  it("says the notification preferences are not delivered anywhere yet", async () => {
+    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }) }));
+    renderPage();
+
+    expect(await screen.findByText("No alerts are sent yet")).toBeInTheDocument();
+  });
 });

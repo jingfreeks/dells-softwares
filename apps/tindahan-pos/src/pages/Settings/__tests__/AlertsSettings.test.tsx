@@ -127,6 +127,57 @@ describe("AlertsSettings", () => {
     expect(window.localStorage.getItem("tindahan-pos:alerts:store-9")).toBeNull();
   });
 
+  // The same honesty pass #503 made on Fees & limits. Verified before marking:
+  // every field left in alertsMock has zero consumers outside Settings.
+  it("marks the settings that do nothing, and the ones that do nothing at all", async () => {
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }), store: makeStore({ id: "store-9" }) })
+    );
+    renderPage();
+
+    expect(
+      screen.getByRole("switch", { name: "Out of stock, straight away (Not enforced yet)" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("switch", { name: "Any void after payment (Not enforced yet)" })
+    ).toBeInTheDocument();
+
+    // "How and when" gets a stronger statement than a chip: there is no push,
+    // SMS or email in this product, so it configures a delivery mechanism that
+    // does not exist rather than a switch that is merely off.
+    //
+    // One note, not two — the notifications card lives on the Profile page,
+    // which its own test covers.
+    expect(screen.getByText("No alerts are sent yet")).toBeInTheDocument();
+  });
+
+  // The other direction, and the reason the marking means anything: the
+  // threshold slider and the fast-mover boost have 55 and 13 consumers. They
+  // really do change what the app shows, so marking them would empty the
+  // marking of meaning.
+  it("does NOT mark the stock threshold or fast-mover boost, which really work", async () => {
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }), store: makeStore({ id: "store-9" }) })
+    );
+    renderPage();
+
+    expect(screen.getByRole("slider", { name: "Warn below" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("switch", { name: "Fast movers warn earlier" })
+    ).toBeInTheDocument();
+  });
+
+  // And the two that became real store columns in #514 stay clean.
+  it("leaves the drawer and utang thresholds unmarked, since they are real now", async () => {
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }), store: makeStore({ id: "store-9" }) })
+    );
+    renderPage();
+
+    expect(screen.getByLabelText("Drawer off by more than")).toBeInTheDocument();
+    expect(screen.getByLabelText("Utang older than")).toBeInTheDocument();
+  });
+
   it("discards unsaved edits across all three underlying settings", async () => {
     const user = userEvent.setup();
     vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }) }));
