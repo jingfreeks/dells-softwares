@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { useFeatures, fetchReviewSummary } from "@/lib";
 import type { ReviewSummary } from "@/lib";
 import { Review } from "../Review";
@@ -49,12 +49,22 @@ const SUMMARY: ReviewSummary = {
   previous: { from: "2026-08-01", to: "2026-08-31", salesTotal: 41000, transactionCount: 190 },
 };
 
+/** Reports back which filter the navigation asked the destination to apply. */
+function FilterProbe({ testId }: { testId: string }) {
+  const { state } = useLocation();
+  return <p data-testid={testId}>{Object.keys((state as object | null) ?? {}).join(",") || "none"}</p>;
+}
+
 function renderPage() {
   return render(
     <MemoryRouter initialEntries={["/review"]}>
       <Routes>
         <Route path="/review" element={<Review />} />
         <Route path="/settings/plan" element={<p>Plan settings</p>} />
+        <Route path="/inventory" element={<FilterProbe testId="inventory-filter" />} />
+        <Route path="/customers" element={<FilterProbe testId="customers-filter" />} />
+        <Route path="/reports" element={<p>Reports</p>} />
+        <Route path="/staff" element={<p>Staff</p>} />
       </Routes>
     </MemoryRouter>
   );
@@ -168,6 +178,102 @@ describe("Review", () => {
     expect(await screen.findByText("No product costs recorded yet")).toBeInTheDocument();
     expect(screen.getByText("—")).toBeInTheDocument();
     expect(screen.queryByText("₱0.00")).not.toBeInTheDocument();
+  });
+
+  it("lists what needs attention, and lands each action on the filtered view", async () => {
+    const user = userEvent.setup();
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({ ok: true, summary: SUMMARY });
+    renderPage();
+
+    expect(await screen.findByText("12 low on stock")).toBeInTheDocument();
+    expect(screen.getByText("3 have overdue utang")).toBeInTheDocument();
+    expect(screen.getByText("Oldest balance: 21 days")).toBeInTheDocument();
+    expect(screen.getByText("8 have not sold recently")).toBeInTheDocument();
+
+    // The action has to arrive somewhere useful. Landing on the full inventory
+    // list and leaving the shopkeeper to find the twelve is the "button that
+    // pretends to work" the brief warns about.
+    await user.click(screen.getByRole("button", { name: "View low stock" }));
+    expect(screen.getByTestId("inventory-filter")).toHaveTextContent("needsAttentionOnly");
+  });
+
+  it("sends View overdue to the customers page already filtered", async () => {
+    const user = userEvent.setup();
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({ ok: true, summary: SUMMARY });
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "View overdue" }));
+    expect(screen.getByTestId("customers-filter")).toHaveTextContent("overdueOnly");
+  });
+
+  // Three states, and the middle one is the reason this is tested at all.
+  it("reports balanced shifts as good news", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({ ok: true, summary: { ...SUMMARY, shiftsClosed: 3, shiftsOff: 0 } });
+    renderPage();
+
+    expect(await screen.findByText("Cashier shifts are balanced")).toBeInTheDocument();
+    expect(screen.getByText("Good")).toBeInTheDocument();
+  });
+
+  it("does NOT report an uncounted drawer as balanced", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({ ok: true, summary: { ...SUMMARY, shiftsClosed: 0, shiftsOff: 0 } });
+    renderPage();
+
+    expect(await screen.findByText("No shifts were counted")).toBeInTheDocument();
+    expect(screen.queryByText("Cashier shifts are balanced")).not.toBeInTheDocument();
+    expect(screen.queryByText("Good")).not.toBeInTheDocument();
+  });
+
+  it("flags a drawer that is out", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({
+      ok: true,
+      summary: { ...SUMMARY, shiftsClosed: 4, shiftsOff: 1, shiftsOffTotal: 60 },
+    });
+    renderPage();
+
+    expect(await screen.findByText("1 of 4 off by more than your limit")).toBeInTheDocument();
+  });
+
+  // A quiet store should not be shown a list of non-problems.
+  it("shows only the good-news row when nothing needs attention", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({
+      ok: true,
+      summary: {
+        ...SUMMARY,
+        lowStockCount: 0,
+        overdueCustomerCount: 0,
+        slowMovingCount: 0,
+        shiftsClosed: 2,
+        shiftsOff: 0,
+      },
+    });
+    renderPage();
+
+    await screen.findByText("Cashier shifts are balanced");
+    expect(screen.queryByText(/low on stock/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/have overdue utang/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/have not sold recently/)).not.toBeInTheDocument();
+  });
+
+  it("names the customers to chase, and says so when there are none", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({
+      ok: true,
+      summary: {
+        ...SUMMARY,
+        overdueCustomers: [{ id: "c1", name: "Juan Dela Cruz", balance: 1250, daysOverdue: 21 }],
+      },
+    });
+    renderPage();
+
+    expect(await screen.findByText("Juan Dela Cruz")).toBeInTheDocument();
+    expect(screen.getByText("21 days overdue")).toBeInTheDocument();
   });
 
   it("shows a plain error with a working retry, and no server wording", async () => {

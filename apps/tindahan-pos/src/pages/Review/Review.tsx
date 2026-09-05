@@ -14,13 +14,38 @@ import {
   TEXT_REVIEW_PROFIT_PARTIAL_SUFFIX,
   TEXT_REVIEW_PROFIT_NO_COST,
   TEXT_REVIEW_VALUE_UNAVAILABLE,
+  TEXT_REVIEW_LOW_STOCK_TITLE_SUFFIX,
+  TEXT_REVIEW_LOW_STOCK_BODY,
+  BUTTON_REVIEW_VIEW_LOW_STOCK,
+  TEXT_REVIEW_OVERDUE_TITLE_SUFFIX,
+  TEXT_REVIEW_OLDEST_BALANCE_PREFIX,
+  BUTTON_REVIEW_VIEW_OVERDUE,
+  TEXT_REVIEW_SLOW_TITLE_SUFFIX,
+  TEXT_REVIEW_SLOW_BODY,
+  BUTTON_REVIEW_VIEW_SLOW,
+  TEXT_REVIEW_SHIFTS_BALANCED,
+  TEXT_REVIEW_SHIFTS_NO_ACTION,
+  TEXT_REVIEW_SHIFTS_NONE_COUNTED,
+  TEXT_REVIEW_SHIFTS_NONE_COUNTED_BODY,
+  TEXT_REVIEW_SHIFTS_OFF_SUFFIX,
+  TEXT_REVIEW_DAYS_SUFFIX_SHORT,
+  BUTTON_REVIEW_OPEN,
   TEXT_REVIEW_ERROR_HEADING,
   TEXT_REVIEW_ERROR_BODY,
   BUTTON_TRY_AGAIN,
   PESO,
 } from "@/lib";
+import { useNavigate } from "react-router-dom";
 import type { ReviewSummary } from "@/lib";
-import { ReviewLockedState, ReviewMetricCard } from "./component";
+import {
+  ReviewLockedState,
+  ReviewMetricCard,
+  ReviewAttentionSection,
+  SalesReviewCard,
+  InventoryReviewCard,
+  CustomerUtangReviewCard,
+} from "./component";
+import type { AttentionItem } from "./component";
 import { useReviewPage } from "./hooks";
 
 /** "82%" from 0.82, for the profit-coverage caveat. */
@@ -46,6 +71,7 @@ function profitBasis(summary: ReviewSummary): string {
 
 export function Review() {
   const { state, summary, retry } = useReviewPage();
+  const navigate = useNavigate();
 
   if (state === "locked") {
     return (
@@ -154,6 +180,109 @@ export function Review() {
           />
         </div>
       )}
+
+      {state === "ready" && summary && (
+        <>
+          <div style={{ height: 11 }} />
+          <ReviewAttentionSection items={attentionItems(summary, navigate)} />
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            <SalesReviewCard
+              daily={summary.dailySales}
+              bestSellers={summary.bestSellers}
+              onOpen={() => navigate("/reports")}
+            />
+            <InventoryReviewCard
+              productCount={summary.productCount}
+              lowStockCount={summary.lowStockCount}
+              outOfStockCount={summary.outOfStockCount}
+              slowMovingCount={summary.slowMovingCount}
+              onOpen={() => navigate("/inventory")}
+            />
+            <CustomerUtangReviewCard
+              outstanding={summary.utangOutstanding}
+              overdue={summary.utangOverdue}
+              customersWithBalance={summary.customersWithBalance}
+              overdueCustomers={summary.overdueCustomers}
+              onOpen={() => navigate("/customers")}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
+}
+
+/**
+ * The attention list, built only from things that are actually true.
+ *
+ * Every row is conditional: a store with full shelves and nobody overdue sees
+ * the good-news row and nothing else. A list padded with "0 products are low on
+ * stock" would be noise, and the section exists to be scanned in a second.
+ */
+function attentionItems(
+  summary: ReviewSummary,
+  navigate: ReturnType<typeof useNavigate>
+): AttentionItem[] {
+  const items: AttentionItem[] = [];
+
+  if (summary.lowStockCount > 0) {
+    items.push({
+      key: "low-stock",
+      title: `${summary.lowStockCount} ${TEXT_REVIEW_LOW_STOCK_TITLE_SUFFIX}`,
+      body: TEXT_REVIEW_LOW_STOCK_BODY,
+      actionLabel: BUTTON_REVIEW_VIEW_LOW_STOCK,
+      // Lands on Inventory already filtered, rather than on the full list with
+      // the shopkeeper left to find the twelve.
+      onAction: () => navigate("/inventory", { state: { needsAttentionOnly: true } }),
+    });
+  }
+
+  if (summary.overdueCustomerCount > 0) {
+    items.push({
+      key: "overdue",
+      title: `${summary.overdueCustomerCount} ${TEXT_REVIEW_OVERDUE_TITLE_SUFFIX}`,
+      body: `${TEXT_REVIEW_OLDEST_BALANCE_PREFIX} ${summary.oldestOverdueDays} ${TEXT_REVIEW_DAYS_SUFFIX_SHORT}`,
+      actionLabel: BUTTON_REVIEW_VIEW_OVERDUE,
+      onAction: () => navigate("/customers", { state: { overdueOnly: true } }),
+    });
+  }
+
+  if (summary.slowMovingCount > 0) {
+    items.push({
+      key: "slow-moving",
+      title: `${summary.slowMovingCount} ${TEXT_REVIEW_SLOW_TITLE_SUFFIX}`,
+      body: TEXT_REVIEW_SLOW_BODY,
+      actionLabel: BUTTON_REVIEW_VIEW_SLOW,
+      onAction: () => navigate("/inventory", { state: { needsAttentionOnly: true } }),
+    });
+  }
+
+  // Three states, not two. "No shifts were counted" is not good news, and
+  // reporting it as balanced would turn nobody counting the drawer into
+  // "no action needed" -- see 20260905130000.
+  if (summary.shiftsClosed === 0) {
+    items.push({
+      key: "shifts",
+      title: TEXT_REVIEW_SHIFTS_NONE_COUNTED,
+      body: TEXT_REVIEW_SHIFTS_NONE_COUNTED_BODY,
+    });
+  } else if (summary.shiftsOff > 0) {
+    items.push({
+      key: "shifts",
+      title: `${summary.shiftsOff} of ${summary.shiftsClosed} ${TEXT_REVIEW_SHIFTS_OFF_SUFFIX}`,
+      body: PESO.format(summary.shiftsOffTotal),
+      actionLabel: BUTTON_REVIEW_OPEN,
+      onAction: () => navigate("/staff"),
+    });
+  } else {
+    items.push({
+      key: "shifts",
+      title: TEXT_REVIEW_SHIFTS_BALANCED,
+      body: TEXT_REVIEW_SHIFTS_NO_ACTION,
+      good: true,
+    });
+  }
+
+  return items;
 }
