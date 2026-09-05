@@ -284,5 +284,65 @@ select is(
   'a customer whose credit sales are all online can be overdue -- min(occurred_at) made them ageless'
 );
 
+-- -----------------------------------------------------------------------------
+-- The trend series and the comparison window
+-- -----------------------------------------------------------------------------
+
+-- A day that sold nothing still has to appear, or a chart drawn from these
+-- rows renders a quiet day as no day and a bad week looks like a short one.
+select is(
+  jsonb_array_length((select review_summary(current_date - 6, current_date)) -> 'daily_sales'),
+  7,
+  'seven days asked for, seven rows returned -- including the days that sold nothing'
+);
+
+select is(
+  ((select review_summary(current_date - 6, current_date)) -> 'daily_sales' -> 0 ->> 'sales')::numeric,
+  0.00::numeric,
+  'and a day with no sales reads 0, not absent'
+);
+
+-- The 500-peso online sale inserted earlier lands on today.
+select is(
+  ((select review_summary(current_date - 6, current_date)) -> 'daily_sales' -> 6 ->> 'sales')::numeric,
+  500.00::numeric,
+  'while the day that did sell carries its total'
+);
+
+-- A whole calendar month compares against the previous calendar month, not
+-- against "the 31 days before this one", which would straddle two months.
+select is(
+  ((select review_summary('2026-09-01'::date, '2026-09-30'::date)) -> 'previous' ->> 'from')::date,
+  '2026-08-01'::date,
+  'a whole calendar month compares against the whole previous calendar month'
+);
+select is(
+  ((select review_summary('2026-09-01'::date, '2026-09-30'::date)) -> 'previous' ->> 'to')::date,
+  '2026-08-31'::date,
+  'ending on its last day, not 30 days back'
+);
+
+-- Anything else gets the same-length window immediately before, and the UI is
+-- told the bounds so it can say what it compared instead of claiming "last
+-- month" over an arbitrary week.
+select is(
+  ((select review_summary('2026-09-10'::date, '2026-09-16'::date)) -> 'previous' ->> 'from')::date,
+  '2026-09-03'::date,
+  'an arbitrary 7-day window compares against the 7 days immediately before it'
+);
+select is(
+  ((select review_summary('2026-09-10'::date, '2026-09-16'::date)) -> 'previous' ->> 'to')::date,
+  '2026-09-09'::date,
+  'ending the day before the period opens'
+);
+
+-- February, because a same-length window would silently be wrong here and a
+-- month-aware one is not.
+select is(
+  ((select review_summary('2026-03-01'::date, '2026-03-31'::date)) -> 'previous' ->> 'from')::date,
+  '2026-02-01'::date,
+  'March compares against February, whatever length February happens to be'
+);
+
 select * from finish();
 rollback;

@@ -41,6 +41,8 @@ const SUMMARY: ReviewSummary = {
   oldestOverdueDays: 21,
   overdueDays: 30,
   bestSellers: [],
+  dailySales: [],
+  previous: { from: "2026-08-01", to: "2026-08-31", salesTotal: 41000, transactionCount: 190 },
 };
 
 function renderPage() {

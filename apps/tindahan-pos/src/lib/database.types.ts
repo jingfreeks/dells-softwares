@@ -25,6 +25,8 @@ export interface ReviewSummaryRow {
   oldest_overdue_days: number;
   overdue_days: number;
   best_sellers: { id: string; name: string; revenue: number; quantity: number }[];
+  daily_sales: { date: string; sales: number }[];
+  previous: { from: string; to: string; sales_total: number; transaction_count: number };
 }
 
 /** One persisted X or Z reading. Mirrors Tables["register_readings"]["Row"]. */
