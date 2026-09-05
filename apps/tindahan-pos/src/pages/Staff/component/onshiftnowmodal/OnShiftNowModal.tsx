@@ -11,6 +11,7 @@ import {
   EMPTY_STATE_NO_ONE_ON_SHIFT,
   useEscapeToClose,
   useFocusTrap,
+  formatDateTime,
 } from "@/lib";
 import type { OpenShift } from "../../hooksShifts";
 
@@ -68,7 +69,7 @@ export function OnShiftNowModal({ openShifts, onClose }: OnShiftNowModalProps) {
                 style={{ gridTemplateColumns: "minmax(0,1.2fr) 140px 90px 90px 100px", cursor: "default" }}
               >
                 <span className="tpl-tp">{shift.staffName}</span>
-                <span className="tpl-ts">{new Date(shift.createdAt).toLocaleString()}</span>
+                <span className="tpl-ts">{formatDateTime(shift.createdAt)}</span>
                 <span className="tpl-ts tpl-right">{PESO.format(shift.openingFloat ?? 0)}</span>
                 <span className="tpl-ts tpl-right">{PESO.format(shift.salesTotal)}</span>
                 <span className="tpl-ts tpl-right">{shift.transactionCount}</span>

@@ -1,5 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { useAuth, useBillingState } from "@/lib";
+import {
+  useAuth,
+  useBillingState,
+  formatDate,
+} from "@/lib";
 import { daysUntil } from "@/lib/billing/trialCountdown";
 import { TrialBanner } from "./TrialBanner";
 
@@ -55,7 +59,7 @@ export function BillingBanner() {
 
   if (billing.subscriptionStatus === "PAST_DUE") {
     const until = billing.graceEndsAt
-      ? new Date(billing.graceEndsAt).toLocaleDateString()
+      ? formatDate(billing.graceEndsAt)
       : null;
     return (
       <div

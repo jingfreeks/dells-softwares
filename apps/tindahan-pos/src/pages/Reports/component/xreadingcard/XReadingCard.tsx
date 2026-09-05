@@ -12,6 +12,7 @@ import {
   COLUMN_TRANSACTIONS,
   COLUMN_NET_SALES,
   BUTTON_TRY_AGAIN,
+  formatTime,
 } from "@/lib";
 import { useXReadings } from "./useXReadings";
 
@@ -78,7 +79,7 @@ export function XReadingCard({ staff }: XReadingCardProps) {
             <tbody>
               {readings.map((reading) => (
                 <tr key={reading.id}>
-                  <td>{new Date(reading.closed_at).toLocaleTimeString()}</td>
+                  <td>{formatTime(reading.closed_at)}</td>
                   <td>{nameFor(reading.taken_by)}</td>
                   <td style={{ textAlign: "right" }}>{reading.transaction_count}</td>
                   <td style={{ textAlign: "right" }}>{PESO.format(Number(reading.net_sales))}</td>

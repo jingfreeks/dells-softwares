@@ -11,6 +11,7 @@ import {
   TEXT_VARIANCE_SCOPE_NOTE,
   useEscapeToClose,
   useFocusTrap,
+  formatDateTime,
 } from "@/lib";
 import { useRef } from "react";
 import type { ClosedShift } from "../../lib";
@@ -68,7 +69,7 @@ export function DrawerVarianceModal({ closedShifts, onClose }: DrawerVarianceMod
                 className="tpl-trow"
                 style={{ gridTemplateColumns: "110px minmax(0,1fr) 90px 90px 90px", cursor: "default" }}
               >
-                <span className="tpl-ts">{new Date(shift.revokedAt).toLocaleString()}</span>
+                <span className="tpl-ts">{formatDateTime(shift.revokedAt)}</span>
                 <span className="tpl-tp">{shift.staffName}</span>
                 <span className="tpl-ts tpl-right">{PESO.format(shift.expectedClosing ?? 0)}</span>
                 <span className="tpl-ts tpl-right">{PESO.format(shift.closingFloat ?? 0)}</span>
