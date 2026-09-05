@@ -344,5 +344,96 @@ select is(
   'March compares against February, whatever length February happens to be'
 );
 
+-- -----------------------------------------------------------------------------
+-- Shifts, and the customers to chase
+-- -----------------------------------------------------------------------------
+
+-- The customer inserted earlier is 40 days late against a 30-day threshold.
+select is(
+  jsonb_array_length((select review_summary(current_date - 60, current_date)) -> 'overdue_customers'),
+  1,
+  'the overdue card names who to chase, not just how many'
+);
+
+select is(
+  ((select review_summary(current_date - 60, current_date)) -> 'overdue_customers' -> 0 ->> 'name'),
+  'Online Utang Customer',
+  'with the customer''s name'
+);
+
+select cmp_ok(
+  (((select review_summary(current_date - 60, current_date)) -> 'overdue_customers' -> 0 ->> 'days_overdue')::int),
+  '>=', 40,
+  'and how far past due they are'
+);
+
+-- Nobody is listed who is not actually past the threshold: asking about 60-day
+-- debt must not name a 40-day debtor.
+select is(
+  jsonb_array_length((select review_summary(current_date - 60, current_date, 60)) -> 'overdue_customers'),
+  0,
+  'and nobody inside the threshold is named'
+);
+
+-- A shift counted and balanced.
+reset role;
+insert into cashier_sessions (token, store_id, staff_id, created_by, opening_float,
+                              closing_float, expected_closing, variance, expires_at, created_at)
+values ('review-shift-ok', pg_temp.growth_org(),
+        '4e900000-0000-4000-8000-00000000a002', '4e900000-0000-4000-8000-00000000a002',
+        1000, 1005, 1000, 5, clock_timestamp() + interval '1 day', clock_timestamp());
+set local role authenticated;
+select pg_temp.act_as('4e900000-0000-4000-8000-00000000a002');
+
+select is(
+  ((select review_summary(current_date, current_date)) ->> 'shifts_closed')::int,
+  1,
+  'a counted shift is counted'
+);
+select is(
+  ((select review_summary(current_date, current_date)) ->> 'shifts_off')::int,
+  0,
+  'and 5 pesos out against a 20-peso threshold is balanced'
+);
+
+-- The case that must not read as "no action needed": a shift nobody counted.
+-- variance null means there is nothing to be off BY, so it belongs in neither
+-- number -- otherwise an uncounted drawer reports itself as balanced.
+reset role;
+insert into cashier_sessions (token, store_id, staff_id, created_by, opening_float,
+                              expires_at, created_at)
+values ('review-shift-uncounted', pg_temp.growth_org(),
+        '4e900000-0000-4000-8000-00000000a002', '4e900000-0000-4000-8000-00000000a002',
+        1000, clock_timestamp() + interval '1 day', clock_timestamp());
+set local role authenticated;
+select pg_temp.act_as('4e900000-0000-4000-8000-00000000a002');
+
+select is(
+  ((select review_summary(current_date, current_date)) ->> 'shifts_closed')::int,
+  1,
+  'an uncounted shift is not reported as balanced -- it is not counted at all'
+);
+
+-- And one genuinely out.
+reset role;
+insert into cashier_sessions (token, store_id, staff_id, created_by, opening_float,
+                              closing_float, expected_closing, variance, expires_at, created_at)
+values ('review-shift-off', pg_temp.growth_org(),
+        '4e900000-0000-4000-8000-00000000a002', '4e900000-0000-4000-8000-00000000a002',
+        1000, 940, 1000, -60, clock_timestamp() + interval '1 day', clock_timestamp());
+set local role authenticated;
+select pg_temp.act_as('4e900000-0000-4000-8000-00000000a002');
+
+select is(
+  ((select review_summary(current_date, current_date)) ->> 'shifts_off')::int,
+  1,
+  'a drawer 60 pesos short against a 20-peso threshold is flagged'
+);
+select is(
+  ((select review_summary(current_date, current_date)) ->> 'shifts_off_total')::numeric,
+  60.00::numeric,
+  'by its absolute size -- short and over both matter'
+);
+
 select * from finish();
 rollback;

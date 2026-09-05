@@ -42,6 +42,10 @@ const SUMMARY: ReviewSummary = {
   overdueDays: 30,
   bestSellers: [],
   dailySales: [],
+  shiftsClosed: 2,
+  shiftsOff: 0,
+  shiftsOffTotal: 0,
+  overdueCustomers: [],
   previous: { from: "2026-08-01", to: "2026-08-31", salesTotal: 41000, transactionCount: 190 },
 };
 
