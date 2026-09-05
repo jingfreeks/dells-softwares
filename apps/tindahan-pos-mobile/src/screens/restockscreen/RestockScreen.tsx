@@ -40,6 +40,14 @@ export function RestockScreen({ onBack, activeTab, onChangeTab }: RestockScreenP
         {rows.length === 0 ? (
           <Text className="text-[13px] text-text-faint text-center py-6">Everything's well stocked.</Text>
         ) : (
+          <>
+            {/* Why these products are here, before the list of them. The
+                Review detail design asks for what-happened / why-it-matters /
+                what-next in that order, and this screen had the list without
+                the "why". */}
+            <Text className="text-[13px] text-text-faint mb-3">
+              These products may need restocking based on recent sales and current stock levels.
+            </Text>
           <Card>
             {rows.map((row, index) => (
               <View key={row.productId}>
@@ -60,6 +68,18 @@ export function RestockScreen({ onBack, activeTab, onChangeTab }: RestockScreenP
               </View>
             ))}
           </Card>
+
+            {/*
+              The wording the design asks to preserve, and it earns its place:
+              the system knows the sales rate. It does not know the shopkeeper's
+              cash, their supplier's minimum order, or what is about to go on
+              promotion. "Order 24" beside every row reads as an instruction
+              unless something says otherwise.
+            */}
+            <Text className="text-[12px] text-text-faint mt-3">
+              This is a suggestion — the decision to reorder is yours.
+            </Text>
+          </>
         )}
 
         {rows.length > 0 && (
