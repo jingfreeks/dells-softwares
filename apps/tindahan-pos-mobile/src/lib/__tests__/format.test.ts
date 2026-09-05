@@ -21,16 +21,26 @@ describe("initialsOf", () => {
 });
 
 describe("greetingForHour", () => {
+  // Absolute instants, not new Date(y, m, d, h) -- a local-time constructor
+  // would make each of these assert the machine's zone rather than Manila's,
+  // which is the whole thing being fixed. 00:00Z is 8am in Manila.
   it("greets morning before noon", () => {
-    expect(greetingForHour(new Date(2026, 0, 1, 8, 0))).toBe("Good morning");
+    expect(greetingForHour(new Date("2026-01-01T00:00:00Z"))).toBe("Good morning");
   });
 
   it("greets afternoon from noon to before 6pm", () => {
-    expect(greetingForHour(new Date(2026, 0, 1, 14, 0))).toBe("Good afternoon");
+    expect(greetingForHour(new Date("2026-01-01T06:00:00Z"))).toBe("Good afternoon");
   });
 
   it("greets evening from 6pm onward", () => {
-    expect(greetingForHour(new Date(2026, 0, 1, 19, 0))).toBe("Good evening");
+    expect(greetingForHour(new Date("2026-01-01T11:00:00Z"))).toBe("Good evening");
+  });
+
+  it("reads the Manila clock, not the device's", () => {
+    // 22:00Z is 6am the next day in Manila and 6pm the same day in New York.
+    // A device-time greeting says good evening here; a Manila one says good
+    // morning, which is what the date beside it on Owner Home already says.
+    expect(greetingForHour(new Date("2026-01-01T22:00:00Z"))).toBe("Good morning");
   });
 });
 
