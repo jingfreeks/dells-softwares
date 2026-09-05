@@ -435,5 +435,85 @@ select is(
   'by its absolute size -- short and over both matter'
 );
 
+-- -----------------------------------------------------------------------------
+-- review_history() -- derived, and gated like everything else
+-- -----------------------------------------------------------------------------
+
+-- Same gate. A second entry point is a second chance to get the plan wrong.
+select pg_temp.act_as('4e900000-0000-4000-8000-00000000a001');
+select throws_ok(
+  $$ select review_history() $$,
+  'P0001',
+  'FEATURE_NOT_AVAILABLE',
+  'a Starter owner calling review_history() directly is refused, same as review_summary()'
+);
+
+select pg_temp.act_as('4e900000-0000-4000-8000-00000000a002');
+
+-- Two sales either side of an empty month. Dates far from "now" on purpose:
+-- an earlier fixture in this file inserts a credit sale 40 days back, which
+-- lands in a month close to today and would make a gap assertion there fail
+-- for a reason that has nothing to do with review_history().
+reset role;
+insert into sales (store_id, cashier_id, total, payment_type, status,
+                   receipt_number, created_at, occurred_at)
+values
+  (pg_temp.growth_org(), '4e900000-0000-4000-8000-00000000a002', 100, 'cash',
+   'completed', 'OR-H1', '2026-03-15 10:00+08', null),
+  (pg_temp.growth_org(), '4e900000-0000-4000-8000-00000000a002', 250, 'cash',
+   'completed', 'OR-H2', '2026-05-20 10:00+08', null);
+set local role authenticated;
+select pg_temp.act_as('4e900000-0000-4000-8000-00000000a002');
+
+-- July has no sales, so it is not a month there is anything to review. Listing
+-- it would invite the owner to open an empty report and wonder what broke.
+select is(
+  ((select review_history()) -> 0 ->> 'month'),
+  to_char(current_date, 'YYYY-MM'),
+  'the newest month comes first'
+);
+
+select ok(
+  not exists (
+    select 1 from jsonb_array_elements((select review_history())) e
+     where e ->> 'month' = '2026-04'
+  ),
+  'a month with no sales is absent -- there is nothing in it to review'
+);
+
+select ok(
+  exists (
+    select 1 from jsonb_array_elements((select review_history())) e
+     where e ->> 'month' = '2026-03' and (e ->> 'sales_total')::numeric = 100.00
+  ),
+  'while a month that traded carries its total'
+);
+
+-- The bounds come from the server so a row cannot disagree with the report it
+-- opens.
+select is(
+  (select e ->> 'period_to' from jsonb_array_elements((select review_history())) e
+    where e ->> 'month' = '2026-03'),
+  '2026-03-31',
+  'and its period ends on the real last day of that month'
+);
+
+-- No status field of any kind: §3 of the product decisions forbids inventing
+-- a "reviewed" state, and a chip that is always the same value implies someone
+-- checked when nobody did.
+select ok(
+  not ((select review_history()) -> 0 ? 'status')
+  and not ((select review_history()) -> 0 ? 'reviewed_at')
+  and not ((select review_history()) -> 0 ? 'reviewed_by'),
+  'and no invented "reviewed" state travels with it'
+);
+
+select throws_ok(
+  $$ select review_history(0) $$,
+  'P0001',
+  'VALIDATION_FAILED: invalid limit',
+  'a nonsense limit is refused rather than silently clamped'
+);
+
 select * from finish();
 rollback;

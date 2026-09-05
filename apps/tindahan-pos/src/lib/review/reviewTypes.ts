@@ -109,3 +109,22 @@ export interface ReviewSummary {
 
 /** What the server said when it refused. */
 export type ReviewAccessRefusal = "FEATURE_NOT_AVAILABLE" | "UNAUTHORIZED_ACTION";
+
+/**
+ * One month there is something to review.
+ *
+ * Derived from store activity, never stored — Product Decisions §3 rules out a
+ * `reviews` table and any invented "reviewed" state. So there is no status
+ * here, and deliberately no `reviewedAt` or `reviewedBy`: a status that is
+ * always the same value implies someone checked when nobody did.
+ *
+ * `from`/`to` come from the server so a row cannot disagree with the report it
+ * opens.
+ */
+export interface ReviewHistoryMonth {
+  month: string;
+  from: string;
+  to: string;
+  salesTotal: number;
+  transactionCount: number;
+}

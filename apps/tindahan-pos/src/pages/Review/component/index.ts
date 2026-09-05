@@ -5,3 +5,4 @@ export * from "./salesreviewcard";
 export * from "./inventoryreviewcard";
 export * from "./customerutangreviewcard";
 export * from "./reviewperiodfilter";
+export * from "./reviewhistorycard";
