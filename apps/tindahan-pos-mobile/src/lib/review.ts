@@ -115,15 +115,20 @@ export async function fetchReviewSummary(from: string, to: string): Promise<Fetc
   };
 }
 
-/** This month in Manila, matching how review_summary() bounds a period. */
+/**
+ * This month in Manila, matching how review_summary() bounds a period.
+ *
+ * Offset arithmetic rather than Intl, for the reason format.ts's manilaParts()
+ * gives at length: these tests run on Node's full ICU while the app runs on
+ * Hermes, which has known time-zone gaps on device and no polyfill here. This
+ * value becomes the PERIOD SENT TO THE SERVER, so getting it wrong asks for
+ * the wrong month's figures — a silent wrong answer rather than a visible
+ * failure.
+ */
 export function thisMonthPeriod(now: Date = new Date()): { from: string; to: string } {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Manila",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now);
-  const [year, month] = parts.split("-").map(Number);
+  const manila = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+  const year = manila.getUTCFullYear();
+  const month = manila.getUTCMonth() + 1;
   const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const pad = (n: number) => String(n).padStart(2, "0");
   return { from: `${year}-${pad(month)}-01`, to: `${year}-${pad(month)}-${pad(last)}` };
