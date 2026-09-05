@@ -32,6 +32,8 @@ interface ReviewSummaryRow {
   oldest_overdue_days: number;
   overdue_days: number;
   best_sellers: { id: string; name: string; revenue: number; quantity: number }[];
+  daily_sales: { date: string; sales: number }[];
+  previous: { from: string; to: string; sales_total: number; transaction_count: number };
 }
 
 function mapSummary(row: ReviewSummaryRow): ReviewSummary {
@@ -53,6 +55,13 @@ function mapSummary(row: ReviewSummaryRow): ReviewSummary {
     overdueCustomerCount: row.overdue_customer_count,
     oldestOverdueDays: row.oldest_overdue_days,
     overdueDays: row.overdue_days,
+    dailySales: (row.daily_sales ?? []).map((d) => ({ date: d.date, sales: Number(d.sales) })),
+    previous: {
+      from: row.previous.from,
+      to: row.previous.to,
+      salesTotal: Number(row.previous.sales_total),
+      transactionCount: row.previous.transaction_count,
+    },
     bestSellers: (row.best_sellers ?? []).map(
       (b): ReviewBestSeller => ({
         id: b.id,

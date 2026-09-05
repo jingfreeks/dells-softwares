@@ -19,6 +19,30 @@ export interface ReviewBestSeller {
   quantity: number;
 }
 
+/** One day of the trend series. Days that sold nothing are present, with 0. */
+export interface ReviewDailySales {
+  date: string;
+  sales: number;
+}
+
+/**
+ * The window the headline figures are compared against.
+ *
+ * `from`/`to` are returned rather than assumed so the UI can label what was
+ * actually compared. A whole calendar month compares against the previous
+ * calendar month; anything else against the same-length window before it — so
+ * "vs last month" is only the right words some of the time.
+ *
+ * Only flows are compared. Inventory value and outstanding utang are levels,
+ * and a level has no previous period to speak of.
+ */
+export interface ReviewPreviousPeriod {
+  from: string;
+  to: string;
+  salesTotal: number;
+  transactionCount: number;
+}
+
 export interface ReviewSummary {
   period: { from: string; to: string };
 
@@ -56,6 +80,8 @@ export interface ReviewSummary {
   overdueDays: number;
 
   bestSellers: ReviewBestSeller[];
+  dailySales: ReviewDailySales[];
+  previous: ReviewPreviousPeriod;
 }
 
 /** What the server said when it refused. */
