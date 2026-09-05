@@ -43,7 +43,10 @@ describe("Sidebar", () => {
   });
 
   it("marks every unbuilt destination pending, so none of them navigate", () => {
+    // Grows one entry per chunk, on purpose. Enabling a nav row without a
+    // screen behind it fails here, which is how the rail stays honest about
+    // what exists.
     const built = NAV_SECTIONS.flatMap((s) => s.items).filter((i) => !i.pending);
-    expect(built.map((i) => i.to)).toEqual(["/"]);
+    expect(built.map((i) => i.to)).toEqual(["/", "/accounts"]);
   });
 });

@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { LoadingSkeleton } from "@/components";
-import { Dashboard, NoAccess } from "@/pages";
+import { AccountDetail, Accounts, Dashboard, NoAccess } from "@/pages";
 import { SessionProvider, TEXT_LOADING, useSession } from "@/lib";
 
 /**
@@ -20,6 +20,8 @@ function Gate() {
   return (
     <Routes>
       <Route path="/" element={<Dashboard />} />
+      <Route path="/accounts" element={<Accounts />} />
+      <Route path="/accounts/:code" element={<AccountDetail />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
