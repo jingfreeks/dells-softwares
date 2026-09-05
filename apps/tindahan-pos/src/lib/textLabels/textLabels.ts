@@ -1293,6 +1293,15 @@ export const ARIA_REVIEW_PERIOD = "Reporting period";
 export const LABEL_REVIEW_FROM = "From";
 export const LABEL_REVIEW_TO = "To";
 
+export const HEADING_REVIEW_HISTORY = "Review History";
+export const BUTTON_REVIEW_VIEW_ALL = "View all";
+export const BUTTON_REVIEW_VIEW = "View";
+export const TEXT_REVIEW_MONTHLY_STORE_REVIEW = "Monthly Store Review";
+export const TEXT_REVIEW_HISTORY_EMPTY = "No months to review yet.";
+export const TEXT_REVIEW_HISTORY_EMPTY_BODY =
+  "A month appears here once the store has recorded sales in it.";
+export const ARIA_REVIEW_HISTORY = "Months with recorded sales, newest first";
+
 export const PAGE_HEADING_LOW_STOCK_REVIEW = "Low Stock Review";
 export const TEXT_LOW_STOCK_REVIEW_RUNNING_LOW_SUFFIX = "products are running low.";
 export const TEXT_LOW_STOCK_REVIEW_DESCRIPTION =

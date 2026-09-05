@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
-import type { ReviewSummary, ReviewBestSeller } from "./reviewTypes";
+import type { ReviewSummary, ReviewBestSeller, ReviewHistoryMonth } from "./reviewTypes";
 
 /**
  * Review reads.
@@ -125,4 +125,39 @@ export async function fetchReviewSummary(
   if (!data) return { ok: false, refused: false };
 
   return { ok: true, summary: mapSummary(data as ReviewSummaryRow) };
+}
+
+interface ReviewHistoryRow {
+  month: string;
+  period_from: string;
+  period_to: string;
+  sales_total: number;
+  transaction_count: number;
+}
+
+export type FetchReviewHistoryResult =
+  | { ok: true; months: ReviewHistoryMonth[] }
+  | { ok: false; refused: boolean };
+
+/** Months with activity, newest first. Same refusal handling as the summary. */
+export async function fetchReviewHistory(limit = 24): Promise<FetchReviewHistoryResult> {
+  const { data, error } = await supabase.rpc("review_history", { p_limit: limit });
+
+  if (error) {
+    const refused =
+      error.message?.includes("FEATURE_NOT_AVAILABLE") ||
+      error.message?.includes("UNAUTHORIZED_ACTION");
+    return { ok: false, refused: Boolean(refused) };
+  }
+
+  return {
+    ok: true,
+    months: ((data ?? []) as ReviewHistoryRow[]).map((row) => ({
+      month: row.month,
+      from: row.period_from,
+      to: row.period_to,
+      salesTotal: Number(row.sales_total),
+      transactionCount: row.transaction_count,
+    })),
+  };
 }

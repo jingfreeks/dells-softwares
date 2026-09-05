@@ -38,6 +38,7 @@ import {
   Reports,
   Review,
   LowStockReview,
+  ReviewHistory,
   PlanSettings,
   Privacy,
   Terms,
@@ -76,6 +77,7 @@ function App() {
                           <Route path="/reports" element={<Reports />} />
                           <Route path="/review" element={<Review />} />
                           <Route path="/review/low-stock" element={<LowStockReview />} />
+                          <Route path="/review/history" element={<ReviewHistory />} />
                           <Route path="/inventory/receiving" element={<Receiving />} />
                           <Route path="/customers" element={<Customers />} />
                           <Route path="/suppliers" element={<Suppliers />} />

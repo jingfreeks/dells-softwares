@@ -43,13 +43,14 @@ import {
   ReviewLockedState,
   ReviewMetricCard,
   ReviewPeriodFilter,
+  ReviewHistoryCard,
   ReviewAttentionSection,
   SalesReviewCard,
   InventoryReviewCard,
   CustomerUtangReviewCard,
 } from "./component";
 import type { AttentionItem } from "./component";
-import { useReviewPage } from "./hooks";
+import { useReviewPage, useReviewHistory } from "./hooks";
 
 /**
  * Sales, and how it compares — using the window the SERVER says it compared
@@ -90,6 +91,7 @@ function profitBasis(summary: ReviewSummary): string {
 
 export function Review() {
   const { state, summary, retry, preset, setPreset, custom, setCustom } = useReviewPage();
+  const { months } = useReviewHistory(3);
   const navigate = useNavigate();
 
   if (state === "locked") {
@@ -233,6 +235,13 @@ export function Review() {
               customersWithBalance={summary.customersWithBalance}
               overdueCustomers={summary.overdueCustomers}
               onOpen={() => navigate("/customers")}
+            />
+            <ReviewHistoryCard
+              months={months}
+              onViewAll={() => navigate("/review/history")}
+              onOpen={(entry) =>
+                navigate("/review", { state: { period: { from: entry.from, to: entry.to } } })
+              }
             />
           </div>
         </>

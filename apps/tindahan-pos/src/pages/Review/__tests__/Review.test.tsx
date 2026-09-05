@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { useFeatures, fetchReviewSummary } from "@/lib";
+import { useFeatures, fetchReviewSummary, fetchReviewHistory } from "@/lib";
 import type { ReviewSummary } from "@/lib";
 import { Review } from "../Review";
 
@@ -13,10 +13,12 @@ vi.mock("@/lib/features/featuresContext", async (importOriginal) => ({
 vi.mock("@/lib/review/reviewService", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   fetchReviewSummary: vi.fn(),
+  fetchReviewHistory: vi.fn(),
 }));
 
 const mockUseFeatures = vi.mocked(useFeatures);
 const mockFetch = vi.mocked(fetchReviewSummary);
+const mockHistory = vi.mocked(fetchReviewHistory);
 
 function asFeatures(codes: string[], loading = false) {
   return { features: new Set(codes), loading } as ReturnType<typeof useFeatures>;
@@ -74,6 +76,9 @@ function renderPage() {
 describe("Review", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // The dashboard shows the three most recent months, so every test that
+    // renders it makes this call. Default to empty; the history tests override.
+    mockHistory.mockResolvedValue({ ok: true, months: [] });
   });
 
   // The first row of the brief's mandatory security matrix, at the UI layer.
@@ -319,6 +324,53 @@ describe("Review", () => {
     await screen.findByText("SALES");
     expect(screen.queryByText(/▲/)).not.toBeInTheDocument();
     expect(screen.getByText("214 sales")).toBeInTheDocument();
+  });
+
+  it("lists recent months, with no invented \"Reviewed\" status", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({ ok: true, summary: SUMMARY });
+    mockHistory.mockResolvedValue({
+      ok: true,
+      months: [
+        { month: "2026-09", from: "2026-09-01", to: "2026-09-30", salesTotal: 45280, transactionCount: 214 },
+        { month: "2026-08", from: "2026-08-01", to: "2026-08-31", salesTotal: 41000, transactionCount: 190 },
+      ],
+    });
+    renderPage();
+
+    expect(await screen.findByText("September 2026")).toBeInTheDocument();
+    expect(screen.getByText("August 2026")).toBeInTheDocument();
+    // Product Decisions §3: nothing sets a reviewed state, so nothing may
+    // claim one. A chip that is always the same word implies someone checked.
+    expect(screen.queryByText("Reviewed")).not.toBeInTheDocument();
+  });
+
+  it("opens a history month as the dashboard's period", async () => {
+    const user = userEvent.setup();
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({ ok: true, summary: SUMMARY });
+    mockHistory.mockResolvedValue({
+      ok: true,
+      months: [
+        { month: "2026-08", from: "2026-08-01", to: "2026-08-31", salesTotal: 41000, transactionCount: 190 },
+      ],
+    });
+    renderPage();
+
+    await screen.findByText("August 2026");
+    mockFetch.mockClear();
+    await user.click(screen.getByRole("button", { name: "View" }));
+
+    // The server's own bounds, so the report cannot disagree with the row.
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledWith("2026-08-01", "2026-08-31"));
+  });
+
+  it("says so plainly when there are no months yet", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({ ok: true, summary: SUMMARY });
+    renderPage();
+
+    expect(await screen.findByText("No months to review yet.")).toBeInTheDocument();
   });
 
   it("shows a plain error with a working retry, and no server wording", async () => {
