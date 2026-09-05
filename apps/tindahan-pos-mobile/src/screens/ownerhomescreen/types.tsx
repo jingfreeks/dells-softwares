@@ -4,6 +4,8 @@ export interface OwnerHomeScreenProps {
   onOpenTodaysSales?: () => void;
   onOpenRestock?: () => void;
   onOpenUtang?: () => void;
+  /** Opens Review. Always offered — a store without the entitlement gets the upgrade state there, which is the point of showing it. */
+  onOpenReview?: () => void;
 }
 
 export interface AttentionRow {

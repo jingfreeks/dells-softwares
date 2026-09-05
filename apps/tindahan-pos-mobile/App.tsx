@@ -6,6 +6,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider, useAuth } from "./src/lib/auth";
 import { BillingProvider, useBillingState } from "./src/lib/billing";
+import { FeaturesProvider } from "./src/lib/features";
 import { CashierSessionProvider, useCashierSession } from "./src/lib/cashierSession";
 import { StoreDataProvider } from "./src/lib/storeData";
 import { daysUntil } from "./src/lib/trialCountdown";
@@ -26,6 +27,7 @@ import { SettingsAlertsScreen } from "./src/screens/settingsalertsscreen";
 import { SettingsBackupScreen } from "./src/screens/settingsbackupscreen";
 import { SettingsFeesScreen } from "./src/screens/settingsfeesscreen";
 import { SettingsMenuScreen } from "./src/screens/settingsmenuscreen";
+import { ReviewScreen } from "./src/screens/reviewscreen";
 import type { SettingsSectionKey } from "./src/screens/settingsmenuscreen/types";
 import { SettingsProfileScreen } from "./src/screens/settingsprofilescreen";
 import { SettingsReceiptsScreen } from "./src/screens/settingsreceiptsscreen";
@@ -109,9 +111,13 @@ function AdminHome() {
   const [showSetupRegister, setShowSetupRegister] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   const [settingsSection, setSettingsSection] = useState<SettingsSectionKey | null>(null);
 
   function handleChangeTab(next: string) {
+    // Every tab press leaves Review. Without this the bar would look live
+    // while changing nothing, because the screen branches ahead of the tabs.
+    setShowReview(false);
     if (next === "more") {
       setShowSettings(true);
       return;
@@ -150,6 +156,33 @@ function AdminHome() {
     );
   }
 
+  if (showReview) {
+    return (
+      <ReviewScreen
+        activeTab={tab}
+        onChangeTab={handleChangeTab}
+        onBack={() => setShowReview(false)}
+        // The upgrade path is the pricing screen that already exists, not a
+        // second billing flow.
+        onUpgrade={() => {
+          setShowReview(false);
+          setShowPricing(true);
+        }}
+        // Restock IS the mobile low-stock screen, and Utang the customers one.
+        // Sending people to screens that already exist beats building a second
+        // low-stock list inside Review.
+        onViewLowStock={() => {
+          setShowReview(false);
+          setTab("stock");
+        }}
+        onViewOverdue={() => {
+          setShowReview(false);
+          setTab("utang");
+        }}
+      />
+    );
+  }
+
   if (showPricing) {
     return <PricingScreen onBack={() => setShowPricing(false)} />;
   }
@@ -184,6 +217,7 @@ function AdminHome() {
         activeTab={tab}
         onChangeTab={handleChangeTab}
         onOpenTodaysSales={() => setShowTodaysSales(true)}
+          onOpenReview={() => setShowReview(true)}
         onOpenRestock={() => setTab("stock")}
         onOpenUtang={() => setTab("utang")}
       />
@@ -276,9 +310,11 @@ export default function App() {
     <SafeAreaProvider>
       <AuthProvider>
         <BillingProvider>
-          <CashierSessionProvider>
-            <Root />
-          </CashierSessionProvider>
+          <FeaturesProvider>
+            <CashierSessionProvider>
+              <Root />
+            </CashierSessionProvider>
+          </FeaturesProvider>
         </BillingProvider>
       </AuthProvider>
       <StatusBar style="auto" />

@@ -6,6 +6,7 @@ import {
   NAV_LABEL_ADMIN,
   NAV_LABEL_STAFF,
   NAV_LABEL_REPORTS,
+  NAV_LABEL_REVIEW,
 } from "./textLabels";
 
 // `permission` (see src/lib/permissions, backed by 0044_rbac_foundation.sql)
@@ -44,6 +45,24 @@ const NAV_ITEMS_ALL = [
     icon: "reports" as const,
     roles: ["admin"] as Role[],
     permission: "pos.report.view",
+  },
+  {
+    to: "/review",
+    label: NAV_LABEL_REVIEW,
+    icon: "review" as const,
+    roles: ["admin"] as Role[],
+    permission: "pos.report.view",
+    // DELIBERATELY no `feature` key, unlike /customers above.
+    //
+    // Filtering on 'pos.review' would hide Review from exactly the tenants the
+    // feature is meant to be sold to. The approved locked design shows Review
+    // sitting in the sidebar for a Starter store, and §15 of the brief asks
+    // that a Starter user not be made to feel the product is broken -- an item
+    // that silently vanishes teaches them nothing.
+    //
+    // The page decides: it renders the upgrade state for a store without the
+    // entitlement and never requests Review data for them. Visibility here is
+    // marketing; the boundary is review_summary(), which refuses server-side.
   },
   // Note: /suppliers has no nav entry today (reachable only by direct URL,
   // same as before this change) — out of scope to add one here.

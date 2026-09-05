@@ -5,6 +5,34 @@
 
 import type { PaymentType, StoreFeeConfig, VatStatus } from "./types";
 
+/** review_summary()'s payload. No `expenses` key, deliberately -- see the RPC. */
+export interface ReviewSummaryRow {
+  period: { from: string; to: string };
+  sales_total: number;
+  transaction_count: number;
+  estimated_profit: number;
+  profit_basis_share: number;
+  inventory_value: number;
+  inventory_basis_share: number;
+  product_count: number;
+  low_stock_count: number;
+  out_of_stock_count: number;
+  slow_moving_count: number;
+  utang_outstanding: number;
+  utang_overdue: number;
+  customers_with_balance: number;
+  overdue_customer_count: number;
+  oldest_overdue_days: number;
+  overdue_days: number;
+  best_sellers: { id: string; name: string; revenue: number; quantity: number }[];
+  daily_sales: { date: string; sales: number }[];
+  shifts_closed: number;
+  shifts_off: number;
+  shifts_off_total: number;
+  overdue_customers: { id: string; name: string; balance: number; days_overdue: number }[];
+  previous: { from: string; to: string; sales_total: number; transaction_count: number };
+}
+
 /** One persisted X or Z reading. Mirrors Tables["register_readings"]["Row"]. */
 export interface RegisterReadingRow {
   id: string;
@@ -65,6 +93,8 @@ export interface Database {
           cashier_can_edit_prices: boolean;
           void_requires_pin: boolean;
           cashier_cash_out_cap: number | null;
+          utang_overdue_days: number;
+          drawer_variance_threshold: number;
         };
         Insert: {
           id?: string;
@@ -84,6 +114,8 @@ export interface Database {
           cashier_can_edit_prices?: boolean;
           void_requires_pin?: boolean;
           cashier_cash_out_cap?: number | null;
+          utang_overdue_days?: number;
+          drawer_variance_threshold?: number;
         };
         Update: {
           id?: string;
@@ -103,6 +135,8 @@ export interface Database {
           cashier_can_edit_prices?: boolean;
           void_requires_pin?: boolean;
           cashier_cash_out_cap?: number | null;
+          utang_overdue_days?: number;
+          drawer_variance_threshold?: number;
         };
         Relationships: [];
       };
@@ -1242,6 +1276,34 @@ export interface Database {
           p_action: string;
         };
         Returns: undefined;
+      };
+      review_history: {
+        Args: { p_limit?: number };
+        // No status, reviewed_at or reviewed_by, deliberately: history is
+        // derived and nobody has reviewed anything. See 20260905140000.
+        Returns: {
+          month: string;
+          period_from: string;
+          period_to: string;
+          sales_total: number;
+          transaction_count: number;
+        }[];
+      };
+      review_summary: {
+        Args: {
+          p_from: string;
+          p_to: string;
+          p_overdue_days?: number | null;
+        };
+        // Written out rather than referenced, for the same reason take_reading
+        // is below: a self-reference inside the Database type resolves the
+        // whole map to never, and it surfaces as unrelated tables losing their
+        // row types rather than as an error here.
+        //
+        // No `expenses` key, deliberately -- there is no expenses table and
+        // review_summary() does not return one. Declaring it optional would
+        // let a card render `undefined` as PHP 0.
+        Returns: ReviewSummaryRow;
       };
       take_reading: {
         Args: {

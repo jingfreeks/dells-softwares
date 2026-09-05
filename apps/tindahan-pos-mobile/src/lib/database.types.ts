@@ -677,6 +677,49 @@ export interface Database {
         Args: { p_plan_code: string };
         Returns: undefined;
       };
+      review_history: {
+        Args: { p_limit?: number };
+        // No status/reviewed_at/reviewed_by: history is derived and nobody has
+        // reviewed anything. See 20260905140000.
+        Returns: {
+          month: string;
+          period_from: string;
+          period_to: string;
+          sales_total: number;
+          transaction_count: number;
+        }[];
+      };
+      review_summary: {
+        Args: { p_from: string; p_to: string; p_overdue_days?: number | null };
+        // No `expenses` key, deliberately -- there is no expenses table and
+        // review_summary() does not return one.
+        Returns: {
+          period: { from: string; to: string };
+          overdue_days: number;
+          sales_total: number;
+          transaction_count: number;
+          estimated_profit: number;
+          profit_basis_share: number;
+          inventory_value: number;
+          inventory_basis_share: number;
+          product_count: number;
+          low_stock_count: number;
+          out_of_stock_count: number;
+          slow_moving_count: number;
+          utang_outstanding: number;
+          utang_overdue: number;
+          customers_with_balance: number;
+          overdue_customer_count: number;
+          oldest_overdue_days: number;
+          best_sellers: { id: string; name: string; revenue: number; quantity: number }[];
+          daily_sales: { date: string; sales: number }[];
+          shifts_closed: number;
+          shifts_off: number;
+          shifts_off_total: number;
+          overdue_customers: { id: string; name: string; balance: number; days_overdue: number }[];
+          previous: { from: string; to: string; sales_total: number; transaction_count: number };
+        };
+      };
       my_store_billing_state: {
         Args: Record<string, never>;
         Returns: {

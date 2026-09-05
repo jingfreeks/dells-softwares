@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useAuth } from "@/lib";
-import { makeAuthValue, makeStaffAccount } from "../../../test/testUtils";
+import { makeAuthValue, makeStaffAccount, makeStore } from "../../../test/testUtils";
 import { AlertsSettings } from "../AlertsSettings";
 import { ComingSoonSettingsPage } from "../ComingSoonSettingsPage";
 
@@ -69,9 +69,20 @@ describe("AlertsSettings", () => {
     expect(JSON.parse(raw as string)).toMatchObject({ warnLowEloadFloat: true });
   });
 
-  it("persists new alert-only fields (drawer variance, channels, quiet hours) to their own storage key", async () => {
+  // The drawer threshold is a real store column now (20260905100000). The
+  // channel toggles are still localStorage, because no push/SMS/email delivery
+  // exists to configure -- so this asserts the split: one goes to the server,
+  // the other does not, and both are saved by the same button.
+  it("saves the drawer threshold to the store and the channel toggles locally", async () => {
     const user = userEvent.setup();
-    vi.mocked(useAuth).mockReturnValue(makeAuthValue({ user: makeStaffAccount({ storeId: "store-9" }) }));
+    const updateStore = vi.fn().mockResolvedValue({ ok: true });
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        user: makeStaffAccount({ storeId: "store-9" }),
+        store: makeStore({ id: "store-9" }),
+        updateStore,
+      })
+    );
     renderPage();
 
     const drawerInput = screen.getByLabelText("Drawer off by more than") as HTMLInputElement;
@@ -82,10 +93,38 @@ describe("AlertsSettings", () => {
 
     await user.click(screen.getByRole("button", { name: "Save changes" }));
 
+    await waitFor(() =>
+      expect(updateStore).toHaveBeenCalledWith(
+        expect.objectContaining({ drawerVarianceThreshold: 50 })
+      )
+    );
+
     const raw = window.localStorage.getItem("tindahan-pos:alerts:store-9");
-    const saved = JSON.parse(raw as string);
-    expect(saved.drawerVarianceThreshold).toBe(50);
-    expect(saved.emailEnabled).toBe(true);
+    expect(JSON.parse(raw as string).emailEnabled).toBe(true);
+    // ...and no longer to the device, which is what caused the disagreement.
+    expect(JSON.parse(raw as string).drawerVarianceThreshold).toBeUndefined();
+  });
+
+  // If the server refuses, nothing is saved locally either -- a screen that
+  // reported success while its two halves disagreed would be worse than the
+  // failure it was hiding.
+  it("saves nothing locally when the store write is refused", async () => {
+    const user = userEvent.setup();
+    const updateStore = vi.fn().mockResolvedValue({ ok: false, error: "Could not save alerts." });
+    vi.mocked(useAuth).mockReturnValue(
+      makeAuthValue({
+        user: makeStaffAccount({ storeId: "store-9" }),
+        store: makeStore({ id: "store-9" }),
+        updateStore,
+      })
+    );
+    renderPage();
+
+    await user.click(screen.getByRole("switch", { name: "Email" }));
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(await screen.findByText("Could not save alerts.")).toBeInTheDocument();
+    expect(window.localStorage.getItem("tindahan-pos:alerts:store-9")).toBeNull();
   });
 
   it("discards unsaved edits across all three underlying settings", async () => {

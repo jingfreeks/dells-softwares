@@ -1,5 +1,9 @@
 # Tindahan POS — Codebase Audit, Consolidated
 
+**Last updated 2026-09-04**, against `dev` at `77e76bc`. Rows dated earlier are
+kept as written — they were true when taken, and rewriting them would destroy
+the trail. Where a status has since moved, the row says so and names the PR.
+
 **One file combining three documents produced over this audit's lifecycle:**
 `CODEBASE_AUDIT_REPORT.md` (original static review, 2026-09-02), `AUDIT-RETEST.md`
 (the dev team's point-by-point re-verification against staging, 2026-09-03), and
@@ -35,7 +39,25 @@ attention. Everything else is the evidence trail underneath it.
 | 2026-09-02 | Same day — `AUDIT-REMEDIATION-PLAN.md` written by the dev team: verifies the report's live-dependent claims against real git history and staging, re-prioritizes by actual risk, and plans one PR per finding. |
 | #459–#469 | Fixes shipped, each its own PR, per the plan above. |
 | 2026-09-03 | `AUDIT-RETEST.md` — every finding re-verified against staging (`dev` at `c058ade`, 141 migrations, 33 pgTAP suites, 1,073 web tests) with a literal command + expected output for each. One finding (#470) left open by design — it needed a product decision, not code. |
-| 2026-09-03 | #470 decided ("build real enforcement") and shipped: `void_requires_pin` and `cashier_cash_out_cap` became real, server-enforced store settings. Committed as `dd66178`, branch `feat/void-pin-and-cash-out-cap`, one commit ahead of `main`, not yet merged. |
+| 2026-09-03 | #470 decided ("build real enforcement") and shipped: `void_requires_pin` and `cashier_cash_out_cap` became real, server-enforced store settings. Committed as `dd66178`, **merged as #485**. |
+| 2026-09-03/04 | The R-series items the retest had left unconfirmed were taken and closed: R1 (#494), R2 (#495, #499), R4 (#493). R5/R6 verified already closed. |
+| 2026-09-04 | **#470 closed in full.** #503 marked the six *remaining* Fees & limits controls that still persist client-side, so the screen no longer presents them as working. |
+| 2026-09-04 | Two defects found outside both audits: the accumulated grand total used three bases at once (#504, settled against BIR RMO 24-2023 Annex D-2), and the R4 fix had pinned locale but not time zone, leaving CI red for six merges (#505). See §3.14. |
+| 2026-09-04 | Dependency question closed: `nanoid` pinned (#502); the `uuid`/`exceljs` advisory deliberately left — see §5. |
+| 2026-09-04 | Both Supabase projects verified at **144 migrations**, `check-function-grants.sh` returning `"rows": []` on each. |
+
+**Current state, 2026-09-04:** 144 migrations, 35 pgTAP suites / **552
+assertions**, **1100 web tests**, 4 CI workflows. Staging and production both
+current and grant-clean. Every SEC-* finding, §D, the testing gap and R1–R6 are
+closed. Figures dated 2026-09-02/03 elsewhere in this document are the numbers
+as they stood then.
+
+> **One caveat that applies to every row below resting on a browser test.** The
+> `e2e` job has been disabled in CI (`if: false`) since 2026-07-28, with a
+> documented reason and re-enable conditions. Thirteen Playwright specs exist —
+> including `url-bypass.spec.ts`, `role-bypass.spec.ts` and `security.spec.ts`,
+> which cover the authorization boundaries in §3.3 and §3.6 — and **none of them
+> run in CI**. Run them locally if those boundaries matter to your sign-off.
 
 ---
 
@@ -56,9 +78,9 @@ attention. Everything else is the evidence trail underneath it.
 | SEC-011 | P3 (informational) | Core financial-RPC soundness check | **Confirmed clean** in the original report; not separately retested. | — |
 | §D | P2 | Offline error classification treated any unrecognized rejection as connectivity (phantom-sale risk) | **Fixed structurally, #464.** Now keyed on SQLSTATE (`P0001` = server considered and refused) rather than a hand-maintained message allow-list; only genuinely transient Postgres error classes still queue. | §3.10 |
 | P1 (testing) | P1 | No explicit double-submit/double-click test on Complete Sale | **Test added, #465 — and the stated rationale for low risk was wrong.** `client_request_id` is minted client-side per `checkout()` call, so two clicks mint two different ids — the database's unique index does *not* catch this. The disabled-while-in-flight button is the only real guard; it's now tested. | §3.11 |
-| — | — | "4 failing tests," "no lockfile," "no CI workflow" | **All three false — same root cause.** The audit ran `npm install` *inside* `apps/tindahan-pos` (an npm-workspace member), which nested a shadow `node_modules` with a newer jsdom than the root's locked version. The lockfile and 3 CI workflows were there all along, at the workspace root. `npm ci` at the root → 1051/1051 passing. | §3.12 |
-| R1 | P1 | 39 catch blocks bypass `describePlatformError()`, showing raw backend strings to shop owners | Not separately retested in `AUDIT-RETEST.md` (outside its scope, which tracked SEC-* and §D/testing items) — **status unconfirmed**, flagged here so it isn't lost. | §3.13 |
-| R2–R6 | P2–P3 | Modal-shell duplication, currency-formatter duplication, date-format duplication, one inline stock-status reimplementation, inline spinner duplication | R3 (PESO) fixed and generalized (**#466**, added `PESO_WHOLE` rather than collapsing all three uses, since one is genuinely different — whole-peso till display). R2/R4/R5/R6 **not separately retested** — status unconfirmed. | §3.13 |
+| — | — | "4 failing tests," "no lockfile," "no CI workflow" | **All three false — same root cause.** The audit ran `npm install` *inside* `apps/tindahan-pos` (an npm-workspace member), which nested a shadow `node_modules` with a newer jsdom than the root's locked version. The lockfile and CI workflows were there all along, at the workspace root. `npm ci` at the root → 1051/1051 passing at the time (1100 as of 2026-09-04). | §3.12 |
+| R1 | P1 | 39 catch blocks bypass `describePlatformError()`, showing raw backend strings to shop owners | **Fixed, #494.** Was "status unconfirmed" when this document was first written; taken and closed since. | §3.13 |
+| R2–R6 | P2–P3 | Modal-shell duplication, currency-formatter duplication, date-format duplication, one inline stock-status reimplementation, inline spinner duplication | **All closed.** R3 (#466, `PESO_WHOLE` named rather than collapsed), R2 (#495, #499), R4 (#493 — **which introduced a defect of its own, §3.14**), R5/R6 verified already shared. | §3.13 |
 | — | P2 | Coverage thresholds (90% configured) vs. measured (89.96/81.59/74.98%) | **Fixed, #467 — and CI never evaluated them.** CI ran `vitest run`, not `vitest run --coverage`, so the threshold config was silently inert regardless of the numbers. Thresholds reset from measured values as a ratchet; `--coverage` wired into CI. | §3.13 |
 | E-1, E-2 | P2 | 2 `: any` occurrences erasing money/permission-relevant types | **Fixed, #468.** `typescript/no-explicit-any` set to error; a third occurrence a plain grep missed (`(props: any)`) was caught by the rule itself. | §3.13 |
 
@@ -208,7 +230,7 @@ select count(*) from core.staff c
 
 All three environment-level claims in the original report trace back to a single mistake: the audit ran `npm install` **inside** `apps/tindahan-pos`, which is a member of an npm workspace, rather than `npm ci` at the **workspace root**.
 
-- **"No CI workflow"** — `ls .github/workflows/` → `backup-production.yml`, `platform-ci.yml`, `tindahan-pos-ci.yml`. `platform-ci` runs the pgTAP suites; `tindahan-pos-ci` runs lint, typecheck, build, and unit tests.
+- **"No CI workflow"** — `ls .github/workflows/` → `backup-production.yml`, `platform-ci.yml`, `tindahan-pos-ci.yml`, and since #489/#490 `tindahan-pos-mobile-ci.yml` (**4 workflows** as of 2026-09-04). `platform-ci` runs the pgTAP suites; `tindahan-pos-ci` runs lint, typecheck, build, and unit tests.
 - **"No lockfile"** — the workspace lockfile lives at the root and is tracked: `git ls-files --error-unmatch package-lock.json` succeeds.
 - **"4 failing tests"** — `npm install` inside `apps/tindahan-pos` (no lockfile *in that directory*) resolved a nested `node_modules` with `jsdom 27.4.0`, shadowing the root's locked `27.0.1`. That version mismatch is what produced the 4 failures — an environment artifact of how the audit itself was run, not an application bug. CI was green on the same commit throughout.
 
@@ -229,11 +251,50 @@ The retest's explicit scope was the SEC-* findings, §D, and the testing gap —
 | R3 — PESO duplicated across 3 files | **Fixed, #466** | Two copies were identical and consolidated; the third (Landing page) genuinely differs (no centavos) and was named explicitly as `PESO_WHOLE` rather than silently collapsed — collapsing it would have made till totals render without centavos. |
 | Coverage thresholds (90% configured vs. 89.96/81.59/74.98% measured) | **Fixed, #467** | The deeper bug: CI ran `vitest run`, not `vitest run --coverage` — the threshold config was never actually evaluated by CI regardless of the numbers. Thresholds reset from measured values as a ratchet, and `--coverage` wired into CI so it can't go silent again. |
 | E-1, E-2 — 2 `: any` occurrences (money/permission-relevant) | **Fixed, #468** | `typescript/no-explicit-any` set to `error`. A plain grep for `: any` catches 2 of the 3 real occurrences; the lint rule caught the third (`(props: any)`, missed by a word-boundary-based search). |
-| R1 — 39 catch blocks bypass `describePlatformError()` | **Not retested — status unconfirmed** | Flagged here so it doesn't fall out of view; not covered in `AUDIT-RETEST.md`. |
-| R2 — 20+ modals duplicate the overlay/focus-trap scaffold | **Not retested — status unconfirmed** | Same. |
-| R4 — date/time formatting duplicated in 3+ places | **Not retested — status unconfirmed** | Same. |
-| R5 — one inline stock-status reimplementation | **Not retested — status unconfirmed** | Same. |
-| R6 — inline loading-spinner duplication | **Not retested — status unconfirmed** | Same, and always P3/low-risk. |
+| R1 — 39 catch blocks bypass `describePlatformError()` | **Fixed, #494** | Messages routed through the describer, so a shop owner no longer sees raw Postgres text. |
+| R2 — 20+ modals duplicate the overlay/focus-trap scaffold | **Fixed, #495 + #499** | A shared `Modal` shell owns the overlay, panel, ARIA and both hooks. Remaining dialogs migrate opportunistically rather than as a flag day — the duplication is gone from the shell, not from every caller yet. |
+| R4 — date/time formatting duplicated in 3+ places | **Fixed, #493 — then #505** | 23 sites and 8 option sets collapsed onto one module. The fix pinned the *locale* and not the *time zone*, which is a defect in its own right: see §3.14. |
+| R5 — one inline stock-status reimplementation | **Closed — verified 2026-09-04** | `stockStatus()` in `src/lib/inventory/inventory.ts` is the single tri-state source and is used by all four call sites. Residue: three places still compute `stock <= 0` inline, but that is a narrower predicate, not the reimplementation R5 filed. |
+| R6 — inline loading-spinner duplication | **Closed — verified 2026-09-04** | `animate-spin` now appears only in `PageLoadingOverlay` and `ScannerLoadingOverlay`. |
+
+### 3.14 · Two defects found after both audits
+
+Neither was raised by the original report or the retest. Recorded here because a
+report that lists only the findings someone else caught is the wrong shape.
+
+**The accumulated grand total used three bases at once — fixed #504.**
+`grand_total` accumulated net-of-discount over *completed* sales only. So a sale
+voided **before** its period's Z never entered the accumulation, while the same
+sale voided **after** it stayed in forever — meaning the figure depended on
+which side of a boundary a void happened to land, and two shops with identical
+transactions could hold different totals.
+
+Settled against BIR's own published sample rather than by preference: on RMO
+24-2023 Annex D-2, "Sales for the Day" (Present less Previous Accumulated Sales)
+equals "Gross Amount" exactly, and the void is not deducted until the payments
+line. The accumulation is gross of voids, returns and discounts alike — an
+odometer, which is what makes a decrease meaningful as a reset signal.
+`gross_sales` and `total_discounts` moved to the same population so that
+identity holds on our own reading.
+
+**The R4 fix pinned the locale but not the time zone — fixed #505.**
+Consolidating the date formatters (#493) pinned everything to `en-PH` and left
+the time zone to the device, which is half of the problem the module was written
+to solve. **CI was red for six consecutive merges (#493 → #503)** and it went
+unnoticed because the failure is invisible on a machine already set to
+Philippine time; local runs were reported as passing instead of CI being read.
+
+It mattered beyond CI. A till on another time zone prints the right words at the
+wrong hour, and worse than the hour is the day: half past midnight in Manila is
+still the previous afternoon in UTC, while `take_reading()` derives the business
+date with `at time zone 'Asia/Manila'`. A client on device time could show a sale
+under a different day than the Z-reading counting it.
+
+**Retest:** `TZ=UTC npx vitest run src/lib/datetime` — 9 passed. The regression
+test uses an instant that falls on a different *calendar day* in the two zones,
+so it fails loudly if the pin is ever dropped. Run the whole suite under
+`TZ=UTC`; that is the condition CI runs in, and it differs from a Manila machine
+by eight hours.
 
 ---
 
@@ -243,7 +304,7 @@ This is the one line item the retest (§9 above) left open by design: two Settin
 
 **Decision made:** build real, server-side enforcement — matching the pattern already proven for the credit-limit override (SEC-005/§3.5 above): a real store column, checked inside the actual RPC that performs the sensitive write, gated behind the same short-lived single-use admin-PIN token mechanism (`check_credit_override_pin()` / `credit_override_tokens`), reused as-is rather than duplicated.
 
-**Shipped** on branch `feat/void-pin-and-cash-out-cap`, commit `dd66178`, one commit ahead of `main` at the time of writing — **not yet merged**.
+**Shipped** on branch `feat/void-pin-and-cash-out-cap`, commit `dd66178` — **merged as #485** and live on both projects.
 
 **`void_requires_pin`** (`stores.void_requires_pin`, boolean, default `false`) — enforced inside `void_sale()`. When on, a Supervisor voiding a sale needs a validated owner-PIN token; an Owner voiding their own store's sale is exempt (the toggle guards against a Supervisor acting unaccompanied, not against an Owner approving their own action). `void_sale()`'s signature grew from `(uuid, text)` to `(uuid, text, text default null)` via `CREATE OR REPLACE` — the same in-place signature-growth mechanism `checkout_sale()` has used across 20+ migrations — so an old client calling the original 2-argument shape keeps working unchanged for any store that leaves the toggle off.
 
@@ -258,7 +319,38 @@ This is the one line item the retest (§9 above) left open by design: two Settin
 - The commit message on `dd66178` additionally states 1,075 web tests pass and lint is clean — that run happened in an environment with working `oxlint`/`vitest` native bindings (this session's own sandboxed device shell hit `Cannot find native binding` errors for both, an environment problem specific to that sandbox, not re-run independently here).
 - Two new pgTAP suites ship with the migrations (`430_void_requires_pin.sql`, `440_cashier_cash_out_cap.sql`) — the commit message states these "run on this PR" (i.e., in CI once opened); not independently executed in this pass.
 
-**Still outstanding:** the branch is not yet merged into `main`, and no pull request had been opened as of this writing.
+**Merged as #485.** Both pgTAP suites (`430_void_requires_pin.sql`,
+`440_cashier_cash_out_cap.sql`) ran in CI on that PR and pass; they are part of
+the 552 assertions the suite now carries.
+
+### 4.1 · The other half of #470 — the controls that are still not real
+
+Enforcing those two settings closed the sharpest part of #470 but not all of it.
+Six further controls on the same screen — keep-in-drawer, default credit limit,
+block-utang-past-limit, warn-on-low-e-load-float, and the four print/photocopy
+prices — still persist client-side and are read by nothing. Verified rather than
+assumed: every field in `feesLimitsMock.ts` has zero references outside
+`src/pages/Settings/`.
+
+The mock persistence was never the defect. Presenting them as ordinary working
+controls was, which is what SEC-009 filed in the first place.
+
+**Fixed, #503:** each now carries a "Not enforced yet" marking, in the visible
+label *and* in the toggle's accessible name. Marked individually rather than
+per card, because the two genuinely enforced settings sit in the same card and a
+card-level banner would have misrepresented both halves. The print card's note
+is blunter, because the gap there is worse than "nothing reads this":
+`PRINT_JOB_TYPES` in `src/lib/pos/cashService.ts` carries its own prices and
+already disagrees with the Settings defaults, so changing a price there does not
+change what a customer pays.
+
+**Retest:** `npx vitest run src/pages/Settings/__tests__/FeesLimits.test.tsx` —
+asserts **both** directions, that the six carry the marking and that the two
+enforced settings stay clean. A marking that creeps onto working controls stops
+meaning anything.
+
+**Not covered:** the Alerts and Receipts screens are mock nearly end to end. Same
+class, out of scope for #470, and not yet marked.
 
 ---
 
@@ -267,7 +359,7 @@ This is the one line item the retest (§9 above) left open by design: two Settin
 Carried forward from `AUDIT-RETEST.md` §16, so silence on these isn't mistaken for an oversight:
 
 - **`storeData.tsx` refactor** (~1,100 lines, the original report's own B-section flagged this as a "god provider"). The original report itself advised against doing this preemptively. Agreed — uncomfortable, not broken.
-- **`uuid`/`exceljs` dependency advisories** (2 moderate-severity, `npm audit`). The available fix is a breaking downgrade (`exceljs` to 3.4.0); worth revisiting now that the dependency tree is back to its locked state, but wants its own decision rather than being folded into this audit.
+- **`uuid`/`exceljs` dependency advisories** (2 moderate-severity, `npm audit`) — **decided 2026-09-04, and deliberately not fixed.** `exceljs` calls `uuid.v4()` with no `buf` argument, and nothing in the repository imports `uuid` directly, so the advisory's code path is unreachable. The only offered remedy is a breaking downgrade to `exceljs@3.4.0`. Two moderates are therefore the *correct* state of `npm audit` here — **do not run `npm audit fix --force`**. Separately, `nanoid` (reachable via `postcss`) was pinned above its advisory in #502.
 - **Completing the `core.*` schema migration.** Changes what a "store" means to the client — needs its own design pass, not incremental changes from whoever next touches a migration. Recorded in `SCHEMA.md`'s "the unfinished part" section.
 - **Raising branch coverage from 75%.** Making the coverage gate actually run (§3.13) was a different, narrower change and wasn't allowed to smuggle in the larger effort of raising the number itself.
 

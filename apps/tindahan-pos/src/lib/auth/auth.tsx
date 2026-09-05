@@ -47,7 +47,11 @@ async function loadStore(storeId: string): Promise<Store | null> {
   const { data, error } = await supabase
     .from("stores")
     .select(
-      "id, name, address, photo_url, fee_config, contact_number, city, tin, business_permit_no, bir_registered, vat_status, vat_rate, invoice_type, cashier_can_edit_prices, void_requires_pin, cashier_cash_out_cap"
+      // DEPLOY ORDER MATTERS HERE. PostgREST fails the whole select when a named
+      // column does not exist, and this select is on the sign-in path -- so
+      // shipping this client before its migration signs EVERYONE out of the
+      // store, which is exactly how #485 broke staging. Push the migration first.
+      "id, name, address, photo_url, fee_config, contact_number, city, tin, business_permit_no, bir_registered, vat_status, vat_rate, invoice_type, cashier_can_edit_prices, void_requires_pin, cashier_cash_out_cap, utang_overdue_days, drawer_variance_threshold"
     )
     .eq("id", storeId)
     .single();
@@ -71,6 +75,8 @@ async function loadStore(storeId: string): Promise<Store | null> {
     cashierCanEditPrices: data.cashier_can_edit_prices,
     voidRequiresPin: data.void_requires_pin,
     cashierCashOutCap: data.cashier_cash_out_cap,
+    utangOverdueDays: data.utang_overdue_days,
+    drawerVarianceThreshold: Number(data.drawer_variance_threshold),
   };
 }
 
@@ -373,6 +379,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     cashierCanEditPrices?: boolean;
     voidRequiresPin?: boolean;
     cashierCashOutCap?: number | null;
+    utangOverdueDays?: number;
+    drawerVarianceThreshold?: number;
   }): Promise<AuthResult> {
     if (!user) return { ok: false, error: "Not signed in." };
     const { data, error } = await supabase
@@ -393,6 +401,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...(patch.cashierCanEditPrices !== undefined && { cashier_can_edit_prices: patch.cashierCanEditPrices }),
         ...(patch.voidRequiresPin !== undefined && { void_requires_pin: patch.voidRequiresPin }),
         ...(patch.cashierCashOutCap !== undefined && { cashier_cash_out_cap: patch.cashierCashOutCap }),
+        ...(patch.utangOverdueDays !== undefined && { utang_overdue_days: patch.utangOverdueDays }),
+        ...(patch.drawerVarianceThreshold !== undefined && { drawer_variance_threshold: patch.drawerVarianceThreshold }),
       })
       .eq("id", user.storeId)
       .select("id");
