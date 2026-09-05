@@ -1,0 +1,44 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# env files (never commit real Supabase keys)
+.env
+.env.*
+!.env.example
+
+# Supabase CLI local link state
+supabase/.temp
+
+# Local DB backups contain real customer data — never commit
+supabase/backups/
+
+# testing
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/coverage/
+# reportPdf tests exercise jsPDF's real save(), which writes actual files
+*.pdf
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

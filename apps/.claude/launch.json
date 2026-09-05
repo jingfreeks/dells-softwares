@@ -83,6 +83,20 @@
         "3000"
       ],
       "port": 3000
+    },
+    {
+      "name": "accounting",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "accounting",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5176"
+      ],
+      "port": 5176
     }
   ]
 }
