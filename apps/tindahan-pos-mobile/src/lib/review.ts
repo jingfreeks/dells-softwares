@@ -128,3 +128,45 @@ export function thisMonthPeriod(now: Date = new Date()): { from: string; to: str
   const pad = (n: number) => String(n).padStart(2, "0");
   return { from: `${year}-${pad(month)}-01`, to: `${year}-${pad(month)}-${pad(last)}` };
 }
+
+/**
+ * One month there is something to review.
+ *
+ * Derived, never stored — Product Decisions §3 rules out a reviews table and
+ * any invented "reviewed" state, so there is no status here. The mobile
+ * mockup shows a "Reviewed" chip on each row; it is dropped for the same
+ * reason the web dropped it: nothing sets it, so it would be the same word on
+ * every row forever.
+ */
+export interface ReviewHistoryMonth {
+  month: string;
+  from: string;
+  to: string;
+  salesTotal: number;
+}
+
+export async function fetchReviewHistory(
+  limit = 6
+): Promise<{ ok: true; months: ReviewHistoryMonth[] } | { ok: false }> {
+  const { data, error } = await supabase.rpc("review_history", { p_limit: limit });
+  if (error || !data) return { ok: false };
+  return {
+    ok: true,
+    months: data.map((row) => ({
+      month: row.month,
+      from: row.period_from,
+      to: row.period_to,
+      salesTotal: Number(row.sales_total),
+    })),
+  };
+}
+
+/** "2026-09" → "September 2026", in the app's pinned locale and zone. */
+export function monthLabel(month: string): string {
+  const [year, m] = month.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(Date.UTC(year, m - 1, 15)));
+}

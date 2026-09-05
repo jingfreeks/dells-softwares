@@ -6,7 +6,14 @@ import { MetricCard } from "../../components/metriccard";
 import { PrimaryButton } from "../../components/primarybutton";
 import { ScreenContainer } from "../../components/screencontainer";
 import { PESO } from "../../lib/money";
-import { ReviewLocked } from "./component";
+import {
+  ReviewLocked,
+  AttentionList,
+  SalesReview,
+  InventoryHealth,
+  UtangReview,
+  HistoryList,
+} from "./component";
 import { useReviewScreen } from "./hooks";
 import type { ReviewScreenProps } from "./types";
 
@@ -39,8 +46,15 @@ function profitCaption(summary: { estimatedProfit: number; profitBasisShare: num
  * bottom tab bar — the mobile design is explicit that it is not a shrunken
  * desktop dashboard.
  */
-export function ReviewScreen({ activeTab, onChangeTab, onBack, onUpgrade }: ReviewScreenProps) {
-  const { state, summary, retry } = useReviewScreen();
+export function ReviewScreen({
+  activeTab,
+  onChangeTab,
+  onBack,
+  onUpgrade,
+  onViewLowStock,
+  onViewOverdue,
+}: ReviewScreenProps) {
+  const { state, summary, months, retry } = useReviewScreen();
 
   return (
     <ScreenContainer>
@@ -99,6 +113,35 @@ export function ReviewScreen({ activeTab, onChangeTab, onBack, onUpgrade }: Revi
             variant={summary.lowStockCount > 0 ? "warning" : "default"}
           />
         </View>
+      )}
+
+      {state === "ready" && summary && (
+        // The mobile hierarchy the design is explicit about: attention first,
+        // then sales, inventory, utang, history. Not the desktop dashboard
+        // squeezed into a column.
+        <>
+          <View className="h-4" />
+          <AttentionList
+            summary={summary}
+            onViewLowStock={onViewLowStock}
+            onViewOverdue={onViewOverdue}
+            onViewSlowMoving={onViewLowStock}
+          />
+          <SalesReview daily={summary.dailySales} bestSellers={summary.bestSellers} />
+          <InventoryHealth
+            productCount={summary.productCount}
+            lowStockCount={summary.lowStockCount}
+            outOfStockCount={summary.outOfStockCount}
+            slowMovingCount={summary.slowMovingCount}
+          />
+          <UtangReview
+            outstanding={summary.utangOutstanding}
+            overdue={summary.utangOverdue}
+            customersWithBalance={summary.customersWithBalance}
+            overdueCustomers={summary.overdueCustomers}
+          />
+          <HistoryList months={months} />
+        </>
       )}
 
       <BottomTabBar active={activeTab} onChange={onChangeTab} />

@@ -168,6 +168,17 @@ function AdminHome() {
           setShowReview(false);
           setShowPricing(true);
         }}
+        // Restock IS the mobile low-stock screen, and Utang the customers one.
+        // Sending people to screens that already exist beats building a second
+        // low-stock list inside Review.
+        onViewLowStock={() => {
+          setShowReview(false);
+          setTab("stock");
+        }}
+        onViewOverdue={() => {
+          setShowReview(false);
+          setTab("utang");
+        }}
       />
     );
   }
