@@ -12,7 +12,7 @@ import {
 import type { SaleRecord } from "@/lib";
 import { buildRestockRows, type RestockRow } from "@/lib/inventory";
 import type { RestockExportRow } from "@/lib/excelExport";
-import { dateRangeForPreset, toDateInputValue } from "@/pages/Reports/lib";
+import { dateRangeForPreset, shiftDateInputValue, toDateInputValue } from "@/pages/Reports/lib";
 
 
 /**
@@ -36,11 +36,9 @@ export type DashboardReportKind =
   | "bestSellers"
   | "restocking";
 
-/** The calendar day before `dateStr` (yyyy-mm-dd), in local time. */
+/** The Manila day before `dateStr` (yyyy-mm-dd). */
 function previousDateString(dateStr: string): string {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() - 1);
-  return toDateInputValue(d);
+  return shiftDateInputValue(dateStr, -1);
 }
 
 function slugify(text: string): string {
