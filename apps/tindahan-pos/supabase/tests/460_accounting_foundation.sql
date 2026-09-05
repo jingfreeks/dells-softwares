@@ -78,8 +78,10 @@ set local role authenticated;
 select pg_temp.act_as('acc00000-0000-4000-8000-000000000001');
 
 select is(
-  (select public.seed_accounting_chart()), 21,
-  'the starter chart installs six groups and fifteen accounts'
+  (select public.seed_accounting_chart()), 22,
+  -- Sixteen, not fifteen, since C1 added 2030 Output VAT Payable: VAT
+  -- collected is money held for the BIR and had nowhere to go before that.
+  'the starter chart installs six groups and sixteen accounts'
 );
 
 select is(
@@ -88,7 +90,7 @@ select is(
 );
 
 select is(
-  (select count(*)::int from public.my_accounting_accounts()), 21,
+  (select count(*)::int from public.my_accounting_accounts()), 22,
   'the reader returns every account'
 );
 
@@ -175,7 +177,7 @@ select throws_ok(
 );
 
 select is(
-  (select count(*)::int from public.my_accounting_accounts()), 20,
+  (select count(*)::int from public.my_accounting_accounts()), 21,
   'but every account it already had stays readable -- a downgrade is not '
   'confiscation of records the business must keep'
 );
