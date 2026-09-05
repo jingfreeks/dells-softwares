@@ -277,6 +277,50 @@ describe("Review", () => {
     expect(screen.getByText("21 days overdue")).toBeInTheDocument();
   });
 
+  it("re-queries when the period changes, and asks for the whole month", async () => {
+    const user = userEvent.setup();
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({ ok: true, summary: SUMMARY });
+    renderPage();
+
+    await screen.findByText("SALES");
+    mockFetch.mockClear();
+
+    await user.click(screen.getByRole("button", { name: "Last month" }));
+
+    // Whole months, not month-to-date: review_summary() only compares against
+    // the previous calendar month when the period IS one.
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+    const [from, to] = mockFetch.mock.calls[0];
+    expect(from).toMatch(/^\d{4}-\d{2}-01$/);
+    expect(to).toMatch(/^\d{4}-\d{2}-(28|29|30|31)$/);
+  });
+
+  // "vs last month" is only true when the period is a month, so the card names
+  // the window the server actually compared against.
+  it("labels the comparison with the window the server used", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({ ok: true, summary: SUMMARY });
+    renderPage();
+
+    // 45,280 against a previous 41,000 is +10%.
+    expect(await screen.findByText(/▲10% vs Aug 1–Aug 31/)).toBeInTheDocument();
+  });
+
+  it("shows no delta when there is no previous period to compare against", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({
+      ok: true,
+      summary: { ...SUMMARY, previous: { ...SUMMARY.previous, salesTotal: 0 } },
+    });
+    renderPage();
+
+    // A store's first month compared against nothing is not "+100%".
+    await screen.findByText("SALES");
+    expect(screen.queryByText(/▲/)).not.toBeInTheDocument();
+    expect(screen.getByText("214 sales")).toBeInTheDocument();
+  });
+
   it("shows a plain error with a working retry, and no server wording", async () => {
     const user = userEvent.setup();
     mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));

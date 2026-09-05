@@ -508,6 +508,7 @@ export const TEXT_REPORTS_DESCRIPTION = "Sales by date range and by cashier";
 export const LABEL_PERIOD_WEEK = "This week";
 export const LABEL_PERIOD_MONTH = "This month";
 export const LABEL_PERIOD_CUSTOM = "Custom";
+export const LABEL_PERIOD_LAST_MONTH = "Last month";
 export const LABEL_ALL_CASHIERS = "All cashiers";
 export const LABEL_ALL_DEVICES = "All devices";
 export const LABEL_TOTAL_SALES = "Total sales";
@@ -1288,6 +1289,10 @@ export const TEXT_REVIEW_VS_PREFIX = "vs";
 export const TEXT_REVIEW_DAYS_SUFFIX_SHORT = "days";
 
 // Review — Low Stock detail
+export const ARIA_REVIEW_PERIOD = "Reporting period";
+export const LABEL_REVIEW_FROM = "From";
+export const LABEL_REVIEW_TO = "To";
+
 export const PAGE_HEADING_LOW_STOCK_REVIEW = "Low Stock Review";
 export const TEXT_LOW_STOCK_REVIEW_RUNNING_LOW_SUFFIX = "products are running low.";
 export const TEXT_LOW_STOCK_REVIEW_DESCRIPTION =
