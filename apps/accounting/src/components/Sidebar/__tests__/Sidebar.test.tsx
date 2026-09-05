@@ -52,6 +52,7 @@ describe("Sidebar", () => {
       "/journal",
       "/ledger",
       "/receivables",
+      "/payables",
       "/accounts",
     ]);
   });

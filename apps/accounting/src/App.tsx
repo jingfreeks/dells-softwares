@@ -9,6 +9,8 @@ import {
   JournalDetail,
   Ledger,
   NoAccess,
+  PayableSupplier,
+  Payables,
   ReceivableCustomer,
   Receivables,
 } from "@/pages";
@@ -39,6 +41,8 @@ function Gate() {
       <Route path="/ledger" element={<Ledger />} />
       <Route path="/receivables" element={<Receivables />} />
       <Route path="/receivables/:id" element={<ReceivableCustomer />} />
+      <Route path="/payables" element={<Payables />} />
+      <Route path="/payables/:id" element={<PayableSupplier />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

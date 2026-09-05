@@ -62,7 +62,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: NAV_SECTION_BALANCES,
     items: [
       { label: NAV_RECEIVABLES, icon: "ic-users", to: "/receivables" },
-      { label: NAV_PAYABLES, icon: "ic-truck", to: "/payables", pending: true },
+      { label: NAV_PAYABLES, icon: "ic-truck", to: "/payables" },
       { label: NAV_CHART_OF_ACCOUNTS, icon: "ic-tree", to: "/accounts" },
     ],
   },

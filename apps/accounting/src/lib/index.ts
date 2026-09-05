@@ -3,6 +3,7 @@ export * from "./accounts";
 export * from "./journal";
 export * from "./ledger";
 export * from "./money";
+export * from "./payables";
 export * from "./receivables";
 export * from "./session";
 export * from "./textLabels";

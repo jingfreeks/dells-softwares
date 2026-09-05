@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { bucketsFor, daysOverdue, shareOf, totalsFor } from "../lib";
+import { shareOf } from "@/components";
+import { bucketsFor, daysOverdue, totalsFor } from "../lib";
 import type { Receivable } from "@/lib";
 
 const row = (over: Partial<Receivable> = {}): Receivable => ({

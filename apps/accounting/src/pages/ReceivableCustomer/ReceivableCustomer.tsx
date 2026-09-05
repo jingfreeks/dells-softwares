@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
-import { AppShell, LoadingSkeleton, StateScreen } from "@/components";
+import { AgingMeter, AppShell, LoadingSkeleton, StateScreen } from "@/components";
 import { amount, formatDate } from "@/lib";
-import { AgingMeter } from "@/pages/Receivables/component";
+
 import { bucketsFor, daysOverdue } from "@/pages/Receivables/lib";
 import { useReceivableCustomer } from "./hooks";
 
