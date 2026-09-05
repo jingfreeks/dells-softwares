@@ -1,17 +1,27 @@
 import { useRef, type CSSProperties, type ReactNode } from "react";
 import { useEscapeToClose, useFocusTrap } from "@/lib";
 
-interface ModalProps {
+interface ModalBaseProps {
   open: boolean;
   /** Called on Escape, on an overlay click, and by the dialog's own controls. */
   onClose: () => void;
-  /** id of the element that names this dialog, for aria-labelledby. */
-  labelledBy: string;
   /** The panel's max width in pixels. Omit for the stylesheet's default. */
   maxWidth?: number;
   style?: CSSProperties;
   children: ReactNode;
 }
+
+/**
+ * A dialog must be named, and there are only two ways to name one. Most name a
+ * heading they already render; a couple (the receipt) have no heading to point
+ * at and carry the name themselves. The union makes that an either/or rather
+ * than two optional props that could both be omitted.
+ */
+type ModalProps = ModalBaseProps &
+  (
+    | { /** id of the element that names this dialog. */ labelledBy: string; label?: never }
+    | { labelledBy?: never; /** The dialog's name, when nothing on screen states it. */ label: string }
+  );
 
 /**
  * The dialog shell every modal in this app was writing out by hand.
@@ -29,7 +39,7 @@ interface ModalProps {
  * title or footer prop -- the modals differ genuinely in their content and
  * forcing them into slots would trade one kind of repetition for a worse one.
  */
-export function Modal({ open, onClose, labelledBy, maxWidth, style, children }: ModalProps) {
+export function Modal({ open, onClose, labelledBy, label, maxWidth, style, children }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   useEscapeToClose(open, onClose);
   useFocusTrap(open, panelRef);
@@ -45,6 +55,7 @@ export function Modal({ open, onClose, labelledBy, maxWidth, style, children }: 
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
+        aria-label={label}
         // The panel must not close the dialog the overlay behind it would.
         onClick={(e) => e.stopPropagation()}
       >

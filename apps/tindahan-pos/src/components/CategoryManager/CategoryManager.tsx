@@ -1,7 +1,7 @@
-import { useRef } from "react";
 import { useCategoryManager } from "./hooks";
 import { Headerscreen, Inputinfoscreen, Categoryinfoscreen } from "./component";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { Modal } from "@/components/Modal";
 import {
   TITLE_MERGE_CATEGORY,
   TITLE_DELETE_CATEGORY,
@@ -11,8 +11,6 @@ import {
   LABEL_MERGE_INTO,
   BUTTON_CONFIRM_MERGE,
   BUTTON_DELETE,
-  useEscapeToClose,
-  useFocusTrap,
 } from "@/lib";
 
 interface CategoryManagerProps {
@@ -43,24 +41,12 @@ export function CategoryManager({ onClose }: CategoryManagerProps) {
     confirmDelete,
   } = useCategoryManager();
 
-  const dialogRef = useRef<HTMLDivElement>(null);
-  useEscapeToClose(true, onClose);
-  useFocusTrap(true, dialogRef);
-
   const confirmCount = confirmTarget ? usageCount(confirmTarget.id) : 0;
   const otherCategories = categories.filter((c) => c.id !== confirmTarget?.id);
 
   return (
     <>
-    <div className="tpl-modal-overlay" onClick={onClose}>
-      <div
-        ref={dialogRef}
-        className="tpl-modal-panel tpl-card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="categoryManagerHeading"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <Modal open onClose={onClose} labelledBy="categoryManagerHeading">
         <Headerscreen onClose={onClose} />
 
         <Inputinfoscreen newName={newName} setNewName={setNewName} handleAdd={handleAdd} adding={adding} />
@@ -84,8 +70,7 @@ export function CategoryManager({ onClose }: CategoryManagerProps) {
           startEdit={startEdit}
           requestDelete={requestDelete}
         />
-      </div>
-    </div>
+      </Modal>
 
     {confirmTarget && (
         <ConfirmDialog
