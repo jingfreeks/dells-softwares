@@ -12,6 +12,7 @@ export interface ReviewSummaryRow {
   transaction_count: number;
   estimated_profit: number;
   profit_basis_share: number;
+  profit_snapshot_share: number;
   inventory_value: number;
   inventory_basis_share: number;
   product_count: number;

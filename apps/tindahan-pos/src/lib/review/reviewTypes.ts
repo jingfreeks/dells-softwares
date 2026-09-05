@@ -67,6 +67,17 @@ export interface ReviewSummary {
    * Presenting estimatedProfit without this overstates what is known.
    */
   profitBasisShare: number;
+  /**
+   * Of the value we can price at all, how much came from a real snapshot
+   * (`sale_items.cost_at_sale`) rather than being reconstructed from today's
+   * `products.cost`.
+   *
+   * 1 means the figure is not an estimate. 0 means every peso of it was
+   * recomputed at current cost. Between the two is the truth during the
+   * changeover, and the card says so rather than picking whichever story reads
+   * better.
+   */
+  profitSnapshotShare: number;
 
   inventoryValue: number;
   inventoryBasisShare: number;

@@ -1237,6 +1237,10 @@ export const TEXT_REVIEW_TRANSACTIONS_SUFFIX = "sales";
 // A bare margin with no basis line reads as exact, which is the thing that
 // decision forbids -- so every state of this card names its basis.
 export const TEXT_REVIEW_PROFIT_BASIS = "Estimated from current product costs";
+// Once sale_items.cost_at_sale exists for a period, the figure stops being an
+// estimate and the card must stop calling it one. See 20260905150000.
+export const TEXT_REVIEW_PROFIT_FROM_SNAPSHOT = "from cost at time of sale";
+export const TEXT_REVIEW_PROFIT_MIXED_BASIS = "part measured, part estimated";
 export const TEXT_REVIEW_PROFIT_PARTIAL_PREFIX = "Estimated from current costs ·";
 export const TEXT_REVIEW_PROFIT_PARTIAL_SUFFIX = "of sales have one";
 // Zero coverage: showing PHP 0.00 profit would be a misleading zero, which the
