@@ -5,4 +5,6 @@ export * from "./Journal";
 export * from "./JournalCreate";
 export * from "./JournalDetail";
 export * from "./Ledger";
+export * from "./Receivables";
+export * from "./ReceivableCustomer";
 export * from "./NoAccess";
