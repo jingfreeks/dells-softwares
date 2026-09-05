@@ -373,6 +373,50 @@ describe("Review", () => {
     expect(await screen.findByText("No months to review yet.")).toBeInTheDocument();
   });
 
+  // SalesReviewCard only ever rendered its empty branch, because every fixture
+  // passed empty collections. These exercise the chart and the best-seller
+  // list, which is where its logic actually is.
+  it("draws the trend and the best sellers when there are sales", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({
+      ok: true,
+      summary: {
+        ...SUMMARY,
+        dailySales: [
+          { date: "2026-09-01", sales: 1200 },
+          { date: "2026-09-02", sales: 0 },
+          { date: "2026-09-03", sales: 3400 },
+        ],
+        bestSellers: [
+          { id: "p1", name: "Coca-Cola 1.5L", revenue: 12400, quantity: 210 },
+          { id: "p2", name: "Lucky Me Pancit", revenue: 8920, quantity: 180 },
+        ],
+      },
+    });
+    renderPage();
+
+    expect(await screen.findByText("Best sellers")).toBeInTheDocument();
+    expect(screen.getByText("Coca-Cola 1.5L")).toBeInTheDocument();
+    expect(screen.getByText("Lucky Me Pancit")).toBeInTheDocument();
+
+    // The chart is one accessible summary, not 30 unlabelled bars — a day with
+    // no sales is still a day, and the total has to include it.
+    expect(
+      screen.getByRole("img", { name: /Daily sales for the period.*across 3 days/ })
+    ).toBeInTheDocument();
+  });
+
+  it("says so when the period sold nothing", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({
+      ok: true,
+      summary: { ...SUMMARY, dailySales: [{ date: "2026-09-01", sales: 0 }], bestSellers: [] },
+    });
+    renderPage();
+
+    expect(await screen.findByText("No sales in this period yet.")).toBeInTheDocument();
+  });
+
   it("shows a plain error with a working retry, and no server wording", async () => {
     const user = userEvent.setup();
     mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
