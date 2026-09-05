@@ -68,7 +68,13 @@ export function useCustomersPage() {
     [showAddForm, customers, form.name]
   );
 
-  const [overdueOnly, setOverdueOnly] = useState(false);
+  // Review's "View overdue" lands here already filtered. Same location.state
+  // channel the search query uses, for the reason the comment above gives:
+  // a URL param would survive a later change of filter and confuse the back
+  // button.
+  const [overdueOnly, setOverdueOnly] = useState(
+    () => (location.state as { overdueOnly?: boolean } | null)?.overdueOnly ?? false
+  );
   const [hasUtangOnly, setHasUtangOnly] = useState(false);
   const [sortByOldestDebt, setSortByOldestDebt] = useState(false);
 

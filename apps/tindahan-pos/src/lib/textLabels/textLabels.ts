@@ -1242,6 +1242,51 @@ export const TEXT_REVIEW_PROFIT_PARTIAL_SUFFIX = "of sales have one";
 // same decision rules out. The card shows no figure and says what is missing.
 export const TEXT_REVIEW_PROFIT_NO_COST = "No product costs recorded yet";
 export const TEXT_REVIEW_VALUE_UNAVAILABLE = "—";
+// Review — dashboard sections
+export const HEADING_REVIEW_ATTENTION = "What needs your attention?";
+export const LABEL_REVIEW_ITEMS_SUFFIX = "items";
+export const TEXT_REVIEW_LOW_STOCK_TITLE_SUFFIX = "low on stock";
+export const TEXT_REVIEW_LOW_STOCK_BODY = "Restock before they run out";
+export const BUTTON_REVIEW_VIEW_LOW_STOCK = "View low stock";
+export const TEXT_REVIEW_OVERDUE_TITLE_SUFFIX = "have overdue utang";
+export const TEXT_REVIEW_OLDEST_BALANCE_PREFIX = "Oldest balance:";
+export const BUTTON_REVIEW_VIEW_OVERDUE = "View overdue";
+export const TEXT_REVIEW_SLOW_TITLE_SUFFIX = "have not sold recently";
+export const TEXT_REVIEW_SLOW_BODY = "Review your slow-moving stock";
+export const BUTTON_REVIEW_VIEW_SLOW = "View slow-moving";
+export const TEXT_REVIEW_SHIFTS_BALANCED = "Cashier shifts are balanced";
+export const TEXT_REVIEW_SHIFTS_NO_ACTION = "No action needed";
+// Not the same as balanced, and must not read like it: a drawer nobody counted
+// has nothing to be off by. See 20260905130000.
+export const TEXT_REVIEW_SHIFTS_NONE_COUNTED = "No shifts were counted";
+export const TEXT_REVIEW_SHIFTS_NONE_COUNTED_BODY = "Nothing to compare — count the drawer at the end of a shift";
+export const TEXT_REVIEW_SHIFTS_OFF_SUFFIX = "off by more than your limit";
+export const LABEL_REVIEW_GOOD = "Good";
+export const HEADING_REVIEW_SALES = "Sales Review";
+export const HEADING_REVIEW_BEST_SELLERS = "Best sellers";
+export const BUTTON_REVIEW_OPEN = "Open";
+export const TEXT_REVIEW_NO_SALES_YET = "No sales in this period yet.";
+export const HEADING_REVIEW_INVENTORY = "Inventory Review";
+export const LABEL_REVIEW_STOCK_HEALTHY = "Healthy";
+export const LABEL_REVIEW_STOCK_LOW = "Low stock";
+export const LABEL_REVIEW_STOCK_CRITICAL = "Critical";
+export const LABEL_REVIEW_STOCK_SLOW = "Slow moving";
+export const TEXT_REVIEW_RESTOCK_SUFFIX = "products need restocking soon.";
+export const TEXT_REVIEW_NO_PRODUCTS = "No products yet.";
+export const HEADING_REVIEW_UTANG = "Customer & Utang Review";
+export const LABEL_REVIEW_OUTSTANDING = "OUTSTANDING";
+export const LABEL_REVIEW_OVERDUE = "OVERDUE";
+export const LABEL_REVIEW_WITH_BALANCE = "WITH BALANCE";
+export const HEADING_REVIEW_NEEDS_ATTENTION = "Needs attention";
+export const TEXT_REVIEW_DAYS_OVERDUE_SUFFIX = "days overdue";
+export const TEXT_REVIEW_NOBODY_OVERDUE = "Nobody is past your overdue limit.";
+export const ARIA_REVIEW_SALES_TREND = "Daily sales for the period";
+export const ARIA_REVIEW_STOCK_HEALTH = "Stock health breakdown";
+// The comparison window's real bounds, because "vs last month" is only true
+// when the period IS a month -- see 20260905120000.
+export const TEXT_REVIEW_VS_PREFIX = "vs";
+export const TEXT_REVIEW_DAYS_SUFFIX_SHORT = "days";
+
 export const TEXT_REVIEW_ERROR_HEADING = "We couldn't load your review";
 export const TEXT_REVIEW_ERROR_BODY = "Please try again.";
 export const ARIA_REVIEW_LOCKED_BENEFITS = "What Review includes on Growth";
