@@ -230,5 +230,59 @@ select is(
   'and the drawer variance default of 20'
 );
 
+-- -----------------------------------------------------------------------------
+-- An ordinary ONLINE sale must be counted
+--
+-- The regression that makes this suite worth reading. review_summary() bounded
+-- its period on sales.occurred_at, which checkout_sale() sets only when
+-- replaying a sale queued offline -- so an online sale has NULL there, NULL
+-- fails every comparison, and Review counted offline replays and nothing else.
+-- A store that had never lost connectivity saw a Review of zero.
+--
+-- occurred_at is deliberately left NULL below, because that is what an
+-- ordinary sale looks like in this schema.
+-- -----------------------------------------------------------------------------
+reset role;
+insert into sales (store_id, cashier_id, total, payment_type, status,
+                   receipt_number, created_at, occurred_at)
+values (pg_temp.growth_org(), '4e900000-0000-4000-8000-00000000a002', 500, 'cash',
+        'completed', 'OR-9001', clock_timestamp(), null);
+set local role authenticated;
+select pg_temp.act_as('4e900000-0000-4000-8000-00000000a002');
+
+select is(
+  ((select review_summary(current_date, current_date)) ->> 'sales_total')::numeric,
+  500.00::numeric,
+  'an online sale -- occurred_at NULL, which is every sale that did not go through the offline queue -- is counted'
+);
+
+select is(
+  ((select review_summary(current_date, current_date)) ->> 'transaction_count')::int,
+  1,
+  'and counted once, not twice'
+);
+
+-- The other half of the same NULL: the utang ageing walk ordered by
+-- occurred_at and took min() of it, so a customer whose credit sales were all
+-- online had no age and could never be overdue.
+reset role;
+insert into customers (store_id, name, balance, credit_limit)
+values (pg_temp.growth_org(), 'Online Utang Customer', 300, 1000);
+
+insert into sales (store_id, cashier_id, total, payment_type, status,
+                   customer_id, receipt_number, created_at, occurred_at)
+values (pg_temp.growth_org(), '4e900000-0000-4000-8000-00000000a002', 300, 'credit',
+        'completed',
+        (select id from customers where name = 'Online Utang Customer'),
+        'OR-9002', clock_timestamp() - interval '40 days', null);
+set local role authenticated;
+select pg_temp.act_as('4e900000-0000-4000-8000-00000000a002');
+
+select is(
+  ((select review_summary(current_date - 60, current_date)) ->> 'overdue_customer_count')::int,
+  1,
+  'a customer whose credit sales are all online can be overdue -- min(occurred_at) made them ageless'
+);
+
 select * from finish();
 rollback;
