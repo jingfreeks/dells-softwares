@@ -43,6 +43,14 @@ export interface ReviewPreviousPeriod {
   transactionCount: number;
 }
 
+/** A customer past the store's overdue threshold, named so the card is actionable. */
+export interface ReviewOverdueCustomer {
+  id: string;
+  name: string;
+  balance: number;
+  daysOverdue: number;
+}
+
 export interface ReviewSummary {
   period: { from: string; to: string };
 
@@ -81,6 +89,21 @@ export interface ReviewSummary {
 
   bestSellers: ReviewBestSeller[];
   dailySales: ReviewDailySales[];
+
+  /**
+   * Shifts CLOSED AND COUNTED in the period. A session still open, or
+   * abandoned without a closing count, is in neither number — it has nothing
+   * to be off by, and reporting it as balanced would turn "nobody counted the
+   * drawer" into "no action needed".
+   *
+   * So `shiftsClosed === 0` means nothing was counted, which is not the same
+   * as everything balancing, and the UI must say so differently.
+   */
+  shiftsClosed: number;
+  shiftsOff: number;
+  shiftsOffTotal: number;
+
+  overdueCustomers: ReviewOverdueCustomer[];
   previous: ReviewPreviousPeriod;
 }
 

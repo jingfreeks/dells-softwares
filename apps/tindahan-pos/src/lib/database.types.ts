@@ -26,6 +26,10 @@ export interface ReviewSummaryRow {
   overdue_days: number;
   best_sellers: { id: string; name: string; revenue: number; quantity: number }[];
   daily_sales: { date: string; sales: number }[];
+  shifts_closed: number;
+  shifts_off: number;
+  shifts_off_total: number;
+  overdue_customers: { id: string; name: string; balance: number; days_overdue: number }[];
   previous: { from: string; to: string; sales_total: number; transaction_count: number };
 }
 
