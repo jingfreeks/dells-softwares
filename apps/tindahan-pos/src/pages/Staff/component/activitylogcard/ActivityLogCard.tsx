@@ -1,5 +1,12 @@
 import { Link } from "react-router-dom";
-import { HEADING_ACTIVITY_LOG, LINK_FULL_LOG, LABEL_LOADING, EMPTY_STATE_NO_ACTIVITY_YET, useAuditLog } from "@/lib";
+import {
+  HEADING_ACTIVITY_LOG,
+  LINK_FULL_LOG,
+  LABEL_LOADING,
+  EMPTY_STATE_NO_ACTIVITY_YET,
+  useAuditLog,
+  formatDateTime,
+} from "@/lib";
 
 function iconForAction(action: string): { icon: string; variant: "" | "w" | "r" | "g" } {
   if (action === "sale_voided") return { icon: "ti-trash", variant: "r" };
@@ -43,7 +50,7 @@ export function ActivityLogCard() {
                   {entry.actionLabel} · {entry.entityLabel}
                 </p>
                 <p className="tpl-ts">
-                  {entry.actorName} · {new Date(entry.createdAt).toLocaleString()}
+                  {entry.actorName} · {formatDateTime(entry.createdAt)}
                   {entry.reason ? ` · ${entry.reason}` : ""}
                 </p>
               </div>

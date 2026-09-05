@@ -17,6 +17,7 @@ import {
   TEXT_SHIFT_NO_COUNT,
   useEscapeToClose,
   useFocusTrap,
+  formatDate,
 } from "@/lib";
 import { useRef } from "react";
 import { useShiftHistory, type ShiftHistoryRow } from "../../hooksShifts";
@@ -97,7 +98,7 @@ export function ShiftHistoryModal({ onClose }: ShiftHistoryModalProps) {
                   cursor: "default",
                 }}
               >
-                <span className="tpl-ts">{new Date(shift.createdAt).toLocaleDateString()}</span>
+                <span className="tpl-ts">{formatDate(shift.createdAt)}</span>
                 <span className="tpl-tp">{shift.staffName}</span>
                 <span className="tpl-ts tpl-right">{PESO.format(shift.openingFloat ?? 0)}</span>
                 <span className="tpl-ts tpl-right">{shift.closingFloat === null ? "—" : PESO.format(shift.closingFloat)}</span>

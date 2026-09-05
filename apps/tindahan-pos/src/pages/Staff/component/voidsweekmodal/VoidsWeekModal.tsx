@@ -11,6 +11,7 @@ import {
   useEscapeToClose,
   useFocusTrap,
   type SaleRecord,
+  formatDateTime,
 } from "@/lib";
 import { useRef } from "react";
 
@@ -67,7 +68,7 @@ export function VoidsWeekModal({ voidedSales, onClose }: VoidsWeekModalProps) {
                 className="tpl-trow"
                 style={{ gridTemplateColumns: "110px minmax(0,1fr) 100px 90px minmax(0,1.4fr)", cursor: "default" }}
               >
-                <span className="tpl-ts">{new Date(sale.voidedAt ?? sale.timestamp).toLocaleString()}</span>
+                <span className="tpl-ts">{formatDateTime(sale.voidedAt ?? sale.timestamp)}</span>
                 <span className="tpl-tp">{sale.cashierName}</span>
                 <span className="tpl-ts">{sale.receiptNumber ?? "—"}</span>
                 <span className="tpl-ts tpl-right">{PESO.format(sale.total)}</span>
