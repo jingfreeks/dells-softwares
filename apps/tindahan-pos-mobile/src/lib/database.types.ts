@@ -677,6 +677,18 @@ export interface Database {
         Args: { p_plan_code: string };
         Returns: undefined;
       };
+      review_history: {
+        Args: { p_limit?: number };
+        // No status/reviewed_at/reviewed_by: history is derived and nobody has
+        // reviewed anything. See 20260905140000.
+        Returns: {
+          month: string;
+          period_from: string;
+          period_to: string;
+          sales_total: number;
+          transaction_count: number;
+        }[];
+      };
       review_summary: {
         Args: { p_from: string; p_to: string; p_overdue_days?: number | null };
         // No `expenses` key, deliberately -- there is no expenses table and
