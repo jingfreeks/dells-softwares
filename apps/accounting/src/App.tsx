@@ -9,6 +9,8 @@ import {
   JournalDetail,
   Ledger,
   NoAccess,
+  ReceivableCustomer,
+  Receivables,
 } from "@/pages";
 import { SessionProvider, TEXT_LOADING, useSession } from "@/lib";
 
@@ -35,6 +37,8 @@ function Gate() {
       <Route path="/journal/new" element={<JournalCreate />} />
       <Route path="/journal/:id" element={<JournalDetail />} />
       <Route path="/ledger" element={<Ledger />} />
+      <Route path="/receivables" element={<Receivables />} />
+      <Route path="/receivables/:id" element={<ReceivableCustomer />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
