@@ -1,8 +1,7 @@
 import { useParams } from "react-router-dom";
 import { AppShell, LoadingSkeleton, StateScreen } from "@/components";
-import { amount, formatDate, typeLabel } from "@/lib";
+import { amount, closingBalance, formatDate, typeLabel, withRunningBalance } from "@/lib";
 import { useAccountDetail } from "./hooks";
-import { closingBalance, withRunningBalance } from "./lib";
 
 export function AccountDetail() {
   const { code } = useParams<{ code: string }>();

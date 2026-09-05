@@ -47,6 +47,6 @@ describe("Sidebar", () => {
     // screen behind it fails here, which is how the rail stays honest about
     // what exists.
     const built = NAV_SECTIONS.flatMap((s) => s.items).filter((i) => !i.pending);
-    expect(built.map((i) => i.to)).toEqual(["/", "/accounts"]);
+    expect(built.map((i) => i.to)).toEqual(["/", "/journal", "/ledger", "/accounts"]);
   });
 });

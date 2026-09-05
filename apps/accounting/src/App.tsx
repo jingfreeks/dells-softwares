@@ -1,6 +1,15 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { LoadingSkeleton } from "@/components";
-import { AccountDetail, Accounts, Dashboard, NoAccess } from "@/pages";
+import {
+  AccountDetail,
+  Accounts,
+  Dashboard,
+  Journal,
+  JournalCreate,
+  JournalDetail,
+  Ledger,
+  NoAccess,
+} from "@/pages";
 import { SessionProvider, TEXT_LOADING, useSession } from "@/lib";
 
 /**
@@ -22,6 +31,10 @@ function Gate() {
       <Route path="/" element={<Dashboard />} />
       <Route path="/accounts" element={<Accounts />} />
       <Route path="/accounts/:code" element={<AccountDetail />} />
+      <Route path="/journal" element={<Journal />} />
+      <Route path="/journal/new" element={<JournalCreate />} />
+      <Route path="/journal/:id" element={<JournalDetail />} />
+      <Route path="/ledger" element={<Ledger />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
