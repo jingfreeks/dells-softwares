@@ -53,8 +53,8 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: NAV_SECTION_TRANSACTIONS,
     items: [
-      { label: NAV_JOURNAL_ENTRIES, icon: "ic-journal", to: "/journal", pending: true },
-      { label: NAV_GENERAL_LEDGER, icon: "ic-ledger", to: "/ledger", pending: true },
+      { label: NAV_JOURNAL_ENTRIES, icon: "ic-journal", to: "/journal" },
+      { label: NAV_GENERAL_LEDGER, icon: "ic-ledger", to: "/ledger" },
       { label: NAV_EXPENSES, icon: "ic-receipt", to: "/expenses", pending: true },
     ],
   },
