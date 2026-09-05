@@ -1352,6 +1352,16 @@ export const LABEL_BLOCK_UTANG_PAST_LIMIT = "Block utang past the customer's lim
 export const LABEL_VOID_NEEDS_PIN = "Voiding a paid sale needs your PIN";
 export const LABEL_WARN_LOW_ELOAD_FLOAT = "Warn when e-load float drops below ₱500";
 export const LABEL_NOT_ENFORCED_YET = "Not enforced yet";
+// The Alerts screen's own version. "Not enforced" understates it for the
+// channels: there is no push, SMS or email delivery in this product at all, so
+// these do not configure something that is switched off -- they configure
+// something that does not exist. Saying "not enforced yet" would imply the
+// pipe is built and the switch is off.
+export const TEXT_ALERTS_NO_DELIVERY_TITLE = "No alerts are sent yet";
+export const TEXT_ALERTS_NO_DELIVERY =
+  "Push, SMS and email are not built yet, so nothing here is delivered. Your choices are saved on this device for when they are.";
+export const TEXT_ALERTS_TOGGLE_NOT_ENFORCED =
+  "Saved on this device only. Nothing checks this yet.";
 export const TEXT_NOT_ENFORCED_YET_TITLE = "Saved, but not applied yet";
 export const TEXT_PRINT_PRICES_NOT_ENFORCED =
   "These prices are kept on this device only. The Print and photocopy panel at the till still charges its own built-in prices, so changing them here does not change what a customer pays.";
