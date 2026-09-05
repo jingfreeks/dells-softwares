@@ -9,27 +9,11 @@ import {
   downloadWorkbook,
   STORE_NAME,
   ERROR_COULD_NOT_GENERATE_REPORT, describePlatformError } from "@/lib";
-import type { Product, SaleRecord, Supplier } from "@/lib";
-import type { RestockSuggestion } from "@/lib/inventory";
+import type { SaleRecord } from "@/lib";
+import { buildRestockRows, type RestockRow } from "@/lib/inventory";
 import type { RestockExportRow } from "@/lib/excelExport";
 import { dateRangeForPreset, toDateInputValue } from "@/pages/Reports/lib";
 
-export interface RestockRow {
-  productId: string;
-  productName: string;
-  barcode: string | null;
-  category: string;
-  stock: number;
-  minStock: number;
-  isOut: boolean;
-  avgDailySales: number | null;
-  daysOfStockLeft: number | null;
-  suggestedQuantity: number | null;
-  /** Best-effort match on the supplier(s) declaring this product's category as something they supply — not a literal delivery record. Null when no active supplier claims the category. */
-  supplier: string | null;
-  /** Admin-entered cost estimate, if any — used only for "est. cost to refill", never fabricated when absent. */
-  cost: number | null;
-}
 
 /**
  * Merges the low-stock product list with restock-rate suggestions and a
@@ -40,39 +24,8 @@ export interface RestockRow {
  * the data exists. Sorted out-of-stock first, then soonest to run out;
  * products with no sales history to project from sort last.
  */
-export function buildRestockRows(
-  lowStock: Product[],
-  suggestions: RestockSuggestion[],
-  suppliers: Supplier[]
-): RestockRow[] {
-  const suggestionByProductId = new Map(suggestions.map((s) => [s.productId, s]));
 
-  return [...lowStock]
-    .map((p) => {
-      const suggestion = suggestionByProductId.get(p.id);
-      const supplier = suppliers.find((s) => s.active && s.categoryIds.includes(p.categoryId));
-      return {
-        productId: p.id,
-        productName: p.name,
-        barcode: p.barcode,
-        category: p.category,
-        stock: p.stock,
-        minStock: p.lowStockThreshold,
-        isOut: p.stock <= 0,
-        avgDailySales: suggestion?.avgDailySales ?? null,
-        daysOfStockLeft: suggestion?.daysOfStockLeft ?? null,
-        suggestedQuantity: suggestion?.suggestedQuantity ?? null,
-        supplier: supplier?.name ?? null,
-        cost: p.cost,
-      };
-    })
-    .sort((a, b) => {
-      if (a.isOut !== b.isOut) return a.isOut ? -1 : 1;
-      const aDays = a.daysOfStockLeft ?? Infinity;
-      const bDays = b.daysOfStockLeft ?? Infinity;
-      return aDays - bDays;
-    });
-}
+export type { RestockRow };
 
 export type DashboardReportKind =
   | "todaysSales"

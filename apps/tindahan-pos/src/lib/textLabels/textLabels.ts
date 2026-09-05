@@ -1287,6 +1287,27 @@ export const ARIA_REVIEW_STOCK_HEALTH = "Stock health breakdown";
 export const TEXT_REVIEW_VS_PREFIX = "vs";
 export const TEXT_REVIEW_DAYS_SUFFIX_SHORT = "days";
 
+// Review — Low Stock detail
+export const PAGE_HEADING_LOW_STOCK_REVIEW = "Low Stock Review";
+export const TEXT_LOW_STOCK_REVIEW_RUNNING_LOW_SUFFIX = "products are running low.";
+export const TEXT_LOW_STOCK_REVIEW_DESCRIPTION =
+  "These products may need restocking based on recent sales and current stock levels.";
+export const LABEL_LOW_STOCK_COL_PRODUCT = "PRODUCT";
+export const LABEL_LOW_STOCK_COL_STOCK = "STOCK";
+export const LABEL_LOW_STOCK_COL_RATE = "AVG. DAILY SALES";
+export const LABEL_LOW_STOCK_COL_REORDER = "REORDER";
+export const TEXT_LOW_STOCK_PER_DAY_SUFFIX = "/ day";
+export const TEXT_LOW_STOCK_ORDER_PREFIX = "Order";
+// A product with no recent sales has no rate to project from, so there is no
+// suggestion to make. Saying so beats printing a confident number.
+export const TEXT_LOW_STOCK_NO_RATE = "No recent sales";
+export const TEXT_LOW_STOCK_SUGGESTION_NOTE =
+  "Suggested amounts are a guide based on recent sales — the final order is yours.";
+export const BUTTON_VIEW_INVENTORY = "View Inventory";
+export const TEXT_LOW_STOCK_NONE = "Nothing is running low.";
+export const TEXT_LOW_STOCK_NONE_BODY = "Every product is above its stock threshold.";
+export const ARIA_LOW_STOCK_TABLE = "Products running low, most urgent first";
+
 export const TEXT_REVIEW_ERROR_HEADING = "We couldn't load your review";
 export const TEXT_REVIEW_ERROR_BODY = "Please try again.";
 export const ARIA_REVIEW_LOCKED_BENEFITS = "What Review includes on Growth";

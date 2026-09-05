@@ -23,20 +23,29 @@ function thisMonth(): { from: string; to: string } {
   return { from: `${year}-${pad(month)}-01`, to: `${year}-${pad(month)}-${pad(last)}` };
 }
 
+/**
+ * Is this store entitled to Review, and do we know yet?
+ *
+ * null means "still loading", and callers must treat that as neither yes nor
+ * no. useFeature() fails OPEN while loading, which is right for hiding a nav
+ * item and wrong here: guessing "entitled" flashes real figures at a Starter
+ * store, and guessing "locked" tells a paying one it has been downgraded.
+ *
+ * Shared by the dashboard and the low-stock detail so a route added later
+ * cannot accidentally gate itself differently -- the brief's §20 is explicit
+ * that a direct URL must not bypass the plan.
+ */
+export function useReviewEntitlement(): boolean | null {
+  const { features, loading } = useFeatures();
+  return loading ? null : features.has("pos.review");
+}
+
 export function useReviewPage() {
-  const { features, loading: featuresLoading } = useFeatures();
   const [summary, setSummary] = useState<ReviewSummary | null>(null);
   const [state, setState] = useState<ReviewPageState>("loading");
   const [period] = useState(thisMonth);
 
-  /**
-   * useFeature() fails OPEN while loading, which is right for hiding a nav
-   * item and wrong here: guessing "entitled" would flash the dashboard at a
-   * Starter store, and guessing "locked" would flash an upgrade prompt at a
-   * paying one. So this waits, exactly as Staff.tsx waits on permissions
-   * before redirecting. An unloaded answer is not an answer.
-   */
-  const entitled = featuresLoading ? null : features.has("pos.review");
+  const entitled = useReviewEntitlement();
 
   const load = useCallback(async () => {
     if (entitled !== true) return;
