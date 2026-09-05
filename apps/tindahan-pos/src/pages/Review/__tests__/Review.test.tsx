@@ -62,6 +62,7 @@ function renderPage() {
         <Route path="/review" element={<Review />} />
         <Route path="/settings/plan" element={<p>Plan settings</p>} />
         <Route path="/inventory" element={<FilterProbe testId="inventory-filter" />} />
+        <Route path="/review/low-stock" element={<p>Low stock detail</p>} />
         <Route path="/customers" element={<FilterProbe testId="customers-filter" />} />
         <Route path="/reports" element={<p>Reports</p>} />
         <Route path="/staff" element={<p>Staff</p>} />
@@ -191,11 +192,11 @@ describe("Review", () => {
     expect(screen.getByText("Oldest balance: 21 days")).toBeInTheDocument();
     expect(screen.getByText("8 have not sold recently")).toBeInTheDocument();
 
-    // The action has to arrive somewhere useful. Landing on the full inventory
-    // list and leaving the shopkeeper to find the twelve is the "button that
-    // pretends to work" the brief warns about.
+    // The action has to arrive somewhere useful. "View low stock" opens the
+    // detail, which answers "how much should I order" -- the product list does
+    // not, and landing there is the button that only looks like it works.
     await user.click(screen.getByRole("button", { name: "View low stock" }));
-    expect(screen.getByTestId("inventory-filter")).toHaveTextContent("needsAttentionOnly");
+    expect(screen.getByText("Low stock detail")).toBeInTheDocument();
   });
 
   it("sends View overdue to the customers page already filtered", async () => {

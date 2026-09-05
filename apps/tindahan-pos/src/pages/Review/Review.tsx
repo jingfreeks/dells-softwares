@@ -232,9 +232,10 @@ function attentionItems(
       title: `${summary.lowStockCount} ${TEXT_REVIEW_LOW_STOCK_TITLE_SUFFIX}`,
       body: TEXT_REVIEW_LOW_STOCK_BODY,
       actionLabel: BUTTON_REVIEW_VIEW_LOW_STOCK,
-      // Lands on Inventory already filtered, rather than on the full list with
-      // the shopkeeper left to find the twelve.
-      onAction: () => navigate("/inventory", { state: { needsAttentionOnly: true } }),
+      // The detail screen, not Inventory: it answers "how much should I order"
+      // which the product list does not. Inventory is one button further on
+      // from there, already filtered.
+      onAction: () => navigate("/review/low-stock"),
     });
   }
 
