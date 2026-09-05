@@ -1,4 +1,5 @@
-import { useRef, type FormEvent } from "react";
+import { type FormEvent } from "react";
+import { Modal } from "@/components";
 import {
   LABEL_CHANGE_PASSWORD_HEADING,
   LABEL_NEW_PASSWORD,
@@ -7,8 +8,6 @@ import {
   BUTTON_UPDATE_PASSWORD,
   BUTTON_UPDATING,
   TEXT_PASSWORD_UPDATED,
-  useEscapeToClose,
-  useFocusTrap,
 } from "@/lib";
 import "@/pages/authTheme.css";
 
@@ -37,88 +36,72 @@ export function ChangePasswordModal({
   onCancel,
   onSubmit,
 }: ChangePasswordModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  useEscapeToClose(open, onCancel);
-  useFocusTrap(open, dialogRef);
-
-  if (!open) return null;
-
   return (
-    <div className="tpl-modal-overlay" onClick={onCancel}>
-      <div
-        ref={dialogRef}
-        className="tpl-modal-panel tpl-card"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="changePasswordHeading"
-        style={{ maxWidth: 380 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <p id="changePasswordHeading" className="tpl-h3">
-          {LABEL_CHANGE_PASSWORD_HEADING}
-        </p>
+    <Modal open={open} onClose={onCancel} labelledBy="changePasswordHeading" maxWidth={380}>
+      <p id="changePasswordHeading" className="tpl-h3">
+        {LABEL_CHANGE_PASSWORD_HEADING}
+      </p>
 
-        <form style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14 }} onSubmit={onSubmit} noValidate>
-          <div>
-            <label htmlFor="newPassword" className="tpl-lbl">
-              {LABEL_NEW_PASSWORD}
-            </label>
-            <div className="tpl-fld">
-              <input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => onNewPasswordChange(e.target.value)}
-              />
-            </div>
+      <form style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14 }} onSubmit={onSubmit} noValidate>
+        <div>
+          <label htmlFor="newPassword" className="tpl-lbl">
+            {LABEL_NEW_PASSWORD}
+          </label>
+          <div className="tpl-fld">
+            <input
+              id="newPassword"
+              type="password"
+              value={newPassword}
+              onChange={(e) => onNewPasswordChange(e.target.value)}
+            />
           </div>
-          <div>
-            <label htmlFor="confirmNewPassword" className="tpl-lbl">
-              {LABEL_CONFIRM_NEW_PASSWORD}
-            </label>
-            <div className="tpl-fld">
-              <input
-                id="confirmNewPassword"
-                type="password"
-                value={confirmNewPassword}
-                onChange={(e) => onConfirmNewPasswordChange(e.target.value)}
-              />
-            </div>
+        </div>
+        <div>
+          <label htmlFor="confirmNewPassword" className="tpl-lbl">
+            {LABEL_CONFIRM_NEW_PASSWORD}
+          </label>
+          <div className="tpl-fld">
+            <input
+              id="confirmNewPassword"
+              type="password"
+              value={confirmNewPassword}
+              onChange={(e) => onConfirmNewPasswordChange(e.target.value)}
+            />
           </div>
+        </div>
 
-          {passwordError && (
-            <p role="alert" className="tpl-emsg">
-              <i className="ti ti-alert-circle" aria-hidden />
-              {passwordError}
-            </p>
-          )}
-          {passwordSaved && (
-            <p role="status" className="tpl-ts" style={{ color: "var(--tpl-ok)" }}>
-              {TEXT_PASSWORD_UPDATED}
-            </p>
-          )}
+        {passwordError && (
+          <p role="alert" className="tpl-emsg">
+            <i className="ti ti-alert-circle" aria-hidden />
+            {passwordError}
+          </p>
+        )}
+        {passwordSaved && (
+          <p role="status" className="tpl-ts" style={{ color: "var(--tpl-ok)" }}>
+            {TEXT_PASSWORD_UPDATED}
+          </p>
+        )}
 
-          <div className="tpl-row" style={{ justifyContent: "flex-end", gap: 8, marginBottom: 0 }}>
-            <button
-              type="button"
-              onClick={onCancel}
-              disabled={updatingPassword}
-              className="tpl-btn"
-              style={{ width: "auto", marginBottom: 0, padding: "0 16px" }}
-            >
-              {BUTTON_CANCEL}
-            </button>
-            <button
-              type="submit"
-              disabled={updatingPassword}
-              className="tpl-btnp"
-              style={{ width: "auto", marginBottom: 0, padding: "0 16px" }}
-            >
-              {updatingPassword ? BUTTON_UPDATING : BUTTON_UPDATE_PASSWORD}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="tpl-row" style={{ justifyContent: "flex-end", gap: 8, marginBottom: 0 }}>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={updatingPassword}
+            className="tpl-btn"
+            style={{ width: "auto", marginBottom: 0, padding: "0 16px" }}
+          >
+            {BUTTON_CANCEL}
+          </button>
+          <button
+            type="submit"
+            disabled={updatingPassword}
+            className="tpl-btnp"
+            style={{ width: "auto", marginBottom: 0, padding: "0 16px" }}
+          >
+            {updatingPassword ? BUTTON_UPDATING : BUTTON_UPDATE_PASSWORD}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }

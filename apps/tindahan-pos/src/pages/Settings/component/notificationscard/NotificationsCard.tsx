@@ -4,7 +4,10 @@ import {
   TEXT_NOTIFY_DRAWER_VARIANCE,
   TEXT_NOTIFY_UTANG_AGING,
   TEXT_NOTIFY_EVERY_SALE,
+  TEXT_ALERTS_NO_DELIVERY,
+  TEXT_ALERTS_NO_DELIVERY_TITLE,
 } from "@/lib";
+import { NotEnforcedNote } from "../notenforcednote";
 import type { NotificationPreferences } from "../../settingsProfileMock";
 
 const NOTIFICATION_ROWS: { key: keyof NotificationPreferences; label: string }[] = [
@@ -40,6 +43,14 @@ export function NotificationsCard({ notifications, onToggle }: NotificationsCard
           </button>
         </div>
       ))}
+      {/*
+        Stronger than the "Not enforced yet" chip used elsewhere, and
+        deliberately so. Those mark a setting nothing reads. These configure a
+        DELIVERY MECHANISM THAT DOES NOT EXIST -- there is no push, SMS or
+        email in this product -- so "not enforced yet" would imply the pipe is
+        built and the switch is merely off.
+      */}
+      <NotEnforcedNote title={TEXT_ALERTS_NO_DELIVERY_TITLE}>{TEXT_ALERTS_NO_DELIVERY}</NotEnforcedNote>
     </div>
   );
 }

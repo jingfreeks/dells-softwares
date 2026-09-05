@@ -1,11 +1,9 @@
-import { useRef } from "react";
+import { Modal } from "@/components/Modal";
 import { PinKeypad } from "@/components/PinKeypad";
 import {
   BUTTON_CANCEL,
   LABEL_ADMIN_PIN_REQUIRED,
   TEXT_ADMIN_PIN_RECORDED_HINT,
-  useEscapeToClose,
-  useFocusTrap,
 } from "@/lib";
 
 interface AdminPinModalProps {
@@ -43,64 +41,48 @@ export function AdminPinModal({
   onCancel,
   heading,
 }: AdminPinModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  useEscapeToClose(open, onCancel);
-  useFocusTrap(open, dialogRef);
-
-  if (!open) return null;
-
   return (
-    <div className="tpl-modal-overlay" onClick={onCancel}>
-      <div
-        ref={dialogRef}
-        className="tpl-modal-panel tpl-card"
-        style={{ maxWidth: 400, textAlign: "center" }}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="adminPinHeading"
-        onClick={(e) => e.stopPropagation()}
+    <Modal open={open} onClose={onCancel} labelledBy="adminPinHeading" maxWidth={400} style={{ textAlign: "center" }}>
+      <span
+        className="tpl-ic tpl-w"
+        style={{ width: 40, height: 40, borderRadius: 12, fontSize: 20, margin: "0 auto 11px" }}
       >
-        <span
-          className="tpl-ic tpl-w"
-          style={{ width: 40, height: 40, borderRadius: 12, fontSize: 20, margin: "0 auto 11px" }}
-        >
-          <i className="ti ti-lock" aria-hidden />
-        </span>
-        <p id="adminPinHeading" className="tpl-h3" style={{ marginBottom: 5 }}>
-          {heading ?? LABEL_ADMIN_PIN_REQUIRED}
+        <i className="ti ti-lock" aria-hidden />
+      </span>
+      <p id="adminPinHeading" className="tpl-h3" style={{ marginBottom: 5 }}>
+        {heading ?? LABEL_ADMIN_PIN_REQUIRED}
+      </p>
+      <p style={{ color: "var(--tpl-t6)", fontSize: 13, lineHeight: 1.5, marginBottom: 16 }}>{message}</p>
+
+      <PinKeypad
+        length={4}
+        value={pin}
+        onChange={onPinChange}
+        onSubmit={onSubmit}
+        disabled={submitting}
+        ariaLabel={heading ?? LABEL_ADMIN_PIN_REQUIRED}
+      />
+
+      {pinError && (
+        <p role="alert" className="tpl-emsg" style={{ marginTop: 14, justifyContent: "center" }}>
+          <i className="ti ti-alert-circle" aria-hidden />
+          {pinError}
         </p>
-        <p style={{ color: "var(--tpl-t6)", fontSize: 13, lineHeight: 1.5, marginBottom: 16 }}>{message}</p>
+      )}
 
-        <PinKeypad
-          length={4}
-          value={pin}
-          onChange={onPinChange}
-          onSubmit={onSubmit}
-          disabled={submitting}
-          ariaLabel={heading ?? LABEL_ADMIN_PIN_REQUIRED}
-        />
+      <p className="tpl-hint" style={{ marginTop: 14, marginBottom: 14 }}>
+        {TEXT_ADMIN_PIN_RECORDED_HINT}
+      </p>
 
-        {pinError && (
-          <p role="alert" className="tpl-emsg" style={{ marginTop: 14, justifyContent: "center" }}>
-            <i className="ti ti-alert-circle" aria-hidden />
-            {pinError}
-          </p>
-        )}
-
-        <p className="tpl-hint" style={{ marginTop: 14, marginBottom: 14 }}>
-          {TEXT_ADMIN_PIN_RECORDED_HINT}
-        </p>
-
-        <button
-          type="button"
-          className="tpl-btn"
-          style={{ width: "100%", marginBottom: 0, justifyContent: "center", height: 40 }}
-          onClick={onCancel}
-          disabled={submitting}
-        >
-          {BUTTON_CANCEL}
-        </button>
-      </div>
-    </div>
+      <button
+        type="button"
+        className="tpl-btn"
+        style={{ width: "100%", marginBottom: 0, justifyContent: "center", height: 40 }}
+        onClick={onCancel}
+        disabled={submitting}
+      >
+        {BUTTON_CANCEL}
+      </button>
+    </Modal>
   );
 }

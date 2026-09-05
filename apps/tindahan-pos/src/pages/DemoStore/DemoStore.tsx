@@ -1,4 +1,5 @@
 import { PESO } from "@/lib/money";
+import { formatDateTime } from "@/lib";
 import { useDemoStoreData } from "@/lib/demoData/demoData";
 import { DemoBanner } from "@/components/DemoBanner/DemoBanner";
 import "@/pages/authTheme.css";
@@ -79,7 +80,7 @@ export function DemoStore() {
                   {sales.map((s) => (
                     <div key={s.id} className="tpl-lr" style={{ padding: "8px 0" }}>
                       <div className="tpl-flex1">
-                        <p className="tpl-tp">{new Date(s.occurredAt).toLocaleString()}</p>
+                        <p className="tpl-tp">{formatDateTime(s.occurredAt)}</p>
                         <p className="tpl-ts">
                           {s.itemCount} {s.itemCount === 1 ? "item" : "items"}
                         </p>

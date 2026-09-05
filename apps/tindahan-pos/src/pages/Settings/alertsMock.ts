@@ -29,6 +29,16 @@ const STORAGE_KEY_PREFIX = "tindahan-pos:alerts:";
  * client-side for now.
  * TODO: move to real store columns/notification service once they exist.
  *
+ * Every field left in this file is now marked on screen, the same way #503
+ * marked the Fees & limits residue: the two toggles carry a "Not enforced yet"
+ * chip, and the channels and quiet hours carry a stronger card-level note,
+ * because those configure a delivery mechanism that does not exist rather than
+ * a setting nothing happens to read. Verified before marking: all eight fields
+ * here have zero consumers outside src/pages/Settings.
+ *
+ * If a field graduates to real behaviour, drop it from here AND drop its
+ * marking — a marking that outlives the gap is as misleading as none.
+ *
  * The drawer-variance and utang-ageing thresholds USED to live here. They are
  * real store columns now (stores.drawer_variance_threshold,
  * stores.utang_overdue_days -- see 20260905100000), because Review and the

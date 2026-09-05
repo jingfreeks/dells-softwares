@@ -6,7 +6,12 @@ import {
   TEXT_DAYS_SUFFIX,
   LABEL_FAST_MOVERS_WARN_EARLIER,
   LABEL_OUT_OF_STOCK_STRAIGHT_AWAY,
+  LABEL_NOT_ENFORCED_YET,
 } from "@/lib";
+// Only this toggle is marked. The threshold slider and the fast-mover boost
+// have 55 and 13 consumers respectively -- they really do change what the app
+// shows, so marking them would make the marking meaningless.
+import { NotEnforcedChip } from "../notenforcednote";
 
 interface StockAlertCardProps {
   thresholdDays: number;
@@ -69,12 +74,15 @@ export function StockAlertCard({
         </button>
       </div>
       <div className="tpl-sp" style={{ padding: "4px 0" }}>
-        <span style={{ color: "var(--tpl-t4)", fontSize: 13 }}>{LABEL_OUT_OF_STOCK_STRAIGHT_AWAY}</span>
+        <span style={{ color: "var(--tpl-t4)", fontSize: 13 }}>
+          {LABEL_OUT_OF_STOCK_STRAIGHT_AWAY}
+          <NotEnforcedChip />
+        </span>
         <button
           type="button"
           role="switch"
           aria-checked={warnOutOfStockImmediately}
-          aria-label={LABEL_OUT_OF_STOCK_STRAIGHT_AWAY}
+          aria-label={`${LABEL_OUT_OF_STOCK_STRAIGHT_AWAY} (${LABEL_NOT_ENFORCED_YET})`}
           onClick={onToggleWarnOutOfStockImmediately}
           className={`tpl-tog${warnOutOfStockImmediately ? " tpl-on" : ""}`}
         >

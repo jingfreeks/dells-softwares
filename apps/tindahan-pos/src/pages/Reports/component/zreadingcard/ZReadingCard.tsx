@@ -35,6 +35,7 @@ import {
   TEXT_Z_PROVISIONAL,
   TEXT_Z_FROM_RECORD,
   type PaymentType,
+  formatDateTime,
 } from "@/lib";
 import { CashierFilter } from "../cashierfilter";
 import { DeviceFilter } from "../devicefilter";
@@ -153,7 +154,7 @@ export function ZReadingCard({ storeName, storeAddress, printedByName, cashiers,
       ]),
       emptyMessage: TEXT_Z_READING_EMPTY,
       footerNote: persisted
-        ? `Z-reading ${persisted.z_counter} taken ${new Date(persisted.closed_at).toLocaleString()} — read from the closing record, not recomputed.`
+        ? `Z-reading ${persisted.z_counter} taken ${formatDateTime(persisted.closed_at)} — read from the closing record, not recomputed.`
         : `Provisional — this business date has not been closed. Figures recomputed from recorded sales data; no manual adjustments made.`,
     });
   }

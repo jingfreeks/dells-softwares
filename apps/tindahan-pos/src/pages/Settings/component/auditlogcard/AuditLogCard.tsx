@@ -5,6 +5,7 @@ import {
   LABEL_LOADING,
   EMPTY_STATE_NO_AUDIT_LOG_ENTRIES,
   type AuditLogRow,
+  formatDateTime,
 } from "@/lib";
 
 interface AuditLogCardProps {
@@ -47,7 +48,7 @@ export function AuditLogCard({ entries, loading, loadError }: AuditLogCardProps)
                 {entry.actionLabel} &middot; {entry.entityLabel}
               </p>
               <p className="tpl-ts">
-                {LABEL_AUDIT_ACTOR_PREFIX} {entry.actorName} &middot; {new Date(entry.createdAt).toLocaleString()}
+                {LABEL_AUDIT_ACTOR_PREFIX} {entry.actorName} &middot; {formatDateTime(entry.createdAt)}
               </p>
               {entry.reason && (
                 <p className="tpl-ts" style={{ marginTop: 2 }}>
