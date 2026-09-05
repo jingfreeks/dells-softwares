@@ -4,10 +4,15 @@
  * A NOTE ON THE ENGINE. dayBounds() avoids Intl entirely (see its comment):
  * it decides which sales count as today, and Hermes has known gaps in
  * time-zone handling that these Node-based tests cannot see. The FORMATTERS
- * below do use Intl, because month and weekday names need locale data — if
- * Hermes ignored the zone there, the cost is a wrong hour on screen rather
- * than a wrong figure, which is worth the dependency. Worth confirming on a
- * real device before relying on the displayed times.
+ * below do use Intl, because month and weekday names need locale data.
+ *
+ * That dependency has now been confirmed rather than assumed. Built and run on
+ * Hermes under iOS (RN 0.81.5, no Intl polyfill): Intl and Intl.DateTimeFormat
+ * both exist, the pinned formatter resolves to Asia/Manila, all three
+ * formatters below render exactly what Node renders, and the same instant
+ * formatted in America/New_York comes back twelve hours off Manila. Hermes is
+ * honouring the zone, not quietly falling back to the device's. Android's
+ * Hermes uses a different Intl backend and has not been checked the same way.
  *
  * Everything here is pinned to en-PH AND to Asia/Manila. The locale alone was
  * only half of it, which is the mistake #505 fixed in the web app: a formatter
@@ -83,6 +88,11 @@ function manilaParts(date: Date): { year: number; month: number; day: number } {
   };
 }
 
+/** The hour of the Manila clock at `date`, 0-23. Same technique as manilaParts. */
+function manilaHour(date: Date): number {
+  return new Date(date.getTime() + MANILA_OFFSET_MS).getUTCHours();
+}
+
 /**
  * Start and end of the MANILA calendar day containing `date`.
  *
@@ -107,9 +117,17 @@ export function dayBounds(date: Date): { start: Date; end: Date } {
   };
 }
 
-/** "Good morning"/"Good afternoon"/"Good evening" from the local hour, for the Owner Home greeting. */
+/**
+ * "Good morning"/"Good afternoon"/"Good evening" for the Owner Home greeting.
+ *
+ * From the MANILA hour, not the device's. It used to read getHours(), which
+ * made it the one thing in this file still rendering in device time -- and it
+ * sits directly above formatDayLabel() on Owner Home, so a tablet set to
+ * another zone would greet the owner good evening beside a date that said it
+ * was still this morning.
+ */
 export function greetingForHour(date: Date = new Date()): string {
-  const hour = date.getHours();
+  const hour = manilaHour(date);
   if (hour < 12) return "Good morning";
   if (hour < 18) return "Good afternoon";
   return "Good evening";
