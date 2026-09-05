@@ -9,6 +9,8 @@ import {
   TEXT_REVIEW_OVERDUE_SUFFIX,
   TEXT_REVIEW_LOW_STOCK_SUFFIX,
   TEXT_REVIEW_TRANSACTIONS_SUFFIX,
+  TEXT_REVIEW_VS_PREFIX,
+  formatDateShort,
   TEXT_REVIEW_PROFIT_BASIS,
   TEXT_REVIEW_PROFIT_PARTIAL_PREFIX,
   TEXT_REVIEW_PROFIT_PARTIAL_SUFFIX,
@@ -40,6 +42,7 @@ import type { ReviewSummary } from "@/lib";
 import {
   ReviewLockedState,
   ReviewMetricCard,
+  ReviewPeriodFilter,
   ReviewAttentionSection,
   SalesReviewCard,
   InventoryReviewCard,
@@ -47,6 +50,22 @@ import {
 } from "./component";
 import type { AttentionItem } from "./component";
 import { useReviewPage } from "./hooks";
+
+/**
+ * Sales, and how it compares — using the window the SERVER says it compared
+ * against, never an assumed "last month".
+ *
+ * No previous period to speak of (a store's first month) means no delta rather
+ * than a triumphant +100%.
+ */
+function salesDetail(summary: ReviewSummary): string {
+  const previous = summary.previous.salesTotal;
+  const label = `${summary.transactionCount} ${TEXT_REVIEW_TRANSACTIONS_SUFFIX}`;
+  if (previous <= 0) return label;
+  const change = Math.round(((summary.salesTotal - previous) / previous) * 100);
+  const arrow = change > 0 ? "▲" : change < 0 ? "▼" : "";
+  return `${label} · ${arrow}${Math.abs(change)}% ${TEXT_REVIEW_VS_PREFIX} ${formatDateShort(summary.previous.from)}–${formatDateShort(summary.previous.to)}`;
+}
 
 /** "82%" from 0.82, for the profit-coverage caveat. */
 function asPercent(share: number): string {
@@ -70,7 +89,7 @@ function profitBasis(summary: ReviewSummary): string {
 }
 
 export function Review() {
-  const { state, summary, retry } = useReviewPage();
+  const { state, summary, retry, preset, setPreset, custom, setCustom } = useReviewPage();
   const navigate = useNavigate();
 
   if (state === "locked") {
@@ -90,6 +109,12 @@ export function Review() {
           </p>
           <p className="tpl-sub">{TEXT_REVIEW_DESCRIPTION}</p>
         </div>
+        <ReviewPeriodFilter
+          preset={preset}
+          onPresetChange={setPreset}
+          custom={custom}
+          onCustomChange={setCustom}
+        />
       </div>
 
       {state === "loading" && (
@@ -131,7 +156,10 @@ export function Review() {
           <ReviewMetricCard
             label={LABEL_REVIEW_METRIC_SALES}
             value={PESO.format(summary.salesTotal)}
-            detail={`${summary.transactionCount} ${TEXT_REVIEW_TRANSACTIONS_SUFFIX}`}
+            // Named bounds, not "vs last month": the comparison is only the
+            // previous calendar month when the period IS a month, and the
+            // server tells us which window it actually used.
+            detail={salesDetail(summary)}
           />
           {/*
             Three states, and every one of them names its basis.
