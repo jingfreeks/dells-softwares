@@ -8,7 +8,12 @@ import { MemoryRouter } from "react-router-dom";
 const useAuth = vi.fn();
 const useBillingState = vi.fn();
 
-vi.mock("@/lib", () => ({
+// Partial, not wholesale: the banner also formats a date, and a mock that
+// replaces the whole module silently removes the real formatter. Spreading the
+// original keeps everything this test is not about — including the pinned
+// date formatting it now asserts.
+vi.mock("@/lib", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   useAuth: () => useAuth(),
   useBillingState: () => useBillingState(),
 }));
@@ -103,7 +108,12 @@ describe("BillingBanner", () => {
     renderBanner();
     const banner = screen.getByRole("status");
     expect(banner).toHaveTextContent(/overdue/i);
-    expect(banner).toHaveTextContent(new Date(PAST_DUE.graceEndsAt).toLocaleDateString());
+    // A literal, not toLocaleDateString(). Building the expectation the same
+    // way the component used to build the value made this a tautology: it
+    // asserted "renders whatever this device renders" and would have passed
+    // just as well while the banner showed the wrong day on a tablet in
+    // another zone. 05:40 UTC on the 30th is still the 30th in Manila.
+    expect(banner).toHaveTextContent("Aug 30, 2026");
   });
 
   it("stays coherent when the grace deadline is missing", () => {

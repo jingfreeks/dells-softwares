@@ -7,6 +7,8 @@ import {
   BUTTON_UNPAIR,
   LABEL_LOADING,
   EMPTY_STATE_NO_DEVICES,
+  formatDate,
+  formatTime,
 } from "@/lib";
 import type { DeviceRow } from "../../hooksDevices";
 
@@ -62,7 +64,7 @@ export function DeviceListCard({
           </p>
           {codeExpiresAt && (
             <p className="tpl-ts">
-              {TEXT_PAIRING_CODE_EXPIRES_PREFIX} {new Date(codeExpiresAt).toLocaleTimeString()}
+              {TEXT_PAIRING_CODE_EXPIRES_PREFIX} {formatTime(codeExpiresAt)}
             </p>
           )}
           <button type="button" className="tpl-txt" onClick={onDismissCode} style={{ marginTop: 6 }}>
@@ -96,7 +98,7 @@ export function DeviceListCard({
             <div className="tpl-flex1">
               <p style={{ color: "var(--tpl-t2)", fontSize: 14, fontWeight: 500 }}>{device.name}</p>
               <p className="tpl-ts">
-                {LABEL_PAIRED_BY_PREFIX} {device.pairedByName} &middot; {new Date(device.pairedAt).toLocaleDateString()}
+                {LABEL_PAIRED_BY_PREFIX} {device.pairedByName} &middot; {formatDate(device.pairedAt)}
               </p>
             </div>
             <button type="button" className="tpl-txt" style={{ color: "var(--tpl-bad)" }} onClick={() => onUnpairClick(device.id)}>

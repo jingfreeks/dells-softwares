@@ -1,12 +1,5 @@
 import { useRef } from "react";
-import {
-  selectOnFocus,
-  LABEL_CREDIT_LIMIT,
-  LABEL_CREDIT_LIMIT_OPTIONAL,
-  PLACEHOLDER_NO_LIMIT,
-  HINT_CREDIT_LIMIT_AVERAGE,
-  BUTTON_CREDIT_LIMIT_OTHER,
-} from "@/lib";
+import { selectOnFocus, LABEL_CREDIT_LIMIT, LABEL_CREDIT_LIMIT_OPTIONAL, PLACEHOLDER_NO_LIMIT, HINT_CREDIT_LIMIT_AVERAGE, BUTTON_CREDIT_LIMIT_OTHER, PESO_WHOLE } from "@/lib";
 
 const PRESETS = [300, 500, 1000];
 
@@ -31,7 +24,7 @@ export function CreditLimitSelector({ value, onChange }: CreditLimitSelectorProp
             className={`tpl-tile${String(preset) === value.trim() ? " tpl-on" : ""}`}
             style={{ height: 34, padding: 0, justifyContent: "center", alignItems: "center", width: "100%" }}
           >
-            <p className="tpl-tn">₱{preset.toLocaleString()}</p>
+            <p className="tpl-tn">{PESO_WHOLE.format(preset)}</p>
           </button>
         ))}
         <button

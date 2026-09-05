@@ -515,5 +515,127 @@ select throws_ok(
   'a nonsense limit is refused rather than silently clamped'
 );
 
+-- -----------------------------------------------------------------------------
+-- Margin uses the cost that applied, not today's
+-- -----------------------------------------------------------------------------
+reset role;
+
+-- A product whose cost has since CHANGED. This is the whole point: valuing the
+-- sale at 30 would rewrite history every time a supplier price moves.
+-- category_id is NOT NULL, so the product needs a category to belong to.
+insert into categories (store_id, name)
+values (pg_temp.growth_org(), 'Snapshot Test Category');
+
+insert into products (store_id, name, price, stock, low_stock_threshold, category, category_id, cost)
+values (pg_temp.growth_org(), 'Cost Snapshot Product', 100, 50, 5, 'General',
+        (select id from categories where name = 'Snapshot Test Category'), 30);
+
+insert into sales (store_id, cashier_id, total, payment_type, status,
+                   receipt_number, created_at, occurred_at)
+values (pg_temp.growth_org(), '4e900000-0000-4000-8000-00000000a002', 100, 'cash',
+        'completed', 'OR-COST1', clock_timestamp(), null);
+
+-- Sold when it cost 20, recorded as such.
+insert into sale_items (sale_id, product_id, name, quantity, price, item_type, line_total, cost_at_sale)
+values ((select id from sales where receipt_number = 'OR-COST1'),
+        (select id from products where name = 'Cost Snapshot Product'),
+        'Cost Snapshot Product', 1, 100, 'product', 100, 20);
+
+set local role authenticated;
+select pg_temp.act_as('4e900000-0000-4000-8000-00000000a002');
+
+-- 100 - 20 = 80 from the snapshot. Using today's cost of 30 would give 70.
+select is(
+  ((select review_summary(current_date, current_date)) ->> 'estimated_profit')::numeric,
+  80.00::numeric,
+  'margin uses the cost recorded at sale, not what the product costs today'
+);
+
+select is(
+  ((select review_summary(current_date, current_date)) ->> 'profit_snapshot_share')::numeric,
+  1.0000::numeric,
+  'and says the whole figure came from a snapshot rather than an estimate'
+);
+
+-- A line with no snapshot falls back to the current cost, and the share drops
+-- to say so. During the changeover this is the honest in-between.
+reset role;
+insert into sales (store_id, cashier_id, total, payment_type, status,
+                   receipt_number, created_at, occurred_at)
+values (pg_temp.growth_org(), '4e900000-0000-4000-8000-00000000a002', 100, 'cash',
+        'completed', 'OR-COST2', clock_timestamp(), null);
+insert into sale_items (sale_id, product_id, name, quantity, price, item_type, line_total, cost_at_sale)
+values ((select id from sales where receipt_number = 'OR-COST2'),
+        (select id from products where name = 'Cost Snapshot Product'),
+        'Cost Snapshot Product', 1, 100, 'product', 100, null);
+set local role authenticated;
+select pg_temp.act_as('4e900000-0000-4000-8000-00000000a002');
+
+-- 80 from the snapshot + 70 from today's cost.
+select is(
+  ((select review_summary(current_date, current_date)) ->> 'estimated_profit')::numeric,
+  150.00::numeric,
+  'a line with no snapshot still falls back to the current cost rather than being dropped'
+);
+
+select is(
+  ((select review_summary(current_date, current_date)) ->> 'profit_snapshot_share')::numeric,
+  0.5000::numeric,
+  'and the snapshot share reports the mix honestly instead of rounding to a comfortable story'
+);
+
+-- -----------------------------------------------------------------------------
+-- checkout_sale() actually records the cost -- the column is worthless if not
+--
+-- Everything above tests review_summary() against rows inserted by hand. This
+-- tests the half that fills them in, because a snapshot column nobody writes
+-- to is a schema change with no effect.
+-- -----------------------------------------------------------------------------
+select pg_temp.act_as('4e900000-0000-4000-8000-00000000a002');
+
+select lives_ok($$
+  select checkout_sale(
+    jsonb_build_array(jsonb_build_object(
+      'product_id', (select id from products where name = 'Cost Snapshot Product'),
+      'quantity', 1
+    ))
+  )
+$$, 'a sale goes through the real checkout path');
+
+select is(
+  (select si.cost_at_sale
+     from sale_items si
+     join sales s on s.id = si.sale_id
+    where si.name = 'Cost Snapshot Product'
+      and s.receipt_number not in ('OR-COST1', 'OR-COST2')
+    order by si.id desc limit 1),
+  30.00::numeric,
+  'and checkout_sale() records the product cost as it stood at that moment'
+);
+
+-- A product with no cost records null, not 0. Zero would claim a 100% margin,
+-- which is the misleading zero the product decisions rule out.
+reset role;
+insert into products (store_id, name, price, stock, low_stock_threshold, category, category_id, cost)
+values (pg_temp.growth_org(), 'No Cost Product', 50, 20, 5, 'General',
+        (select id from categories where name = 'Snapshot Test Category'), null);
+set local role authenticated;
+select pg_temp.act_as('4e900000-0000-4000-8000-00000000a002');
+
+select lives_ok($$
+  select checkout_sale(
+    jsonb_build_array(jsonb_build_object(
+      'product_id', (select id from products where name = 'No Cost Product'),
+      'quantity', 1
+    ))
+  )
+$$, 'a product with no cost still sells');
+
+select is(
+  (select si.cost_at_sale from sale_items si where si.name = 'No Cost Product' order by si.id desc limit 1),
+  null::numeric,
+  'and records null rather than 0 -- "not known" is not "free"'
+);
+
 select * from finish();
 rollback;

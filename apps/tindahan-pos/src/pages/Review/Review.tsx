@@ -12,6 +12,8 @@ import {
   TEXT_REVIEW_VS_PREFIX,
   formatDateShort,
   TEXT_REVIEW_PROFIT_BASIS,
+  TEXT_REVIEW_PROFIT_FROM_SNAPSHOT,
+  TEXT_REVIEW_PROFIT_MIXED_BASIS,
   TEXT_REVIEW_PROFIT_PARTIAL_PREFIX,
   TEXT_REVIEW_PROFIT_PARTIAL_SUFFIX,
   TEXT_REVIEW_PROFIT_NO_COST,
@@ -79,14 +81,25 @@ function asPercent(share: number): string {
  */
 function profitBasis(summary: ReviewSummary): string {
   if (summary.profitBasisShare <= 0) return TEXT_REVIEW_PROFIT_NO_COST;
+
+  // How the costed part was priced. Since 20260905150000 a sale records the
+  // cost that applied to it, so a period made entirely of such sales is
+  // MEASURED, not estimated -- and calling it an estimate would now be its own
+  // small dishonesty, in the opposite direction from the one #513 fixed.
+  const how =
+    summary.profitSnapshotShare >= 1
+      ? TEXT_REVIEW_PROFIT_FROM_SNAPSHOT
+      : summary.profitSnapshotShare > 0
+        ? TEXT_REVIEW_PROFIT_MIXED_BASIS
+        : TEXT_REVIEW_PROFIT_BASIS.toLowerCase();
+
   if (summary.profitBasisShare < 1) {
     return `${TEXT_REVIEW_PROFIT_PARTIAL_PREFIX} ${asPercent(summary.profitBasisShare)} ${TEXT_REVIEW_PROFIT_PARTIAL_SUFFIX}`;
   }
-  // Full coverage still gets the basis line; the margin rides alongside it
-  // rather than replacing it.
+
   return summary.salesTotal > 0
-    ? `${asPercent(summary.estimatedProfit / summary.salesTotal)} ${TEXT_REVIEW_MARGIN_SUFFIX} · ${TEXT_REVIEW_PROFIT_BASIS.toLowerCase()}`
-    : TEXT_REVIEW_PROFIT_BASIS;
+    ? `${asPercent(summary.estimatedProfit / summary.salesTotal)} ${TEXT_REVIEW_MARGIN_SUFFIX} · ${how}`
+    : how;
 }
 
 export function Review() {

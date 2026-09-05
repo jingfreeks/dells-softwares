@@ -30,6 +30,7 @@ const SUMMARY: ReviewSummary = {
   transactionCount: 214,
   estimatedProfit: 11420,
   profitBasisShare: 1,
+  profitSnapshotShare: 0,
   inventoryValue: 72400,
   inventoryBasisShare: 1,
   productCount: 120,
@@ -168,6 +169,34 @@ describe("Review", () => {
     expect(
       screen.getByText(/estimated from current product costs$/i)
     ).toBeInTheDocument();
+  });
+
+  // Once every costed peso comes from a snapshot the figure is measured, not
+  // estimated — and still calling it an estimate would be its own small
+  // dishonesty, in the opposite direction from the one #513 fixed.
+  it("stops calling the figure an estimate once the costs are snapshots", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({
+      ok: true,
+      summary: { ...SUMMARY, profitBasisShare: 1, profitSnapshotShare: 1 },
+    });
+    renderPage();
+
+    expect(await screen.findByText(/from cost at time of sale/)).toBeInTheDocument();
+    expect(screen.queryByText(/estimated from current product costs/i)).not.toBeInTheDocument();
+  });
+
+  it("says so plainly when a period straddles the changeover", async () => {
+    mockUseFeatures.mockReturnValue(asFeatures(["pos.review"]));
+    mockFetch.mockResolvedValue({
+      ok: true,
+      summary: { ...SUMMARY, profitBasisShare: 1, profitSnapshotShare: 0.5 },
+    });
+    renderPage();
+
+    // Half measured and half reconstructed is the truth for months either side
+    // of 20260905150000, and neither rounding is honest.
+    expect(await screen.findByText(/part measured, part estimated/)).toBeInTheDocument();
   });
 
   // A misleading zero, which §2 rules out: review_summary() returns 0 profit

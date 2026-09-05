@@ -19,6 +19,7 @@ interface ReviewSummaryRow {
   transaction_count: number;
   estimated_profit: number;
   profit_basis_share: number;
+  profit_snapshot_share: number;
   inventory_value: number;
   inventory_basis_share: number;
   product_count: number;
@@ -47,6 +48,7 @@ function mapSummary(row: ReviewSummaryRow): ReviewSummary {
     transactionCount: row.transaction_count,
     estimatedProfit: Number(row.estimated_profit),
     profitBasisShare: Number(row.profit_basis_share),
+    profitSnapshotShare: Number(row.profit_snapshot_share),
     inventoryValue: Number(row.inventory_value),
     inventoryBasisShare: Number(row.inventory_basis_share),
     productCount: row.product_count,

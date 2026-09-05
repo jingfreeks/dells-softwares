@@ -1,5 +1,4 @@
-import { useRef } from "react";
-import { PinKeypad } from "@/components";
+import { Modal, PinKeypad } from "@/components";
 import {
   PESO,
   creditOverageAmount,
@@ -8,8 +7,6 @@ import {
   TEXT_OWNER_APPROVAL_RECORDED_HINT,
   BUTTON_CANCEL,
   BUTTON_PAY_CASH_INSTEAD,
-  useEscapeToClose,
-  useFocusTrap,
   type Customer,
 } from "@/lib";
 
@@ -38,80 +35,66 @@ export function OwnerApprovalModal({
   onCancel,
   onPayCashInstead,
 }: OwnerApprovalModalProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  useEscapeToClose(open, onCancel);
-  useFocusTrap(open, dialogRef);
-
-  if (!open || !customer) return null;
+  if (!customer) return null;
 
   const overage = creditOverageAmount(customer, total);
 
   return (
-    <div className="tpl-modal-overlay" onClick={onCancel}>
-      <div
-        ref={dialogRef}
-        className="tpl-modal-panel tpl-card"
-        style={{ maxWidth: 400, textAlign: "center" }}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="ownerApprovalHeading"
-        onClick={(e) => e.stopPropagation()}
+    <Modal open={open} onClose={onCancel} labelledBy="ownerApprovalHeading" maxWidth={400} style={{ textAlign: "center" }}>
+      <span
+        className="tpl-ic tpl-w"
+        style={{ width: 40, height: 40, borderRadius: 12, fontSize: 20, margin: "0 auto 11px" }}
       >
-        <span
-          className="tpl-ic tpl-w"
-          style={{ width: 40, height: 40, borderRadius: 12, fontSize: 20, margin: "0 auto 11px" }}
-        >
-          <i className="ti ti-lock" aria-hidden />
-        </span>
-        <p id="ownerApprovalHeading" className="tpl-h3" style={{ marginBottom: 5 }}>
-          {LABEL_OWNER_APPROVAL_NEEDED}
-        </p>
-        <p style={{ color: "var(--tpl-t6)", fontSize: 13, lineHeight: 1.5, marginBottom: 16 }}>
-          {customer.name} {TEXT_CREDIT_LIMIT_WARNING_MIDDLE} {PESO.format(customer.creditLimit ?? 0)} limit by{" "}
-          {PESO.format(overage)}.
-        </p>
+        <i className="ti ti-lock" aria-hidden />
+      </span>
+      <p id="ownerApprovalHeading" className="tpl-h3" style={{ marginBottom: 5 }}>
+        {LABEL_OWNER_APPROVAL_NEEDED}
+      </p>
+      <p style={{ color: "var(--tpl-t6)", fontSize: 13, lineHeight: 1.5, marginBottom: 16 }}>
+        {customer.name} {TEXT_CREDIT_LIMIT_WARNING_MIDDLE} {PESO.format(customer.creditLimit ?? 0)} limit by{" "}
+        {PESO.format(overage)}.
+      </p>
 
-        <PinKeypad
-          length={4}
-          value={pin}
-          onChange={onPinChange}
-          onSubmit={onSubmit}
+      <PinKeypad
+        length={4}
+        value={pin}
+        onChange={onPinChange}
+        onSubmit={onSubmit}
+        disabled={submitting}
+        ariaLabel={LABEL_OWNER_APPROVAL_NEEDED}
+      />
+
+      {pinError && (
+        <p role="alert" className="tpl-emsg" style={{ marginTop: 14, justifyContent: "center" }}>
+          <i className="ti ti-alert-circle" aria-hidden />
+          {pinError}
+        </p>
+      )}
+
+      <p className="tpl-hint" style={{ marginTop: 14, marginBottom: 14 }}>
+        {TEXT_OWNER_APPROVAL_RECORDED_HINT}
+      </p>
+
+      <div className="tpl-row">
+        <button
+          type="button"
+          className="tpl-btn"
+          style={{ flex: 1, marginBottom: 0, justifyContent: "center", height: 40 }}
+          onClick={onCancel}
           disabled={submitting}
-          ariaLabel={LABEL_OWNER_APPROVAL_NEEDED}
-        />
-
-        {pinError && (
-          <p role="alert" className="tpl-emsg" style={{ marginTop: 14, justifyContent: "center" }}>
-            <i className="ti ti-alert-circle" aria-hidden />
-            {pinError}
-          </p>
-        )}
-
-        <p className="tpl-hint" style={{ marginTop: 14, marginBottom: 14 }}>
-          {TEXT_OWNER_APPROVAL_RECORDED_HINT}
-        </p>
-
-        <div className="tpl-row">
-          <button
-            type="button"
-            className="tpl-btn"
-            style={{ flex: 1, marginBottom: 0, justifyContent: "center", height: 40 }}
-            onClick={onCancel}
-            disabled={submitting}
-          >
-            {BUTTON_CANCEL}
-          </button>
-          <button
-            type="button"
-            className="tpl-btn"
-            style={{ flex: 1, marginBottom: 0, justifyContent: "center", height: 40 }}
-            onClick={onPayCashInstead}
-            disabled={submitting}
-          >
-            {BUTTON_PAY_CASH_INSTEAD}
-          </button>
-        </div>
+        >
+          {BUTTON_CANCEL}
+        </button>
+        <button
+          type="button"
+          className="tpl-btn"
+          style={{ flex: 1, marginBottom: 0, justifyContent: "center", height: 40 }}
+          onClick={onPayCashInstead}
+          disabled={submitting}
+        >
+          {BUTTON_PAY_CASH_INSTEAD}
+        </button>
       </div>
-    </div>
+    </Modal>
   );
 }

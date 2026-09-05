@@ -1,4 +1,5 @@
 import { Pressable, Text, View } from "react-native";
+import { formatDate } from "../../../../lib/format";
 import { Feather } from "@expo/vector-icons";
 import { colors } from "../../../../theme/colors";
 import type { DeviceRowProps } from "./types";
@@ -11,7 +12,7 @@ export function DeviceRow({ device, isLast, onUnpair }: DeviceRowProps) {
       </View>
       <View className="flex-1">
         <Text className="text-[13.5px] font-medium text-text-primary">{device.name}</Text>
-        <Text className="text-[11.5px] text-text-faint mt-px">Paired {new Date(device.pairedAt).toLocaleDateString()}</Text>
+        <Text className="text-[11.5px] text-text-faint mt-px">Paired {formatDate(device.pairedAt)}</Text>
       </View>
       <Pressable accessibilityRole="button" onPress={() => onUnpair(device)} hitSlop={8}>
         <Text className="text-[12.5px] text-error">Unpair</Text>
