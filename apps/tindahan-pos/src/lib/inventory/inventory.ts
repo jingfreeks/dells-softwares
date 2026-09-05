@@ -1,5 +1,5 @@
 import { PESO, roundMoney } from "@/lib/money";
-import type { Product, SaleRecord } from "@/lib/types";
+import type { Product, SaleRecord, Supplier } from "@/lib/types";
 
 export type StockStatus = "out" | "low" | "in-stock";
 
@@ -192,4 +192,69 @@ export function findDuplicateBarcodeFast(
   const match = index.get(trimmed);
   if (!match || match.id === excludeId) return null;
   return match;
+}
+
+export interface RestockRow {
+  productId: string;
+  productName: string;
+  barcode: string | null;
+  category: string;
+  stock: number;
+  minStock: number;
+  isOut: boolean;
+  avgDailySales: number | null;
+  daysOfStockLeft: number | null;
+  suggestedQuantity: number | null;
+  /** Best-effort match on the supplier(s) declaring this product's category as something they supply — not a literal delivery record. Null when no active supplier claims the category. */
+  supplier: string | null;
+  /** Admin-entered cost estimate, if any — used only for "est. cost to refill", never fabricated when absent. */
+  cost: number | null;
+}
+
+/**
+ * Which products need attention, enriched with a rate where one can be
+ * computed.
+ *
+ * `lowStock` is the source of truth for WHICH products qualify -- it includes
+ * products with no recent sales, which computeRestockSuggestions deliberately
+ * excludes because there is no rate to project from. The suggestion only
+ * enriches a row when the data exists, so a product with an empty rate column
+ * is honestly empty rather than silently missing from the list.
+ *
+ * Lifted here from the Dashboard page so Review can use it without importing
+ * across pages: this is inventory arithmetic, not a Dashboard concern, and it
+ * now has three consumers.
+ */
+export function buildRestockRows(
+  lowStock: Product[],
+  suggestions: RestockSuggestion[],
+  suppliers: Supplier[]
+): RestockRow[] {
+  const suggestionByProductId = new Map(suggestions.map((s) => [s.productId, s]));
+
+  return [...lowStock]
+    .map((p) => {
+      const suggestion = suggestionByProductId.get(p.id);
+      const supplier = suppliers.find((s) => s.active && s.categoryIds.includes(p.categoryId));
+      return {
+        productId: p.id,
+        productName: p.name,
+        barcode: p.barcode,
+        category: p.category,
+        stock: p.stock,
+        minStock: p.lowStockThreshold,
+        isOut: p.stock <= 0,
+        avgDailySales: suggestion?.avgDailySales ?? null,
+        daysOfStockLeft: suggestion?.daysOfStockLeft ?? null,
+        suggestedQuantity: suggestion?.suggestedQuantity ?? null,
+        supplier: supplier?.name ?? null,
+        cost: p.cost,
+      };
+    })
+    .sort((a, b) => {
+      if (a.isOut !== b.isOut) return a.isOut ? -1 : 1;
+      const aDays = a.daysOfStockLeft ?? Infinity;
+      const bDays = b.daysOfStockLeft ?? Infinity;
+      return aDays - bDays;
+    });
 }

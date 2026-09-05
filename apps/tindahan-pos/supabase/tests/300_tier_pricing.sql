@@ -44,9 +44,10 @@ select is(
 select is(
   (select count(distinct pf.feature_code)::int from core.plan_features pf
    join core.subscription_plans p on p.id = pf.plan_id where p.code = 'PRO'),
-  14,
-  'and PRO''s feature SET is unchanged by BUSINESS existing -- still the same '
-  || 'fourteen codes, not five carved away'
+  15,
+  'and PRO''s feature SET is still not carved up by BUSINESS existing -- the '
+  || 'original fourteen, plus Review, which 20260904110000 granted by RANK so '
+  || 'that no tier above Growth is missing what Growth holds'
 );
 select is(
   (select price_php from core.subscription_plans where code = 'ENTERPRISE'),

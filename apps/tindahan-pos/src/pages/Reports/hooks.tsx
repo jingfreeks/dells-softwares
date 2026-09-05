@@ -22,7 +22,6 @@ import {
 } from "@/lib";
 import { buildRangeReport, refundSummary } from "@/lib/reports";
 import { describePlatformError } from "@/lib/platformErrors";
-import { DEFAULT_ALERTS_MOCK, loadAlertsMock } from "@/pages/Settings/alertsMock";
 import {
   DEFAULT_RECEIPT_SETTINGS_MOCK,
   loadReceiptSettingsMock,
@@ -52,10 +51,10 @@ export function useReportsPage() {
   const { loading: permissionsLoading } = usePermissions();
   const canViewReports = useCan("pos.report.view");
   const authorized = !!user && !permissionsLoading && canViewReports;
-  const thresholdDays = useMemo(
-    () => (store ? loadAlertsMock(store.id).utangAgingThresholdDays : DEFAULT_ALERTS_MOCK.utangAgingThresholdDays),
-    [store]
-  );
+  // The store's own setting, not a per-device copy. This used to read
+  // localStorage, which is how this page and Review came to age the same
+  // customers by different rules -- see 20260905100000.
+  const thresholdDays = store?.utangOverdueDays ?? 30;
   const [preset, setPreset] = useState<DateRangePreset>("today");
   const now = useMemo(() => new Date(), []);
   const [customStart, setCustomStart] = useState(toDateInputValue(now));

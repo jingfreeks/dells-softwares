@@ -23,7 +23,7 @@ import type { OwnerHomeScreenProps } from "./types";
  * silently disagree with each other.
  */
 export function OwnerHomeScreen(props: OwnerHomeScreenProps) {
-  const { activeTab, onChangeTab, onOpenTodaysSales, onOpenRestock } = props;
+  const { activeTab, onChangeTab, onOpenTodaysSales, onOpenRestock, onOpenReview } = props;
   const {
     store,
     activeCashier,
@@ -107,6 +107,23 @@ export function OwnerHomeScreen(props: OwnerHomeScreenProps) {
               ))}
             </View>
           </>
+        )}
+
+        {/*
+          Review is offered to every owner, not only entitled ones. The screen
+          itself shows the upgrade state to a Starter store -- an entry point
+          that silently vanishes cannot sell anything, which is the same call
+          the web app made in nav.ts.
+        */}
+        {onOpenReview && (
+          <View className="bg-panel border border-hairline rounded-card px-3.5 mb-4">
+            <ListRow
+              icon="award"
+              title="Review"
+              subtitle="See how your store is doing"
+              trailing={<ActionPill label="Open" onPress={onOpenReview} />}
+            />
+          </View>
         )}
 
         <SectionHeader title="Recent sales" onSeeAllPress={onOpenTodaysSales} />

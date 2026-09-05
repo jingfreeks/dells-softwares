@@ -63,7 +63,11 @@ export function useInventoryPage() {
     () => (location.state as { initialQuery?: string } | null)?.initialQuery ?? ""
   );
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
-  const [needsAttentionOnly, setNeedsAttentionOnly] = useState(false);
+  // Review's "View low stock" and "View slow-moving" land here already
+  // filtered, through the same location.state channel as the search query.
+  const [needsAttentionOnly, setNeedsAttentionOnly] = useState(
+    () => (location.state as { needsAttentionOnly?: boolean } | null)?.needsAttentionOnly ?? false
+  );
   const [sortByRunsOutSoonest, setSortByRunsOutSoonest] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);

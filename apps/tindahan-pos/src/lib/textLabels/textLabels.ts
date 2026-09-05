@@ -13,6 +13,7 @@ export const NAV_LABEL_CUSTOMERS = "Customers";
 export const NAV_LABEL_ADMIN = "Admin";
 export const NAV_LABEL_STAFF = "Staff";
 export const NAV_LABEL_REPORTS = "Reports";
+export const NAV_LABEL_REVIEW = "Review";
 
 export const PAGE_HEADING_POS = "POS Checkout";
 export const PAGE_HEADING_ADMIN_DASHBOARD = "Admin dashboard";
@@ -507,6 +508,7 @@ export const TEXT_REPORTS_DESCRIPTION = "Sales by date range and by cashier";
 export const LABEL_PERIOD_WEEK = "This week";
 export const LABEL_PERIOD_MONTH = "This month";
 export const LABEL_PERIOD_CUSTOM = "Custom";
+export const LABEL_PERIOD_LAST_MONTH = "Last month";
 export const LABEL_ALL_CASHIERS = "All cashiers";
 export const LABEL_ALL_DEVICES = "All devices";
 export const LABEL_TOTAL_SALES = "Total sales";
@@ -1201,6 +1203,128 @@ export const TEXT_PREVIEW_CASHIER_LABEL = "Cashier:";
 export const TEXT_PREVIEW_TOTAL = "TOTAL";
 export const TEXT_PREVIEW_CASH = "Cash";
 export const TEXT_PREVIEW_CHANGE = "Change";
+
+// Review — the Growth-plan feature
+//
+// Copy taken from the approved designs (review-dashboard.html,
+// review-locked.html) rather than rewritten. The locked state's wording is
+// deliberately plain about what Growth adds; §15 of the design brief asks that
+// a Starter user not be made to feel the product is broken.
+export const PAGE_HEADING_REVIEW = "Review";
+export const TEXT_REVIEW_DESCRIPTION = "See how your store is doing and what needs your attention.";
+export const TEXT_REVIEW_LOCKED_SUBHEADING = "Get a clearer picture of your store's performance.";
+export const TEXT_REVIEW_LOCKED_TITLE = "Review is available with Growth";
+export const TEXT_REVIEW_LOCKED_BENEFIT_SALES = "Understand your sales";
+export const TEXT_REVIEW_LOCKED_BENEFIT_STOCK = "Spot low-stock products";
+export const TEXT_REVIEW_LOCKED_BENEFIT_UTANG = "Review outstanding utang";
+export const TEXT_REVIEW_LOCKED_BENEFIT_ATTENTION = "Find products that need attention";
+export const TEXT_REVIEW_LOCKED_BENEFIT_PERFORMANCE = "Track business performance";
+export const BUTTON_UPGRADE_TO_GROWTH = "Upgrade to Growth";
+export const LABEL_REVIEW_METRIC_SALES = "SALES";
+export const LABEL_REVIEW_METRIC_PROFIT = "ESTIMATED PROFIT";
+export const LABEL_REVIEW_METRIC_UTANG = "UTANG";
+export const LABEL_REVIEW_METRIC_INVENTORY = "INVENTORY";
+export const TEXT_REVIEW_MARGIN_SUFFIX = "margin";
+export const TEXT_REVIEW_OVERDUE_SUFFIX = "overdue";
+export const TEXT_REVIEW_LOW_STOCK_SUFFIX = "low stock";
+export const TEXT_REVIEW_TRANSACTIONS_SUFFIX = "sales";
+// Said on the card, not buried in a tooltip, and said ALWAYS -- not only when
+// cost coverage is partial.
+//
+// Product Decisions §2: "Do not silently present estimated profit as exact
+// historical profit." Even at full coverage this figure is estimated, because
+// sale_items never captured a cost snapshot and products.cost is TODAY's cost.
+// A bare margin with no basis line reads as exact, which is the thing that
+// decision forbids -- so every state of this card names its basis.
+export const TEXT_REVIEW_PROFIT_BASIS = "Estimated from current product costs";
+export const TEXT_REVIEW_PROFIT_PARTIAL_PREFIX = "Estimated from current costs ·";
+export const TEXT_REVIEW_PROFIT_PARTIAL_SUFFIX = "of sales have one";
+// Zero coverage: showing PHP 0.00 profit would be a misleading zero, which the
+// same decision rules out. The card shows no figure and says what is missing.
+export const TEXT_REVIEW_PROFIT_NO_COST = "No product costs recorded yet";
+export const TEXT_REVIEW_VALUE_UNAVAILABLE = "—";
+// Review — dashboard sections
+export const HEADING_REVIEW_ATTENTION = "What needs your attention?";
+export const LABEL_REVIEW_ITEMS_SUFFIX = "items";
+export const TEXT_REVIEW_LOW_STOCK_TITLE_SUFFIX = "low on stock";
+export const TEXT_REVIEW_LOW_STOCK_BODY = "Restock before they run out";
+export const BUTTON_REVIEW_VIEW_LOW_STOCK = "View low stock";
+export const TEXT_REVIEW_OVERDUE_TITLE_SUFFIX = "have overdue utang";
+export const TEXT_REVIEW_OLDEST_BALANCE_PREFIX = "Oldest balance:";
+export const BUTTON_REVIEW_VIEW_OVERDUE = "View overdue";
+export const TEXT_REVIEW_SLOW_TITLE_SUFFIX = "have not sold recently";
+export const TEXT_REVIEW_SLOW_BODY = "Review your slow-moving stock";
+export const BUTTON_REVIEW_VIEW_SLOW = "View slow-moving";
+export const TEXT_REVIEW_SHIFTS_BALANCED = "Cashier shifts are balanced";
+export const TEXT_REVIEW_SHIFTS_NO_ACTION = "No action needed";
+// Not the same as balanced, and must not read like it: a drawer nobody counted
+// has nothing to be off by. See 20260905130000.
+export const TEXT_REVIEW_SHIFTS_NONE_COUNTED = "No shifts were counted";
+export const TEXT_REVIEW_SHIFTS_NONE_COUNTED_BODY = "Nothing to compare — count the drawer at the end of a shift";
+export const TEXT_REVIEW_SHIFTS_OFF_SUFFIX = "off by more than your limit";
+export const LABEL_REVIEW_GOOD = "Good";
+export const HEADING_REVIEW_SALES = "Sales Review";
+export const HEADING_REVIEW_BEST_SELLERS = "Best sellers";
+export const BUTTON_REVIEW_OPEN = "Open";
+export const TEXT_REVIEW_NO_SALES_YET = "No sales in this period yet.";
+export const HEADING_REVIEW_INVENTORY = "Inventory Review";
+export const LABEL_REVIEW_STOCK_HEALTHY = "Healthy";
+export const LABEL_REVIEW_STOCK_LOW = "Low stock";
+export const LABEL_REVIEW_STOCK_CRITICAL = "Critical";
+export const LABEL_REVIEW_STOCK_SLOW = "Slow moving";
+export const TEXT_REVIEW_RESTOCK_SUFFIX = "products need restocking soon.";
+export const TEXT_REVIEW_NO_PRODUCTS = "No products yet.";
+export const HEADING_REVIEW_UTANG = "Customer & Utang Review";
+export const LABEL_REVIEW_OUTSTANDING = "OUTSTANDING";
+export const LABEL_REVIEW_OVERDUE = "OVERDUE";
+export const LABEL_REVIEW_WITH_BALANCE = "WITH BALANCE";
+export const HEADING_REVIEW_NEEDS_ATTENTION = "Needs attention";
+export const TEXT_REVIEW_DAYS_OVERDUE_SUFFIX = "days overdue";
+export const TEXT_REVIEW_NOBODY_OVERDUE = "Nobody is past your overdue limit.";
+export const ARIA_REVIEW_SALES_TREND = "Daily sales for the period";
+export const ARIA_REVIEW_STOCK_HEALTH = "Stock health breakdown";
+// The comparison window's real bounds, because "vs last month" is only true
+// when the period IS a month -- see 20260905120000.
+export const TEXT_REVIEW_VS_PREFIX = "vs";
+export const TEXT_REVIEW_DAYS_SUFFIX_SHORT = "days";
+
+// Review — Low Stock detail
+export const ARIA_REVIEW_PERIOD = "Reporting period";
+export const LABEL_REVIEW_FROM = "From";
+export const LABEL_REVIEW_TO = "To";
+
+export const HEADING_REVIEW_HISTORY = "Review History";
+export const BUTTON_REVIEW_VIEW_ALL = "View all";
+export const BUTTON_REVIEW_VIEW = "View";
+export const TEXT_REVIEW_MONTHLY_STORE_REVIEW = "Monthly Store Review";
+export const TEXT_REVIEW_HISTORY_EMPTY = "No months to review yet.";
+export const TEXT_REVIEW_HISTORY_EMPTY_BODY =
+  "A month appears here once the store has recorded sales in it.";
+export const ARIA_REVIEW_HISTORY = "Months with recorded sales, newest first";
+
+export const PAGE_HEADING_LOW_STOCK_REVIEW = "Low Stock Review";
+export const TEXT_LOW_STOCK_REVIEW_RUNNING_LOW_SUFFIX = "products are running low.";
+export const TEXT_LOW_STOCK_REVIEW_DESCRIPTION =
+  "These products may need restocking based on recent sales and current stock levels.";
+export const LABEL_LOW_STOCK_COL_PRODUCT = "PRODUCT";
+export const LABEL_LOW_STOCK_COL_STOCK = "STOCK";
+export const LABEL_LOW_STOCK_COL_RATE = "AVG. DAILY SALES";
+export const LABEL_LOW_STOCK_COL_REORDER = "REORDER";
+export const TEXT_LOW_STOCK_PER_DAY_SUFFIX = "/ day";
+export const TEXT_LOW_STOCK_ORDER_PREFIX = "Order";
+// A product with no recent sales has no rate to project from, so there is no
+// suggestion to make. Saying so beats printing a confident number.
+export const TEXT_LOW_STOCK_NO_RATE = "No recent sales";
+export const TEXT_LOW_STOCK_SUGGESTION_NOTE =
+  "Suggested amounts are a guide based on recent sales — the final order is yours.";
+export const BUTTON_VIEW_INVENTORY = "View Inventory";
+export const TEXT_LOW_STOCK_NONE = "Nothing is running low.";
+export const TEXT_LOW_STOCK_NONE_BODY = "Every product is above its stock threshold.";
+export const ARIA_LOW_STOCK_TABLE = "Products running low, most urgent first";
+
+export const TEXT_REVIEW_ERROR_HEADING = "We couldn't load your review";
+export const TEXT_REVIEW_ERROR_BODY = "Please try again.";
+export const ARIA_REVIEW_LOCKED_BENEFITS = "What Review includes on Growth";
 
 // Settings — Fees and Limits
 export const PAGE_HEADING_FEES_AND_LIMITS = "Fees and limits";

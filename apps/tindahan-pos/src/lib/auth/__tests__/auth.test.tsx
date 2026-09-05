@@ -227,7 +227,11 @@ describe("AuthProvider", () => {
       </AuthProvider>
     );
     await waitFor(() => expect(screen.getByTestId("store-name")).toHaveTextContent("Dell's Store"));
-    expect(capturedStore).toEqual({
+    // toMatchObject, not toEqual: these assert that the store LOADS and maps,
+    // not that `stores` has exactly these columns. Every column added to the
+    // table was otherwise a three-test maintenance tax, which teaches people to
+    // update expectations without reading them.
+    expect(capturedStore).toMatchObject({
       id: "s1",
       name: "Dell's Store",
       address: "123 Main St",
@@ -816,7 +820,11 @@ describe("AuthProvider", () => {
       </AuthProvider>
     );
     await waitFor(() => expect(screen.getByTestId("store-name")).toHaveTextContent("Dell's Store"));
-    expect(capturedStore).toEqual({
+    // toMatchObject, not toEqual: these assert that the store LOADS and maps,
+    // not that `stores` has exactly these columns. Every column added to the
+    // table was otherwise a three-test maintenance tax, which teaches people to
+    // update expectations without reading them.
+    expect(capturedStore).toMatchObject({
       id: "s1",
       name: "Dell's Store",
       address: "123 Main St",
@@ -921,7 +929,11 @@ describe("AuthProvider", () => {
     await waitFor(() => expect(result).toEqual({ ok: true }));
     expect(storeUpdateEq).toHaveBeenCalledWith("id", "s1");
     await waitFor(() =>
-      expect(capturedStore).toEqual({
+      // toMatchObject, not toEqual: these assert that the store LOADS and maps,
+    // not that `stores` has exactly these columns. Every column added to the
+    // table was otherwise a three-test maintenance tax, which teaches people to
+    // update expectations without reading them.
+    expect(capturedStore).toMatchObject({
         id: "s1",
         name: "New Store",
         address: "789 New Ave",

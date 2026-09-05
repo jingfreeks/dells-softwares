@@ -1,0 +1,163 @@
+import { supabase } from "@/lib/supabaseClient";
+import type { ReviewSummary, ReviewBestSeller, ReviewHistoryMonth } from "./reviewTypes";
+
+/**
+ * Review reads.
+ *
+ * One call, one aggregate. Every figure comes from review_summary(), which
+ * checks the Growth entitlement before it reads anything -- so this service
+ * cannot be pointed at a cheaper tenant's data by changing what it asks for.
+ *
+ * Errors are returned as codes rather than thrown strings: the design's error
+ * state is deliberately plain ("We couldn't load your review"), and a Postgres
+ * message must never reach it.
+ */
+
+interface ReviewSummaryRow {
+  period: { from: string; to: string };
+  sales_total: number;
+  transaction_count: number;
+  estimated_profit: number;
+  profit_basis_share: number;
+  inventory_value: number;
+  inventory_basis_share: number;
+  product_count: number;
+  low_stock_count: number;
+  out_of_stock_count: number;
+  slow_moving_count: number;
+  utang_outstanding: number;
+  utang_overdue: number;
+  customers_with_balance: number;
+  overdue_customer_count: number;
+  oldest_overdue_days: number;
+  overdue_days: number;
+  best_sellers: { id: string; name: string; revenue: number; quantity: number }[];
+  daily_sales: { date: string; sales: number }[];
+  shifts_closed: number;
+  shifts_off: number;
+  shifts_off_total: number;
+  overdue_customers: { id: string; name: string; balance: number; days_overdue: number }[];
+  previous: { from: string; to: string; sales_total: number; transaction_count: number };
+}
+
+function mapSummary(row: ReviewSummaryRow): ReviewSummary {
+  return {
+    period: row.period,
+    salesTotal: Number(row.sales_total),
+    transactionCount: row.transaction_count,
+    estimatedProfit: Number(row.estimated_profit),
+    profitBasisShare: Number(row.profit_basis_share),
+    inventoryValue: Number(row.inventory_value),
+    inventoryBasisShare: Number(row.inventory_basis_share),
+    productCount: row.product_count,
+    lowStockCount: row.low_stock_count,
+    outOfStockCount: row.out_of_stock_count,
+    slowMovingCount: row.slow_moving_count,
+    utangOutstanding: Number(row.utang_outstanding),
+    utangOverdue: Number(row.utang_overdue),
+    customersWithBalance: row.customers_with_balance,
+    overdueCustomerCount: row.overdue_customer_count,
+    oldestOverdueDays: row.oldest_overdue_days,
+    overdueDays: row.overdue_days,
+    dailySales: (row.daily_sales ?? []).map((d) => ({ date: d.date, sales: Number(d.sales) })),
+    shiftsClosed: row.shifts_closed,
+    shiftsOff: row.shifts_off,
+    shiftsOffTotal: Number(row.shifts_off_total),
+    overdueCustomers: (row.overdue_customers ?? []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      balance: Number(c.balance),
+      daysOverdue: c.days_overdue,
+    })),
+    previous: {
+      from: row.previous.from,
+      to: row.previous.to,
+      salesTotal: Number(row.previous.sales_total),
+      transactionCount: row.previous.transaction_count,
+    },
+    bestSellers: (row.best_sellers ?? []).map(
+      (b): ReviewBestSeller => ({
+        id: b.id,
+        name: b.name,
+        revenue: Number(b.revenue),
+        quantity: b.quantity,
+      })
+    ),
+  };
+}
+
+export type FetchReviewResult =
+  | { ok: true; summary: ReviewSummary }
+  | { ok: false; refused: true }
+  | { ok: false; refused: false };
+
+/**
+ * `refused` separates "your plan does not include this" from "something went
+ * wrong", because they are different screens: the first is the upgrade state,
+ * the second is Try again. Anything unrecognised is treated as a failure
+ * rather than a refusal -- showing an upgrade prompt after a network blip
+ * would tell a paying customer they had been downgraded.
+ */
+export async function fetchReviewSummary(
+  from: string,
+  to: string,
+  /**
+   * Omit to use the store's own `utang_overdue_days`. Pass a number only to
+   * ask a different question ("who is 60 days late") without changing the
+   * store's setting -- the client no longer carries a default of its own,
+   * because a client-side default is precisely what let Review and the
+   * Customers page disagree.
+   */
+  overdueDays?: number
+): Promise<FetchReviewResult> {
+  const { data, error } = await supabase.rpc("review_summary", {
+    p_from: from,
+    p_to: to,
+    ...(overdueDays !== undefined && { p_overdue_days: overdueDays }),
+  });
+
+  if (error) {
+    const refused =
+      error.message?.includes("FEATURE_NOT_AVAILABLE") ||
+      error.message?.includes("UNAUTHORIZED_ACTION");
+    return { ok: false, refused: Boolean(refused) };
+  }
+  if (!data) return { ok: false, refused: false };
+
+  return { ok: true, summary: mapSummary(data as ReviewSummaryRow) };
+}
+
+interface ReviewHistoryRow {
+  month: string;
+  period_from: string;
+  period_to: string;
+  sales_total: number;
+  transaction_count: number;
+}
+
+export type FetchReviewHistoryResult =
+  | { ok: true; months: ReviewHistoryMonth[] }
+  | { ok: false; refused: boolean };
+
+/** Months with activity, newest first. Same refusal handling as the summary. */
+export async function fetchReviewHistory(limit = 24): Promise<FetchReviewHistoryResult> {
+  const { data, error } = await supabase.rpc("review_history", { p_limit: limit });
+
+  if (error) {
+    const refused =
+      error.message?.includes("FEATURE_NOT_AVAILABLE") ||
+      error.message?.includes("UNAUTHORIZED_ACTION");
+    return { ok: false, refused: Boolean(refused) };
+  }
+
+  return {
+    ok: true,
+    months: ((data ?? []) as ReviewHistoryRow[]).map((row) => ({
+      month: row.month,
+      from: row.period_from,
+      to: row.period_to,
+      salesTotal: Number(row.sales_total),
+      transactionCount: row.transaction_count,
+    })),
+  };
+}

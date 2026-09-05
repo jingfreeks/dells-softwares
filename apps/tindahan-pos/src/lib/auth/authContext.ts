@@ -69,6 +69,8 @@ export interface AuthContextValue {
     cashierCanEditPrices?: boolean;
     voidRequiresPin?: boolean;
     cashierCashOutCap?: number | null;
+    utangOverdueDays?: number;
+    drawerVarianceThreshold?: number;
   }) => Promise<AuthResult>;
   /** Sets or changes the signed-in staff member's own 4-digit PIN (used to approve an over-limit Utang sale). */
   setOwnPin: (pin: string) => Promise<AuthResult>;
